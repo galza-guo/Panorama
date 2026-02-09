@@ -344,6 +344,8 @@ export interface Settings {
   baseCurrency: string;
   onboardingCompleted: boolean;
   autoUpdateCheckEnabled: boolean;
+  handleExchangeAutomatically: boolean;
+  exchangeRateProvider: string;
   menuBarVisible: boolean;
   syncEnabled: boolean;
 }

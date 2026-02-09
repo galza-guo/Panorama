@@ -28,3 +28,16 @@ pub async fn update_market_data_provider_settings(
         .update_market_data_provider_settings(provider_id, priority, enabled)
         .await?)
 }
+
+#[tauri::command]
+pub async fn validate_market_data_provider_api_key(
+    context: State<'_, Arc<ServiceContext>>,
+    provider_id: String,
+    api_key: String,
+) -> CommandResult<()> {
+    context
+        .market_data_service
+        .validate_market_data_provider_api_key(&provider_id, &api_key)
+        .await?;
+    Ok(())
+}

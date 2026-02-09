@@ -11,7 +11,14 @@ interface ExtendedSettingsContextType extends SettingsContextType {
     updates: Partial<
       Pick<
         Settings,
-        "theme" | "font" | "baseCurrency" | "onboardingCompleted" | "menuBarVisible" | "syncEnabled"
+        | "theme"
+        | "font"
+        | "baseCurrency"
+        | "onboardingCompleted"
+        | "menuBarVisible"
+        | "syncEnabled"
+        | "handleExchangeAutomatically"
+        | "exchangeRateProvider"
       >
     >,
   ) => Promise<void>;
@@ -37,7 +44,14 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
     updates: Partial<
       Pick<
         Settings,
-        "theme" | "font" | "baseCurrency" | "onboardingCompleted" | "menuBarVisible" | "syncEnabled"
+        | "theme"
+        | "font"
+        | "baseCurrency"
+        | "onboardingCompleted"
+        | "menuBarVisible"
+        | "syncEnabled"
+        | "handleExchangeAutomatically"
+        | "exchangeRateProvider"
       >
     >,
   ) => {

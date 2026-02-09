@@ -58,6 +58,11 @@ pub trait MarketDataServiceTrait: Send + Sync {
         priority: i32,
         enabled: bool,
     ) -> Result<MarketDataProviderSetting>;
+    async fn validate_market_data_provider_api_key(
+        &self,
+        provider_id: &str,
+        api_key: &str,
+    ) -> Result<()>;
 
     // --- Quote Import Methods ---
     async fn import_quotes_from_csv(

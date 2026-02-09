@@ -1,7 +1,7 @@
 use crate::market_data::market_data_constants::{
     DATA_SOURCE_ALPHA_VANTAGE, DATA_SOURCE_EASTMONEY_CN, DATA_SOURCE_MANUAL,
     DATA_SOURCE_MARKET_DATA_APP, DATA_SOURCE_METAL_PRICE_API, DATA_SOURCE_TIANTIAN_FUND,
-    DATA_SOURCE_YAHOO,
+    DATA_SOURCE_OPEN_EXCHANGE_RATES, DATA_SOURCE_YAHOO,
 };
 use crate::market_data::market_data_errors::MarketDataError;
 use crate::market_data::market_data_model::{
@@ -146,6 +146,13 @@ impl ProviderRegistry {
                         warn!("MetalPriceApi provider '{}' (ID: {}) is enabled but requires an API key, which was not found or resolved. Skipping.", setting.name, setting.id);
                         (None, None)
                     }
+                }
+                DATA_SOURCE_OPEN_EXCHANGE_RATES => {
+                    info!(
+                        "Provider '{}' (ID: {}) is managed by the FX pipeline and is not registered for market quote fetching.",
+                        setting.name, setting.id
+                    );
+                    (None, None)
                 }
                 _ => {
                     warn!("Unknown market data provider ID: {}. Skipping.", setting.id);

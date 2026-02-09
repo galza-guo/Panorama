@@ -3,10 +3,39 @@ import { QueryKeys } from "@/lib/query-keys";
 import {
   getMarketDataProviderSettings,
   updateMarketDataProviderSettings,
+  validateMarketDataProviderApiKey,
   MarketDataProviderSetting,
 } from "@/commands/market-data";
 import { setSecret, deleteSecret } from "@/commands/secrets";
 import { toast } from "@/components/ui/use-toast";
+
+function getErrorMessage(error: unknown, fallback: string): string {
+  if (error instanceof Error && error.message.trim().length > 0) {
+    return error.message;
+  }
+
+  if (typeof error === "string" && error.trim().length > 0) {
+    return error;
+  }
+
+  if (error && typeof error === "object") {
+    const record = error as Record<string, unknown>;
+    const serviceError = record.ServiceError;
+    if (typeof serviceError === "string" && serviceError.trim().length > 0) {
+      return serviceError;
+    }
+    const message = record.message;
+    if (typeof message === "string" && message.trim().length > 0) {
+      return message;
+    }
+    const nestedError = record.error;
+    if (typeof nestedError === "string" && nestedError.trim().length > 0) {
+      return nestedError;
+    }
+  }
+
+  return fallback;
+}
 
 export function useMarketDataProviderSettings() {
   return useQuery({
@@ -62,7 +91,10 @@ export function useUpdateMarketDataProviderSettings() {
       }
       toast({
         title: `Failed to update settings for provider ${variables.providerId}`,
-        description: error.message,
+        description: getErrorMessage(
+          error,
+          "Could not update provider settings. Check API key and provider configuration.",
+        ),
         variant: "destructive",
       });
     },
@@ -88,7 +120,7 @@ export function useSetApiKey() {
     onError: (error) => {
       toast({
         title: "Failed to save API key",
-        description: error.message,
+        description: getErrorMessage(error, "Could not save API key."),
         variant: "destructive",
       });
     },
@@ -109,7 +141,21 @@ export function useDeleteApiKey() {
     onError: (error) => {
       toast({
         title: "Failed to delete API key",
-        description: error.message,
+        description: getErrorMessage(error, "Could not delete API key."),
+        variant: "destructive",
+      });
+    },
+  });
+}
+
+export function useValidateMarketDataProviderApiKey() {
+  return useMutation({
+    mutationFn: async (variables: { providerId: string; apiKey: string }) =>
+      validateMarketDataProviderApiKey(variables),
+    onError: (error) => {
+      toast({
+        title: "API Key validation failed",
+        description: getErrorMessage(error, "Please verify your API key and try again."),
         variant: "destructive",
       });
     },

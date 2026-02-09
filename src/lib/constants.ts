@@ -32,6 +32,13 @@ export const DataSource = {
 
 export type DataSource = (typeof DataSource)[keyof typeof DataSource];
 
+export const ExchangeRateProvider = {
+  YAHOO: "YAHOO",
+  OPEN_EXCHANGE_RATES: "OPEN_EXCHANGE_RATES",
+} as const;
+
+export type ExchangeRateProvider = (typeof ExchangeRateProvider)[keyof typeof ExchangeRateProvider];
+
 // Zod schema for data source validation
 export const dataSourceSchema = z.enum([
   DataSource.YAHOO,

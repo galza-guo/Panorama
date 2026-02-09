@@ -57,6 +57,10 @@ const COMMANDS: CommandMap = {
   get_market_data_providers: { method: "GET", path: "/providers" },
   get_market_data_providers_settings: { method: "GET", path: "/providers/settings" },
   update_market_data_provider_settings: { method: "PUT", path: "/providers/settings" },
+  validate_market_data_provider_api_key: {
+    method: "POST",
+    path: "/providers/settings/validate-key",
+  },
   // Contribution limits
   get_contribution_limits: { method: "GET", path: "/limits" },
   create_contribution_limit: { method: "POST", path: "/limits" },
@@ -307,6 +311,11 @@ export const invokeWeb = async <T>(
     }
     case "update_market_data_provider_settings": {
       body = JSON.stringify(payload);
+      break;
+    }
+    case "validate_market_data_provider_api_key": {
+      const { providerId, apiKey } = payload as { providerId: string; apiKey: string };
+      body = JSON.stringify({ providerId, apiKey });
       break;
     }
     case "create_contribution_limit": {

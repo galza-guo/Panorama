@@ -238,6 +238,13 @@ mod tests {
         ) -> Result<MarketDataProviderSetting> {
             unimplemented!()
         }
+        async fn validate_market_data_provider_api_key(
+            &self,
+            _provider_id: &str,
+            _api_key: &str,
+        ) -> Result<()> {
+            unimplemented!()
+        }
         async fn import_quotes_from_csv(
             &self,
             _quotes: Vec<crate::market_data::market_data_model::QuoteImport>,

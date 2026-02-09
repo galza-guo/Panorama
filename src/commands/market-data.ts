@@ -272,6 +272,25 @@ export const updateMarketDataProviderSettings = async (payload: {
   }
 };
 
+export const validateMarketDataProviderApiKey = async (payload: {
+  providerId: string;
+  apiKey: string;
+}): Promise<void> => {
+  try {
+    switch (getRunEnv()) {
+      case RUN_ENV.DESKTOP:
+        return invokeTauri("validate_market_data_provider_api_key", payload);
+      case RUN_ENV.WEB:
+        return invokeWeb("validate_market_data_provider_api_key", payload);
+      default:
+        throw new Error(`Unsupported environment`);
+    }
+  } catch (error) {
+    logger.error("Error validating market data provider API key.");
+    throw error;
+  }
+};
+
 export const importManualQuotes = async (quotes: QuoteImport[]): Promise<QuoteImport[]> => {
   try {
     const overwriteExisting = true;

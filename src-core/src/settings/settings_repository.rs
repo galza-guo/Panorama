@@ -56,6 +56,12 @@ impl SettingsRepositoryTrait for SettingsRepository {
                 "auto_update_check_enabled" => {
                     settings.auto_update_check_enabled = value.parse().unwrap_or(true);
                 }
+                "handle_exchange_automatically" => {
+                    settings.handle_exchange_automatically = value.parse().unwrap_or(true);
+                }
+                "exchange_rate_provider" => {
+                    settings.exchange_rate_provider = value.trim().to_uppercase();
+                }
                 "menu_bar_visible" => {
                     settings.menu_bar_visible = value.parse().unwrap_or(true);
                 }
@@ -118,6 +124,24 @@ impl SettingsRepositoryTrait for SettingsRepository {
                         .execute(conn)?;
                 }
 
+                if let Some(handle_exchange_automatically) = settings.handle_exchange_automatically {
+                    diesel::replace_into(app_settings)
+                        .values(&AppSetting {
+                            setting_key: "handle_exchange_automatically".to_string(),
+                            setting_value: handle_exchange_automatically.to_string(),
+                        })
+                        .execute(conn)?;
+                }
+
+                if let Some(ref exchange_rate_provider) = settings.exchange_rate_provider {
+                    diesel::replace_into(app_settings)
+                        .values(&AppSetting {
+                            setting_key: "exchange_rate_provider".to_string(),
+                            setting_value: exchange_rate_provider.trim().to_uppercase(),
+                        })
+                        .execute(conn)?;
+                }
+
                 if let Some(menu_bar_visible) = settings.menu_bar_visible {
                     diesel::replace_into(app_settings)
                         .values(&AppSetting {
@@ -157,6 +181,8 @@ impl SettingsRepositoryTrait for SettingsRepository {
                     "font" => "font-mono",
                     "onboarding_completed" => "false",
                     "auto_update_check_enabled" => "true",
+                    "handle_exchange_automatically" => "true",
+                    "exchange_rate_provider" => "YAHOO",
                     "menu_bar_visible" => "true",
                     "sync_enabled" => "true",
                     _ => return Err(Error::from(diesel::result::Error::NotFound)),

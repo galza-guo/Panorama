@@ -1,6 +1,10 @@
 use super::settings_repository::SettingsRepositoryTrait;
 use crate::errors::{DatabaseError, Error, Result};
 use crate::fx::fx_traits::FxServiceTrait;
+use crate::market_data::market_data_constants::{
+    DATA_SOURCE_OPEN_EXCHANGE_RATES, DATA_SOURCE_YAHOO,
+};
+use crate::errors::ValidationError;
 use crate::settings::{Settings, SettingsUpdate};
 use async_trait::async_trait;
 use log::{debug, error};
@@ -35,18 +39,28 @@ impl SettingsServiceTrait for SettingsService {
     }
 
     async fn update_settings(&self, new_settings: &SettingsUpdate) -> Result<()> {
+        let mut normalized_update = new_settings.clone();
+        if let Some(provider) = normalized_update.exchange_rate_provider.as_mut() {
+            let normalized = provider.trim().to_uppercase();
+            if normalized != DATA_SOURCE_YAHOO && normalized != DATA_SOURCE_OPEN_EXCHANGE_RATES {
+                return Err(Error::Validation(ValidationError::InvalidInput(format!(
+                    "Unsupported exchange rate provider: {}",
+                    provider
+                ))));
+            }
+            *provider = normalized;
+        }
+
         let current_base_currency = self.get_base_currency()?;
 
-        if let Some(ref new_base_currency_val) = new_settings.base_currency {
+        if let Some(ref new_base_currency_val) = normalized_update.base_currency {
             if current_base_currency.as_deref() != Some(new_base_currency_val.as_str()) {
                 self.update_base_currency(new_base_currency_val.as_str())
                     .await?;
             }
         }
 
-        self.settings_repository
-            .update_settings(new_settings)
-            .await?;
+        self.settings_repository.update_settings(&normalized_update).await?;
         Ok(())
     }
 

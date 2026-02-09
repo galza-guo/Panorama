@@ -22,13 +22,16 @@ import {
 } from "@/hooks/use-calculate-portfolio";
 import { QueryKeys } from "@/lib/query-keys";
 import { cn } from "@/lib/utils";
+import { toast } from "@/components/ui/use-toast";
 import { ActionConfirm } from "@wealthfolio/ui";
 import {
   useDeleteApiKey,
   useMarketDataProviderSettings,
   useSetApiKey,
   useUpdateMarketDataProviderSettings,
+  useValidateMarketDataProviderApiKey,
 } from "./use-market-data-settings";
+import { ExchangeRateProvider } from "@/lib/constants";
 
 const KEYLESS_PROVIDERS = new Set(["YAHOO", "MANUAL", "EASTMONEY_CN", "TIANTIAN_FUND"]);
 
@@ -69,9 +72,11 @@ function ProviderSettings({
 }: ProviderSettingsProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [showApiKey, setShowApiKey] = useState(false);
-  const { apiKey, isSecretSet, needsApiKey, invalidateApiKeyStatus } = useApiKeyStatus(provider.id);
-  const { mutate: setApiKey } = useSetApiKey();
-  const { mutate: deleteApiKey } = useDeleteApiKey();
+  const { apiKey, isSecretSet, isLoading, needsApiKey, invalidateApiKeyStatus } =
+    useApiKeyStatus(provider.id);
+  const setApiKeyMutation = useSetApiKey();
+  const deleteApiKeyMutation = useDeleteApiKey();
+  const validateApiKeyMutation = useValidateMarketDataProviderApiKey();
 
   const [apiKeyValue, setApiKeyValue] = useState("");
 
@@ -81,25 +86,48 @@ function ProviderSettings({
     }
   }, [apiKey]);
 
-  const handleSaveApiKey = () => {
-    if (apiKeyValue && apiKeyValue.trim() !== "") {
-      setApiKey(
-        { providerId: provider.id, apiKey: apiKeyValue },
-        {
-          onSuccess: () => invalidateApiKeyStatus(),
-        },
-      );
-    } else {
-      deleteApiKey(
-        { providerId: provider.id },
-        {
-          onSuccess: () => invalidateApiKeyStatus(),
-        },
-      );
+  const handleSaveApiKey = async () => {
+    const trimmedApiKey = apiKeyValue.trim();
+    try {
+      if (trimmedApiKey) {
+        if (provider.id === ExchangeRateProvider.OPEN_EXCHANGE_RATES) {
+          await validateApiKeyMutation.mutateAsync({
+            providerId: provider.id,
+            apiKey: trimmedApiKey,
+          });
+        }
+        await setApiKeyMutation.mutateAsync({
+          providerId: provider.id,
+          apiKey: trimmedApiKey,
+        });
+      } else {
+        await deleteApiKeyMutation.mutateAsync({ providerId: provider.id });
+      }
+      invalidateApiKeyStatus();
+    } catch {
+      // Toasts are handled by mutation hooks.
     }
   };
 
   const isConfigured = !needsApiKey || isSecretSet;
+  const isSavingApiKey =
+    setApiKeyMutation.isPending ||
+    deleteApiKeyMutation.isPending ||
+    validateApiKeyMutation.isPending;
+  const requiresApiKeyBeforeEnable = provider.id === ExchangeRateProvider.OPEN_EXCHANGE_RATES;
+  const canConfigureWhileDisabled = needsApiKey;
+
+  const handleEnabledToggle = (checked: boolean) => {
+    if (checked && requiresApiKeyBeforeEnable && !isSecretSet) {
+      toast({
+        title: "API key required",
+        description: "Save and validate your Open Exchange Rates API key before enabling it.",
+        variant: "destructive",
+      });
+      return;
+    }
+    onUpdate({ enabled: checked });
+  };
 
   return (
     <Card
@@ -202,7 +230,8 @@ function ProviderSettings({
               <Switch
                 id={`${provider.id}-enabled`}
                 checked={provider.enabled}
-                onCheckedChange={(checked) => onUpdate({ enabled: checked })}
+                onCheckedChange={handleEnabledToggle}
+                disabled={requiresApiKeyBeforeEnable && isLoading}
                 className="data-[state=checked]:bg-green-600"
               />
             </div>
@@ -215,14 +244,18 @@ function ProviderSettings({
             variant="ghost"
             className={cn(
               "h-auto w-full justify-between rounded-none border-t p-4",
-              !provider.enabled && "opacity-50",
+              !provider.enabled && !canConfigureWhileDisabled && "opacity-50",
             )}
-            disabled={!provider.enabled}
+            disabled={!provider.enabled && !canConfigureWhileDisabled}
           >
             <span className="text-sm font-medium">
-              {provider.enabled ? "Configure Settings" : "Enable provider to configure"}
+              {provider.enabled
+                ? "Configure Settings"
+                : canConfigureWhileDisabled
+                  ? "Configure API Key to Enable"
+                  : "Enable provider to configure"}
             </span>
-            {provider.enabled &&
+            {(provider.enabled || canConfigureWhileDisabled) &&
               (isOpen ? (
                 <Icons.ChevronUp className="h-4 w-4" />
               ) : (
@@ -243,12 +276,14 @@ function ProviderSettings({
                     onChange={(e) => setApiKeyValue(e.target.value)}
                     placeholder={isSecretSet && !apiKeyValue ? "API Key is Set" : "Enter API Key"}
                     className="grow"
+                    disabled={isSavingApiKey}
                   />
                   <Button
                     variant="outline"
                     size="icon"
                     onClick={() => setShowApiKey(!showApiKey)}
                     aria-label={showApiKey ? "Hide API key" : "Show API key"}
+                    disabled={isSavingApiKey}
                   >
                     {showApiKey ? (
                       <Icons.EyeOff className="h-4 w-4" />
@@ -256,7 +291,7 @@ function ProviderSettings({
                       <Icons.Eye className="h-4 w-4" />
                     )}
                   </Button>
-                  <Button onClick={handleSaveApiKey} size="sm">
+                  <Button onClick={() => void handleSaveApiKey()} size="sm" disabled={isSavingApiKey}>
                     <Icons.Save className="mr-2 h-4 w-4" /> Save Key
                   </Button>
                 </div>
@@ -271,6 +306,18 @@ function ProviderSettings({
                     No API key set. Enter a key and save.
                   </p>
                 )}
+                {provider.id === ExchangeRateProvider.OPEN_EXCHANGE_RATES && (
+                  <p className="text-muted-foreground text-xs">
+                    This key will be validated before it is saved.
+                  </p>
+                )}
+                {provider.id === ExchangeRateProvider.OPEN_EXCHANGE_RATES &&
+                  !provider.enabled &&
+                  !isSecretSet && (
+                    <p className="text-muted-foreground text-xs">
+                      Open Exchange Rates can be enabled only after a valid API key is saved.
+                    </p>
+                  )}
               </div>
             )}
 

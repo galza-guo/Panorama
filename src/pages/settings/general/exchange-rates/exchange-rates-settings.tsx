@@ -3,9 +3,15 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { DataTable } from "@/components/ui/data-table";
 import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
 import { Icons } from "@/components/ui/icons";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Switch } from "@/components/ui/switch";
+import { ExchangeRateProvider } from "@/lib/constants";
+import { useSettingsContext } from "@/lib/settings-provider";
 import { ExchangeRate } from "@/lib/types";
 import { formatDate } from "@/lib/utils";
+import { useMarketDataProviderSettings } from "@/pages/settings/market-data/use-market-data-settings";
 import { ColumnDef } from "@tanstack/react-table";
 import { ActionConfirm } from "@wealthfolio/ui";
 import { useState } from "react";
@@ -23,7 +29,37 @@ export function ExchangeRatesSettings() {
     deleteExchangeRate,
     isDeletingRate,
   } = useExchangeRates();
+  const { settings, updateSettings } = useSettingsContext();
+  const { data: providerSettings } = useMarketDataProviderSettings();
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+
+  const isOpenExchangeRatesEnabled = !!providerSettings?.find(
+    (provider) => provider.id === ExchangeRateProvider.OPEN_EXCHANGE_RATES && provider.enabled,
+  );
+  const selectedProvider =
+    settings?.exchangeRateProvider?.toUpperCase() ?? ExchangeRateProvider.YAHOO;
+  const isAutomaticExchangeEnabled = settings?.handleExchangeAutomatically ?? true;
+
+  const handleAutomaticExchangeToggle = (enabled: boolean) => {
+    if (!settings) {
+      return;
+    }
+    void updateSettings({
+      handleExchangeAutomatically: enabled,
+      exchangeRateProvider:
+        selectedProvider === ExchangeRateProvider.OPEN_EXCHANGE_RATES &&
+        !isOpenExchangeRatesEnabled
+          ? ExchangeRateProvider.YAHOO
+          : selectedProvider,
+    });
+  };
+
+  const handleProviderChange = (provider: string) => {
+    if (!settings) {
+      return;
+    }
+    void updateSettings({ exchangeRateProvider: provider });
+  };
 
   const columns: ColumnDef<ExchangeRate>[] = [
     {
@@ -151,6 +187,55 @@ export function ExchangeRatesSettings() {
         </div>
       </CardHeader>
       <CardContent>
+        <div className="mb-6 space-y-4 rounded-md border p-4">
+          <div className="flex items-start justify-between gap-4">
+            <div className="space-y-1">
+              <Label htmlFor="handle-exchange-automatically" className="text-base">
+                Handle exchange automatically
+              </Label>
+              <p className="text-muted-foreground text-xs">
+                Automatically manage exchange rates for currency conversion workflows.
+              </p>
+            </div>
+            <Switch
+              id="handle-exchange-automatically"
+              checked={isAutomaticExchangeEnabled}
+              onCheckedChange={handleAutomaticExchangeToggle}
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="exchange-rate-provider">Automatic exchange provider</Label>
+            <Select
+              value={
+                selectedProvider === ExchangeRateProvider.OPEN_EXCHANGE_RATES &&
+                !isOpenExchangeRatesEnabled
+                  ? ExchangeRateProvider.YAHOO
+                  : selectedProvider
+              }
+              onValueChange={handleProviderChange}
+              disabled={!isAutomaticExchangeEnabled}
+            >
+              <SelectTrigger id="exchange-rate-provider" className="w-full sm:w-72">
+                <SelectValue placeholder="Select provider" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value={ExchangeRateProvider.YAHOO}>Yahoo Finance</SelectItem>
+                {isOpenExchangeRatesEnabled && (
+                  <SelectItem value={ExchangeRateProvider.OPEN_EXCHANGE_RATES}>
+                    Open Exchange Rates
+                  </SelectItem>
+                )}
+              </SelectContent>
+            </Select>
+            {!isOpenExchangeRatesEnabled && (
+              <p className="text-muted-foreground text-xs">
+                Enable and validate Open Exchange Rates in Market Data settings to use it here.
+              </p>
+            )}
+          </div>
+        </div>
+
         {isLoadingRates ? (
           <div className="space-y-2">
             {[...Array(5)].map((_, index) => (

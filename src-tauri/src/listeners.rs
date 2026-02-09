@@ -6,6 +6,9 @@ use std::sync::Arc;
 use std::time::Instant;
 use tauri::{async_runtime::spawn, AppHandle, Emitter, Listener, Manager};
 use wealthfolio_core::constants::PORTFOLIO_TOTAL_ACCOUNT_ID;
+use wealthfolio_core::fx::{auto_exchange, open_exchange_rates_client};
+use wealthfolio_core::market_data::{DATA_SOURCE_OPEN_EXCHANGE_RATES, DATA_SOURCE_YAHOO};
+use wealthfolio_core::secrets::SecretStore;
 
 use crate::context::ServiceContext;
 use crate::events::{
@@ -14,6 +17,177 @@ use crate::events::{
     PORTFOLIO_TRIGGER_RECALCULATE, PORTFOLIO_TRIGGER_UPDATE, PORTFOLIO_UPDATE_COMPLETE,
     PORTFOLIO_UPDATE_ERROR, PORTFOLIO_UPDATE_START, RESOURCE_CHANGED,
 };
+use crate::secret_store::KeyringSecretStore;
+
+#[derive(Clone)]
+struct AutoExchangeManagementContext {
+    base_currency: String,
+    managed_currencies: HashSet<String>,
+    provider: String,
+    open_exchange_api_key: Option<String>,
+}
+
+async fn prepare_auto_exchange_management(
+    context: &Arc<ServiceContext>,
+) -> Option<AutoExchangeManagementContext> {
+    let settings = match context.settings_service().get_settings() {
+        Ok(value) => value,
+        Err(err) => {
+            warn!(
+                "Failed to load settings for automatic exchange management: {}",
+                err
+            );
+            return None;
+        }
+    };
+
+    if !settings.handle_exchange_automatically {
+        return None;
+    }
+
+    let base_currency = settings.base_currency.trim().to_uppercase();
+    if base_currency.is_empty() {
+        return None;
+    }
+
+    let account_currencies = match context.account_service().list_accounts(Some(true), None) {
+        Ok(accounts) => accounts.into_iter().map(|account| account.currency).collect(),
+        Err(err) => {
+            warn!(
+                "Failed to list accounts for automatic exchange management: {}",
+                err
+            );
+            Vec::new()
+        }
+    };
+
+    let asset_currencies = match context.asset_service().get_assets() {
+        Ok(assets) => assets.into_iter().map(|asset| asset.currency).collect(),
+        Err(err) => {
+            warn!(
+                "Failed to list assets for automatic exchange management: {}",
+                err
+            );
+            Vec::new()
+        }
+    };
+
+    let managed_currencies =
+        auto_exchange::build_managed_currency_set(&base_currency, account_currencies, asset_currencies);
+
+    if let Err(err) = auto_exchange::ensure_registered_pairs(
+        context.fx_service().as_ref(),
+        &base_currency,
+        &managed_currencies,
+    )
+    .await
+    {
+        warn!(
+            "Failed to auto-register exchange pairs for base currency {}: {}",
+            base_currency, err
+        );
+    }
+
+    let selected_provider = settings.exchange_rate_provider.trim().to_uppercase();
+    let mut provider = if selected_provider == DATA_SOURCE_OPEN_EXCHANGE_RATES {
+        DATA_SOURCE_OPEN_EXCHANGE_RATES.to_string()
+    } else {
+        DATA_SOURCE_YAHOO.to_string()
+    };
+
+    let mut open_exchange_api_key = None;
+    if provider == DATA_SOURCE_OPEN_EXCHANGE_RATES {
+        let provider_enabled = match context
+            .market_data_service()
+            .get_market_data_providers_settings()
+            .await
+        {
+            Ok(providers) => providers
+                .iter()
+                .any(|item| item.id == DATA_SOURCE_OPEN_EXCHANGE_RATES && item.enabled),
+            Err(err) => {
+                warn!(
+                    "Failed to load market data provider settings for Open Exchange Rates: {}",
+                    err
+                );
+                false
+            }
+        };
+
+        if !provider_enabled {
+            warn!(
+                "Open Exchange Rates is selected in settings but the provider is disabled. Falling back to Yahoo."
+            );
+            provider = DATA_SOURCE_YAHOO.to_string();
+        } else {
+            let keyring_store = KeyringSecretStore;
+            open_exchange_api_key = keyring_store
+                .get_secret(DATA_SOURCE_OPEN_EXCHANGE_RATES)
+                .ok()
+                .flatten()
+                .filter(|value| !value.trim().is_empty());
+
+            if open_exchange_api_key.is_none() {
+                warn!(
+                    "Open Exchange Rates is selected but no API key is configured. Falling back to Yahoo."
+                );
+                provider = DATA_SOURCE_YAHOO.to_string();
+            }
+        }
+    }
+
+    Some(AutoExchangeManagementContext {
+        base_currency,
+        managed_currencies,
+        provider,
+        open_exchange_api_key,
+    })
+}
+
+async fn apply_open_exchange_rates_management(
+    context: &Arc<ServiceContext>,
+    management: &AutoExchangeManagementContext,
+) {
+    if management.provider != DATA_SOURCE_OPEN_EXCHANGE_RATES {
+        return;
+    }
+
+    let Some(api_key) = management.open_exchange_api_key.as_deref() else {
+        return;
+    };
+
+    let latest_rates = match open_exchange_rates_client::fetch_latest_rates(api_key).await {
+        Ok(rates) => rates,
+        Err(err) => {
+            warn!(
+                "Failed to fetch rates from Open Exchange Rates. Falling back to existing FX quotes: {}",
+                err
+            );
+            return;
+        }
+    };
+
+    let updated_count = auto_exchange::upsert_open_exchange_rates(
+        context.fx_service().as_ref(),
+        &management.base_currency,
+        &management.managed_currencies,
+        &latest_rates,
+    )
+    .await;
+
+    if updated_count > 0 {
+        info!(
+            "Updated {} exchange rates from Open Exchange Rates",
+            updated_count
+        );
+        if let Err(err) = context.fx_service().initialize() {
+            warn!(
+                "Failed to initialize FxService after Open Exchange Rates update: {}",
+                err
+            );
+        }
+    }
+}
 
 /// Sets up the global event listeners for the application.
 pub fn setup_event_listeners(handle: AppHandle) {
@@ -60,6 +234,7 @@ fn handle_portfolio_request(handle: AppHandle, payload_str: &str, force_recalc: 
 
                 if let Some(context) = context_result {
                     let market_data_service = context.market_data_service();
+                    let auto_exchange_context = prepare_auto_exchange_management(&context).await;
 
                     // Emit sync start event
                     if let Err(e) = handle_clone.emit(MARKET_SYNC_START, &()) {
@@ -91,6 +266,10 @@ fn handle_portfolio_request(handle: AppHandle, payload_str: &str, force_recalc: 
                                     "Failed to initialize FxService after market data sync: {}",
                                     e
                                 );
+                            }
+
+                            if let Some(management) = auto_exchange_context.as_ref() {
+                                apply_open_exchange_rates_management(&context, management).await;
                             }
 
                             // Trigger calculation after successful sync

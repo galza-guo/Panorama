@@ -18,7 +18,8 @@ use super::providers::models::AssetProfile;
 use crate::assets::assets_constants::CASH_ASSET_TYPE;
 use crate::assets::{Asset, UpdateAssetProfile};
 use crate::assets::assets_traits::AssetRepositoryTrait;
-use crate::errors::Result;
+use crate::errors::{Error, Result, ValidationError};
+use crate::fx::open_exchange_rates_client;
 use crate::market_data::providers::ProviderRegistry;
 use crate::market_data::symbol_normalizer::infer_panorama_data_source;
 use crate::secrets::SecretStore;
@@ -272,6 +273,23 @@ impl MarketDataServiceTrait for MarketDataService {
             "Updating market data provider settings for provider id: {}",
             provider_id
         );
+
+        if provider_id.eq_ignore_ascii_case(DATA_SOURCE_OPEN_EXCHANGE_RATES) && enabled {
+            let api_key = self
+                .secret_store
+                .get_secret(DATA_SOURCE_OPEN_EXCHANGE_RATES)?
+                .filter(|value| !value.trim().is_empty())
+                .ok_or_else(|| {
+                    Error::Validation(ValidationError::InvalidInput(
+                        "Open Exchange Rates API key is required before enabling this provider"
+                            .to_string(),
+                    ))
+                })?;
+
+            self.validate_market_data_provider_api_key(&provider_id, &api_key)
+                .await?;
+        }
+
         let changes = UpdateMarketDataProviderSetting {
             priority: Some(priority),
             enabled: Some(enabled),
@@ -286,6 +304,24 @@ impl MarketDataServiceTrait for MarketDataService {
         self.refresh_provider_registry().await?;
 
         Ok(updated_setting)
+    }
+
+    async fn validate_market_data_provider_api_key(
+        &self,
+        provider_id: &str,
+        api_key: &str,
+    ) -> Result<()> {
+        if api_key.trim().is_empty() {
+            return Err(Error::Validation(ValidationError::InvalidInput(
+                "API key is required".to_string(),
+            )));
+        }
+
+        if provider_id.eq_ignore_ascii_case(DATA_SOURCE_OPEN_EXCHANGE_RATES) {
+            open_exchange_rates_client::validate_api_key(api_key).await?;
+        }
+
+        Ok(())
     }
 
     async fn import_quotes_from_csv(

@@ -24,6 +24,7 @@ export type ActivityType = (typeof ActivityType)[keyof typeof ActivityType];
 
 export const DataSource = {
   YAHOO: 'YAHOO',
+  OPEN_EXCHANGE_RATES: 'OPEN_EXCHANGE_RATES',
   MANUAL: 'MANUAL',
 } as const;
 
@@ -394,6 +395,10 @@ export interface Settings {
   baseCurrency: string;
   onboardingCompleted: boolean;
   autoUpdateCheckEnabled: boolean;
+  handleExchangeAutomatically: boolean;
+  exchangeRateProvider: string;
+  menuBarVisible: boolean;
+  syncEnabled: boolean;
 }
 
 export interface SettingsContextType {

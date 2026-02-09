@@ -55,6 +55,25 @@ async fn update_market_data_provider_settings(
 }
 
 #[derive(serde::Deserialize)]
+struct ProviderApiKeyValidationBody {
+    #[serde(rename = "providerId")]
+    provider_id: String,
+    #[serde(rename = "apiKey")]
+    api_key: String,
+}
+
+async fn validate_market_data_provider_api_key(
+    State(state): State<Arc<AppState>>,
+    Json(body): Json<ProviderApiKeyValidationBody>,
+) -> ApiResult<StatusCode> {
+    state
+        .market_data_service
+        .validate_market_data_provider_api_key(&body.provider_id, &body.api_key)
+        .await?;
+    Ok(StatusCode::NO_CONTENT)
+}
+
+#[derive(serde::Deserialize)]
 struct SearchQuery {
     query: String,
 }
@@ -201,6 +220,10 @@ pub fn router() -> Router<Arc<AppState>> {
         .route(
             "/providers/settings",
             get(get_market_data_providers_settings).put(update_market_data_provider_settings),
+        )
+        .route(
+            "/providers/settings/validate-key",
+            post(validate_market_data_provider_api_key),
         )
         .route("/market-data/search", get(search_symbol))
         .route("/market-data/quotes/history", get(get_quote_history))

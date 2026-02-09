@@ -251,6 +251,7 @@ pub fn run() {
             // Provider settings commands
             commands::providers_settings::get_market_data_providers_settings,
             commands::providers_settings::update_market_data_provider_settings,
+            commands::providers_settings::validate_market_data_provider_api_key,
             // Addon commands
             commands::addon::extract_addon_zip,
             commands::addon::install_addon_zip,
