@@ -632,13 +632,19 @@ impl MarketDataProvider for TiantianFundProvider {
                 async move {
                     self.get_historical_quotes(&symbol_clone, start, end, currency_clone.clone())
                         .await
-                        .map_err(|e| (symbol_clone, currency_clone, e.to_string()))
+                        .map_err(|e| (symbol_clone, currency_clone, e))
                 }
             });
 
             for result in join_all(futures).await {
                 match result {
                     Ok(quotes) => all_quotes.extend(quotes),
+                    Err((symbol, _currency, MarketDataError::NoData)) => {
+                        log::debug!(
+                            "TIANTIAN_FUND has no new history in requested window for symbol {}",
+                            symbol
+                        );
+                    }
                     Err((symbol, currency, error)) => {
                         log::warn!(
                             "TIANTIAN_FUND failed to fetch history for symbol {}: {}",
