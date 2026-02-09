@@ -72,13 +72,14 @@ export const getAssetProfile = async (assetId: string): Promise<Asset> => {
   }
 };
 
-export const getAssets = async (): Promise<Asset[]> => {
+export const getAssets = async (owner?: string): Promise<Asset[]> => {
   try {
+    const payload = owner?.trim() ? { owner: owner.trim() } : undefined;
     switch (getRunEnv()) {
       case RUN_ENV.DESKTOP:
-        return invokeTauri("get_assets");
+        return invokeTauri("get_assets", payload);
       case RUN_ENV.WEB:
-        return invokeWeb("get_assets");
+        return invokeWeb("get_assets", payload);
       default:
         throw new Error(`Unsupported`);
     }

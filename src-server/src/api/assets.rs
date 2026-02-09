@@ -27,8 +27,17 @@ async fn get_asset_profile(
     Ok(Json(asset))
 }
 
-async fn list_assets(State(state): State<Arc<AppState>>) -> ApiResult<Json<Vec<CoreAsset>>> {
-    let assets = state.asset_service.get_assets()?;
+#[derive(serde::Deserialize)]
+struct AssetListQuery {
+    owner: Option<String>,
+}
+
+async fn list_assets(
+    State(state): State<Arc<AppState>>,
+    Query(q): Query<AssetListQuery>,
+) -> ApiResult<Json<Vec<CoreAsset>>> {
+    let owner = q.owner.as_deref().map(str::trim).filter(|owner| !owner.is_empty());
+    let assets = state.asset_service.get_assets_by_owner(owner)?;
     Ok(Json(assets))
 }
 

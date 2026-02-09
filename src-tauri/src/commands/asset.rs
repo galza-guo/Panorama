@@ -19,10 +19,13 @@ pub async fn get_asset_profile(
 }
 
 #[tauri::command]
-pub async fn get_assets(state: State<'_, Arc<ServiceContext>>) -> Result<Vec<Asset>, String> {
+pub async fn get_assets(
+    owner: Option<String>,
+    state: State<'_, Arc<ServiceContext>>,
+) -> Result<Vec<Asset>, String> {
     state
         .asset_service()
-        .get_assets()
+        .get_assets_by_owner(owner.as_deref())
         .map_err(|e| e.to_string())
 }
 

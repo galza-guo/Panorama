@@ -16,6 +16,11 @@ import {
   Icons,
   MoneyInput,
   QuantityInput,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
   Sheet,
   SheetContent,
   SheetDescription,
@@ -154,6 +159,25 @@ export function MobileDetailsStep({ accounts, activityType }: MobileDetailsStepP
                         className="h-6 w-6"
                       />
                     </div>
+                    {field.value !== DataSource.MANUAL && (
+                      <div className="mt-2">
+                        <Select
+                          value={field.value}
+                          onValueChange={(value) => field.onChange(value as DataSource)}
+                        >
+                          <SelectTrigger aria-label="Symbol lookup provider">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value={DataSource.YAHOO}>Yahoo Finance</SelectItem>
+                            <SelectItem value={DataSource.EASTMONEY_CN}>EastMoney CN</SelectItem>
+                            <SelectItem value={DataSource.TIANTIAN_FUND}>
+                              Tiantian Fund
+                            </SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    )}
                   </FormItem>
                 )}
               />

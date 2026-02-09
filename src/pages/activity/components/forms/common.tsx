@@ -40,7 +40,7 @@ export const ConfigurationCheckbox = ({
           name="assetDataSource"
           render={({ field }) => (
             <FormItem className="mt-2 space-y-1">
-              <div className="flex items-center justify-between">
+              <div className="flex flex-wrap items-center justify-between gap-3">
                 <div className="flex items-center space-x-2">
                   <label
                     htmlFor="use-lookup-checkbox"
@@ -59,6 +59,24 @@ export const ConfigurationCheckbox = ({
                   />
                 </div>
               </div>
+              {field.value !== DataSource.MANUAL && (
+                <div className="flex items-center gap-2">
+                  <span className="text-muted-foreground text-xs">Lookup Provider</span>
+                  <Select
+                    value={field.value}
+                    onValueChange={(value) => field.onChange(value as DataSource)}
+                  >
+                    <SelectTrigger aria-label="Symbol lookup provider" className="h-9 w-52">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value={DataSource.YAHOO}>Yahoo Finance</SelectItem>
+                      <SelectItem value={DataSource.EASTMONEY_CN}>EastMoney CN</SelectItem>
+                      <SelectItem value={DataSource.TIANTIAN_FUND}>Tiantian Fund</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
             </FormItem>
           )}
         />
@@ -188,13 +206,17 @@ export function AssetSymbolInput({
   isManualAsset: boolean;
 }) {
   const { setValue } = useFormContext();
+  const resolveLookupDataSource = (source?: QuoteSummary["dataSource"]): DataSource => {
+    const normalized = source?.toUpperCase();
+    if (normalized === DataSource.MANUAL) return DataSource.MANUAL;
+    if (normalized === DataSource.EASTMONEY_CN) return DataSource.EASTMONEY_CN;
+    if (normalized === DataSource.TIANTIAN_FUND) return DataSource.TIANTIAN_FUND;
+    return DataSource.YAHOO;
+  };
 
   const handleTickerSelect = (symbol: string, quoteSummary?: QuoteSummary) => {
     field.onChange(symbol);
-    // If the selected ticker is a custom/manual entry, automatically enable skip lookup
-    if (quoteSummary?.dataSource === DataSource.MANUAL) {
-      setValue("assetDataSource", DataSource.MANUAL);
-    }
+    setValue("assetDataSource", resolveLookupDataSource(quoteSummary?.dataSource));
   };
 
   return (

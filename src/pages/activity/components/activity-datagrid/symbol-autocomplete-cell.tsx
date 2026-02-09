@@ -45,8 +45,13 @@ export function SymbolAutocompleteCell({
   const cellRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const deferredQuery = useDeferredValue(searchQuery);
-  const resolveDataSource = (source?: QuoteSummary["dataSource"]) =>
-    source === DataSource.MANUAL ? DataSource.MANUAL : DataSource.YAHOO;
+  const resolveDataSource = (source?: QuoteSummary["dataSource"]) => {
+    const normalized = source?.toUpperCase();
+    if (normalized === DataSource.MANUAL) return DataSource.MANUAL;
+    if (normalized === DataSource.EASTMONEY_CN) return DataSource.EASTMONEY_CN;
+    if (normalized === DataSource.TIANTIAN_FUND) return DataSource.TIANTIAN_FUND;
+    return DataSource.YAHOO;
+  };
 
   const { data, isLoading, isError } = useQuery<QuoteSummary[], Error>({
     queryKey: [QueryKeys.symbolSearch, deferredQuery],

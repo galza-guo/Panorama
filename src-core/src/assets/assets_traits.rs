@@ -5,6 +5,7 @@ use crate::errors::Result;
 #[async_trait::async_trait]
 pub trait AssetServiceTrait: Send + Sync {
     fn get_assets(&self) -> Result<Vec<Asset>>;
+    fn get_assets_by_owner(&self, owner: Option<&str>) -> Result<Vec<Asset>>;
     fn get_asset_by_id(&self, asset_id: &str) -> Result<Asset>;
     async fn delete_asset(&self, asset_id: &str) -> Result<()>;
     async fn update_asset_profile(
@@ -31,6 +32,7 @@ pub trait AssetRepositoryTrait: Send + Sync {
     async fn update_data_source(&self, asset_id: &str, data_source: String) -> Result<Asset>;
     fn get_by_id(&self, asset_id: &str) -> Result<Asset>;
     fn list(&self) -> Result<Vec<Asset>>;
+    fn list_by_owner(&self, owner: &str) -> Result<Vec<Asset>>;
     fn list_cash_assets(&self, base_currency: &str) -> Result<Vec<Asset>>;
     fn list_by_symbols(&self, symbols: &[String]) -> Result<Vec<Asset>>;
     async fn delete(&self, asset_id: &str) -> Result<()>;

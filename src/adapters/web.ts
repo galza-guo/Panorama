@@ -335,6 +335,15 @@ export const invokeWeb = async <T>(
       url += `/${encodeURIComponent(limitId)}/deposits`;
       break;
     }
+    case "get_assets": {
+      const { owner } = (payload ?? {}) as { owner?: string };
+      if (owner?.trim()) {
+        const params = new URLSearchParams();
+        params.set("owner", owner.trim());
+        url += `?${params.toString()}`;
+      }
+      break;
+    }
     case "get_asset_profile": {
       const { assetId } = payload as { assetId: string };
       const params = new URLSearchParams();

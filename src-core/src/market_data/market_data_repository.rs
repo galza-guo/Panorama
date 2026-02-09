@@ -385,7 +385,7 @@ impl MarketDataRepositoryTrait for MarketDataRepository {
     fn get_all_providers(&self) -> Result<Vec<MarketDataProviderSetting>> {
         let mut conn = get_connection(&self.pool)?;
         market_data_providers_dsl::market_data_providers
-            .order(market_data_providers_dsl::priority.desc())
+            .order(market_data_providers_dsl::priority.asc())
             .select(MarketDataProviderSetting::as_select())
             .load::<MarketDataProviderSetting>(&mut conn)
             .map_err(|e| MarketDataError::DatabaseError(e).into())

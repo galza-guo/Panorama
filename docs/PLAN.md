@@ -38,23 +38,40 @@ We will create dedicated UI modules for Insurance and MPF assets, using the exis
 
 ### P0: Core Data Providers
 - [ ] **EastMoney CN Provider** (`EASTMONEY_CN`, keyless):
+  - [ ] Add `DATA_SOURCE_EASTMONEY_CN` constant in `src-core/src/market_data/market_data_constants.rs`.
+  - [ ] Add `EastMoneyCn` variant to `DataSource` enum in `src-core/src/market_data/market_data_model.rs`.
   - [ ] Implement `src-core/src/market_data/providers/eastmoney_cn_provider.rs`.
-  - [ ] Register in `provider_registry.rs`.
+  - [ ] Add match arm in `src-core/src/market_data/providers/provider_registry.rs`.
+  - [ ] Update keyless check in `provider_registry.rs` lines 52-65 to skip API key lookup.
+  - [ ] Add seed row in DB migration with priority `2`.
   - [ ] Verify symbol format (Panorama PSS): `600001.SH` / `000001.SZ`.
 - [ ] **Tiantian Fund Provider** (`TIANTIAN_FUND`, keyless):
+  - [ ] Add `DATA_SOURCE_TIANTIAN_FUND` constant in `src-core/src/market_data/market_data_constants.rs`.
+  - [ ] Add `TiantianFund` variant to `DataSource` enum in `src-core/src/market_data/market_data_model.rs`.
   - [ ] Implement `src-core/src/market_data/providers/tiantian_fund_provider.rs`.
-  - [ ] Register in `provider_registry.rs`.
+  - [ ] Add match arm in `src-core/src/market_data/providers/provider_registry.rs`.
+  - [ ] Add seed row in DB migration with priority `1`.
   - [ ] Verify symbol format (Panorama PSS): `161039.FUND` (and accept `161039` when explicitly chosen as FUND in UI).
+- [ ] **Frontend update**:
+  - [ ] Update `src/pages/settings/market-data/market-data-settings.tsx` to add `EASTMONEY_CN` and `TIANTIAN_FUND` to keyless providers list.
 
 ### P1: Insurance & MPF Modules
 - [ ] **Asset Extension**:
-  - [ ] Update `Asset` type definitions to include `owner`.
-  - [ ] Define standard keys for `attributes` (e.g., `policy_type`, `guaranteed_value`).
+  - [ ] Store `owner` and specialized metadata in the existing `attributes` JSON field (no schema migration needed).
+  - [ ] Document standard JSON keys:
+    ```json
+    {
+      "owner": "Self" | "Spouse",
+      "policy_type": "Life" | "ILP" | "Medical",
+      "guaranteed_value": 50000,
+      "trustee": "Manulife"
+    }
+    ```
 - [ ] **Insurance UI**:
-  - [ ] Create `InsuranceDashboard`.
+  - [ ] Create `InsuranceDashboard` in `src/pages/insurance/`.
   - [ ] Create `PolicyDetailView`.
 - [ ] **MPF UI**:
-  - [ ] Create `MpfDashboard`.
+  - [ ] Create `MpfDashboard` in `src/pages/mpf/`.
   - [ ] Implement visualization for MPF fund allocation.
 
 ### P2: Family Dashboard

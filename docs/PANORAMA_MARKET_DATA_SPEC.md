@@ -61,6 +61,7 @@ These are applied at input boundaries (asset creation, CSV mapping, etc). Storag
 
 - **CN A-shares**
   - Enforce 6 digits + `.SH` or `.SZ`.
+  - **Yahoo symbol conversion**: `.SS` → `.SH` (Yahoo uses `.SS` for Shanghai; normalize on import).
 
 - **FUND**
   - Enforce 6 digits.
@@ -174,7 +175,12 @@ Failure behavior:
 
 ### 4.3 Keyless providers
 - Keyless providers MUST NOT show "API Key" input.
-- Current UI logic hard-codes `needsApiKey` as providerId != YAHOO/MANUAL; Panorama must extend this list to include `EASTMONEY_CN` and `TIANTIAN_FUND` (and any other keyless providers).
+- **Frontend update required**: `market-data-settings.tsx` line 35 must be updated:
+  ```typescript
+  const KEYLESS_PROVIDERS = ["YAHOO", "MANUAL", "EASTMONEY_CN", "TIANTIAN_FUND"];
+  const needsApiKey = !KEYLESS_PROVIDERS.includes(providerId);
+  ```
+- **Backend update required**: `provider_registry.rs` lines 52-65 must skip API key lookup for keyless providers.
 
 ### 4.4 Optional non-secret config
 If we later need per-provider knobs (proxy URL, pacing), store in `app_settings` (non-secret). Secrets (cookies/tokens) go to SecretStore.
@@ -203,16 +209,32 @@ If we later need per-provider knobs (proxy URL, pacing), store in `app_settings`
 
 ## 6) Implementation Checklist (Phase 1)
 
-1) Add new provider IDs and seed rows in `market_data_providers`.
-2) Implement `EASTMONEY_CN` provider (latest + daily history + bulk).
-3) Implement `TIANTIAN_FUND` provider (latest + history + bulk).
-4) Update Market Data settings UI logic so keyless providers do not require an API key.
-5) Add minimal symbol normalization at input boundaries (accept `.US`, accept HK 5-digit inputs).
-6) Manual verification:
+1) Add new provider IDs and seed rows in `market_data_providers` with priority values:
+   | Provider | ID | Priority |
+   |----------|----|---------:|
+   | Tiantian Fund | `TIANTIAN_FUND` | 1 |
+   | EastMoney CN | `EASTMONEY_CN` | 2 |
+   | Yahoo | `YAHOO` | 10 |
+   | Alpha Vantage | `ALPHA_VANTAGE` | 20 |
+
+2) Backend changes (4 files):
+   - `src-core/src/market_data/market_data_constants.rs`: Add `DATA_SOURCE_EASTMONEY_CN`, `DATA_SOURCE_TIANTIAN_FUND`.
+   - `src-core/src/market_data/market_data_model.rs`: Add `EastMoneyCn`, `TiantianFund` variants to `DataSource` enum.
+   - `src-core/src/market_data/providers/provider_registry.rs`: Add match arms; update keyless check (lines 52-65).
+   - DB migration: Seed new provider rows.
+
+3) Implement `EASTMONEY_CN` provider (latest + daily history + bulk).
+4) Implement `TIANTIAN_FUND` provider (latest + history + bulk).
+5) Update Market Data settings UI logic so keyless providers do not require an API key.
+6) Add minimal symbol normalization at input boundaries (accept `.US`, accept HK 5-digit inputs, convert `.SS` → `.SH`).
+7) Manual verification:
    - A-share: `600519.SH`, `000001.SZ`
    - Fund: `161039.FUND`
    - HK: `0700.HK`
    - US: `AAPL` and `AAPL.US`
+   - FX: `CNYUSD=X` (ensure FX still routes to Yahoo)
+   - Historical: Fetch A-share quotes spanning a Chinese holiday
+   - Bulk: Mixed symbol types in a single portfolio update
 
 ---
 

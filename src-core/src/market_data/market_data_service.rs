@@ -16,9 +16,11 @@ use super::market_data_model::{
 use super::market_data_traits::{MarketDataRepositoryTrait, MarketDataServiceTrait};
 use super::providers::models::AssetProfile;
 use crate::assets::assets_constants::CASH_ASSET_TYPE;
+use crate::assets::{Asset, UpdateAssetProfile};
 use crate::assets::assets_traits::AssetRepositoryTrait;
 use crate::errors::Result;
 use crate::market_data::providers::ProviderRegistry;
+use crate::market_data::symbol_normalizer::infer_panorama_data_source;
 use crate::secrets::SecretStore;
 use crate::utils::time_utils;
 
@@ -138,18 +140,7 @@ impl MarketDataServiceTrait for MarketDataService {
     async fn sync_market_data(&self) -> Result<((), Vec<(String, String)>)> {
         debug!("Syncing market data.");
         let assets = self.asset_repository.list()?;
-        let quote_requests: Vec<_> = assets
-            .iter()
-            .filter(|asset| {
-                asset.asset_type.as_deref() != Some(CASH_ASSET_TYPE)
-                    && asset.data_source != DATA_SOURCE_MANUAL
-            })
-            .map(|asset| QuoteRequest {
-                symbol: asset.symbol.clone(),
-                data_source: asset.data_source.as_str().into(),
-                currency: asset.currency.clone(),
-            })
-            .collect();
+        let quote_requests = self.build_quote_requests_from_assets(assets).await;
 
         self.process_market_data_sync(quote_requests, false).await
     }
@@ -167,18 +158,7 @@ impl MarketDataServiceTrait for MarketDataService {
             }
         };
 
-        let quote_requests: Vec<_> = assets
-            .iter()
-            .filter(|asset| {
-                asset.asset_type.as_deref() != Some(CASH_ASSET_TYPE)
-                    && asset.data_source != DATA_SOURCE_MANUAL
-            })
-            .map(|asset| QuoteRequest {
-                symbol: asset.symbol.clone(),
-                data_source: asset.data_source.as_str().into(),
-                currency: asset.currency.clone(),
-            })
-            .collect();
+        let quote_requests = self.build_quote_requests_from_assets(assets).await;
 
         self.process_market_data_sync(quote_requests, true).await
     }
@@ -538,6 +518,180 @@ impl MarketDataService {
         }
 
         all_filled_quotes
+    }
+
+    fn has_placeholder_name(asset: &Asset) -> bool {
+        let Some(name) = &asset.name else {
+            return true;
+        };
+
+        let trimmed = name.trim();
+        trimmed.is_empty()
+            || trimmed.eq_ignore_ascii_case(asset.id.as_str())
+            || trimmed.eq_ignore_ascii_case(asset.symbol.as_str())
+    }
+
+    fn is_cn_a_share_symbol(symbol: &str) -> bool {
+        let normalized = symbol.trim().to_uppercase();
+        normalized.ends_with(".SH") || normalized.ends_with(".SZ")
+    }
+
+    fn contains_cjk(value: &str) -> bool {
+        value.chars().any(|ch| {
+            matches!(
+                ch as u32,
+                0x3400..=0x4DBF // CJK Unified Ideographs Extension A
+                    | 0x4E00..=0x9FFF // CJK Unified Ideographs
+                    | 0xF900..=0xFAFF // CJK Compatibility Ideographs
+            )
+        })
+    }
+
+    async fn maybe_backfill_asset_profile_name(&self, asset: &Asset, effective_source: &str) {
+        if !matches!(effective_source, DATA_SOURCE_EASTMONEY_CN | DATA_SOURCE_TIANTIAN_FUND) {
+            return;
+        }
+
+        let force_cn_name_for_a_share = effective_source.eq_ignore_ascii_case(DATA_SOURCE_EASTMONEY_CN)
+            && Self::is_cn_a_share_symbol(&asset.symbol);
+
+        if !force_cn_name_for_a_share && !Self::has_placeholder_name(asset) {
+            return;
+        }
+
+        let profile = match self
+            .provider_registry
+            .read()
+            .await
+            .get_asset_profile(&asset.symbol)
+            .await
+        {
+            Ok(value) => value,
+            Err(err) => {
+                debug!(
+                    "Skipping profile backfill for '{}' due to profile lookup error: {}",
+                    asset.symbol, err
+                );
+                return;
+            }
+        };
+
+        if profile.data_source.eq_ignore_ascii_case(DATA_SOURCE_MANUAL) {
+            return;
+        }
+
+        let profile_name = profile
+            .name
+            .as_ref()
+            .map(|value| value.trim())
+            .filter(|value| !value.is_empty())
+            .filter(|value| !value.eq_ignore_ascii_case(asset.id.as_str()))
+            .filter(|value| !value.eq_ignore_ascii_case(asset.symbol.as_str()))
+            .map(|value| value.to_string());
+
+        let Some(profile_name) = profile_name else {
+            return;
+        };
+
+        if force_cn_name_for_a_share {
+            if !Self::contains_cjk(&profile_name) {
+                debug!(
+                    "Skipping CN name override for '{}' because provider name is not CJK: '{}'",
+                    asset.symbol, profile_name
+                );
+                return;
+            }
+
+            let current_name_matches = asset
+                .name
+                .as_ref()
+                .map(|value| value.trim() == profile_name.as_str())
+                .unwrap_or(false);
+            if current_name_matches {
+                return;
+            }
+        }
+
+        let payload = UpdateAssetProfile {
+            symbol: asset.symbol.clone(),
+            name: Some(profile_name),
+            sectors: profile.sectors.or_else(|| asset.sectors.clone()),
+            countries: profile.countries.or_else(|| asset.countries.clone()),
+            notes: profile
+                .notes
+                .or_else(|| asset.notes.clone())
+                .unwrap_or_default(),
+            asset_sub_class: profile
+                .asset_sub_class
+                .or_else(|| asset.asset_sub_class.clone()),
+            asset_class: profile.asset_class.or_else(|| asset.asset_class.clone()),
+        };
+
+        match self.asset_repository.update_profile(&asset.id, payload).await {
+            Ok(updated) => debug!(
+                "Backfilled asset profile name for '{}' -> '{}'",
+                updated.id,
+                updated.name.unwrap_or_default()
+            ),
+            Err(err) => error!(
+                "Failed to backfill asset profile for '{}': {}",
+                asset.id, err
+            ),
+        }
+    }
+
+    async fn build_quote_requests_from_assets(&self, assets: Vec<Asset>) -> Vec<QuoteRequest> {
+        let mut quote_requests = Vec::new();
+
+        for asset in assets {
+            if asset.asset_type.as_deref() == Some(CASH_ASSET_TYPE) {
+                continue;
+            }
+
+            let inferred_source = infer_panorama_data_source(&asset.symbol);
+            let mut effective_source = match inferred_source {
+                Some(source) => source.to_string(),
+                None => asset.data_source.clone(),
+            };
+
+            if effective_source.eq_ignore_ascii_case(DATA_SOURCE_MANUAL) {
+                continue;
+            }
+
+            if !asset.data_source.eq_ignore_ascii_case(&effective_source) {
+                if let Err(err) = self
+                    .asset_repository
+                    .update_data_source(&asset.id, effective_source.clone())
+                    .await
+                {
+                    error!(
+                        "Failed to auto-correct data source for asset '{}' to '{}': {}",
+                        asset.id, effective_source, err
+                    );
+                    effective_source = asset.data_source.clone();
+                } else {
+                    debug!(
+                        "Auto-corrected data source for asset '{}' to '{}'",
+                        asset.id, effective_source
+                    );
+                }
+            }
+
+            if effective_source.eq_ignore_ascii_case(DATA_SOURCE_MANUAL) {
+                continue;
+            }
+
+            self.maybe_backfill_asset_profile_name(&asset, &effective_source)
+                .await;
+
+            quote_requests.push(QuoteRequest {
+                symbol: asset.symbol,
+                data_source: effective_source.as_str().into(),
+                currency: asset.currency,
+            });
+        }
+
+        quote_requests
     }
 
     async fn process_market_data_sync(

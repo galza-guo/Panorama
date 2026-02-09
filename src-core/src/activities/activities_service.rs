@@ -8,6 +8,8 @@ use crate::activities::activities_model::*;
 use crate::activities::{ActivityRepositoryTrait, ActivityServiceTrait};
 use crate::assets::AssetServiceTrait;
 use crate::fx::FxServiceTrait;
+use crate::market_data::symbol_normalizer::{normalize_panorama_symbol, SymbolNormalizationOptions};
+use crate::market_data::DATA_SOURCE_TIANTIAN_FUND;
 use crate::Result;
 use uuid::Uuid;
 
@@ -37,7 +39,45 @@ impl ActivityService {
 }
 
 impl ActivityService {
+    fn normalize_activity_asset_id(
+        &self,
+        raw_asset_id: &str,
+        requested_data_source: Option<&str>,
+    ) -> String {
+        let raw_trimmed = raw_asset_id.trim();
+        if raw_trimmed.is_empty() {
+            return raw_trimmed.to_string();
+        }
+
+        let treat_bare_six_digit_as_fund = requested_data_source
+            .map(|source| source.eq_ignore_ascii_case(DATA_SOURCE_TIANTIAN_FUND))
+            .unwrap_or(false);
+
+        let normalized = normalize_panorama_symbol(
+            raw_trimmed,
+            SymbolNormalizationOptions {
+                treat_bare_six_digit_as_fund,
+            },
+        );
+
+        // Keep legacy symbols if they already exist to avoid breaking existing links.
+        if normalized != raw_trimmed && self.asset_service.get_asset_by_id(raw_trimmed).is_ok() {
+            return raw_trimmed.to_string();
+        }
+
+        normalized
+    }
+
     async fn prepare_new_activity(&self, mut activity: NewActivity) -> Result<NewActivity> {
+        let requested_source = activity
+            .asset_data_source
+            .as_ref()
+            .map(|source| source.trim().to_uppercase())
+            .filter(|source| !source.is_empty());
+        activity.asset_data_source = requested_source.clone();
+        activity.asset_id =
+            self.normalize_activity_asset_id(&activity.asset_id, requested_source.as_deref());
+
         let account: Account = self.account_service.get_account(&activity.account_id)?;
 
         let asset_context_currency = if !activity.currency.is_empty() {
@@ -51,9 +91,8 @@ impl ActivityService {
             .get_or_create_asset(&activity.asset_id, Some(asset_context_currency))
             .await?;
 
-        if let Some(requested_source) = activity.asset_data_source.as_ref() {
-            let requested = requested_source.to_uppercase();
-            if !requested.is_empty() && asset.data_source.to_uppercase() != requested {
+        if let Some(requested) = requested_source {
+            if asset.data_source.to_uppercase() != requested {
                 self.asset_service
                     .update_asset_data_source(&asset.id, requested)
                     .await?;
@@ -77,6 +116,15 @@ impl ActivityService {
         &self,
         mut activity: ActivityUpdate,
     ) -> Result<ActivityUpdate> {
+        let requested_source = activity
+            .asset_data_source
+            .as_ref()
+            .map(|source| source.trim().to_uppercase())
+            .filter(|source| !source.is_empty());
+        activity.asset_data_source = requested_source.clone();
+        activity.asset_id =
+            self.normalize_activity_asset_id(&activity.asset_id, requested_source.as_deref());
+
         let account: Account = self.account_service.get_account(&activity.account_id)?;
 
         let asset_context_currency = if !activity.currency.is_empty() {
@@ -90,9 +138,8 @@ impl ActivityService {
             .get_or_create_asset(&activity.asset_id, Some(asset_context_currency))
             .await?;
 
-        if let Some(requested_source) = activity.asset_data_source.as_ref() {
-            let requested = requested_source.to_uppercase();
-            if !requested.is_empty() && asset.data_source.to_uppercase() != requested {
+        if let Some(requested) = requested_source {
+            if asset.data_source.to_uppercase() != requested {
                 self.asset_service
                     .update_asset_data_source(&asset.id, requested)
                     .await?;
@@ -269,6 +316,8 @@ impl ActivityServiceTrait for ActivityService {
                 activity.account_id = Some(account_id.clone());
             }
 
+            activity.symbol = self.normalize_activity_asset_id(&activity.symbol, None);
+
             // Determine context currency for potential asset creation during check
             let asset_context_currency = if !activity.currency.is_empty() {
                 activity.currency.clone()
@@ -364,7 +413,7 @@ impl ActivityServiceTrait for ActivityService {
             .map(|activity| NewActivity {
                 id: activity.id.clone(),
                 account_id: activity.account_id.clone().unwrap_or_default(),
-                asset_id: activity.symbol.clone(),
+                asset_id: self.normalize_activity_asset_id(&activity.symbol, None),
                 asset_data_source: None,
                 activity_type: activity.activity_type.clone(),
                 activity_date: activity.date.clone(),

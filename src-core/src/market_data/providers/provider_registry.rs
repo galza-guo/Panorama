@@ -1,16 +1,19 @@
 use crate::market_data::market_data_constants::{
-    DATA_SOURCE_ALPHA_VANTAGE, DATA_SOURCE_MANUAL, DATA_SOURCE_MARKET_DATA_APP,
-    DATA_SOURCE_METAL_PRICE_API, DATA_SOURCE_YAHOO,
+    DATA_SOURCE_ALPHA_VANTAGE, DATA_SOURCE_EASTMONEY_CN, DATA_SOURCE_MANUAL,
+    DATA_SOURCE_MARKET_DATA_APP, DATA_SOURCE_METAL_PRICE_API, DATA_SOURCE_TIANTIAN_FUND,
+    DATA_SOURCE_YAHOO,
 };
 use crate::market_data::market_data_errors::MarketDataError;
 use crate::market_data::market_data_model::{
     MarketDataProviderSetting, Quote as ModelQuote, QuoteSummary,
 };
 use crate::market_data::providers::alpha_vantage_provider::AlphaVantageProvider;
+use crate::market_data::providers::eastmoney_cn_provider::EastMoneyCnProvider;
 use crate::market_data::providers::manual_provider::ManualProvider;
 use crate::market_data::providers::market_data_provider::{AssetProfiler, MarketDataProvider};
 use crate::market_data::providers::marketdata_app_provider::MarketDataAppProvider;
 use crate::market_data::providers::metal_price_api_provider::MetalPriceApiProvider;
+use crate::market_data::providers::tiantian_fund_provider::TiantianFundProvider;
 use crate::market_data::providers::yahoo_provider::YahooProvider;
 use crate::secrets::SecretStore;
 use log::{debug, info, warn};
@@ -26,6 +29,13 @@ pub struct ProviderRegistry {
 }
 
 impl ProviderRegistry {
+    fn is_keyless_provider(provider_id: &str) -> bool {
+        matches!(
+            provider_id,
+            DATA_SOURCE_YAHOO | DATA_SOURCE_EASTMONEY_CN | DATA_SOURCE_TIANTIAN_FUND
+        )
+    }
+
     pub async fn new(
         provider_settings: Vec<MarketDataProviderSetting>,
         secret_store: Arc<dyn SecretStore>,
@@ -49,7 +59,7 @@ impl ProviderRegistry {
 
             let provider_id_str = &setting.id;
 
-            let api_key = if provider_id_str != DATA_SOURCE_YAHOO {
+            let api_key = if !Self::is_keyless_provider(provider_id_str) {
                 match secret_store.get_secret(provider_id_str) {
                     Ok(key_opt) => key_opt,
                     Err(e) => {
@@ -67,6 +77,20 @@ impl ProviderRegistry {
             let (provider, profiler) = match provider_id_str.as_str() {
                 DATA_SOURCE_YAHOO => {
                     let p = Arc::new(YahooProvider::new().await?);
+                    (
+                        Some(p.clone() as Arc<dyn MarketDataProvider + Send + Sync>),
+                        Some(p as Arc<dyn AssetProfiler + Send + Sync>),
+                    )
+                }
+                DATA_SOURCE_EASTMONEY_CN => {
+                    let p = Arc::new(EastMoneyCnProvider::new());
+                    (
+                        Some(p.clone() as Arc<dyn MarketDataProvider + Send + Sync>),
+                        Some(p as Arc<dyn AssetProfiler + Send + Sync>),
+                    )
+                }
+                DATA_SOURCE_TIANTIAN_FUND => {
+                    let p = Arc::new(TiantianFundProvider::new());
                     (
                         Some(p.clone() as Arc<dyn MarketDataProvider + Send + Sync>),
                         Some(p as Arc<dyn AssetProfiler + Send + Sync>),

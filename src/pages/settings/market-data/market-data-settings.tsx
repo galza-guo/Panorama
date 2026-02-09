@@ -30,9 +30,11 @@ import {
   useUpdateMarketDataProviderSettings,
 } from "./use-market-data-settings";
 
+const KEYLESS_PROVIDERS = new Set(["YAHOO", "MANUAL", "EASTMONEY_CN", "TIANTIAN_FUND"]);
+
 const useApiKeyStatus = (providerId: string) => {
   const queryClient = useQueryClient();
-  const needsApiKey = providerId !== "YAHOO" && providerId !== "MANUAL";
+  const needsApiKey = !KEYLESS_PROVIDERS.has(providerId);
 
   const { data: apiKey, isLoading } = useQuery({
     queryKey: QueryKeys.secrets.apiKey(providerId),

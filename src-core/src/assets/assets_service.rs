@@ -2,6 +2,7 @@ use log::{debug, error};
 use std::sync::Arc;
 
 use crate::market_data::market_data_traits::MarketDataServiceTrait;
+use crate::market_data::symbol_normalizer::infer_panorama_data_source;
 
 use super::assets_model::{Asset, NewAsset, UpdateAssetProfile};
 use super::assets_traits::{AssetRepositoryTrait, AssetServiceTrait};
@@ -33,6 +34,13 @@ impl AssetServiceTrait for AssetService {
     /// Lists all assets
     fn get_assets(&self) -> Result<Vec<Asset>> {
         self.asset_repository.list()
+    }
+
+    fn get_assets_by_owner(&self, owner: Option<&str>) -> Result<Vec<Asset>> {
+        match owner.map(str::trim).filter(|owner| !owner.is_empty()) {
+            Some(owner) => self.asset_repository.list_by_owner(owner),
+            None => self.asset_repository.list(),
+        }
     }
 
     /// Retrieves an asset by its ID
@@ -73,7 +81,22 @@ impl AssetServiceTrait for AssetService {
         context_currency: Option<String>,
     ) -> Result<Asset> {
         match self.asset_repository.get_by_id(asset_id) {
-            Ok(existing_asset) => Ok(existing_asset),
+            Ok(existing_asset) => {
+                if let Some(inferred_source) = infer_panorama_data_source(&existing_asset.id) {
+                    if !existing_asset.data_source.eq_ignore_ascii_case(inferred_source) {
+                        debug!(
+                            "Auto-correcting data source for asset '{}' from '{}' to '{}'",
+                            existing_asset.id, existing_asset.data_source, inferred_source
+                        );
+                        return self
+                            .asset_repository
+                            .update_data_source(&existing_asset.id, inferred_source.to_string())
+                            .await;
+                    }
+                }
+
+                Ok(existing_asset)
+            }
             Err(Error::Database(DatabaseError::QueryFailed(DieselError::NotFound))) => {
                 debug!(
                     "Asset not found locally, attempting to fetch from market data: {}",
@@ -83,6 +106,16 @@ impl AssetServiceTrait for AssetService {
                     self.market_data_service.get_asset_profile(asset_id).await?;
 
                 let mut new_asset: NewAsset = asset_profile_from_provider.into();
+
+                if let Some(inferred_source) = infer_panorama_data_source(&new_asset.symbol) {
+                    if !new_asset.data_source.eq_ignore_ascii_case(inferred_source) {
+                        debug!(
+                            "Overriding inferred data source for symbol '{}' from '{}' to '{}'",
+                            new_asset.symbol, new_asset.data_source, inferred_source
+                        );
+                        new_asset.data_source = inferred_source.to_string();
+                    }
+                }
 
                 // If the asset profile didn't provide a currency (e.g., generic manual asset)
                 // and a context currency is available, use the context currency.

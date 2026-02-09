@@ -1,0 +1,13 @@
+date,symbol,quantity,activityType,unitPrice,amount,currency,fee,comment
+2026-02-09,510300.SH,700,ADD_HOLDING,3.686,2580.20,CNY,0,Imported from screenshot batch 2
+2026-02-09,512070.SH,3400,ADD_HOLDING,0.846,2876.40,CNY,0,Imported from screenshot batch 2
+2026-02-09,512100.SH,768,ADD_HOLDING,2.453,1883.90,CNY,0,Imported from screenshot batch 2
+2026-02-09,512170.SH,1000,ADD_HOLDING,0.604,604.00,CNY,0,Imported from screenshot batch 2
+2026-02-09,512660.SH,1100,ADD_HOLDING,1.043,1147.30,CNY,0,Imported from screenshot batch 2
+2026-02-09,512760.SH,7100,ADD_HOLDING,1.139,8086.90,CNY,0,Imported from screenshot batch 2
+2026-02-09,512980.SH,3400,ADD_HOLDING,0.905,3077.00,CNY,0,Imported from screenshot batch 2
+2026-02-09,513050.SH,8000,ADD_HOLDING,1.115,8920.00,CNY,0,Imported from screenshot batch 2
+2026-02-09,588080.SH,3927,ADD_HOLDING,1.121,4402.17,CNY,0,Imported from screenshot batch 2
+2026-02-09,601328.SH,500,ADD_HOLDING,3.264,1632.00,CNY,0,Imported from screenshot batch 2
+2026-02-09,159920.SZ,2700,ADD_HOLDING,1.089,2940.30,CNY,0,Imported from screenshot batch 2 (manual add)
+2026-02-09,159938.SZ,600,ADD_HOLDING,0.800,480.00,CNY,0,Imported from screenshot batch 2 (manual add)

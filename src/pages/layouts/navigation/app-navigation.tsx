@@ -39,6 +39,20 @@ const staticNavigation: NavigationProps = {
       keywords: ["transactions", "trades", "history"],
       label: "View Activities",
     },
+    {
+      icon: <Icons.Shield className="size-6" />,
+      title: "Insurance",
+      href: "/insurance",
+      keywords: ["policy", "protection", "coverage"],
+      label: "View Insurance",
+    },
+    {
+      icon: <Icons.PieChart className="size-6" />,
+      title: "MPF",
+      href: "/mpf",
+      keywords: ["retirement", "allocation", "fund"],
+      label: "View MPF",
+    },
   ],
   secondary: [
     {

@@ -13,7 +13,7 @@ Panorama is a fork of Wealthfolio focused on a truly "All-in-One" experience for
 - **Scope**: Equities (CN/HK/US), CN OTC Funds, Insurance policies, and MPF accounts.
 - **Non-Goals (Phase 1)**: Broker synchronization is currently out of scope.
 - **Strategy**: "Free-first" provider strategy prioritizing keyless sources (Tiantian, Eastmoney) and "update-on-open" behavior for simplicity.
-- **Symbol Standard**: Uses the `CODE.MKT` format (e.g., `600519.SH`, `00700.HK`). See [Market Data Spec](docs/PANORAMA_MARKET_DATA_SPEC.md).
+- **Symbol Standard**: Uses the `CODE.MKT` format (e.g., `600519.SH`, `0700.HK`). See [Market Data Spec](docs/PANORAMA_MARKET_DATA_SPEC.md).
 
 **Doc Entrypoints**:
 - [Implementation Plan](docs/PLAN.md): Current tasks and architectural approach.

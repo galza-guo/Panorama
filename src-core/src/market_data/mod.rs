@@ -5,6 +5,7 @@ pub(crate) mod market_data_repository;
 pub(crate) mod market_data_service;
 pub(crate) mod market_data_traits;
 pub(crate) mod providers;
+pub(crate) mod symbol_normalizer;
 
 // Re-export the public interface
 pub use market_data_constants::*;

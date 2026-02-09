@@ -1,6 +1,7 @@
 use crate::market_data::market_data_constants::{
-    DATA_SOURCE_ALPHA_VANTAGE, DATA_SOURCE_MANUAL, DATA_SOURCE_MARKET_DATA_APP,
-    DATA_SOURCE_METAL_PRICE_API, DATA_SOURCE_YAHOO,
+    DATA_SOURCE_ALPHA_VANTAGE, DATA_SOURCE_EASTMONEY_CN, DATA_SOURCE_MANUAL,
+    DATA_SOURCE_MARKET_DATA_APP, DATA_SOURCE_METAL_PRICE_API, DATA_SOURCE_TIANTIAN_FUND,
+    DATA_SOURCE_YAHOO,
 };
 use crate::schema::quotes;
 use chrono::{DateTime, Utc};
@@ -146,6 +147,10 @@ pub enum DataSource {
     MarketDataApp,
     AlphaVantage,
     MetalPriceApi,
+    #[serde(rename = "EASTMONEY_CN")]
+    EastMoneyCn,
+    #[serde(rename = "TIANTIAN_FUND")]
+    TiantianFund,
     #[default]
     Manual,
 }
@@ -157,6 +162,8 @@ impl DataSource {
             DataSource::MarketDataApp => DATA_SOURCE_MARKET_DATA_APP,
             DataSource::AlphaVantage => DATA_SOURCE_ALPHA_VANTAGE,
             DataSource::MetalPriceApi => DATA_SOURCE_METAL_PRICE_API,
+            DataSource::EastMoneyCn => DATA_SOURCE_EASTMONEY_CN,
+            DataSource::TiantianFund => DATA_SOURCE_TIANTIAN_FUND,
             DataSource::Manual => DATA_SOURCE_MANUAL,
         }
     }
@@ -175,6 +182,8 @@ impl From<&str> for DataSource {
             DATA_SOURCE_MARKET_DATA_APP => DataSource::MarketDataApp,
             DATA_SOURCE_ALPHA_VANTAGE => DataSource::AlphaVantage,
             DATA_SOURCE_METAL_PRICE_API => DataSource::MetalPriceApi,
+            DATA_SOURCE_EASTMONEY_CN => DataSource::EastMoneyCn,
+            DATA_SOURCE_TIANTIAN_FUND => DataSource::TiantianFund,
             _ => DataSource::Manual,
         }
     }

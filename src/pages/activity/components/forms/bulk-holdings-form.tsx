@@ -64,6 +64,13 @@ const HoldingRow = memo(
     canRemove: boolean;
   }) => {
     const { control, setValue } = useFormContext<BulkHoldingsFormValues>();
+    const resolveLookupDataSource = (source?: QuoteSummary["dataSource"]): DataSource => {
+      const normalized = source?.toUpperCase();
+      if (normalized === DataSource.MANUAL) return DataSource.MANUAL;
+      if (normalized === DataSource.EASTMONEY_CN) return DataSource.EASTMONEY_CN;
+      if (normalized === DataSource.TIANTIAN_FUND) return DataSource.TIANTIAN_FUND;
+      return DataSource.YAHOO;
+    };
 
     // Use useWatch for specific fields instead of watch() in parent
     const ticker = useWatch({
@@ -118,11 +125,8 @@ const HoldingRow = memo(
 
     const handleTickerSelect = useCallback(
       (_symbol: string, quoteSummary?: QuoteSummary) => {
-        if (quoteSummary?.dataSource === DataSource.MANUAL) {
-          setValue(`holdings.${index}.assetDataSource`, DataSource.MANUAL, { shouldDirty: true });
-        } else {
-          setValue(`holdings.${index}.assetDataSource`, DataSource.YAHOO, { shouldDirty: true });
-        }
+        const dataSource = resolveLookupDataSource(quoteSummary?.dataSource);
+        setValue(`holdings.${index}.assetDataSource`, dataSource, { shouldDirty: true });
         setFocus(`holdings.${index}.sharesOwned`);
       },
       [index, setFocus, setValue],

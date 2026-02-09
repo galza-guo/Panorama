@@ -12,6 +12,16 @@ use crate::schema::{activities, assets, quotes};
 use super::assets_model::{Asset, AssetDB, NewAsset, UpdateAssetProfile};
 use super::assets_traits::AssetRepositoryTrait;
 
+fn parse_owner_from_attributes(attributes: &Option<String>) -> Option<String> {
+    let raw = attributes.as_ref()?;
+    let value: serde_json::Value = serde_json::from_str(raw).ok()?;
+    value
+        .get("owner")
+        .and_then(|owner| owner.as_str())
+        .map(|owner| owner.trim().to_string())
+        .filter(|owner| !owner.is_empty())
+}
+
 /// Repository for managing asset data in the database
 pub struct AssetRepository {
     pool: Arc<Pool<r2d2::ConnectionManager<SqliteConnection>>>,
@@ -48,6 +58,23 @@ impl AssetRepository {
             .load::<AssetDB>(&mut conn)?;
 
         Ok(results.into_iter().map(Asset::from).collect())
+    }
+
+    pub fn list_by_owner_impl(&self, owner: &str) -> Result<Vec<Asset>> {
+        let requested_owner = owner.trim();
+        if requested_owner.is_empty() {
+            return self.list_impl();
+        }
+
+        let assets = self.list_impl()?;
+        Ok(assets
+            .into_iter()
+            .filter(|asset| {
+                parse_owner_from_attributes(&asset.attributes)
+                    .map(|asset_owner| asset_owner.eq_ignore_ascii_case(requested_owner))
+                    .unwrap_or(false)
+            })
+            .collect())
     }
 
     /// Lists currency assets for a given base currency
@@ -140,6 +167,10 @@ impl AssetRepositoryTrait for AssetRepository {
     /// Lists all assets in the database
     fn list(&self) -> Result<Vec<Asset>> {
         self.list_impl()
+    }
+
+    fn list_by_owner(&self, owner: &str) -> Result<Vec<Asset>> {
+        self.list_by_owner_impl(owner)
     }
 
     /// Lists currency assets for a given base currency
