@@ -5,6 +5,21 @@ repository. It summarizes architecture, key entry points, run targets, code
 conventions, and an actionable playbook for common changes. Prefer surgical
 edits, clear reasoning, and validation via the existing scripts and tests.
 
+## Panorama (Fork Context)
+
+Panorama is a fork of Wealthfolio focused on a truly "All-in-One" experience for HK/CN markets. It bridges the gap for localized market data (A-shares, CN Funds) and specialized assets (Insurance, MPF).
+
+- **Vision**: Privacy-first personal wealth aggregation with comprehensive localized coverage.
+- **Scope**: Equities (CN/HK/US), CN OTC Funds, Insurance policies, and MPF accounts.
+- **Non-Goals (Phase 1)**: Broker synchronization is currently out of scope.
+- **Strategy**: "Free-first" provider strategy prioritizing keyless sources (Tiantian, Eastmoney) and "update-on-open" behavior for simplicity.
+- **Symbol Standard**: Uses the `CODE.MKT` format (e.g., `600519.SH`, `00700.HK`). See [Market Data Spec](docs/PANORAMA_MARKET_DATA_SPEC.md).
+
+**Doc Entrypoints**:
+- [Implementation Plan](docs/PLAN.md): Current tasks and architectural approach.
+- [Market Data Spec](docs/PANORAMA_MARKET_DATA_SPEC.md): Canonical standard for symbols and providers.
+- [Archive](docs/_archive/): Historical research and audit reports.
+
 ## Overview
 
 - React + Vite frontend with Tailwind v4 and shadcn-based UI components.
