@@ -1,10 +1,10 @@
 # Panorama Project Overview
 
-> 个人财富聚合管理系统 - 基于Wealthfolio的Fork
+> 个人财富聚合管理系统 - 基于Panorama的Fork
 
 ## 关于Panorama
 
-Panorama是一个基于Wealthfolio fork的个人财富管理系统，目标是实现真正的"All-in-One"资产管理。
+Panorama是一个基于Panorama fork的个人财富管理系统，目标是实现真正的"All-in-One"资产管理。
 
 ## 涵盖资产类型
 
@@ -38,14 +38,14 @@ Panorama是一个基于Wealthfolio fork的个人财富管理系统，目标是�
 
 | 文档 | 说明 |
 |------|------|
-| [Audit](PANORAMA_AUDIT_2026-02-09.md) | 现状审计：Wealthfolio底座已有Market Data / FX / Secrets / Settings |
+| [Audit](PANORAMA_AUDIT_2026-02-09.md) | 现状审计：Panorama底座已有Market Data / FX / Secrets / Settings |
 | [Plan](../PLAN.md) | 实施计划：新增CN providers + 保险/MPF UI |
 | [Market Data Spec](../PANORAMA_MARKET_DATA_SPEC.md) | Phase 1 唯一标准：symbol 规范 + providers + mapping + 缓存/限流 |
 | [研究笔记](research/) | 前期研究笔记 |
 
 ## 致谢
 
-- [Wealthfolio](https://github.com/afadil/wealthfolio) - 原始项目
+- [Panorama](https://github.com/galza-guo/Panorama) - 原始项目
 - [AKShare](https://akshare.xyz/) - A股数据
 - [Yahoo Finance](https://finance.yahoo.com/) - 港股/美股数据
 

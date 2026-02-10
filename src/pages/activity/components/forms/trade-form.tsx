@@ -9,7 +9,7 @@ import {
   FormMessage,
   MoneyInput,
   QuantityInput,
-} from "@wealthfolio/ui";
+} from "@panorama/ui";
 import { ConfigurationCheckbox, CommonFields, AssetSymbolInput } from "./common";
 import { AccountSelectOption } from "../activity-form";
 import {

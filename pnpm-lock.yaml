@@ -56,7 +56,7 @@ importers:
       '@tauri-apps/plugin-window-state':
         specifier: ~2.4.1
         version: 2.4.1
-      '@wealthfolio/ui':
+      '@panorama/ui':
         specifier: workspace:*
         version: link:packages/ui
       clsx:
@@ -204,10 +204,10 @@ importers:
       '@tanstack/react-query':
         specifier: ^5.90.5
         version: 5.90.5(react@19.1.1)
-      '@wealthfolio/addon-sdk':
+      '@panorama/addon-sdk':
         specifier: workspace:*
         version: link:../../packages/addon-sdk
-      '@wealthfolio/ui':
+      '@panorama/ui':
         specifier: workspace:*
         version: link:../../packages/ui
       react:
@@ -226,7 +226,7 @@ importers:
       '@types/react-dom':
         specifier: ^19.1.1
         version: 19.1.9(@types/react@19.1.12)
-      '@wealthfolio/addon-dev-tools':
+      '@panorama/addon-dev-tools':
         specifier: workspace:*
         version: link:../../packages/addon-dev-tools
       rollup-plugin-external-globals:
@@ -247,10 +247,10 @@ importers:
       '@tanstack/react-query':
         specifier: ^5.90.5
         version: 5.90.5(react@19.1.1)
-      '@wealthfolio/addon-sdk':
+      '@panorama/addon-sdk':
         specifier: workspace:*
         version: link:../../packages/addon-sdk
-      '@wealthfolio/ui':
+      '@panorama/ui':
         specifier: workspace:*
         version: link:../../packages/ui
       react:
@@ -269,7 +269,7 @@ importers:
       '@types/react-dom':
         specifier: ^19.1.1
         version: 19.1.9(@types/react@19.1.12)
-      '@wealthfolio/addon-dev-tools':
+      '@panorama/addon-dev-tools':
         specifier: workspace:*
         version: link:../../packages/addon-dev-tools
       rollup-plugin-external-globals:
@@ -290,10 +290,10 @@ importers:
       '@tanstack/react-query':
         specifier: ^5.90.5
         version: 5.90.5(react@19.1.1)
-      '@wealthfolio/addon-sdk':
+      '@panorama/addon-sdk':
         specifier: workspace:*
         version: link:../../packages/addon-sdk
-      '@wealthfolio/ui':
+      '@panorama/ui':
         specifier: workspace:*
         version: link:../../packages/ui
       clsx:
@@ -324,7 +324,7 @@ importers:
       '@vitejs/plugin-react':
         specifier: ^5.0.2
         version: 5.0.2(vite@7.1.5(@types/node@20.19.13)(jiti@2.6.1)(lightningcss@1.30.2))
-      '@wealthfolio/addon-dev-tools':
+      '@panorama/addon-dev-tools':
         specifier: workspace:*
         version: link:../../packages/addon-dev-tools
       rollup-plugin-external-globals:

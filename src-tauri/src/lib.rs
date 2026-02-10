@@ -271,6 +271,6 @@ pub fn run() {
             commands::addon::submit_addon_rating,
         ])
         .build(tauri::generate_context!())
-        .expect("Failed to build Wealthfolio application")
+        .expect("Failed to build Panorama application")
         .run(|_handle, _event| {});
 }

@@ -1,14 +1,14 @@
-import { Alert, AlertDescription } from "@wealthfolio/ui/components/ui/alert";
-import { Button } from "@wealthfolio/ui/components/ui/button";
+import { Alert, AlertDescription } from "@panorama/ui/components/ui/alert";
+import { Button } from "@panorama/ui/components/ui/button";
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from "@wealthfolio/ui/components/ui/card";
-import { Icons } from "@wealthfolio/ui/components/ui/icons";
-import { Input } from "@wealthfolio/ui/components/ui/input";
+} from "@panorama/ui/components/ui/card";
+import { Icons } from "@panorama/ui/components/ui/icons";
+import { Input } from "@panorama/ui/components/ui/input";
 import { AnimatePresence, motion } from "motion/react";
 import React, { useRef, useState } from "react";
 

@@ -1,10 +1,10 @@
 [package]
-name = "wealthfolio_core"
+name = "panorama_core"
 version = "2.1.0"
 description = "An Open Source Desktop Portfolio tracker"
 authors = ["Aziz Fadil"]
 license = "AGPL-3.0"
-repository = "https://github.com/afadil/wealthfolio"
+repository = "https://github.com/galza-guo/Panorama"
 edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html

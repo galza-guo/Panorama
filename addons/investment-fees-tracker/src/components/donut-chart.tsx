@@ -1,4 +1,4 @@
-import { useBalancePrivacy } from "@wealthfolio/ui";
+import { useBalancePrivacy } from "@panorama/ui";
 import type React from "react";
 import { Cell, Pie, PieChart, Sector } from "recharts";
 

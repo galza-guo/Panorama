@@ -5,7 +5,7 @@ import { usePlatform } from "@/hooks/use-platform";
 import { QueryKeys } from "@/lib/query-keys";
 import type { Account, ActivityImport, ImportMappingData } from "@/lib/types";
 import { useQuery } from "@tanstack/react-query";
-import { AlertFeedback, Page, PageContent, PageHeader } from "@wealthfolio/ui";
+import { AlertFeedback, Page, PageContent, PageHeader } from "@panorama/ui";
 import { AnimatePresence, motion } from "motion/react";
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";

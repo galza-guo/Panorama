@@ -17,7 +17,7 @@ import { DataSource, PORTFOLIO_ACCOUNT_ID } from "@/lib/constants";
 import { QueryKeys } from "@/lib/query-keys";
 import { Asset, Country, Holding, Quote, Sector } from "@/lib/types";
 import { useQuery } from "@tanstack/react-query";
-import { AnimatedToggleGroup, Page, PageContent, PageHeader, SwipableView } from "@wealthfolio/ui";
+import { AnimatedToggleGroup, Page, PageContent, PageHeader, SwipableView } from "@panorama/ui";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 import AssetDetailCard from "./asset-detail-card";

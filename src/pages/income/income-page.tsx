@@ -9,7 +9,7 @@ import { useBalancePrivacy } from "@/hooks/use-balance-privacy";
 import { QueryKeys } from "@/lib/query-keys";
 import type { IncomeSummary } from "@/lib/types";
 import { useQuery } from "@tanstack/react-query";
-import { AmountDisplay, AnimatedToggleGroup, GainPercent, PrivacyAmount } from "@wealthfolio/ui";
+import { AmountDisplay, AnimatedToggleGroup, GainPercent, PrivacyAmount } from "@panorama/ui";
 import React, { useState } from "react";
 import { Cell, Pie, PieChart } from "recharts";
 import { IncomeHistoryChart } from "./income-history-chart";

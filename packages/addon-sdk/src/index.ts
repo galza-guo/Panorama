@@ -1,11 +1,11 @@
 /**
- * @wealthfolio/addon-sdk
+ * @panorama/addon-sdk
  *
- * TypeScript SDK for building Wealthfolio addons with enhanced functionality,
+ * TypeScript SDK for building Panorama addons with enhanced functionality,
  * type safety, and comprehensive permission management.
  *
  * @version 1.0.0
- * @author Wealthfolio Team
+ * @author Panorama Team
  * @license MIT
  */
 

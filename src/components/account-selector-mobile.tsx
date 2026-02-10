@@ -14,7 +14,7 @@ import { useSettings } from "@/hooks/use-settings";
 import { AccountType, PORTFOLIO_ACCOUNT_ID } from "@/lib/constants";
 import { Account } from "@/lib/types";
 import { cn } from "@/lib/utils";
-import { Icons, type Icon } from "@wealthfolio/ui";
+import { Icons, type Icon } from "@panorama/ui";
 import { forwardRef, useState } from "react";
 
 // Custom type for UI purposes that extends the standard AccountType

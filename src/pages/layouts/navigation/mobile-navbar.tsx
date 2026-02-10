@@ -10,7 +10,7 @@ import {
   SheetContent,
   SheetHeader,
   SheetTitle,
-} from "@wealthfolio/ui";
+} from "@panorama/ui";
 import { motion } from "motion/react";
 import React, { useCallback, useId, useMemo, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";

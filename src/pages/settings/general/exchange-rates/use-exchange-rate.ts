@@ -9,7 +9,7 @@ import { toast } from "@/components/ui/use-toast";
 import { QueryKeys } from "@/lib/query-keys";
 import { ExchangeRate } from "@/lib/types";
 import { useMutation, useQuery } from "@tanstack/react-query";
-import { worldCurrencies } from "@wealthfolio/ui";
+import { worldCurrencies } from "@panorama/ui";
 
 export function useExchangeRates() {
   const getCurrencyName = (code: string) => {

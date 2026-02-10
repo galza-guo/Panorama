@@ -5,7 +5,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { QueryKeys } from "@/lib/query-keys";
 import { ContributionLimit, DepositsCalculation } from "@/lib/types";
 import { useQuery } from "@tanstack/react-query";
-import { Icons, PrivacyAmount } from "@wealthfolio/ui";
+import { Icons, PrivacyAmount } from "@panorama/ui";
 import { Link } from "react-router-dom";
 
 interface AccountContributionLimitProps {

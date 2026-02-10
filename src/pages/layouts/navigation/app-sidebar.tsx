@@ -9,7 +9,7 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from "@wealthfolio/ui";
+} from "@panorama/ui";
 import { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { type NavLink, type NavigationProps, isPathActive } from "./app-navigation";
@@ -64,7 +64,7 @@ export function AppSidebar({ navigation }: AppSidebarProps) {
                       },
                     )}
                   >
-                    Wealthfolio
+                    Panorama
                   </span>
                 </div>
 

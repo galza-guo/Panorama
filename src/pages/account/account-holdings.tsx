@@ -5,7 +5,7 @@ import { QueryKeys } from "@/lib/query-keys";
 import { Account, Holding, HoldingType } from "@/lib/types";
 import { HoldingsTable } from "@/pages/holdings/components/holdings-table";
 import { HoldingsTableMobile } from "@/pages/holdings/components/holdings-table-mobile";
-import { Button, EmptyPlaceholder, Icons } from "@wealthfolio/ui";
+import { Button, EmptyPlaceholder, Icons } from "@panorama/ui";
 import { useQuery } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";

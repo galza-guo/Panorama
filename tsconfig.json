@@ -9,9 +9,9 @@
     // Path mapping for main app
     "paths": {
       "@/*": ["./src/*"],
-      "@wealthfolio/addon-sdk": ["packages/addon-sdk/src"],
-      "@wealthfolio/ui": ["packages/ui/src"],
-      "@wealthfolio/ui/*": ["packages/ui/src/*"],
+      "@panorama/addon-sdk": ["packages/addon-sdk/src"],
+      "@panorama/ui": ["packages/ui/src"],
+      "@panorama/ui/*": ["packages/ui/src/*"],
       "@/components/ui/*": ["packages/ui/src/components/ui/*"]
     }
   },

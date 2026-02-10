@@ -11,7 +11,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Icons } from "@/components/ui/icons";
 import { Button } from "@/components/ui/button";
-import { AmountDisplay, Page } from "@wealthfolio/ui";
+import { AmountDisplay, Page } from "@panorama/ui";
 import { MpfAssetEditorSheet } from "./components/mpf-asset-editor-sheet";
 
 interface MpfRow {

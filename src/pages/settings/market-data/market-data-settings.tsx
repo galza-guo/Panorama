@@ -23,7 +23,7 @@ import {
 import { QueryKeys } from "@/lib/query-keys";
 import { cn } from "@/lib/utils";
 import { toast } from "@/components/ui/use-toast";
-import { ActionConfirm } from "@wealthfolio/ui";
+import { ActionConfirm } from "@panorama/ui";
 import {
   useDeleteApiKey,
   useMarketDataProviderSettings,

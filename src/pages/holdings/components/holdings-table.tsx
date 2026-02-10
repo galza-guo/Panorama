@@ -4,7 +4,7 @@ import { DataTableColumnHeader } from "@/components/ui/data-table/data-table-col
 import { Icons } from "@/components/ui/icons";
 import { safeDivide } from "@/lib/utils";
 import type { ColumnDef } from "@tanstack/react-table";
-import { GainPercent } from "@wealthfolio/ui";
+import { GainPercent } from "@panorama/ui";
 
 import { TickerAvatar } from "@/components/ticker-avatar";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -12,11 +12,11 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 import { useBalancePrivacy } from "@/hooks/use-balance-privacy";
 import { useSettingsContext } from "@/lib/settings-provider";
 import { Holding } from "@/lib/types";
-import { AmountDisplay, QuantityDisplay } from "@wealthfolio/ui";
+import { AmountDisplay, QuantityDisplay } from "@panorama/ui";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 
-import { AnimatedToggleGroup } from "@wealthfolio/ui";
+import { AnimatedToggleGroup } from "@panorama/ui";
 
 // Helper function to get display value and currency based on toggle state
 const getDisplayValueAndCurrency = (

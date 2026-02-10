@@ -12,7 +12,7 @@ import {
   PageContent,
   PageHeader,
   PrivacyAmount,
-} from "@wealthfolio/ui";
+} from "@panorama/ui";
 import { useMemo, useState } from "react";
 
 import { MobileActionsMenu } from "@/components/mobile-actions-menu";
@@ -52,7 +52,7 @@ import { calculatePerformanceMetrics, cn } from "@/lib/utils";
 import { PortfolioUpdateTrigger } from "@/pages/dashboard/portfolio-update-trigger";
 import { useCalculatePerformanceHistory } from "@/pages/performance/hooks/use-performance-data";
 import { useQuery } from "@tanstack/react-query";
-import { Icons, type Icon } from "@wealthfolio/ui";
+import { Icons, type Icon } from "@panorama/ui";
 import { subMonths } from "date-fns";
 import { useNavigate, useParams } from "react-router-dom";
 import { AccountContributionLimit } from "./account-contribution-limit";

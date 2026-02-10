@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { type AddonContext, type Goal } from "@wealthfolio/addon-sdk";
+import { type AddonContext, type Goal } from "@panorama/addon-sdk";
 
 interface UseGoalsOptions {
   ctx: AddonContext;

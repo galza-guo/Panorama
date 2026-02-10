@@ -3,7 +3,7 @@ import { useAccounts } from "@/hooks/use-accounts";
 import { QueryKeys } from "@/lib/query-keys";
 import type { ContributionLimit } from "@/lib/types";
 import { useQuery } from "@tanstack/react-query";
-import { Button, EmptyPlaceholder, Icons, Separator, Skeleton } from "@wealthfolio/ui";
+import { Button, EmptyPlaceholder, Icons, Separator, Skeleton } from "@panorama/ui";
 import { useState } from "react";
 import { SettingsHeader } from "../settings-header";
 import { ContributionLimitEditModal } from "./components/contribution-limit-edit-modal";

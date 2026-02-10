@@ -17,7 +17,7 @@ import { QueryKeys } from "@/lib/query-keys";
 import type { QuoteSummary } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { useQuery } from "@tanstack/react-query";
-import { Icons } from "@wealthfolio/ui";
+import { Icons } from "@panorama/ui";
 import { Check } from "lucide-react";
 import { useDeferredValue, useEffect, useMemo, useRef, useState } from "react";
 

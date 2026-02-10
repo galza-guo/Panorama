@@ -1,7 +1,7 @@
 # Panorama Implementation Plan (Updated 2026-02-09)
 
 ## 1. Overview
-Panorama is an extension of Wealthfolio focused on localized data (A-shares, CN Funds) and specialized asset classes (Insurance, MPF). We will reuse the existing robust Rust core for market data and FX.
+Panorama is an extension of Panorama focused on localized data (A-shares, CN Funds) and specialized asset classes (Insurance, MPF). We will reuse the existing robust Rust core for market data and FX.
 
 Authoritative spec for Phase 1 market data: `PANORAMA_MARKET_DATA_SPEC.md`.
 
@@ -82,7 +82,7 @@ We will create dedicated UI modules for Insurance and MPF assets, using the exis
 ---
 
 ## 4. Why this approach?
-1.  **Low Risk**: Reuses the stable, tested Wealthfolio core.
+1.  **Low Risk**: Reuses the stable, tested Panorama core.
 2.  **Maintainable**: Follows the existing architectural patterns (traits, providers, registry).
 3.  **Clean Data**: No massive SQL migrations; uses flexible JSON attributes for non-standard assets.
 4.  **Privacy**: Maintains the local-first, zero-cloud philosophy.

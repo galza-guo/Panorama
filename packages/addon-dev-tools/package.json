@@ -1,29 +1,29 @@
 {
-  "name": "@wealthfolio/addon-dev-tools",
+  "name": "@panorama/addon-dev-tools",
   "version": "2.0.0",
-  "description": "Development tools for Wealthfolio addons - hot reload server and CLI",
+  "description": "Development tools for Panorama addons - hot reload server and CLI",
   "main": "index.js",
   "bin": {
-    "wealthfolio": "cli.js"
+    "panorama": "cli.js"
   },
   "keywords": [
-    "wealthfolio",
+    "panorama",
     "addon",
     "development",
     "cli",
     "hot-reload"
   ],
-  "author": "Wealthfolio Team",
+  "author": "Panorama Team",
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/afadil/wealthfolio.git",
+    "url": "https://github.com/galza-guo/Panorama.git",
     "directory": "packages/addon-dev-tools"
   },
   "bugs": {
-    "url": "https://github.com/afadil/wealthfolio/issues"
+    "url": "https://github.com/galza-guo/Panorama/issues"
   },
-  "homepage": "https://github.com/afadil/wealthfolio/tree/main/packages/addon-dev-tools#readme",
+  "homepage": "https://github.com/galza-guo/Panorama/tree/main/packages/addon-dev-tools#readme",
   "files": [
     "cli.js",
     "dev-server.js",

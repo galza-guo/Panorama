@@ -1,6 +1,6 @@
-name: wealthfolio-app
+name: panorama-app
 options:
-  bundleIdPrefix: com.teymz.wealthfolio
+  bundleIdPrefix: com.gallantguo.panorama
   deploymentTarget:
     iOS: 14.0
 fileGroups: [../../src]
@@ -10,8 +10,8 @@ configs:
 settingGroups:
   app:
     base:
-      PRODUCT_NAME: Wealthfolio
-      PRODUCT_BUNDLE_IDENTIFIER: com.teymz.wealthfolio
+      PRODUCT_NAME: Panorama
+      PRODUCT_BUNDLE_IDENTIFIER: com.gallantguo.panorama
 targetTemplates:
   app:
     type: application
@@ -24,20 +24,20 @@ targetTemplates:
     settings:
       groups: [app]
 targets:
-  wealthfolio-app_iOS:
+  panorama-app_iOS:
     type: application
     platform: iOS
     sources:
       - path: Sources
       - path: Assets.xcassets
       - path: Externals
-      - path: wealthfolio-app_iOS
+      - path: panorama-app_iOS
       - path: assets
         buildPhase: resources
         type: folder
       - path: LaunchScreen.storyboard
     info:
-      path: wealthfolio-app_iOS/Info.plist
+      path: panorama-app_iOS/Info.plist
       properties:
         LSRequiresIPhoneOS: true
         UILaunchStoryboardName: LaunchScreen
@@ -54,7 +54,7 @@ targets:
         CFBundleShortVersionString: 1.2.1
         CFBundleVersion: "1.2.1"
     entitlements:
-      path: wealthfolio-app_iOS/wealthfolio-app_iOS.entitlements
+      path: panorama-app_iOS/panorama-app_iOS.entitlements
     scheme:
       environmentVariables:
         RUST_BACKTRACE: full

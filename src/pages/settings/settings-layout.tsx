@@ -1,6 +1,6 @@
 import { Icons } from "@/components/ui/icons";
 import { Separator } from "@/components/ui/separator";
-import { ApplicationShell } from "@wealthfolio/ui";
+import { ApplicationShell } from "@panorama/ui";
 import { Outlet, useLocation, useNavigate } from "react-router-dom";
 import { SidebarNav } from "./sidebar-nav";
 
@@ -50,7 +50,7 @@ const sidebarNavItems = [
   {
     title: "Add-ons",
     href: "addons",
-    subtitle: "Extend Wealthfolio with features",
+    subtitle: "Extend Panorama with features",
     icon: <Icons.Package className="h-5 w-5" />,
   },
   {
@@ -62,7 +62,7 @@ const sidebarNavItems = [
   {
     title: "About",
     href: "about",
-    subtitle: "About Wealthfolio",
+    subtitle: "About Panorama",
     icon: <Icons.InfoCircle className="h-5 w-5" />,
   },
 ];

@@ -9,7 +9,7 @@ use axum::{
     Json, Router,
 };
 use base64::{engine::general_purpose::STANDARD as BASE64, Engine as _};
-use wealthfolio_core::addons::{
+use panorama_core::addons::{
     self, AddonManifest, AddonUpdateCheckResult, AddonUpdateInfo, ExtractedAddon, InstalledAddon,
 };
 
@@ -185,7 +185,7 @@ async fn check_all_addon_updates_web(
                             changelog_url: None,
                             is_critical: None,
                             has_breaking_changes: None,
-                            min_wealthfolio_version: None,
+                            min_panorama_version: None,
                         },
                         error: Some(err),
                     });

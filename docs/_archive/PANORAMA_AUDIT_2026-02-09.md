@@ -1,9 +1,9 @@
 # Panorama Project Audit Report (2026-02-09)
 
 ## 1. Audit Objective
-Verify the current state of the Panorama repository (forked from Wealthfolio) against existing planning documentation (primarily `PROJECT_OVERVIEW.md`) and identify mismatches or missing core components.
+Verify the current state of the Panorama repository (forked from Panorama) against existing planning documentation (primarily `PROJECT_OVERVIEW.md`) and identify mismatches or missing core components.
 
-## 2. Evidence of Existing Capabilities (Wealthfolio Base)
+## 2. Evidence of Existing Capabilities (Panorama Base)
 
 The repository already contains a sophisticated market data and FX infrastructure that was partially overlooked in prior planning documents.
 

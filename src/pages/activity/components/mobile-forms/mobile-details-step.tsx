@@ -26,7 +26,7 @@ import {
   SheetDescription,
   SheetHeader,
   SheetTitle,
-} from "@wealthfolio/ui";
+} from "@panorama/ui";
 import { useState } from "react";
 import { useFormContext } from "react-hook-form";
 import type { AccountSelectOption } from "../activity-form";

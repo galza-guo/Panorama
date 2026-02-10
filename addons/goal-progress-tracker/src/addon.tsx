@@ -1,5 +1,5 @@
 import { QueryClientProvider, type QueryClient } from "@tanstack/react-query";
-import { type AddonContext, type Goal } from "@wealthfolio/addon-sdk";
+import { type AddonContext, type Goal } from "@panorama/addon-sdk";
 import {
   Button,
   EmptyPlaceholder,
@@ -8,7 +8,7 @@ import {
   PageContent,
   PageHeader,
   useBalancePrivacy,
-} from "@wealthfolio/ui";
+} from "@panorama/ui";
 import React, { useEffect, useState } from "react";
 import { GoalSelector, HelpPopover, InvestmentCalendar } from "./components";
 import { useGoalProgress } from "./hooks";

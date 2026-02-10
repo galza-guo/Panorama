@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import IncomePage from "@/pages/income/income-page";
 import PerformancePage from "@/pages/performance/performance-page";
-import { Icons } from "@wealthfolio/ui";
+import { Icons } from "@panorama/ui";
 import { Suspense, useMemo } from "react";
 import HoldingsInsightsPage from "../holdings/holdings-insights-page";
 

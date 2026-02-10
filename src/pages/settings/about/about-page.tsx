@@ -61,17 +61,17 @@ export default function AboutSettingsPage() {
 
       <Card>
         <CardHeader className="flex flex-row items-center gap-4">
-          <img src="/logo.svg" alt="Wealthfolio logo" className="h-12 w-12 rounded-md shadow" />
+          <img src="/logo.svg" alt="Panorama logo" className="h-12 w-12 rounded-md shadow" />
           <div className="flex flex-col">
-            <CardTitle className="text-xl">Wealthfolio</CardTitle>
+            <CardTitle className="text-xl">Panorama</CardTitle>
             <CardDescription>Version {version || "N/A"}</CardDescription>
           </div>
         </CardHeader>
         <CardContent className="space-y-6">
           <div className="space-y-4">
             <p className="text-muted-foreground text-sm">
-              A beautiful, simple, and secure personal finance and investment tracker that helps you
-              take control of your wealth.
+              Panorama is a local-first personal finance and investment tracker focused on broad
+              HK/CN coverage.
             </p>
             <div className="flex flex-wrap items-center gap-2">
               {!isMobile && (
@@ -85,9 +85,13 @@ export default function AboutSettingsPage() {
                 size="sm"
                 className="inline-flex items-center gap-2"
               >
-                <a href="https://wealthfolio.app" target="_blank" rel="noreferrer noopener">
+                <a
+                  href="https://github.com/galza-guo/Panorama"
+                  target="_blank"
+                  rel="noreferrer noopener"
+                >
                   <Icons.Globe className="h-4 w-4" />
-                  Website
+                  Project Home
                 </a>
               </Button>
               <Button
@@ -97,7 +101,7 @@ export default function AboutSettingsPage() {
                 className="inline-flex items-center gap-2"
               >
                 <a
-                  href="https://wealthfolio.app/docs/introduction/"
+                  href="https://github.com/galza-guo/Panorama/tree/main/docs"
                   target="_blank"
                   rel="noreferrer noopener"
                 >
@@ -112,15 +116,27 @@ export default function AboutSettingsPage() {
                 className="inline-flex items-center gap-2"
               >
                 <a
-                  href="https://github.com/afadil/wealthfolio"
+                  href="https://github.com/galza-guo/Panorama"
                   target="_blank"
                   rel="noreferrer noopener"
                 >
                   <Icons.ExternalLink className="h-4 w-4" />
-                  GitHub
+                  Repository
                 </a>
               </Button>
             </div>
+            <p className="text-muted-foreground text-sm">
+              Panorama is an open-source fork of{" "}
+              <a
+                href="https://github.com/afadil/wealthfolio"
+                target="_blank"
+                rel="noreferrer noopener"
+                className="hover:text-foreground underline underline-offset-4"
+              >
+                Wealthfolio
+              </a>
+              . We keep this attribution explicit and are grateful for the original foundation.
+            </p>
           </div>
 
           {!isMobile && (
@@ -174,8 +190,7 @@ export default function AboutSettingsPage() {
 
           <div className="space-y-4">
             <p className="text-muted-foreground text-sm">
-              Have questions or found a bug? Please email us at{" "}
-              <span className="font-mono font-semibold select-all">wealthfolio@teymz.com</span>
+              Have questions or found a bug? Please open an issue in the repository.
             </p>
             <div className="flex flex-wrap items-center gap-2">
               <Button
@@ -184,19 +199,8 @@ export default function AboutSettingsPage() {
                 size="sm"
                 className="inline-flex items-center gap-2"
               >
-                <a href="mailto:wealthfolio@teymz.com">
-                  <Icons.ExternalLink className="h-4 w-4" />
-                  Email Us
-                </a>
-              </Button>
-              <Button
-                asChild
-                variant="outline"
-                size="sm"
-                className="inline-flex items-center gap-2"
-              >
                 <a
-                  href="https://github.com/afadil/wealthfolio/issues"
+                  href="https://github.com/galza-guo/Panorama/issues"
                   target="_blank"
                   rel="noreferrer noopener"
                 >
@@ -210,30 +214,30 @@ export default function AboutSettingsPage() {
 
             <p className="text-muted-foreground text-sm">
               <a
-                href="https://wealthfolio.app/legal/privacy-policy"
+                href="https://github.com/galza-guo/Panorama/blob/main/LICENSE"
                 target="_blank"
                 rel="noreferrer noopener"
                 className="hover:text-foreground underline underline-offset-4"
               >
-                Privacy Policy
+                License
               </a>
               <span className="mx-2">•</span>
               <a
-                href="https://wealthfolio.app/legal/terms-of-use"
+                href="https://github.com/galza-guo/Panorama"
                 target="_blank"
                 rel="noreferrer noopener"
                 className="hover:text-foreground underline underline-offset-4"
               >
-                Terms of Use
+                Repository
               </a>
               <span className="mx-2">•</span>
               <a
-                href="https://wealthfolio.app"
+                href="https://github.com/afadil/wealthfolio"
                 target="_blank"
                 rel="noreferrer noopener"
                 className="hover:text-foreground underline underline-offset-4"
               >
-                Website
+                Upstream Wealthfolio
               </a>
             </p>
           </div>

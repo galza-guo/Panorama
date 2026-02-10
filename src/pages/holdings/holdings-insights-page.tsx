@@ -10,7 +10,7 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet";
-import { AmountDisplay, EmptyPlaceholder } from "@wealthfolio/ui";
+import { AmountDisplay, EmptyPlaceholder } from "@panorama/ui";
 import { useMemo, useState } from "react";
 
 import { AccountSelector } from "@/components/account-selector";

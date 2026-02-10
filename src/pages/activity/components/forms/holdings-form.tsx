@@ -8,7 +8,7 @@ import {
   FormMessage,
   MoneyInput,
   QuantityInput,
-} from "@wealthfolio/ui";
+} from "@panorama/ui";
 import { useFormContext } from "react-hook-form";
 import { AccountSelectOption } from "../activity-form";
 import {

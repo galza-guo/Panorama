@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 /**
- * Wealthfolio Addon CLI
+ * Panorama Addon CLI
  *
  * Command-line tool for developing, building, and managing addons
  */
@@ -78,7 +78,7 @@ async function createAddon(name, options) {
       const rl = readline.createInterface({ input: stdin, output: stdout });
       try {
         if (!config.description) {
-          const defaultDesc = `A Wealthfolio addon for ${name}`;
+          const defaultDesc = `A Panorama addon for ${name}`;
           const answer = (await rl.question(`Description [${defaultDesc}]: `)).trim();
           config.description = answer.length > 0 ? answer : defaultDesc;
         }
@@ -94,7 +94,7 @@ async function createAddon(name, options) {
 
     // Set defaults for non-interactive mode
     if (!config.description) {
-      config.description = `A Wealthfolio addon for ${name}`;
+      config.description = `A Panorama addon for ${name}`;
     }
     if (!config.author) {
       config.author = "Anonymous";
@@ -271,7 +271,7 @@ async function installAddon(zipPath) {
 }
 
 // CLI Setup
-program.name("wealthfolio").description("Wealthfolio Addon Development CLI").version("1.0.0");
+program.name("panorama").description("Panorama Addon Development CLI").version("1.0.0");
 
 program
   .command("create <name>")

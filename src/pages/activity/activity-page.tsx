@@ -17,7 +17,7 @@ import {
   Page,
   PageContent,
   PageHeader,
-} from "@wealthfolio/ui";
+} from "@panorama/ui";
 import { debounce } from "lodash";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";

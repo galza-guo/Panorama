@@ -3,7 +3,7 @@ import { useEffect, useMemo, useState } from "react";
 
 import { ActivityType, ActivityTypeNames } from "@/lib/constants";
 import { Account } from "@/lib/types";
-import { AnimatedToggleGroup, Button, Icons, Input } from "@wealthfolio/ui";
+import { AnimatedToggleGroup, Button, Icons, Input } from "@panorama/ui";
 
 import { DataTableFacetedFilter } from "./activity-datagrid/data-table-faceted-filter";
 

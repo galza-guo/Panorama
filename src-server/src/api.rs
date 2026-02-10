@@ -46,7 +46,7 @@ pub async fn readyz() -> &'static str {
 #[openapi(
     paths(healthz, readyz, accounts::list_accounts, accounts::create_account, accounts::update_account, accounts::delete_account),
     components(schemas(Account, NewAccount, AccountUpdate)),
-    tags((name="wealthfolio"))
+    tags((name="panorama"))
 )]
 pub struct ApiDoc;
 

@@ -1,6 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { Icons } from "@/components/ui/icons";
-import { EmptyPlaceholder, Page, PageContent, PageHeader } from "@wealthfolio/ui";
+import { EmptyPlaceholder, Page, PageContent, PageHeader } from "@panorama/ui";
 import { useMemo, useState } from "react";
 
 import { AccountSelector } from "@/components/account-selector";

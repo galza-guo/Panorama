@@ -1,5 +1,5 @@
 use tauri::State;
-use wealthfolio_core::market_data::MarketDataProviderSetting;
+use panorama_core::market_data::MarketDataProviderSetting;
 
 use crate::context::ServiceContext; // To access the service
 use std::sync::Arc;

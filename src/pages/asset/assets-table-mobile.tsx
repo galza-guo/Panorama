@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
-import { Badge, Card } from "@wealthfolio/ui";
+import { Badge, Card } from "@panorama/ui";
 
 import { TickerAvatar } from "@/components/ticker-avatar";
 import { Button } from "@/components/ui/button";
@@ -26,7 +26,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Quote } from "@/lib/types";
 import { cn, formatAmount, formatDate } from "@/lib/utils";
-import { ScrollArea, Separator } from "@wealthfolio/ui";
+import { ScrollArea, Separator } from "@panorama/ui";
 import { ParsedAsset } from "./asset-utils";
 
 interface AssetsTableMobileProps {

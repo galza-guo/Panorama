@@ -10,7 +10,7 @@ import {
   SheetHeader,
   SheetTitle,
   SheetTrigger,
-} from "@wealthfolio/ui";
+} from "@panorama/ui";
 
 export function ImportHelpPopover() {
   const { isMobile } = usePlatform();
@@ -114,7 +114,7 @@ export function ImportHelpPopover() {
       <p className="text-xs">
         For more details, see the{" "}
         <a
-          href="https://wealthfolio.app/docs/concepts/activity-types"
+          href="https://github.com/galza-guo/Panorama/blob/main/docs/activities/activity-types.md"
           target="_blank"
           rel="noopener noreferrer"
           className="underline"

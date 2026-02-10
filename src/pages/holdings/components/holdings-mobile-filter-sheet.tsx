@@ -11,7 +11,7 @@ import {
 import { ASSET_SUBCLASS_TYPES, PORTFOLIO_ACCOUNT_ID } from "@/lib/constants";
 import { Account } from "@/lib/types";
 import { cn } from "@/lib/utils";
-import { AnimatedToggleGroup, ScrollArea, Separator } from "@wealthfolio/ui";
+import { AnimatedToggleGroup, ScrollArea, Separator } from "@panorama/ui";
 
 interface HoldingsMobileFilterSheetProps {
   open: boolean;

@@ -67,7 +67,7 @@ const OnboardingPage = () => {
         <div className="bg-background/95 supports-[backdrop-filter]:bg-background/80 sticky top-0 z-20 pt-[env(safe-area-inset-top)] backdrop-blur lg:relative lg:backdrop-blur-none">
           <div className="flex flex-col items-center">
             <img
-              alt="Wealthfolio Illustration"
+              alt="Panorama Illustration"
               className="h-20 w-20 sm:h-24 sm:w-24"
               src="/illustration.png"
               style={{

@@ -5,10 +5,10 @@ use std::collections::HashSet;
 use std::sync::Arc;
 use std::time::Instant;
 use tauri::{async_runtime::spawn, AppHandle, Emitter, Listener, Manager};
-use wealthfolio_core::constants::PORTFOLIO_TOTAL_ACCOUNT_ID;
-use wealthfolio_core::fx::{auto_exchange, open_exchange_rates_client};
-use wealthfolio_core::market_data::{DATA_SOURCE_OPEN_EXCHANGE_RATES, DATA_SOURCE_YAHOO};
-use wealthfolio_core::secrets::SecretStore;
+use panorama_core::constants::PORTFOLIO_TOTAL_ACCOUNT_ID;
+use panorama_core::fx::{auto_exchange, open_exchange_rates_client};
+use panorama_core::market_data::{DATA_SOURCE_OPEN_EXCHANGE_RATES, DATA_SOURCE_YAHOO};
+use panorama_core::secrets::SecretStore;
 
 use crate::context::ServiceContext;
 use crate::events::{

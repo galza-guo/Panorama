@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import type { AddonContext, AddonEnableFunction } from '@wealthfolio/addon-sdk';
+import type { AddonContext, AddonEnableFunction } from '@panorama/addon-sdk';
 import React from 'react';
 import { SwingfolioIcon } from './components/swingfolio-icon';
 import ActivitySelectorPage from './pages/activity-selector-page';

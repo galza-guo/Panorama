@@ -37,7 +37,7 @@ import {
   GainPercent,
   Icons,
   Separator,
-} from "@wealthfolio/ui";
+} from "@panorama/ui";
 import { subMonths } from "date-fns";
 import { useMemo, useState } from "react";
 import { AccountSelector } from "../../components/account-selector";

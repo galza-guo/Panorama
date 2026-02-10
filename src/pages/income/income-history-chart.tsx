@@ -9,7 +9,7 @@ import {
 import { EmptyPlaceholder } from "@/components/ui/empty-placeholder";
 import { Icons } from "@/components/ui/icons";
 import { cn } from "@/lib/utils";
-import { formatAmount } from "@wealthfolio/ui";
+import { formatAmount } from "@panorama/ui";
 import { format, parseISO } from "date-fns";
 import React from "react";
 import { Bar, CartesianGrid, ComposedChart, Line, XAxis, YAxis } from "recharts";

@@ -7,7 +7,7 @@ import {
   DonutChart,
   EmptyPlaceholder,
   Skeleton,
-} from "@wealthfolio/ui";
+} from "@panorama/ui";
 import { useMemo, useState } from "react";
 
 function getClassData(holdings: Holding[]) {

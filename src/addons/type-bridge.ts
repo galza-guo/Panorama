@@ -33,7 +33,7 @@ import type {
   SimplePerformanceMetrics,
   UpdateAssetProfile,
 } from "@/lib/types";
-import type { HostAPI as SDKHostAPI } from "@wealthfolio/addon-sdk";
+import type { HostAPI as SDKHostAPI } from "@panorama/addon-sdk";
 
 /**
  * Internal HostAPI interface that matches the actual command function signatures

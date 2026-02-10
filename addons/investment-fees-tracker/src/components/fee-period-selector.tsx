@@ -1,4 +1,4 @@
-import { AnimatedToggleGroup } from "@wealthfolio/ui";
+import { AnimatedToggleGroup } from "@panorama/ui";
 
 const periods = [
   { value: "YTD" as const, label: "Year to Date" },

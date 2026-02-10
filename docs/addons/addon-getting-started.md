@@ -14,20 +14,20 @@ npm install -g pnpm
 Requirements:
 
 - Node.js 20+ and pnpm
-- Wealthfolio desktop app (optional but recommended: running in development mode
+- Panorama desktop app (optional but recommended: running in development mode
   for live reload and testing)
 - Basic TypeScript and React knowledge
 - Code editor (VS Code recommended)
 
-## Start Wealthfolio (Recommended)
+## Start Panorama (Recommended)
 
 For the best development experience with live reload and testing, start
-Wealthfolio in addon development mode:
+Panorama in addon development mode:
 
 ```bash
-# Clone Wealthfolio repository (if not already done)
-git clone https://github.com/afadil/wealthfolio.git
-cd wealthfolio
+# Clone Panorama repository (if not already done)
+git clone https://github.com/galza-guo/Panorama.git
+cd panorama
 
 # Install dependencies
 pnpm install
@@ -50,10 +50,10 @@ This enables:
 
 ```bash
 # Navigate to development directory
-cd ~/Documents/WealthfolioAddons
+cd ~/Documents/PanoramaAddons
 
 # Create addon using CLI
-npx @wealthfolio/addon-dev-tools create hello-world-addon
+npx @panorama/addon-dev-tools create hello-world-addon
 
 # Navigate and install
 cd hello-world-addon
@@ -88,7 +88,7 @@ hello-world-addon/
   "id": "hello-world-addon",
   "name": "Hello World Addon",
   "version": "1.0.0",
-  "description": "My first Wealthfolio addon",
+  "description": "My first Panorama addon",
   "author": "Your Name",
   "permissions": {
     "category": "ui",
@@ -104,13 +104,13 @@ hello-world-addon/
 
 ```typescript
 import React from 'react';
-import type { AddonContext } from '@wealthfolio/addon-sdk';
-import { Icons } from '@wealthfolio/ui';
+import type { AddonContext } from '@panorama/addon-sdk';
+import { Icons } from '@panorama/ui';
 
 function HelloWorldPage() {
   return (
     <div className="p-6 max-w-4xl mx-auto">
-      <h1 className="text-4xl font-bold mb-4">Hello Wealthfolio</h1>
+      <h1 className="text-4xl font-bold mb-4">Hello Panorama</h1>
       <p className="text-xl mb-8">Your first addon is working.</p>
 
       <div className="border rounded-lg p-6">
@@ -160,7 +160,7 @@ pnpm dev:server
 Output:
 
 ```
-Wealthfolio Addon Development Server
+Panorama Addon Development Server
 Addon: hello-world-addon
 Server: http://localhost:3001
 Watching for changes...
@@ -171,7 +171,7 @@ Watching for changes...
 - File watching in `src/` directory
 - Fast rebuilds with Vite
 - Hot Module Replacement for component updates
-- Auto-discovery by Wealthfolio
+- Auto-discovery by Panorama
 - Error recovery with overlay messages
 
 ### Available Commands
@@ -185,9 +185,9 @@ pnpm format       # Run Prettier
 pnpm bundle       # Bundle addon for distribution
 ```
 
-Verify in Wealthfolio:
+Verify in Panorama:
 
-1. Open Wealthfolio in addon development mode with
+1. Open Panorama in addon development mode with
    `VITE_ENABLE_ADDON_DEV_MODE=true pnpm tauri dev`
 2. Check sidebar for "Hello World"
 3. Click to load addon page
@@ -209,7 +209,7 @@ Update `src/addon.tsx` to access portfolio data using TanStack Query:
 ```typescript
 import React from 'react';
 import { useQuery } from '@tanstack/react-query';
-import type { AddonContext, Account } from '@wealthfolio/addon-sdk';
+import type { AddonContext, Account } from '@panorama/addon-sdk';
 
 function HelloWorldPage({ ctx }: { ctx: AddonContext }) {
   const {
@@ -230,7 +230,7 @@ function HelloWorldPage({ ctx }: { ctx: AddonContext }) {
 
   return (
     <div className="p-6 max-w-4xl mx-auto">
-      <h1 className="text-3xl font-bold mb-6">Hello Wealthfolio</h1>
+      <h1 className="text-3xl font-bold mb-6">Hello Panorama</h1>
 
       <div className="border rounded-lg p-6 mb-8">
         <div className="flex justify-between items-center mb-4">
@@ -288,7 +288,7 @@ function HelloWorldPage({ ctx }: { ctx: AddonContext }) {
               </div>
             ) : (
               <p className="text-muted-foreground">
-                No accounts found. Add an account in Wealthfolio to see data.
+                No accounts found. Add an account in Panorama to see data.
               </p>
             )}
           </div>
@@ -330,7 +330,7 @@ Update `manifest.json` to include account access:
   "id": "hello-world-addon",
   "name": "Hello World Addon",
   "version": "1.0.0",
-  "description": "My first Wealthfolio addon",
+  "description": "My first Panorama addon",
   "author": "Your Name",
   "permissions": {
     "accounts": ["read"],
@@ -394,7 +394,7 @@ export default function enable(ctx: AddonContext) {
 ### Development Server Features
 
 - Port: `http://localhost:3001`
-- CORS configured for Wealthfolio
+- CORS configured for Panorama
 - Source maps for debugging
 - Real-time TypeScript checking
 - Hot Module Replacement
@@ -426,7 +426,7 @@ Create `.vscode/settings.json`:
 ### Manual Testing
 
 1. Start development server
-2. Open Wealthfolio
+2. Open Panorama
 3. Navigate to your addon
 4. Test all features
 5. Check console for errors
@@ -451,7 +451,7 @@ pnpm format
 ```json
 {
   "scripts": {
-    "dev:server": "wealthfolio dev",
+    "dev:server": "panorama dev",
     "build": "vite build",
     "type-check": "tsc --noEmit",
     "lint": "eslint src --ext .ts,.tsx",
@@ -526,5 +526,5 @@ You now understand:
 Continue with:
 
 - [API Reference](/docs/addons/api-reference) - All available APIs
-- [Examples](https://github.com/afadil/wealthfolio/tree/main/addons/) - Real
+- [Examples](https://github.com/galza-guo/Panorama/tree/main/addons/) - Real
   addon implementations

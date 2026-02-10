@@ -1,6 +1,6 @@
 import { useHapticFeedback, useIsMobileViewport } from "@/hooks";
 import { cn } from "@/lib/utils";
-import { Page, SwipableView, type Icon } from "@wealthfolio/ui";
+import { Page, SwipableView, type Icon } from "@panorama/ui";
 import { motion } from "motion/react";
 import * as React from "react";
 import { useSearchParams } from "react-router-dom";

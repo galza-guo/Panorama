@@ -9,7 +9,7 @@ import { useLatestValuations } from "@/hooks/use-latest-valuations";
 import { useSettingsContext } from "@/lib/settings-provider";
 import type { AccountValuation } from "@/lib/types";
 import { calculatePerformanceMetrics } from "@/lib/utils";
-import { GainAmount, GainPercent, PrivacyAmount } from "@wealthfolio/ui";
+import { GainAmount, GainPercent, PrivacyAmount } from "@panorama/ui";
 import React, { useCallback, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 

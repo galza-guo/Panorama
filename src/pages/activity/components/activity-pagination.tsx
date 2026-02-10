@@ -1,4 +1,4 @@
-import { Button, Icons } from "@wealthfolio/ui";
+import { Button, Icons } from "@panorama/ui";
 
 interface ActivityPaginationProps {
   hasMore: boolean;

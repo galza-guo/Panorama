@@ -1,5 +1,5 @@
 [package]
-name = "wealthfolio-server"
+name = "panorama-server"
 version = "2.1.0"
 edition = "2021"
 
@@ -32,7 +32,7 @@ futures-core = "0.3"
 semver = "1"
 
 # path dependency to core
-wealthfolio_core = { path = "../src-core", package = "wealthfolio_core" }
+panorama_core = { path = "../src-core", package = "panorama_core" }
 
 hyper = { version = "0.14", features = ["full"] }
 

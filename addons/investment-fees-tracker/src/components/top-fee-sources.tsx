@@ -1,6 +1,6 @@
 import React from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@wealthfolio/ui";
-import { Badge, Icons, AmountDisplay } from "@wealthfolio/ui";
+import { Card, CardContent, CardHeader, CardTitle } from "@panorama/ui";
+import { Badge, Icons, AmountDisplay } from "@panorama/ui";
 import type { FeeAnalytics } from "../lib/fee-calculation.service";
 
 // Simple EmptyPlaceholder component since it's not exported from UI package

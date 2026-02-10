@@ -7,7 +7,7 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet";
-import { Icons } from "@wealthfolio/ui";
+import { Icons } from "@panorama/ui";
 
 export interface MobileAction {
   icon: keyof typeof Icons;

@@ -21,7 +21,7 @@ import {
   SelectSeparator,
   SelectTrigger,
   SelectValue,
-} from "@wealthfolio/ui";
+} from "@panorama/ui";
 import { useState } from "react";
 
 const SKIP_FIELD_VALUE = "__skip__";

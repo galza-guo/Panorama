@@ -9,7 +9,7 @@ import { Icons } from "@/components/ui/icons";
 import { parsePanoramaAssetAttributes } from "@/lib/panorama-asset-attributes";
 import { QueryKeys } from "@/lib/query-keys";
 import { Asset } from "@/lib/types";
-import { AmountDisplay, Button, Page } from "@wealthfolio/ui";
+import { AmountDisplay, Button, Page } from "@panorama/ui";
 import { InsurancePolicyEditorSheet } from "./components/insurance-policy-editor-sheet";
 
 export default function PolicyDetailView() {

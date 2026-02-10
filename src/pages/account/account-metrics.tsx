@@ -15,7 +15,7 @@ import {
   TooltipTrigger,
   Separator,
   Skeleton,
-} from "@wealthfolio/ui";
+} from "@panorama/ui";
 import { AccountValuation, PerformanceMetrics } from "@/lib/types";
 import { PerformanceGrid } from "@/pages/account/performance-grid";
 import { formatDate } from "@/lib/utils";

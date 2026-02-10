@@ -9,7 +9,7 @@ import {
   Progress,
   Skeleton,
   formatAmount,
-} from "@wealthfolio/ui";
+} from "@panorama/ui";
 import { useEffect, useState } from "react";
 import { useContributionLimitProgress } from "../use-contribution-limit-mutations";
 import { AccountSelection } from "./account-selection";

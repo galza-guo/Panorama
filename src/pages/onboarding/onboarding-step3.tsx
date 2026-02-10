@@ -1,5 +1,5 @@
 import { Card, CardContent } from "@/components/ui/card";
-import { Icons } from "@wealthfolio/ui";
+import { Icons } from "@panorama/ui";
 import React, { useState } from "react";
 
 const checklistItems = [
@@ -25,7 +25,7 @@ export const OnboardingStep3: React.FC = () => {
     <div className="space-y-3">
       <div className="text-center">
         <p className="text-muted-foreground text-sm sm:text-base">
-          Here are a few things you can do to get the most out of Wealthfolio
+          Here are a few things you can do to get the most out of Panorama
         </p>
       </div>
       <Card className="border-none bg-transparent">

@@ -4,7 +4,7 @@ import { useBalancePrivacy } from "@/hooks/use-balance-privacy";
 import { useSettingsContext } from "@/lib/settings-provider";
 import { Holding } from "@/lib/types";
 import { cn } from "@/lib/utils";
-import { AmountDisplay } from "@wealthfolio/ui";
+import { AmountDisplay } from "@panorama/ui";
 import { useMemo } from "react";
 
 interface CashHoldingsWidgetProps {

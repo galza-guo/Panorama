@@ -13,7 +13,7 @@ import { ExchangeRate } from "@/lib/types";
 import { formatDate } from "@/lib/utils";
 import { useMarketDataProviderSettings } from "@/pages/settings/market-data/use-market-data-settings";
 import { ColumnDef } from "@tanstack/react-table";
-import { ActionConfirm } from "@wealthfolio/ui";
+import { ActionConfirm } from "@panorama/ui";
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { AddExchangeRateForm } from "./add-exchange-rate-form";

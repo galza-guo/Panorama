@@ -88,7 +88,7 @@ export const OnboardingStep1: React.FC = () => {
           <p className="text-muted-foreground text-xs md:text-sm">
             Mix both types as needed.{" "}
             <a
-              href="https://wealthfolio.app/docs/concepts/activity-types"
+              href="https://github.com/galza-guo/Panorama/blob/main/docs/activities/activity-types.md"
               target="_blank"
               rel="noopener noreferrer"
               className="hover:text-foreground underline transition-colors"

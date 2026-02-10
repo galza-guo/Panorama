@@ -1,7 +1,7 @@
 use crate::{context::ServiceContext, secret_store::KeyringSecretStore};
 use std::sync::Arc;
 use tauri::State;
-use wealthfolio_core::secrets::SecretStore;
+use panorama_core::secrets::SecretStore;
 
 #[tauri::command]
 pub async fn set_secret(

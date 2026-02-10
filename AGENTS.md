@@ -7,7 +7,7 @@ edits, clear reasoning, and validation via the existing scripts and tests.
 
 ## Panorama (Fork Context)
 
-Panorama is a fork of Wealthfolio focused on a truly "All-in-One" experience for HK/CN markets. It bridges the gap for localized market data (A-shares, CN Funds) and specialized assets (Insurance, MPF).
+Panorama is a fork of Panorama focused on a truly "All-in-One" experience for HK/CN markets. It bridges the gap for localized market data (A-shares, CN Funds) and specialized assets (Insurance, MPF).
 
 - **Vision**: Privacy-first personal wealth aggregation with comprehensive localized coverage.
 - **Scope**: Equities (CN/HK/US), CN OTC Funds, Insurance policies, and MPF accounts.
@@ -27,7 +27,7 @@ Panorama is a fork of Wealthfolio focused on a truly "All-in-One" experience for
   served by an Axum HTTP server.
 - Strong addon system powered by a TypeScript SDK enabling dynamic sidebar
   routes, UI, permissions, and secure secrets.
-- Monorepo-style packages: shared UI (`@wealthfolio/ui`), addon SDK, and addon
+- Monorepo-style packages: shared UI (`@panorama/ui`), addon SDK, and addon
   dev tools.
 
 References:
@@ -70,7 +70,7 @@ References:
 - Packages: `packages/`
   - `addon-sdk` — TypeScript SDK for addons
   - `addon-dev-tools` — CLI and dev server for addons
-  - `ui` — Shared UI lib (`@wealthfolio/ui`)
+  - `ui` — Shared UI lib (`@panorama/ui`)
 
 ## Architecture Notes
 
@@ -90,7 +90,7 @@ References:
 
 ## Styling & UI
 
-- Use Tailwind v4 (CSS-first) and shared components from `@wealthfolio/ui`.
+- Use Tailwind v4 (CSS-first) and shared components from `@panorama/ui`.
 - Prefer composition via `packages/ui/src/components/ui/*` and
   `packages/ui/src/components/common/*`.
 - Theme tokens are declared in `src/styles.css`:1 (light/dark, semantic colors,
@@ -136,7 +136,7 @@ When adding a new user-visible feature that needs backend data:
 1. Frontend route and UI
 
 - Add page under `src/pages/...` and route in `src/routes.tsx`:1.
-- Build UI with components from `@wealthfolio/ui` and Tailwind.
+- Build UI with components from `@panorama/ui` and Tailwind.
 
 2. Frontend command wrapper
 
@@ -184,9 +184,9 @@ Common UI tasks:
 
 ## Addon Development (Quickstart)
 
-- Scaffold: `npx @wealthfolio/addon-dev-tools create <my-addon>`
+- Scaffold: `npx @panorama/addon-dev-tools create <my-addon>`
 - Start addon dev server: `npm run dev:server` (from addon dir)
-- Run Wealthfolio (desktop) with addon dev mode:
+- Run Panorama (desktop) with addon dev mode:
   `VITE_ENABLE_ADDON_DEV_MODE=true pnpm tauri dev`
 - Add routes and sidebar via the addon context
   (`src/addons/addons-runtime-context.ts`:1)
@@ -215,7 +215,7 @@ Docs entry points:
   maps/union types); use functional components with interface props.
 - Syntax: use `function` for pure functions; always use curly braces for
   conditionals; favor simple, declarative JSX.
-- UI/styling: use Tailwind utilities; reuse `@wealthfolio/ui` components where
+- UI/styling: use Tailwind utilities; reuse `@panorama/ui` components where
   possible.
 - Performance: immutable data; efficient data fetching with React Query;
   minimize network calls; choose efficient data structures; optimize rendering

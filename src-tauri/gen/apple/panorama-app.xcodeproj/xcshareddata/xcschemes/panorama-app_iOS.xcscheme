@@ -15,9 +15,9 @@
             <BuildableReference
                BuildableIdentifier = "primary"
                BlueprintIdentifier = "0611B7A201FCFBBF724846B3"
-               BuildableName = "Wealthfolio.app"
-               BlueprintName = "wealthfolio-app_iOS"
-               ReferencedContainer = "container:wealthfolio-app.xcodeproj">
+               BuildableName = "Panorama.app"
+               BlueprintName = "panorama-app_iOS"
+               ReferencedContainer = "container:panorama-app.xcodeproj">
             </BuildableReference>
          </BuildActionEntry>
       </BuildActionEntries>
@@ -31,9 +31,9 @@
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "0611B7A201FCFBBF724846B3"
-            BuildableName = "Wealthfolio.app"
-            BlueprintName = "wealthfolio-app_iOS"
-            ReferencedContainer = "container:wealthfolio-app.xcodeproj">
+            BuildableName = "Panorama.app"
+            BlueprintName = "panorama-app_iOS"
+            ReferencedContainer = "container:panorama-app.xcodeproj">
          </BuildableReference>
       </MacroExpansion>
       <EnvironmentVariables>
@@ -66,9 +66,9 @@
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "0611B7A201FCFBBF724846B3"
-            BuildableName = "Wealthfolio.app"
-            BlueprintName = "wealthfolio-app_iOS"
-            ReferencedContainer = "container:wealthfolio-app.xcodeproj">
+            BuildableName = "Panorama.app"
+            BlueprintName = "panorama-app_iOS"
+            ReferencedContainer = "container:panorama-app.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>
       <EnvironmentVariables>
@@ -95,9 +95,9 @@
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "0611B7A201FCFBBF724846B3"
-            BuildableName = "Wealthfolio.app"
-            BlueprintName = "wealthfolio-app_iOS"
-            ReferencedContainer = "container:wealthfolio-app.xcodeproj">
+            BuildableName = "Panorama.app"
+            BlueprintName = "panorama-app_iOS"
+            ReferencedContainer = "container:panorama-app.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>
       <EnvironmentVariables>

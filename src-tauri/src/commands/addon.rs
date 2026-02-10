@@ -5,7 +5,7 @@ use tauri::{AppHandle, State};
 
 // Import addon modules
 use crate::context::ServiceContext;
-use wealthfolio_core::addons::{
+use panorama_core::addons::{
     self, AddonManifest, AddonUpdateCheckResult, AddonUpdateInfo, ExtractedAddon, InstalledAddon,
 };
 
@@ -315,7 +315,7 @@ pub async fn check_addon_update(
                     changelog_url: None,
                     is_critical: None,
                     has_breaking_changes: None,
-                    min_wealthfolio_version: None,
+                    min_panorama_version: None,
                 },
                 error: Some(error),
             })
@@ -361,7 +361,7 @@ pub async fn check_all_addon_updates(
                         changelog_url: None,
                         is_critical: None,
                         has_breaking_changes: None,
-                        min_wealthfolio_version: None,
+                        min_panorama_version: None,
                     },
                     error: Some(error),
                 });

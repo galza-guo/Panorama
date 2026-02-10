@@ -14,13 +14,17 @@ import { Icons } from "@/components/ui/icons";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/components/ui/use-toast";
-import type { AddonUpdateInfo } from "@wealthfolio/addon-sdk";
+import type { AddonUpdateInfo } from "@panorama/addon-sdk";
 import { useState } from "react";
+
+interface PanoramaAddonUpdateInfo extends AddonUpdateInfo {
+  minPanoramaVersion?: string;
+}
 
 interface AddonUpdateCardProps {
   addonId: string;
   addonName: string;
-  updateInfo: AddonUpdateInfo;
+  updateInfo: PanoramaAddonUpdateInfo;
   onUpdateComplete?: () => void;
   disabled?: boolean;
 }
@@ -226,11 +230,11 @@ export function AddonUpdateCard({
         </div>
       </div>
 
-      {updateInfo.minWealthfolioVersion && (
+      {updateInfo.minPanoramaVersion && (
         <div className="mt-3 rounded-md bg-amber-100 p-2 dark:bg-amber-900/20">
           <p className="text-xs text-amber-800 dark:text-amber-200">
             <Icons.Info className="mr-1 inline h-3 w-3" />
-            Requires Wealthfolio {updateInfo.minWealthfolioVersion} or later
+            Requires Panorama {updateInfo.minPanoramaVersion} or later
           </p>
         </div>
       )}

@@ -2,7 +2,7 @@ use crate::errors::Result;
 
 /// Prefix applied to all secret identifiers to avoid collisions with other
 /// applications that may share the same underlying credential store.
-pub const SERVICE_PREFIX: &str = "wealthfolio_";
+pub const SERVICE_PREFIX: &str = "panorama_";
 
 /// Format a service identifier into the canonical form expected by the
 /// platform-specific secret stores.

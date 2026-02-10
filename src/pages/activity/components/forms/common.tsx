@@ -17,7 +17,7 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@wealthfolio/ui";
+} from "@panorama/ui";
 import { useFormContext } from "react-hook-form";
 import { AccountSelectOption } from "../activity-form";
 

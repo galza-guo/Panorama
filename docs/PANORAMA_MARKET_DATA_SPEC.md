@@ -13,7 +13,7 @@ This document defines:
 - All-in-one coverage for: CN A-shares, CN funds (OTC NAV), HK stocks/ETFs, US stocks/ETFs, FX.
 - Update-on-open is enough (no background realtime required).
 - Free-first: default paths require no paid subscription; optional BYO-key providers are allowed.
-- Preserve Wealthfolio architecture: reuse Market Data / FX / Settings / SecretStore.
+- Preserve Panorama architecture: reuse Market Data / FX / Settings / SecretStore.
 
 ## Non-Goals (Phase 1)
 - Broker account sync (Futu/Tiger/etc). CSV import stays.
@@ -79,13 +79,13 @@ Panorama will map PSS symbols to provider-native symbols as needed.
 | HK | `0700.HK` | `0700.HK` | `0700.HKG` | n/a | n/a |
 | FUND | `161039.FUND` | n/a | n/a | (optional) | `161039` |
 
-Note: Wealthfolio already uses Yahoo symbols in multiple places (e.g., `000001.SS` exists in `src/components/benchmark-symbol-selector.tsx`).
+Note: Panorama already uses Yahoo symbols in multiple places (e.g., `000001.SS` exists in `src/components/benchmark-symbol-selector.tsx`).
 
 ---
 
 ## 2) Provider Strategy (Free-first)
 
-Wealthfolio uses a global provider priority list (not per-asset). Each provider MUST:
+Panorama uses a global provider priority list (not per-asset). Each provider MUST:
 - Fail fast without network calls for symbols it does not support.
 - In bulk fetch, return unsupported symbols in the `failed` list so the next provider can try.
 
@@ -190,7 +190,7 @@ If we later need per-provider knobs (proxy URL, pacing), store in `app_settings`
 ## 5) Rate Limiting, Caching, Reliability
 
 ### 5.1 General rules
-- Never refetch history unnecessarily: rely on Wealthfolio incremental sync (latest quote date -> fetch from next day).
+- Never refetch history unnecessarily: rely on Panorama incremental sync (latest quote date -> fetch from next day).
 - Use bulk fetch APIs where possible, but cap concurrency.
 
 ### 5.2 Recommended pacing (Phase 1 defaults)

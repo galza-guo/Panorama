@@ -7,8 +7,8 @@ import {
   EmptyPlaceholder,
   Icons,
   formatAmount,
-} from '@wealthfolio/ui';
-import { Bar, CartesianGrid, Cell, ComposedChart, Line, XAxis, YAxis } from '@wealthfolio/ui/chart';
+} from '@panorama/ui';
+import { Bar, CartesianGrid, Cell, ComposedChart, Line, XAxis, YAxis } from '@panorama/ui/chart';
 import { format, parseISO } from 'date-fns';
 import type { EquityPoint } from '../types';
 

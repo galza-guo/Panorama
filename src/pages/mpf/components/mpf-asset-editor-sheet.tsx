@@ -33,7 +33,7 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-} from "@wealthfolio/ui";
+} from "@panorama/ui";
 
 const mpfSubfundSchema = z.object({
   name: z.string().optional().default(""),

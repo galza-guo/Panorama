@@ -53,9 +53,9 @@
 
 ## 二、推荐方案重新评估
 
-### 方案A：Wealthfolio + 自建数据层（推荐！）
+### 方案A：Panorama + 自建数据层（推荐！）
 
-**Wealthfolio** 是完美匹配你需求的Tauri应用：
+**Panorama** 是完美匹配你需求的Tauri应用：
 
 | 特性 | 详情 |
 |------|------|
@@ -67,10 +67,10 @@
 | **开源** | AGPL-3.0，6,200+ Stars |
 | **费用** | 免费（可选Connect订阅$3/月） |
 
-**官网**: https://wealthfolio.app
-**GitHub**: https://github.com/afadil/wealthfolio
+**官网**: https://panorama.app
+**GitHub**: https://github.com/galza-guo/Panorama
 
-#### Wealthfolio支持的资产
+#### Panorama支持的资产
 
 | 资产类型 | 支持 | 备注 |
 |----------|------|------|
@@ -81,10 +81,10 @@
 | 现金/银行 | ✅ | - |
 | 保险 | ⚠️ | 需手动添加为资产 |
 
-#### Wealthfolio的数据获取
+#### Panorama的数据获取
 
 ```
-Wealthfolio本身不自动拉取价格
+Panorama本身不自动拉取价格
 需要搭配：
 ├── AKShare / 东方财富API → 获取A股价格
 ├── Yahoo Finance → 获取港股/美股价格
@@ -94,7 +94,7 @@ Wealthfolio本身不自动拉取价格
 **架构**：
 ```
 ┌─────────────────────────────────────┐
-│          Wealthfolio (本地)          │
+│          Panorama (本地)          │
 │  ┌─────────────────────────────────┐ │
 │  │ 持仓数据 (本地SQLite)           │ │
 │  │ - 股票代码/数量                │ │
@@ -135,7 +135,7 @@ Wealthfolio本身不自动拉取价格
 | 组合 | 用途 |
 |------|------|
 | **Actual Budget** | 日常预算 + 资产净值追踪 |
-| **Wealthfolio** | 投资组合详细分析 |
+| **Panorama** | 投资组合详细分析 |
 
 **Actual Budget**:
 - SQLite本地存储
@@ -170,7 +170,7 @@ Wealthfolio本身不自动拉取价格
 
 **缺点**: 不能自动同步，需要手动维护
 
-#### 方案2：富途/老虎API + Wealthfolio
+#### 方案2：富途/老虎API + Panorama
 
 富途提供 **FutuOpenAPI**，可以：
 - 获取实时行情
@@ -179,7 +179,7 @@ Wealthfolio本身不自动拉取价格
 
 **集成方式**:
 ```
-Python脚本 (FutuOpenAPI) → 获取持仓/价格 → 导出CSV → Wealthfolio导入
+Python脚本 (FutuOpenAPI) → 获取持仓/价格 → 导出CSV → Panorama导入
 ```
 
 #### 方案3：AKShare + 自建定时任务
@@ -191,20 +191,20 @@ AKShare → 获取A股/基金价格
      ↓
 更新本地JSON/SQLite
      ↓
-Wealthfolio读取本地数据
+Panorama读取本地数据
 ```
 
 ---
 
 ## 四、完整推荐方案（按你的需求定制）
 
-### 推荐：Wealthfolio + AKShare定时层
+### 推荐：Panorama + AKShare定时层
 
 #### 架构图
 
 ```
 ┌────────────────────────────────────────────────────────────┐
-│                   Wealthfolio (本地App)                 │
+│                   Panorama (本地App)                 │
 │  ┌──────────────┐    ┌──────────────┐    ┌────────┐ │
 │  │ 投资组合      │    │ 保险资产    │    │ 现金   │ │
 │  │ - A股        │    │ - 储蓄险    │    │ - 存款  │ │
@@ -225,13 +225,13 @@ Wealthfolio读取本地数据
 
 #### 实施步骤
 
-##### 步骤1：安装Wealthfolio
+##### 步骤1：安装Panorama
 
 ```bash
 # macOS
-brew install --cask wealthfolio
+brew install --cask panorama
 
-# 或下载DMG: https://wealthfolio.app/download
+# 或下载DMG: https://panorama.app/download
 ```
 
 ##### 步骤2：创建持仓CSV模板
@@ -266,7 +266,7 @@ def get_a_stock_price(code):
     price = df[df['代码'] == code]['最新价'].values[0]
     return price
 
-# 生成Wealthfolio格式
+# 生成Panorama格式
 output = []
 for code, info in a_stock_holdings.items():
     price = get_a_stock_price(code)
@@ -292,7 +292,7 @@ print(f"Updated {len(output)} prices")
 
 ```
 ├── 保险现金价值
-│   └── 每年保单周年日手动更新到Wealthfolio
+│   └── 每年保单周年日手动更新到Panorama
 │
 └── MPF
     └── 每季度登录eMPF app查看截图记录
@@ -302,7 +302,7 @@ print(f"Updated {len(output)} prices")
 
 ## 五、各方案对比（更新版）
 
-| 维度 | Wealthfolio | Planto | Sharesight | 自建方案 |
+| 维度 | Panorama | Planto | Sharesight | 自建方案 |
 |------|------------|--------|------------|----------|
 | **平台** | Tauri桌面 | SaaS | SaaS/Web | 定制 |
 | **A股支持** | CSV导入 | ❌ | CSV导入 | API自动 |
@@ -321,9 +321,9 @@ print(f"Updated {len(output)} prices")
 
 ### 如果你追求"轻量+隐私+全覆盖"
 
-**推荐方案: Wealthfolio + 手动维护**
+**推荐方案: Panorama + 手动维护**
 
-1. **投资组合** → Wealthfolio (CSV导入/手动更新)
+1. **投资组合** → Panorama (CSV导入/手动更新)
 2. **A股价格** → AKShare脚本 (可选自动)
 3. **港股/美股** → Yahoo Finance (可选自动)
 4. **基金净值** → 天天基金API
@@ -362,22 +362,22 @@ print(f"Updated {len(output)} prices")
 
 ### 今天（5分钟）
 
-- [ ] 下载Wealthfolio试用版: https://wealthfolio.app/download
+- [ ] 下载Panorama试用版: https://panorama.app/download
 - [ ] 浏览Features页面了解功能
 
 ### 本周（2小时）
 
 - [ ] 整理所有持仓清单（股票/基金/保险/MPF）
-- [ ] 测试CSV导入到Wealthfolio
+- [ ] 测试CSV导入到Panorama
 - [ ] 尝试AKShare脚本获取A股价格
 
 ### 决策点
 
 | 问题 | 你的选择 |
 |------|----------|
-| 愿意折腾技术吗？ | 是 → 自建/Wealthfolio |
+| 愿意折腾技术吗？ | 是 → 自建/Panorama |
 | 还是直接用现成工具？ | 否 → Planto + Sharesight |
-| 完全隐私+本地数据？ | 是 → Wealthfolio |
+| 完全隐私+本地数据？ | 是 → Panorama |
 | 需要专业业绩分析？ | 是 → Portfolio Performance |
 
 ---
@@ -388,7 +388,7 @@ print(f"Updated {len(output)} prices")
 
 | 工具 | 链接 | Stars |
 |------|------|-------|
-| Wealthfolio | https://wealthfolio.app | 6,200+ |
+| Panorama | https://panorama.app | 6,200+ |
 | Ghostfolio | https://ghostfolio.app | 4,100+ |
 | Portfolio Performance | https://www.portfolio-performance.info | - |
 | AKShare | https://akshare.xyz | - |
@@ -419,4 +419,4 @@ print(f"Updated {len(output)} prices")
 
 ---
 
-**下一步**: 告诉我你的选择倾向（Wealthfolio/Planto/自建），我来帮你制定具体实施细节。
+**下一步**: 告诉我你的选择倾向（Panorama/Planto/自建），我来帮你制定具体实施细节。

@@ -5,7 +5,7 @@ use crate::addons::service::*;
 fn test_detect_addon_permissions_hello_world() {
     // Test with actual hello world addon content
     let hello_world_content = r#"
-import { type AddonContext } from '@wealthfolio/addon-sdk';
+import { type AddonContext } from '@panorama/addon-sdk';
 import React from 'react';
 import { AlertsIcon } from './icons';
 
@@ -210,7 +210,7 @@ fn test_addon_manifest_to_installed() {
         homepage: None,
         repository: None,
         license: None,
-        min_wealthfolio_version: None,
+        min_panorama_version: None,
         keywords: None,
         icon: None,
         installed_at: None,
@@ -240,7 +240,7 @@ fn test_addon_manifest_get_main() {
         homepage: None,
         repository: None,
         license: None,
-        min_wealthfolio_version: None,
+        min_panorama_version: None,
         keywords: None,
         icon: None,
         installed_at: None,
@@ -264,7 +264,7 @@ fn test_addon_manifest_get_main() {
         homepage: None,
         repository: None,
         license: None,
-        min_wealthfolio_version: None,
+        min_panorama_version: None,
         keywords: None,
         icon: None,
         installed_at: None,
@@ -618,7 +618,7 @@ mod service_tests {
     #[test]
     fn test_ensure_addons_directory_service() {
         // Test the service function ensure_addons_directory
-        let temp_dir = env::temp_dir().join("wealthfolio_test_addons");
+        let temp_dir = env::temp_dir().join("panorama_test_addons");
         let app_data_path = temp_dir.to_str().unwrap();
 
         // Clean up any existing test directory
@@ -641,7 +641,7 @@ mod service_tests {
     #[test]
     fn test_get_addon_path_service() {
         // Test the service function get_addon_path
-        let temp_dir = env::temp_dir().join("wealthfolio_test_addon_path");
+        let temp_dir = env::temp_dir().join("panorama_test_addon_path");
         let app_data_path = temp_dir.to_str().unwrap();
 
         // Clean up any existing test directory

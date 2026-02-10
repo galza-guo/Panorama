@@ -7,7 +7,7 @@ import {
   isInsuranceAsset,
   parsePanoramaAssetAttributes,
 } from "@/lib/panorama-asset-attributes";
-import { AmountDisplay, Page } from "@wealthfolio/ui";
+import { AmountDisplay, Page } from "@panorama/ui";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Icons } from "@/components/ui/icons";

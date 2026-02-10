@@ -4,7 +4,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { HoldingType } from "@/lib/constants";
 import { Holding } from "@/lib/types";
 import { cn } from "@/lib/utils";
-import { AmountDisplay, Button, GainAmount, GainPercent, Icons } from "@wealthfolio/ui";
+import { AmountDisplay, Button, GainAmount, GainPercent, Icons } from "@panorama/ui";
 import { useMemo } from "react";
 import { Link, useNavigate } from "react-router-dom";
 

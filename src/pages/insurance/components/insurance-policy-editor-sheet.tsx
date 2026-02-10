@@ -31,7 +31,7 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-} from "@wealthfolio/ui";
+} from "@panorama/ui";
 
 const insurancePolicyFormSchema = z.object({
   symbol: z.string().min(1, "Symbol is required"),

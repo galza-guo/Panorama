@@ -3,7 +3,7 @@ import { Icons } from "@/components/ui/icons";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
-import { GainPercent } from "@wealthfolio/ui";
+import { GainPercent } from "@panorama/ui";
 import React, { useState } from "react";
 
 // Explanatory texts for info popovers

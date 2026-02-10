@@ -41,7 +41,7 @@ import {
 import { useMarketDataProviders } from "@/hooks/use-market-data-providers";
 import { ExchangeRate } from "@/lib/types";
 import { cn } from "@/lib/utils";
-import { MoneyInput, worldCurrencies } from "@wealthfolio/ui";
+import { MoneyInput, worldCurrencies } from "@panorama/ui";
 
 const exchangeRateSchema = z
   .object({

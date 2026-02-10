@@ -1,7 +1,7 @@
 import { ChartConfig, ChartContainer } from "@/components/ui/chart";
 import { useBalancePrivacy } from "@/hooks/use-balance-privacy";
 import { formatDate } from "@/lib/utils";
-import { AmountDisplay } from "@wealthfolio/ui";
+import { AmountDisplay } from "@panorama/ui";
 import { useState } from "react";
 import { Area, AreaChart, Tooltip, YAxis } from "recharts";
 

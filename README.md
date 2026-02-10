@@ -1,21 +1,21 @@
 <div align="center">
-  <a href="https://github.com/afadil/wealthfolio">
+  <a href="https://github.com/galza-guo/Panorama">
     <img src="public/logo.svg" alt="Logo" width="80" height="80">
   </a>
 
-  <h3 align="center">Wealthfolio</h3>
+  <h3 align="center">Panorama</h3>
 
   <p align="center">
     A Beautiful and Boring Desktop Investment Tracker
     <br />
     <br />
-    <a href="https://wealthfolio.app">Website</a>
+    <a href="https://panorama.app">Website</a>
     ·
     <a href="https://discord.gg/WDMCY6aPWK">Discord</a>
     ·
-    <a href="https://x.com/intent/follow?screen_name=WealthfolioApp">Twitter</a>
+    <a href="https://x.com/intent/follow?screen_name=PanoramaApp">Twitter</a>
     ·
-    <a href="https://github.com/afadil/wealthfolio/releases">Releases</a>
+    <a href="https://github.com/galza-guo/Panorama/releases">Releases</a>
   </p>
 </div>
 <div align="center">
@@ -32,19 +32,23 @@
     style="width: 250px; height: 55px;" width="250" height="55"
   />
 </a>
-  <a href="https://www.producthunt.com/posts/wealthfolio?embed=true&amp;utm_source=badge-featured&amp;utm_medium=badge&amp;utm_souce=badge-wealthfolio" target="_blank"><img src="https://api.producthunt.com/widgets/embed-image/v1/featured.svg?post_id=461640&amp;theme=light" alt="Wealthfolio - A boring, Local first, desktop Investment Tracking app | Product Hunt" class="h-[55px] w-[250px]" width="250" height="55"></a>
+  <a href="https://www.producthunt.com/posts/panorama?embed=true&amp;utm_source=badge-featured&amp;utm_medium=badge&amp;utm_souce=badge-panorama" target="_blank"><img src="https://api.producthunt.com/widgets/embed-image/v1/featured.svg?post_id=461640&amp;theme=light" alt="Panorama - A boring, Local first, desktop Investment Tracking app | Product Hunt" class="h-[55px] w-[250px]" width="250" height="55"></a>
 
   <a href="https://trendshift.io/repositories/11701" target="_blank">
-  <img src="https://trendshift.io/api/badge/repositories/11701" alt="afadil%2Fwealthfolio | Trendshift" style="width: 250px; height: 55px;" width="250" height="55"/></a>
+  <img src="https://trendshift.io/api/badge/repositories/11701" alt="afadil%2Fpanorama | Trendshift" style="width: 250px; height: 55px;" width="250" height="55"/></a>
 
 </div>
 
 ## Introduction
 
-**Wealthfolio App** is a Beautiful and Boring Investment Tracker, with Local
+**Panorama App** is a Beautiful and Boring Investment Tracker, with Local
 Data Storage. No Subscriptions, No Cloud.
 
-Visit the app website at [Wealthfolio App](https://wealthfolio.app/).
+Visit the app website at [Panorama App](https://panorama.app/).
+
+Panorama is a transparent fork of
+[Wealthfolio](https://github.com/afadil/wealthfolio), and keeps upstream
+attribution under AGPL-3.0.
 
 ![Screenshot](public/screenshot.webp)
 
@@ -65,7 +69,7 @@ Visit the app website at [Wealthfolio App](https://wealthfolio.app/).
 
 ### 🧩 Addon System
 
-Wealthfolio features a powerful addon system that allows developers to extend
+Panorama features a powerful addon system that allows developers to extend
 functionality:
 
 - **🔌 Easy Development** - TypeScript SDK with full type safety and hot reload
@@ -130,8 +134,8 @@ Ensure you have the following installed on your machine:
 1. **Clone the repository**:
 
    ```bash
-   git clone https://github.com/afadil/wealthfolio.git
-   cd wealthfolio
+   git clone https://github.com/galza-guo/Panorama.git
+   cd panorama
    ```
 
 2. **Install dependencies using pnpm**:
@@ -153,7 +157,7 @@ Ensure you have the following installed on your machine:
 
    ```bash
    # Database location
-   DATABASE_URL=../db/wealthfolio.db
+   DATABASE_URL=../db/panorama.db
    ```
 
 4. **Run in Development Mode**:
@@ -301,18 +305,18 @@ You can either pull the official Docker image or build it yourself locally.
 The latest server build is published to Docker Hub.
 
 ```bash
-docker pull afadil/wealthfolio:latest
+docker pull galza-guo/panorama:latest
 ```
 
-After pulling, use `afadil/wealthfolio:latest` in the run commands below. If you
-build the image locally, swap the image name back to `wealthfolio`.
+After pulling, use `galza-guo/panorama:latest` in the run commands below. If you
+build the image locally, swap the image name back to `panorama`.
 
 ### Building the Image
 
 Build the Docker image directly from source (no pre-build required):
 
 ```bash
-docker build -t wealthfolio .
+docker build -t panorama .
 ```
 
 The build process:
@@ -324,7 +328,7 @@ The build process:
 The final image includes:
 
 - Compiled frontend assets in `/app/dist`
-- `wealthfolio-server` binary at `/usr/local/bin/wealthfolio-server`
+- `panorama-server` binary at `/usr/local/bin/panorama-server`
 - Alpine Linux base (small footprint)
 
 ### Configuration
@@ -340,7 +344,7 @@ You can configure the container using either:
 # Create a Docker-specific environment file
 cat > .env.docker << 'EOF'
 WF_LISTEN_ADDR=0.0.0.0:8088
-WF_DB_PATH=/data/wealthfolio.db
+WF_DB_PATH=/data/panorama.db
 WF_SECRET_KEY=<generate-with-openssl-rand>
 WF_CORS_ALLOW_ORIGINS=*
 WF_REQUEST_TIMEOUT_MS=30000
@@ -360,56 +364,56 @@ See examples below for inline configuration.
 
 ### Running the Container
 
-All examples below use the published image (`afadil/wealthfolio:latest`). If you
-built locally, substitute your local tag (e.g., `wealthfolio`).
+All examples below use the published image (`galza-guo/panorama:latest`). If you
+built locally, substitute your local tag (e.g., `panorama`).
 
 **Using environment file** (recommended):
 
 ```bash
 docker run --rm -d \
-  --name wealthfolio \
+  --name panorama \
   --env-file .env.docker \
   -p 8088:8088 \
-  -v "$(pwd)/wealthfolio-data:/data" \
-  afadil/wealthfolio:latest
+  -v "$(pwd)/panorama-data:/data" \
+  galza-guo/panorama:latest
 ```
 
 **Basic usage** (inline environment variables):
 
 ```bash
 docker run --rm -d \
-  --name wealthfolio \
+  --name panorama \
   -e WF_LISTEN_ADDR=0.0.0.0:8088 \
-  -e WF_DB_PATH=/data/wealthfolio.db \
+  -e WF_DB_PATH=/data/panorama.db \
   -p 8088:8088 \
-  -v "$(pwd)/wealthfolio-data:/data" \
-  afadil/wealthfolio:latest
+  -v "$(pwd)/panorama-data:/data" \
+  galza-guo/panorama:latest
 ```
 
 **Development mode** (with CORS for local Vite dev server):
 
 ```bash
 docker run --rm -it \
-  --name wealthfolio \
+  --name panorama \
   -e WF_LISTEN_ADDR=0.0.0.0:8088 \
-  -e WF_DB_PATH=/data/wealthfolio.db \
+  -e WF_DB_PATH=/data/panorama.db \
   -e WF_CORS_ALLOW_ORIGINS=http://localhost:1420 \
   -p 8088:8088 \
-  -v "$(pwd)/wealthfolio-data:/data" \
-  afadil/wealthfolio:latest
+  -v "$(pwd)/panorama-data:/data" \
+  galza-guo/panorama:latest
 ```
 
 **Production with encryption** (recommended):
 
 ```bash
 docker run --rm -d \
-  --name wealthfolio \
+  --name panorama \
   -e WF_LISTEN_ADDR=0.0.0.0:8088 \
-  -e WF_DB_PATH=/data/wealthfolio.db \
+  -e WF_DB_PATH=/data/panorama.db \
   -e WF_SECRET_KEY=$(openssl rand -base64 32) \
   -p 8088:8088 \
-  -v "$(pwd)/wealthfolio-data:/data" \
-  afadil/wealthfolio:latest
+  -v "$(pwd)/panorama-data:/data" \
+  galza-guo/panorama:latest
 ```
 
 ### Environment Variables
@@ -419,7 +423,7 @@ The container supports all `WF_*` environment variables documented in the
 
 - `WF_LISTEN_ADDR` - Bind address (**must use `0.0.0.0:PORT` for Docker**, not
   `127.0.0.1`)
-- `WF_DB_PATH` - Database path (typically `/data/wealthfolio.db`)
+- `WF_DB_PATH` - Database path (typically `/data/panorama.db`)
 - `WF_CORS_ALLOW_ORIGINS` - CORS origins (set for dev/frontend access)
 - `WF_SECRET_KEY` - Required 32-byte key used for secrets encryption and JWT
   signing
@@ -427,7 +431,7 @@ The container supports all `WF_*` environment variables documented in the
 ### Volumes
 
 - `/data` - Persistent storage for database and secrets
-  - Database: `/data/wealthfolio.db`
+  - Database: `/data/panorama.db`
   - Secrets: `/data/secrets.json` (encrypted with `WF_SECRET_KEY`)
 
 ### Ports
@@ -466,13 +470,13 @@ steps and provides an isolated environment with all necessary dependencies.
 
 1. **Clone the repository** (if you haven't already):
    ```bash
-   git clone https://github.com/afadil/wealthfolio.git
-   cd wealthfolio
+   git clone https://github.com/galza-guo/Panorama.git
+   cd panorama
    ```
 2. **Open in VS Code**:
    - Open VS Code
    - Go to File > Open Folder
-   - Select the wealthfolio directory
+   - Select the panorama directory
 
 3. **Launch DevContainer**:
    - Press `F1` or `Ctrl+Shift+P`
@@ -489,7 +493,7 @@ steps and provides an isolated environment with all necessary dependencies.
 
 ## Addon Development
 
-Wealthfolio supports a powerful addon ecosystem that allows developers to extend
+Panorama supports a powerful addon ecosystem that allows developers to extend
 functionality with custom features.
 
 ### Quick Start with Addons
@@ -497,7 +501,7 @@ functionality with custom features.
 1. **Create a new addon**:
 
    ```bash
-   npx @wealthfolio/addon-dev-tools create my-addon
+   npx @panorama/addon-dev-tools create my-addon
    cd my-addon
    npm install
    ```
@@ -508,7 +512,7 @@ functionality with custom features.
    npm run dev:server
    ```
 
-3. **Start Wealthfolio in addon development mode** (in another terminal):
+3. **Start Panorama in addon development mode** (in another terminal):
    ```bash
    VITE_ENABLE_ADDON_DEV_MODE=true pnpm tauri dev
    ```
@@ -561,11 +565,11 @@ Check out the [addons/](addons/) directory for sample addons including:
 
 ### Addon System
 
-- **@wealthfolio/addon-sdk**: TypeScript SDK for addon development with full
+- **@panorama/addon-sdk**: TypeScript SDK for addon development with full
   type safety.
-- **@wealthfolio/addon-dev-tools**: CLI tools and development server for hot
+- **@panorama/addon-dev-tools**: CLI tools and development server for hot
   reload.
-- **@wealthfolio/ui**: Shared UI component library for consistent styling.
+- **@panorama/ui**: Shared UI component library for consistent styling.
 
 ### Development Tools
 
@@ -580,7 +584,7 @@ Check out the [addons/](addons/) directory for sample addons including:
 ## Folder Structure
 
 ```
-wealthfolio/
+panorama/
 ├── src/                         # Main source code for the React application
 │   ├── addons/                  # Addon system core functionality
 │   ├── components/              # React components
@@ -662,6 +666,6 @@ details.
 
 ## 🌟 Star History
 
-## [![Star History Chart](https://api.star-history.com/svg?repos=afadil/wealthfolio&type=Timeline)](https://star-history.com/#afadil/wealthfolio&Date)
+## [![Star History Chart](https://api.star-history.com/svg?repos=galza-guo/panorama&type=Timeline)](https://star-history.com/#galza-guo/panorama&Date)
 
-Enjoy managing your wealth with **Wealthfolio**! 🚀
+Enjoy managing your wealth with **Panorama**! 🚀

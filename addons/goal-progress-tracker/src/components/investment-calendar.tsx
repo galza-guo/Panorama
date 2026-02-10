@@ -1,5 +1,5 @@
-import { type Goal } from "@wealthfolio/addon-sdk";
-import { Card, CardContent } from "@wealthfolio/ui";
+import { type Goal } from "@panorama/addon-sdk";
+import { Card, CardContent } from "@panorama/ui";
 import { useState } from "react";
 import { EditableValue } from "./editable-value";
 

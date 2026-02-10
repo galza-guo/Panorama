@@ -1,16 +1,16 @@
 # Addon Development Packages
 
-A comprehensive guide to the packages available for developing Wealthfolio
+A comprehensive guide to the packages available for developing Panorama
 addons.
 
 ## Core Packages
 
-### @wealthfolio/addon-sdk
+### @panorama/addon-sdk
 
 The main SDK for addon development that provides TypeScript types and APIs.
 
 ```bash
-npm install @wealthfolio/addon-sdk
+npm install @panorama/addon-sdk
 ```
 
 **What it provides:**
@@ -30,22 +30,22 @@ import type {
   HostAPI,
   Permission,
   RiskLevel,
-} from "@wealthfolio/addon-sdk";
+} from "@panorama/addon-sdk";
 ```
 
 **Version:** 1.0.0 **Peer Dependencies:** React ^18.0.0
 
-### @wealthfolio/ui
+### @panorama/ui
 
 UI component library based on shadcn/ui and Tailwind CSS.
 
 ```bash
-npm install @wealthfolio/ui
+npm install @panorama/ui
 ```
 
 **What it provides:**
 
-- Pre-built UI components consistent with Wealthfolio's design
+- Pre-built UI components consistent with Panorama's design
 - Radix UI primitives
 - Tailwind CSS utilities
 - Financial-specific components
@@ -62,7 +62,7 @@ import {
   Badge,
   Progress,
   Tabs,
-} from "@wealthfolio/ui";
+} from "@panorama/ui";
 ```
 
 **Included libraries:**
@@ -75,17 +75,17 @@ import {
 
 ## Development Tools
 
-### @wealthfolio/addon-dev-tools
+### @panorama/addon-dev-tools
 
 Development CLI and hot-reload server for addon development.
 
 ```bash
-npm install -D @wealthfolio/addon-dev-tools
+npm install -D @panorama/addon-dev-tools
 ```
 
 **What it provides:**
 
-- `wealthfolio` CLI command
+- `panorama` CLI command
 - Hot-reload development server
 - Project scaffolding templates
 - Build and package utilities
@@ -94,16 +94,16 @@ npm install -D @wealthfolio/addon-dev-tools
 
 ```bash
 # Create new addon
-wealthfolio create my-addon
+panorama create my-addon
 
 # Start development server
-wealthfolio dev
+panorama dev
 
 # Build addon
-wealthfolio build
+panorama build
 
 # Package for distribution
-wealthfolio package
+panorama package
 ```
 
 ## Required Dependencies
@@ -157,20 +157,20 @@ TypeScript support with proper types:
 
 ### Radix UI Components
 
-All Radix UI components are available through `@wealthfolio/ui`:
+All Radix UI components are available through `@panorama/ui`:
 
 ```typescript
 // Dialog components
-import { Dialog, DialogContent, DialogTrigger } from "@wealthfolio/ui";
+import { Dialog, DialogContent, DialogTrigger } from "@panorama/ui";
 
 // Form components
-import { Input, Label, Checkbox, Select } from "@wealthfolio/ui";
+import { Input, Label, Checkbox, Select } from "@panorama/ui";
 
 // Navigation
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@wealthfolio/ui";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@panorama/ui";
 
 // Feedback
-import { Alert, AlertDescription, Toast } from "@wealthfolio/ui";
+import { Alert, AlertDescription, Toast } from "@panorama/ui";
 ```
 
 ### Icons
@@ -213,7 +213,7 @@ export default function PerformanceChart({ data }) {
 
 ### React Query
 
-Available through `@wealthfolio/ui`:
+Available through `@panorama/ui`:
 
 ```typescript
 import { useQuery } from '@tanstack/react-query';
@@ -260,7 +260,7 @@ export default function MyComponent() {
 Utility classes from included packages:
 
 ```typescript
-import { cn } from '@wealthfolio/ui'; // clsx + tailwind-merge
+import { cn } from '@panorama/ui'; // clsx + tailwind-merge
 
 export default function Card({ className, children }) {
   return (
@@ -275,7 +275,7 @@ export default function Card({ className, children }) {
 
 ### date-fns
 
-Available through `@wealthfolio/ui`:
+Available through `@panorama/ui`:
 
 ```typescript
 import { format, parseISO, isAfter } from 'date-fns';
@@ -303,8 +303,8 @@ You can add other npm packages to your addon:
 ```json
 {
   "dependencies": {
-    "@wealthfolio/addon-sdk": "1.0.0",
-    "@wealthfolio/ui": "1.0.0",
+    "@panorama/addon-sdk": "1.0.0",
+    "@panorama/ui": "1.0.0",
     "react": "^19.1.1"
   }
 }
@@ -323,28 +323,28 @@ Template for addon package.json:
 {
   "name": "my-addon",
   "version": "1.0.0",
-  "description": "My Wealthfolio addon",
+  "description": "My Panorama addon",
   "type": "module",
   "main": "dist/addon.js",
-  "keywords": ["wealthfolio", "addon"],
+  "keywords": ["panorama", "addon"],
   "license": "MIT",
   "scripts": {
     "build": "vite build",
     "dev": "vite build --watch",
-    "dev:server": "wealthfolio dev",
+    "dev:server": "panorama dev",
     "clean": "rm -rf dist *.zip",
     "package": "zip -r my-addon.zip manifest.json dist/ README.md",
     "bundle": "npm run clean && npm run build && npm run package",
     "lint": "tsc --noEmit"
   },
   "dependencies": {
-    "@wealthfolio/addon-sdk": "1.0.0",
-    "@wealthfolio/ui": "1.0.0",
+    "@panorama/addon-sdk": "1.0.0",
+    "@panorama/ui": "1.0.0",
     "react": "^19.1.1",
     "react-dom": "^19.1.1"
   },
   "devDependencies": {
-    "@wealthfolio/addon-dev-tools": "^1.0.0",
+    "@panorama/addon-dev-tools": "^1.0.0",
     "@types/node": "^22.14.0",
     "@types/react": "^19.1.11",
     "@types/react-dom": "^18.3.0",
@@ -398,7 +398,7 @@ export default defineConfig({
 
 Always use compatible versions:
 
-| SDK Version | Wealthfolio Version | React Version |
+| SDK Version | Panorama Version | React Version |
 | ----------- | ------------------- | ------------- |
 | 1.0.0       | 1.0.0+              | ^19.1.1       |
 
@@ -417,13 +417,13 @@ Create a new addon with all packages:
 
 ```bash
 # Using CLI (recommended)
-npx @wealthfolio/addon-dev-tools create my-addon
+npx @panorama/addon-dev-tools create my-addon
 
 # Manual setup
 mkdir my-addon && cd my-addon
 npm init -y
-npm install @wealthfolio/addon-sdk @wealthfolio/ui react react-dom
-npm install -D @wealthfolio/addon-dev-tools @vitejs/plugin-react vite typescript
+npm install @panorama/addon-sdk @panorama/ui react react-dom
+npm install -D @panorama/addon-dev-tools @vitejs/plugin-react vite typescript
 ```
 
 ### Workspace Setup
@@ -433,16 +433,16 @@ For monorepo development:
 ```json
 {
   "dependencies": {
-    "@wealthfolio/addon-sdk": "workspace:*",
-    "@wealthfolio/ui": "workspace:*",
-    "@wealthfolio/addon-dev-tools": "workspace:*"
+    "@panorama/addon-sdk": "workspace:*",
+    "@panorama/ui": "workspace:*",
+    "@panorama/addon-dev-tools": "workspace:*"
   }
 }
 ```
 
 ## Development Server & Hot Reload
 
-### @wealthfolio/addon-dev-tools Development Server
+### @panorama/addon-dev-tools Development Server
 
 The addon development tools provide a built-in development server with hot
 reload capabilities for seamless addon development.
@@ -458,9 +458,9 @@ npm run dev:server
 Using CLI directly:
 
 ```bash
-npx wealthfolio dev
+npx panorama dev
 # or if installed globally
-wealthfolio dev
+panorama dev
 ```
 
 #### How Hot Reload Works
@@ -469,7 +469,7 @@ The development server automatically:
 
 1. **Watches for file changes** in your addon source code
 2. **Rebuilds the addon** when changes are detected
-3. **Notifies Wealthfolio** to reload the addon
+3. **Notifies Panorama** to reload the addon
 4. **Preserves application state** where possible
 
 **Supported file types:**
@@ -487,7 +487,7 @@ The development server runs on ports 3001-3003 by default:
 const DEVELOPMENT_PORTS = [3001, 3002, 3003];
 
 // Server will bind to first available port
-// Wealthfolio automatically discovers addons on these ports
+// Panorama automatically discovers addons on these ports
 ```
 
 #### Package.json Scripts
@@ -497,10 +497,10 @@ Standard development scripts setup:
 ```json
 {
   "scripts": {
-    "dev:server": "wealthfolio dev",
+    "dev:server": "panorama dev",
     "build": "vite build",
     "clean": "rm -rf dist",
-    "bundle": "npm run build && wealthfolio package",
+    "bundle": "npm run build && panorama package",
     "lint": "tsc --noEmit"
   }
 }
@@ -511,13 +511,13 @@ Standard development scripts setup:
 **Instant Feedback:**
 
 - Component changes reflect immediately
-- No need to manually reload Wealthfolio
+- No need to manually reload Panorama
 - Preserves addon state when possible
 
 **Error Handling:**
 
 - Build errors shown in terminal
-- Runtime errors displayed in Wealthfolio dev console
+- Runtime errors displayed in Panorama dev console
 - Graceful fallback on reload failures
 
 **Development Utilities:**
@@ -537,11 +537,11 @@ __ADDON_DEV__.discoverAddons(); // Force addon discovery
    npm run dev:server
    ```
 
-2. **Open Wealthfolio** - addons are auto-discovered
+2. **Open Panorama** - addons are auto-discovered
 
 3. **Make changes** to your addon code
 
-4. **See changes instantly** in Wealthfolio
+4. **See changes instantly** in Panorama
 
 5. **Check terminal** for build status and errors
 
@@ -575,7 +575,7 @@ kill -9 <PID>
 **Hot reload not working:**
 
 ```bash
-# Check Wealthfolio console for discovery logs
+# Check Panorama console for discovery logs
 # Verify addon manifest is valid
 cat manifest.json | jq .
 

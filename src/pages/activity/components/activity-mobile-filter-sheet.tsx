@@ -4,7 +4,7 @@ import { Sheet, SheetContent, SheetFooter, SheetHeader, SheetTitle } from "@/com
 import { ActivityType, ActivityTypeNames } from "@/lib/constants";
 import { Account } from "@/lib/types";
 import { cn } from "@/lib/utils";
-import { ScrollArea } from "@wealthfolio/ui";
+import { ScrollArea } from "@panorama/ui";
 import { useEffect, useState } from "react";
 
 interface ActivityMobileFilterSheetProps {

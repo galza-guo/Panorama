@@ -11,7 +11,7 @@ import {
   DialogHeader,
   DialogTitle,
   Form,
-} from "@wealthfolio/ui";
+} from "@panorama/ui";
 import { useCallback, useEffect, useState } from "react";
 import { FormProvider, useForm, type Resolver, type SubmitHandler } from "react-hook-form";
 import { z } from "zod";

@@ -1,6 +1,6 @@
 /**
  * Host API interface for addon development
- * Provides comprehensive access to Wealthfolio functionality organized by domain
+ * Provides comprehensive access to Panorama functionality organized by domain
  */
 
 import type { EventCallback, UnlistenFn } from './types';
@@ -638,7 +638,7 @@ export interface QueryAPI {
 }
 
 /**
- * Comprehensive Host API interface providing access to all Wealthfolio functionality
+ * Comprehensive Host API interface providing access to all Panorama functionality
  * Organized by functional domains for better discoverability and maintainability
  */
 export interface HostAPI {

@@ -1,6 +1,6 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Country, Holding } from "@/lib/types";
-import { DonutChart, EmptyPlaceholder, Skeleton } from "@wealthfolio/ui";
+import { DonutChart, EmptyPlaceholder, Skeleton } from "@panorama/ui";
 import { useMemo, useState } from "react";
 
 interface CountryChartProps {

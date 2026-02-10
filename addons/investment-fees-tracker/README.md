@@ -1,6 +1,6 @@
 # Investment Fees Tracker
 
-A comprehensive Wealthfolio addon that helps you track and analyze investment
+A comprehensive Panorama addon that helps you track and analyze investment
 fees across your portfolio, providing detailed insights into your investment
 costs and their impact on returns.
 
@@ -72,7 +72,7 @@ costs and their impact on returns.
    pnpm package
    ```
 
-3. Install in Wealthfolio through the addon settings page
+3. Install in Panorama through the addon settings page
 
 ## Development
 
@@ -113,7 +113,7 @@ This addon demonstrates how to:
   calculations
 - Build responsive dashboard components with charts using Recharts library
 - Implement period-based data filtering and comparison analytics
-- Integrate with Wealthfolio UI components and theming system
+- Integrate with Panorama UI components and theming system
 
 ## Permissions Required
 
@@ -180,4 +180,4 @@ This addon demonstrates how to:
 
 ## License
 
-MIT License - see the main Wealthfolio project for details.
+MIT License - see the main Panorama project for details.

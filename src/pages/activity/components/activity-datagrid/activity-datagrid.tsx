@@ -43,7 +43,7 @@ import {
   TableHeader,
   TableRow,
   worldCurrencies,
-} from "@wealthfolio/ui";
+} from "@panorama/ui";
 import type { Dispatch, SetStateAction } from "react";
 import { Fragment, memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useActivityMutations } from "../../hooks/use-activity-mutations";

@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import type { AddonContext, ExchangeRate, Settings } from '@wealthfolio/addon-sdk';
+import type { AddonContext, ExchangeRate, Settings } from '@panorama/addon-sdk';
 
 interface UseCurrencyConversionOptions {
   ctx: AddonContext;
