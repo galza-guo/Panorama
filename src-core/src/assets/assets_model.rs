@@ -165,6 +165,76 @@ impl From<crate::market_data::providers::models::AssetProfile> for NewAsset {
     }
 }
 
+/// Input model for creating a user-managed asset profile
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct CreateAssetProfile {
+    pub symbol: String,
+    pub name: Option<String>,
+    pub currency: String,
+    pub data_source: Option<String>,
+    pub asset_class: Option<String>,
+    pub asset_sub_class: Option<String>,
+    pub notes: Option<String>,
+    pub attributes: Option<String>,
+    pub sectors: Option<String>,
+    pub countries: Option<String>,
+}
+
+impl CreateAssetProfile {
+    /// Validates the asset creation data
+    pub fn validate(&self) -> Result<()> {
+        if self.symbol.trim().is_empty() {
+            return Err(Error::Validation(ValidationError::InvalidInput(
+                "Asset symbol cannot be empty".to_string(),
+            )));
+        }
+        if self.currency.trim().is_empty() {
+            return Err(Error::Validation(ValidationError::InvalidInput(
+                "Currency cannot be empty".to_string(),
+            )));
+        }
+        Ok(())
+    }
+}
+
+impl From<CreateAssetProfile> for NewAsset {
+    fn from(payload: CreateAssetProfile) -> Self {
+        let symbol = payload.symbol.trim().to_string();
+        let name = payload
+            .name
+            .as_ref()
+            .map(|value| value.trim().to_string())
+            .filter(|value| !value.is_empty());
+        let notes = payload
+            .notes
+            .as_ref()
+            .map(|value| value.trim().to_string())
+            .filter(|value| !value.is_empty());
+        let normalized_data_source = payload
+            .data_source
+            .as_ref()
+            .map(|value| value.trim().to_string())
+            .filter(|value| !value.is_empty())
+            .unwrap_or_else(|| DataSource::Manual.as_str().to_string());
+
+        Self {
+            id: Some(symbol.clone()),
+            symbol,
+            name,
+            currency: payload.currency.trim().to_string(),
+            data_source: normalized_data_source,
+            asset_class: payload.asset_class,
+            asset_sub_class: payload.asset_sub_class,
+            notes,
+            attributes: payload.attributes,
+            sectors: payload.sectors,
+            countries: payload.countries,
+            ..Default::default()
+        }
+    }
+}
+
 /// Input model for updating an asset profile
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -176,6 +246,7 @@ pub struct UpdateAssetProfile {
     pub notes: String,
     pub asset_sub_class: Option<String>,
     pub asset_class: Option<String>,
+    pub attributes: Option<String>,
 }
 
 impl UpdateAssetProfile {

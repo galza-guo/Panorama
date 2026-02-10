@@ -36,6 +36,7 @@ serde_with = "3"
 urlencoding = "2"
 csv = "1.4.0"
 zip = "2.2.0"
+calamine = "0.24"
 
 # SQLite / Diesel
 rusqlite = { version = "0.34", features = ["bundled"] }

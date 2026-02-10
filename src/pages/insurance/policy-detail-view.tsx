@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 
@@ -10,9 +10,11 @@ import { parsePanoramaAssetAttributes } from "@/lib/panorama-asset-attributes";
 import { QueryKeys } from "@/lib/query-keys";
 import { Asset } from "@/lib/types";
 import { AmountDisplay, Button, Page } from "@wealthfolio/ui";
+import { InsurancePolicyEditorSheet } from "./components/insurance-policy-editor-sheet";
 
 export default function PolicyDetailView() {
   const navigate = useNavigate();
+  const [isEditorOpen, setIsEditorOpen] = useState(false);
   const { symbol: encodedSymbol = "" } = useParams<{ symbol: string }>();
   const symbol = decodeURIComponent(encodedSymbol);
 
@@ -27,11 +29,19 @@ export default function PolicyDetailView() {
   });
 
   const attributes = useMemo(() => parsePanoramaAssetAttributes(asset?.attributes), [asset]);
-  const guaranteedValue =
-    typeof attributes.guaranteed_value === "number" ? attributes.guaranteed_value : undefined;
-  const owner = attributes.owner?.trim() || "Unassigned";
-  const policyType = attributes.policy_type?.trim() || "Unspecified";
-  const trustee = attributes.trustee?.trim() || "Not set";
+  const ownerText = attributes.owner?.trim();
+  const owner = ownerText && ownerText.length > 0 ? ownerText : "Unassigned";
+  const providerText =
+    typeof attributes.insurance_provider === "string"
+      ? attributes.insurance_provider
+      : attributes.trustee;
+  const provider = providerText ?? "Not set";
+  const totalPaidToDate =
+    typeof attributes.total_paid_to_date === "number" ? attributes.total_paid_to_date : undefined;
+  const withdrawableValue =
+    typeof attributes.withdrawable_value === "number" ? attributes.withdrawable_value : undefined;
+  const valuationDate =
+    typeof attributes.valuation_date === "string" ? attributes.valuation_date : undefined;
 
   return (
     <Page className="flex flex-col px-4 pt-22 pb-10 md:px-6 md:pt-10 lg:px-8 lg:pt-12">
@@ -41,10 +51,16 @@ export default function PolicyDetailView() {
             <h1 className="text-2xl font-semibold tracking-tight">{asset?.name ?? symbol}</h1>
             <p className="text-muted-foreground text-sm">{symbol}</p>
           </div>
-          <Button variant="outline" onClick={() => navigate(-1)}>
-            <Icons.ArrowLeft className="mr-2 h-4 w-4" />
-            Back
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button variant="outline" onClick={() => setIsEditorOpen(true)} disabled={!asset}>
+              <Icons.Pencil className="mr-2 h-4 w-4" />
+              Edit Policy
+            </Button>
+            <Button variant="outline" onClick={() => navigate(-1)}>
+              <Icons.ArrowLeft className="mr-2 h-4 w-4" />
+              Back
+            </Button>
+          </div>
         </div>
 
         {isLoading ? (
@@ -69,26 +85,40 @@ export default function PolicyDetailView() {
               </Card>
               <Card>
                 <CardHeader className="pb-2">
-                  <CardTitle className="text-sm font-medium">Policy Type</CardTitle>
+                  <CardTitle className="text-sm font-medium">Provider</CardTitle>
                 </CardHeader>
-                <CardContent className="text-base font-semibold">{policyType}</CardContent>
+                <CardContent className="text-base font-semibold">{provider}</CardContent>
               </Card>
               <Card>
                 <CardHeader className="pb-2">
-                  <CardTitle className="text-sm font-medium">Trustee / Provider</CardTitle>
-                </CardHeader>
-                <CardContent className="text-base font-semibold">{trustee}</CardContent>
-              </Card>
-              <Card>
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-sm font-medium">Guaranteed Value</CardTitle>
+                  <CardTitle className="text-sm font-medium">Total Paid To Date</CardTitle>
                 </CardHeader>
                 <CardContent className="text-base font-semibold">
-                  {guaranteedValue === undefined ? (
+                  {totalPaidToDate === undefined ? (
                     <span className="text-muted-foreground">Not set</span>
                   ) : (
-                    <AmountDisplay value={guaranteedValue} currency={asset.currency} />
+                    <AmountDisplay value={totalPaidToDate} currency={asset.currency} />
                   )}
+                </CardContent>
+              </Card>
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm font-medium">Withdrawable Value</CardTitle>
+                </CardHeader>
+                <CardContent className="text-base font-semibold">
+                  {withdrawableValue === undefined ? (
+                    <span className="text-muted-foreground">Not set</span>
+                  ) : (
+                    <AmountDisplay value={withdrawableValue} currency={asset.currency} />
+                  )}
+                </CardContent>
+              </Card>
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm font-medium">Valuation Date</CardTitle>
+                </CardHeader>
+                <CardContent className="text-base font-semibold">
+                  {valuationDate ?? <span className="text-muted-foreground">Not set</span>}
                 </CardContent>
               </Card>
             </div>
@@ -115,6 +145,13 @@ export default function PolicyDetailView() {
           </>
         )}
       </div>
+
+      <InsurancePolicyEditorSheet
+        mode="edit"
+        asset={asset ?? null}
+        open={isEditorOpen}
+        onOpenChange={setIsEditorOpen}
+      />
     </Page>
   );
 }

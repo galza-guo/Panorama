@@ -127,6 +127,12 @@ impl AssetRepositoryTrait for AssetRepository {
 
         self.writer
             .exec(move |conn: &mut SqliteConnection| -> Result<Asset> {
+                let current_attributes = assets::table
+                    .filter(assets::id.eq(&asset_id_owned))
+                    .select(assets::attributes)
+                    .first::<Option<String>>(conn)?;
+                let next_attributes = payload_owned.attributes.clone().or(current_attributes);
+
                 let result_db = diesel::update(assets::table.filter(assets::id.eq(asset_id_owned)))
                     .set((
                         assets::name.eq(&payload_owned.name),
@@ -135,6 +141,7 @@ impl AssetRepositoryTrait for AssetRepository {
                         assets::notes.eq(&payload_owned.notes),
                         assets::asset_sub_class.eq(&payload_owned.asset_sub_class),
                         assets::asset_class.eq(&payload_owned.asset_class),
+                        assets::attributes.eq(next_attributes),
                     ))
                     .get_result::<AssetDB>(conn)?;
                 Ok(result_db.into())

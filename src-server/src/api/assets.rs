@@ -11,7 +11,7 @@ use axum::{
     routing::{delete, get, put},
     Json, Router,
 };
-use wealthfolio_core::assets::{Asset as CoreAsset, UpdateAssetProfile};
+use wealthfolio_core::assets::{Asset as CoreAsset, CreateAssetProfile, UpdateAssetProfile};
 
 #[derive(serde::Deserialize)]
 struct AssetQuery {
@@ -27,17 +27,10 @@ async fn get_asset_profile(
     Ok(Json(asset))
 }
 
-#[derive(serde::Deserialize)]
-struct AssetListQuery {
-    owner: Option<String>,
-}
-
 async fn list_assets(
     State(state): State<Arc<AppState>>,
-    Query(q): Query<AssetListQuery>,
 ) -> ApiResult<Json<Vec<CoreAsset>>> {
-    let owner = q.owner.as_deref().map(str::trim).filter(|owner| !owner.is_empty());
-    let assets = state.asset_service.get_assets_by_owner(owner)?;
+    let assets = state.asset_service.get_assets()?;
     Ok(Json(assets))
 }
 
@@ -50,6 +43,14 @@ async fn update_asset_profile(
         .asset_service
         .update_asset_profile(&id, payload)
         .await?;
+    Ok(Json(asset))
+}
+
+async fn create_asset_profile(
+    State(state): State<Arc<AppState>>,
+    Json(payload): Json<CreateAssetProfile>,
+) -> ApiResult<Json<CoreAsset>> {
+    let asset = state.asset_service.create_asset_profile(payload).await?;
     Ok(Json(asset))
 }
 
@@ -92,7 +93,7 @@ pub fn router() -> Router<Arc<AppState>> {
     Router::new()
         .route("/assets", get(list_assets))
         .route("/assets/{id}", delete(delete_asset))
-        .route("/assets/profile", get(get_asset_profile))
+        .route("/assets/profile", get(get_asset_profile).post(create_asset_profile))
         .route("/assets/profile/{id}", put(update_asset_profile))
         .route("/assets/data-source/{id}", put(update_asset_data_source))
 }

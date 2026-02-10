@@ -4,7 +4,7 @@ use std::sync::Arc;
 use crate::market_data::market_data_traits::MarketDataServiceTrait;
 use crate::market_data::symbol_normalizer::infer_panorama_data_source;
 
-use super::assets_model::{Asset, NewAsset, UpdateAssetProfile};
+use super::assets_model::{Asset, CreateAssetProfile, NewAsset, UpdateAssetProfile};
 use super::assets_traits::{AssetRepositoryTrait, AssetServiceTrait};
 use crate::errors::{DatabaseError, Error, Result};
 use diesel::result::Error as DieselError;
@@ -63,6 +63,11 @@ impl AssetServiceTrait for AssetService {
             .await
     }
 
+    async fn create_asset_profile(&self, payload: CreateAssetProfile) -> Result<Asset> {
+        payload.validate()?;
+        self.asset_repository.create(payload.into()).await
+    }
+
     /// Lists currency assets for a given base currency
     fn load_cash_assets(&self, base_currency: &str) -> Result<Vec<Asset>> {
         self.asset_repository.list_cash_assets(base_currency)
@@ -83,7 +88,10 @@ impl AssetServiceTrait for AssetService {
         match self.asset_repository.get_by_id(asset_id) {
             Ok(existing_asset) => {
                 if let Some(inferred_source) = infer_panorama_data_source(&existing_asset.id) {
-                    if !existing_asset.data_source.eq_ignore_ascii_case(inferred_source) {
+                    if !existing_asset
+                        .data_source
+                        .eq_ignore_ascii_case(inferred_source)
+                    {
                         debug!(
                             "Auto-correcting data source for asset '{}' from '{}' to '{}'",
                             existing_asset.id, existing_asset.data_source, inferred_source

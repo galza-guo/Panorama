@@ -1,12 +1,18 @@
-import { useMemo } from "react";
-import { Link } from "react-router-dom";
+import { useMemo, useState } from "react";
 
 import { useAssets } from "@/pages/asset/hooks/use-assets";
-import { getAssetOwner, isMpfAsset, parsePanoramaAssetAttributes } from "@/lib/panorama-asset-attributes";
+import {
+  getAssetOwner,
+  isMpfAsset,
+  normalizeMpfSubfunds,
+  parsePanoramaAssetAttributes,
+} from "@/lib/panorama-asset-attributes";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Icons } from "@/components/ui/icons";
+import { Button } from "@/components/ui/button";
 import { AmountDisplay, Page } from "@wealthfolio/ui";
+import { MpfAssetEditorSheet } from "./components/mpf-asset-editor-sheet";
 
 interface MpfRow {
   symbol: string;
@@ -14,80 +20,93 @@ interface MpfRow {
   owner: string;
   trustee: string;
   currency: string;
-  marketValueHint?: number;
-  allocation: Record<string, number>;
+  totalValue?: number;
+  valuationDate?: string;
+  subfunds: {
+    name: string;
+    units?: number;
+    totalValue?: number;
+  }[];
+  subfundCount: number;
 }
 
-function parseAllocation(raw: unknown): Record<string, number> {
-  if (!raw || typeof raw !== "object" || Array.isArray(raw)) {
-    return {};
-  }
+type MpfEditorState = { mode: "create" } | { mode: "edit"; symbol: string } | null;
 
-  const output: Record<string, number> = {};
-  for (const [name, value] of Object.entries(raw as Record<string, unknown>)) {
-    if (typeof value === "number" && Number.isFinite(value)) {
-      output[name] = value;
-    }
-  }
-  return output;
+function formatUnits(value: number): string {
+  return new Intl.NumberFormat(undefined, {
+    maximumFractionDigits: 4,
+  }).format(value);
 }
 
 export default function MpfDashboard() {
   const { assets, isLoading } = useAssets();
+  const [editorState, setEditorState] = useState<MpfEditorState>(null);
 
   const rows = useMemo<MpfRow[]>(() => {
     return assets
       .filter(isMpfAsset)
       .map((asset) => {
         const attributes = parsePanoramaAssetAttributes(asset.attributes);
-        const trustee = attributes.trustee?.trim() || "Unspecified";
+        const trusteeText = attributes.trustee?.trim();
+        const trustee = trusteeText && trusteeText.length > 0 ? trusteeText : "Unspecified";
         const marketValueHint =
           typeof attributes.market_value === "number" ? attributes.market_value : undefined;
+        const valuationDate =
+          typeof attributes.valuation_date === "string" ? attributes.valuation_date : undefined;
+        const nameText = asset.name?.trim();
+        const subfunds = normalizeMpfSubfunds(attributes.mpf_subfunds).map((subfund) => {
+          const derivedValue =
+            typeof subfund.market_value === "number"
+              ? subfund.market_value
+              : typeof subfund.units === "number" && typeof subfund.nav === "number"
+                ? subfund.units * subfund.nav
+                : undefined;
+
+          return {
+            name: subfund.name,
+            units: subfund.units,
+            totalValue: derivedValue,
+          };
+        });
+
+        const subfundValueTotal = subfunds.reduce(
+          (sum, subfund) => sum + (typeof subfund.totalValue === "number" ? subfund.totalValue : 0),
+          0,
+        );
+        const hasSubfundValue = subfunds.some((subfund) => typeof subfund.totalValue === "number");
+        const totalValue = marketValueHint ?? (hasSubfundValue ? subfundValueTotal : undefined);
+        const subfundCount = subfunds.length;
 
         return {
           symbol: asset.symbol,
-          name: asset.name?.trim() || asset.symbol,
+          name: nameText && nameText.length > 0 ? nameText : asset.symbol,
           owner: getAssetOwner(asset) ?? "Unassigned",
           trustee,
-          currency: asset.currency || "HKD",
-          marketValueHint,
-          allocation: parseAllocation(attributes.fund_allocation),
+          currency: asset.currency ?? "HKD",
+          totalValue,
+          valuationDate,
+          subfunds,
+          subfundCount,
         };
       })
       .sort((a, b) => a.name.localeCompare(b.name));
   }, [assets]);
 
+  const editingAsset = useMemo(
+    () =>
+      editorState?.mode === "edit"
+        ? assets.find((asset) => asset.symbol === editorState.symbol) ?? null
+        : null,
+    [assets, editorState],
+  );
+
   const trusteeCount = useMemo(() => new Set(rows.map((row) => row.trustee)).size, [rows]);
 
-  const aggregateAllocation = useMemo(() => {
+  const totalValueByCurrency = useMemo(() => {
     const totals = new Map<string, number>();
     for (const row of rows) {
-      for (const [fund, weight] of Object.entries(row.allocation)) {
-        totals.set(fund, (totals.get(fund) ?? 0) + weight);
-      }
-    }
-
-    const entries = Array.from(totals.entries());
-    const totalWeight = entries.reduce((sum, [, value]) => sum + value, 0);
-    if (totalWeight <= 0) {
-      return [];
-    }
-
-    return entries
-      .map(([fund, value]) => ({
-        fund,
-        value,
-        percent: (value / totalWeight) * 100,
-      }))
-      .sort((a, b) => b.percent - a.percent)
-      .slice(0, 8);
-  }, [rows]);
-
-  const valueHintsByCurrency = useMemo(() => {
-    const totals = new Map<string, number>();
-    for (const row of rows) {
-      if (row.marketValueHint === undefined) continue;
-      totals.set(row.currency, (totals.get(row.currency) ?? 0) + row.marketValueHint);
+      if (row.totalValue === undefined) continue;
+      totals.set(row.currency, (totals.get(row.currency) ?? 0) + row.totalValue);
     }
     return Array.from(totals.entries()).sort(([a], [b]) => a.localeCompare(b));
   }, [rows]);
@@ -98,7 +117,7 @@ export default function MpfDashboard() {
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">MPF</h1>
           <p className="text-muted-foreground text-sm">
-            Monitor MPF accounts and fund allocation snapshots from asset attributes.
+            Monitor MPF accounts, subfund units, and latest available values.
           </p>
         </div>
 
@@ -117,14 +136,14 @@ export default function MpfDashboard() {
           </Card>
           <Card>
             <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium">Value Hints</CardTitle>
+              <CardTitle className="text-sm font-medium">Total NAV</CardTitle>
             </CardHeader>
             <CardContent>
-              {valueHintsByCurrency.length === 0 ? (
+              {totalValueByCurrency.length === 0 ? (
                 <span className="text-muted-foreground text-sm">Not provided</span>
               ) : (
                 <div className="space-y-1">
-                  {valueHintsByCurrency.map(([currency, value]) => (
+                  {totalValueByCurrency.map(([currency, value]) => (
                     <div key={currency} className="text-sm font-medium">
                       <AmountDisplay value={value} currency={currency} />
                     </div>
@@ -137,43 +156,18 @@ export default function MpfDashboard() {
 
         <Card>
           <CardHeader>
-            <CardTitle>Fund Allocation</CardTitle>
-          </CardHeader>
-          <CardContent>
-            {isLoading ? (
-              <div className="space-y-2">
-                {Array.from({ length: 4 }).map((_, index) => (
-                  <Skeleton key={index} className="h-8 w-full" />
-                ))}
-              </div>
-            ) : aggregateAllocation.length === 0 ? (
-              <p className="text-muted-foreground text-sm">
-                No `fund_allocation` metadata found yet.
-              </p>
-            ) : (
-              <div className="space-y-3">
-                {aggregateAllocation.map((item) => (
-                  <div key={item.fund} className="space-y-1">
-                    <div className="flex items-center justify-between text-sm">
-                      <span className="font-medium">{item.fund}</span>
-                      <span className="text-muted-foreground">{item.percent.toFixed(1)}%</span>
-                    </div>
-                    <div className="bg-muted h-2 overflow-hidden rounded-full">
-                      <div
-                        className="bg-primary h-full rounded-full"
-                        style={{ width: `${Math.max(2, item.percent)}%` }}
-                      />
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle>MPF Accounts</CardTitle>
+            <div className="flex items-center justify-between gap-3">
+              <CardTitle>MPF Accounts</CardTitle>
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                onClick={() => setEditorState({ mode: "create" })}
+              >
+                <Icons.Plus className="mr-2 h-3 w-3" />
+                Add MPF Asset
+              </Button>
+            </div>
           </CardHeader>
           <CardContent>
             {isLoading ? (
@@ -185,29 +179,92 @@ export default function MpfDashboard() {
             ) : rows.length === 0 ? (
               <div className="border-border/50 bg-success/10 rounded-lg border p-6 text-center">
                 <p className="text-sm">No MPF assets found.</p>
-                <Link
-                  to="/activities/manage"
-                  className="text-muted-foreground hover:text-foreground mt-2 inline-flex items-center gap-1 text-xs underline-offset-4 hover:underline"
+                <p className="text-muted-foreground mt-1 text-xs">
+                  Add your first MPF asset and enter valuation/subfund details.
+                </p>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  className="mt-4"
+                  onClick={() => setEditorState({ mode: "create" })}
                 >
-                  Add MPF activity
-                  <Icons.ChevronRight className="h-3 w-3" />
-                </Link>
+                  <Icons.Plus className="mr-2 h-3 w-3" />
+                  Add MPF Asset
+                </Button>
               </div>
             ) : (
               <div className="space-y-2">
                 {rows.map((row) => (
                   <div
                     key={row.symbol}
-                    className="border-border grid grid-cols-6 items-center gap-2 rounded-md border px-3 py-3"
+                    className="border-border hover:bg-muted/40 rounded-md border px-3 py-3 transition-colors"
                   >
-                    <div className="col-span-2">
-                      <div className="text-sm font-semibold">{row.name}</div>
-                      <div className="text-muted-foreground text-xs">{row.symbol}</div>
+                    <div className="flex items-start justify-between gap-2">
+                      <div>
+                        <div className="text-sm font-semibold">{row.name}</div>
+                        <div className="text-muted-foreground text-xs">{row.symbol}</div>
+                      </div>
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="outline"
+                        onClick={() => setEditorState({ mode: "edit", symbol: row.symbol })}
+                      >
+                        <Icons.Pencil className="mr-1 h-3 w-3" />
+                        Edit
+                      </Button>
                     </div>
-                    <div className="text-sm">{row.owner}</div>
-                    <div className="text-sm">{row.trustee}</div>
-                    <div className="text-sm">{Object.keys(row.allocation).length} funds</div>
-                    <div className="text-muted-foreground text-xs">{row.currency}</div>
+
+                    <div className="mt-3 grid grid-cols-2 gap-2 text-sm md:grid-cols-5">
+                      <div>{row.owner}</div>
+                      <div>{row.trustee}</div>
+                      <div>{row.subfundCount} subfunds</div>
+                      <div className="text-muted-foreground text-xs md:col-span-2">
+                        {row.currency}
+                        {row.valuationDate ? ` · ${row.valuationDate}` : ""}
+                      </div>
+                    </div>
+
+                    <div className="border-border/50 bg-muted/30 mt-3 rounded-md border p-3">
+                      <div className="mb-2 flex items-center justify-between">
+                        <span className="text-muted-foreground text-xs">Total NAV</span>
+                        {row.totalValue === undefined ? (
+                          <span className="text-muted-foreground text-xs">Not available</span>
+                        ) : (
+                          <span className="text-sm font-semibold">
+                            <AmountDisplay value={row.totalValue} currency={row.currency} />
+                          </span>
+                        )}
+                      </div>
+
+                      {row.subfunds.length === 0 ? (
+                        <p className="text-muted-foreground text-xs">No subfund records yet.</p>
+                      ) : (
+                        <div className="space-y-1">
+                          {row.subfunds.map((subfund, index) => (
+                            <div
+                              key={`${row.symbol}-${subfund.name}-${index}`}
+                              className="grid grid-cols-[1fr_auto_auto] items-center gap-2 text-xs"
+                            >
+                              <span className="truncate">{subfund.name}</span>
+                              <span className="text-muted-foreground">
+                                {typeof subfund.units === "number"
+                                  ? `${formatUnits(subfund.units)} units`
+                                  : "Units: -"}
+                              </span>
+                              {typeof subfund.totalValue === "number" ? (
+                                <span className="font-medium">
+                                  <AmountDisplay value={subfund.totalValue} currency={row.currency} />
+                                </span>
+                              ) : (
+                                <span className="text-muted-foreground">Value: -</span>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
                   </div>
                 ))}
               </div>
@@ -215,6 +272,17 @@ export default function MpfDashboard() {
           </CardContent>
         </Card>
       </div>
+
+      <MpfAssetEditorSheet
+        asset={editingAsset}
+        mode={editorState?.mode === "create" ? "create" : "edit"}
+        open={Boolean(editorState)}
+        onOpenChange={(open) => {
+          if (!open) {
+            setEditorState(null);
+          }
+        }}
+      />
     </Page>
   );
 }

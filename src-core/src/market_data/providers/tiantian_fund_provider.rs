@@ -264,7 +264,11 @@ impl TiantianFundProvider {
     ) -> Result<ModelQuote, MarketDataError> {
         let url = reqwest::Url::parse_with_params(
             HISTORY_URL,
-            &[("fundCode", fund_code), ("pageIndex", "1"), ("pageSize", "1")],
+            &[
+                ("fundCode", fund_code),
+                ("pageIndex", "1"),
+                ("pageSize", "1"),
+            ],
         )
         .map_err(|e| MarketDataError::ProviderError(format!("Failed to build URL: {e}")))?;
 
@@ -713,7 +717,8 @@ mod tests {
 
     #[test]
     fn parses_fund_name_from_profile_js_payload() {
-        let body = r#"/*基金或股票信息*/var fS_name = "华安德国(DAX)联接(QDII)A";var fS_code = "000614";"#;
+        let body =
+            r#"/*基金或股票信息*/var fS_name = "华安德国(DAX)联接(QDII)A";var fS_code = "000614";"#;
         let parsed = TiantianFundProvider::parse_fund_name_from_profile_js(body);
         assert_eq!(parsed.as_deref(), Some("华安德国(DAX)联接(QDII)A"));
     }

@@ -3,6 +3,7 @@ import {
   QuoteSummary,
   Asset,
   Quote,
+  CreateAssetPayload,
   UpdateAssetProfile,
   MarketDataProviderInfo,
 } from "@/lib/types";
@@ -72,14 +73,13 @@ export const getAssetProfile = async (assetId: string): Promise<Asset> => {
   }
 };
 
-export const getAssets = async (owner?: string): Promise<Asset[]> => {
+export const getAssets = async (): Promise<Asset[]> => {
   try {
-    const payload = owner?.trim() ? { owner: owner.trim() } : undefined;
     switch (getRunEnv()) {
       case RUN_ENV.DESKTOP:
-        return invokeTauri("get_assets", payload);
+        return invokeTauri("get_assets");
       case RUN_ENV.WEB:
-        return invokeWeb("get_assets", payload);
+        return invokeWeb("get_assets");
       default:
         throw new Error(`Unsupported`);
     }
@@ -117,6 +117,22 @@ export const updateAssetProfile = async (payload: UpdateAssetProfile): Promise<A
     }
   } catch (error) {
     logger.error("Error updating asset profile.");
+    throw error;
+  }
+};
+
+export const createAssetProfile = async (payload: CreateAssetPayload): Promise<Asset> => {
+  try {
+    switch (getRunEnv()) {
+      case RUN_ENV.DESKTOP:
+        return invokeTauri("create_asset_profile", { payload });
+      case RUN_ENV.WEB:
+        return invokeWeb("create_asset_profile", { payload });
+      default:
+        throw new Error(`Unsupported`);
+    }
+  } catch (error) {
+    logger.error("Error creating asset profile.");
     throw error;
   }
 };

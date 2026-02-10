@@ -5,7 +5,7 @@ use crate::{
     events::{emit_portfolio_trigger_recalculate, PortfolioRequestPayload},
 };
 use tauri::{AppHandle, State};
-use wealthfolio_core::assets::{Asset, UpdateAssetProfile};
+use wealthfolio_core::assets::{Asset, CreateAssetProfile, UpdateAssetProfile};
 
 #[tauri::command]
 pub async fn get_asset_profile(
@@ -19,13 +19,10 @@ pub async fn get_asset_profile(
 }
 
 #[tauri::command]
-pub async fn get_assets(
-    owner: Option<String>,
-    state: State<'_, Arc<ServiceContext>>,
-) -> Result<Vec<Asset>, String> {
+pub async fn get_assets(state: State<'_, Arc<ServiceContext>>) -> Result<Vec<Asset>, String> {
     state
         .asset_service()
-        .get_assets_by_owner(owner.as_deref())
+        .get_assets()
         .map_err(|e| e.to_string())
 }
 
@@ -38,6 +35,18 @@ pub async fn update_asset_profile(
     state
         .asset_service()
         .update_asset_profile(&id, payload)
+        .await
+        .map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+pub async fn create_asset_profile(
+    payload: CreateAssetProfile,
+    state: State<'_, Arc<ServiceContext>>,
+) -> Result<Asset, String> {
+    state
+        .asset_service()
+        .create_asset_profile(payload)
         .await
         .map_err(|e| e.to_string())
 }

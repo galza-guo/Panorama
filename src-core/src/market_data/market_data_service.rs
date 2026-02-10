@@ -1,9 +1,16 @@
 use async_trait::async_trait;
+use calamine::{open_workbook_auto_from_rs, Data, Reader};
 use chrono::{DateTime, Duration, NaiveDate, NaiveDateTime, TimeZone, Utc};
+use lazy_static::lazy_static;
 use log::{debug, error};
+use num_traits::ToPrimitive;
+use regex::Regex;
 use rust_decimal::Decimal;
+use serde_json::{Map as JsonMap, Number as JsonNumber, Value as JsonValue};
 use std::collections::btree_map::Entry as BTreeEntry;
 use std::collections::{BTreeMap, HashMap, HashSet};
+use std::io::Cursor;
+use std::str::FromStr;
 use std::sync::Arc;
 use std::time::SystemTime;
 use tokio::sync::RwLock;
@@ -16,8 +23,8 @@ use super::market_data_model::{
 use super::market_data_traits::{MarketDataRepositoryTrait, MarketDataServiceTrait};
 use super::providers::models::AssetProfile;
 use crate::assets::assets_constants::CASH_ASSET_TYPE;
-use crate::assets::{Asset, UpdateAssetProfile};
 use crate::assets::assets_traits::AssetRepositoryTrait;
+use crate::assets::{Asset, UpdateAssetProfile};
 use crate::errors::{Error, Result, ValidationError};
 use crate::fx::open_exchange_rates_client;
 use crate::market_data::providers::ProviderRegistry;
@@ -26,12 +33,33 @@ use crate::secrets::SecretStore;
 use crate::utils::time_utils;
 
 const QUOTE_LOOKBACK_DAYS: i64 = 7;
+const MPFA_MONTHLY_UNIT_PRICE_PAGE_URL: &str = "https://www.mpfa.org.hk/en/info-centre/fund-information/monthly-fund-price/monthly-unit-prices-of-mpf-constituent-funds";
+const MPFA_BASE_URL: &str = "https://www.mpfa.org.hk";
+const MPFA_USER_AGENT: &str =
+    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36";
+
+lazy_static! {
+    static ref MPFA_UNIT_PRICE_LINK_REGEX: Regex = Regex::new(
+        r#"(?i)href=['"](?P<path>/en/-/media/files/information-centre/fund-information/monthly-fund-price/consolidated_list_for_[^'"]+?\.xls)['"]"#
+    )
+    .expect("valid MPFA unit price link regex");
+    static ref MPFA_DMY_DATE_REGEX: Regex =
+        Regex::new(r"(?i)(\d{1,2})[./-](\d{1,2})[./-](\d{4})").expect("valid DMY date regex");
+    static ref MPFA_YMD_ZH_DATE_REGEX: Regex =
+        Regex::new(r"(\d{4})年\s*(\d{1,2})月\s*(\d{1,2})日").expect("valid zh date regex");
+}
 
 #[derive(Debug)]
 struct SymbolSyncPlanItem {
     symbol: String,
     currency: String,
     start: SystemTime,
+}
+
+#[derive(Debug, Default)]
+struct MpfUnitPriceSnapshot {
+    valuation_date: Option<NaiveDate>,
+    unit_prices_by_normalized_name: HashMap<String, Decimal>,
 }
 
 pub struct MarketDataService {
@@ -584,11 +612,15 @@ impl MarketDataService {
     }
 
     async fn maybe_backfill_asset_profile_name(&self, asset: &Asset, effective_source: &str) {
-        if !matches!(effective_source, DATA_SOURCE_EASTMONEY_CN | DATA_SOURCE_TIANTIAN_FUND) {
+        if !matches!(
+            effective_source,
+            DATA_SOURCE_EASTMONEY_CN | DATA_SOURCE_TIANTIAN_FUND
+        ) {
             return;
         }
 
-        let force_cn_name_for_a_share = effective_source.eq_ignore_ascii_case(DATA_SOURCE_EASTMONEY_CN)
+        let force_cn_name_for_a_share = effective_source
+            .eq_ignore_ascii_case(DATA_SOURCE_EASTMONEY_CN)
             && Self::is_cn_a_share_symbol(&asset.symbol);
 
         if !force_cn_name_for_a_share && !Self::has_placeholder_name(asset) {
@@ -661,9 +693,14 @@ impl MarketDataService {
                 .asset_sub_class
                 .or_else(|| asset.asset_sub_class.clone()),
             asset_class: profile.asset_class.or_else(|| asset.asset_class.clone()),
+            attributes: asset.attributes.clone(),
         };
 
-        match self.asset_repository.update_profile(&asset.id, payload).await {
+        match self
+            .asset_repository
+            .update_profile(&asset.id, payload)
+            .await
+        {
             Ok(updated) => debug!(
                 "Backfilled asset profile name for '{}' -> '{}'",
                 updated.id,
@@ -737,6 +774,7 @@ impl MarketDataService {
     ) -> Result<((), Vec<(String, String)>)> {
         if quote_requests.is_empty() {
             debug!("No syncable assets found matching the criteria. Skipping sync.");
+            self.try_sync_mpf_unit_prices().await;
             return Ok(((), Vec::new()));
         }
 
@@ -854,7 +892,444 @@ impl MarketDataService {
             }
         }
 
+        self.try_sync_mpf_unit_prices().await;
+
         Ok(((), failed_syncs))
+    }
+
+    async fn try_sync_mpf_unit_prices(&self) {
+        match self.sync_mpf_unit_prices().await {
+            Ok(updated_assets) => {
+                if updated_assets > 0 {
+                    debug!("MPF unit price sync updated {} asset(s).", updated_assets);
+                }
+            }
+            Err(err) => {
+                error!("MPF unit price sync failed: {}", err);
+            }
+        }
+    }
+
+    async fn sync_mpf_unit_prices(&self) -> Result<usize> {
+        let assets = self.asset_repository.list()?;
+        let mpf_assets: Vec<Asset> = assets.into_iter().filter(Self::is_mpf_asset).collect();
+
+        if mpf_assets.is_empty() {
+            return Ok(0);
+        }
+
+        let snapshot = self.fetch_latest_mpf_unit_price_snapshot().await?;
+        if snapshot.unit_prices_by_normalized_name.is_empty() {
+            return Ok(0);
+        }
+
+        let mut updated_assets = 0usize;
+        for asset in mpf_assets {
+            match self.apply_mpf_unit_prices_to_asset(&asset, &snapshot).await {
+                Ok(true) => updated_assets += 1,
+                Ok(false) => {}
+                Err(err) => {
+                    error!(
+                        "Failed to apply MPF unit prices for asset '{}': {}",
+                        asset.symbol, err
+                    );
+                }
+            }
+        }
+
+        Ok(updated_assets)
+    }
+
+    fn is_mpf_asset(asset: &Asset) -> bool {
+        if asset
+            .asset_class
+            .as_deref()
+            .map(|value| value.to_ascii_lowercase().contains("mpf"))
+            .unwrap_or(false)
+        {
+            return true;
+        }
+
+        if asset
+            .asset_sub_class
+            .as_deref()
+            .map(|value| value.to_ascii_lowercase().contains("mpf"))
+            .unwrap_or(false)
+        {
+            return true;
+        }
+
+        let Some(attributes) = asset.attributes.as_deref() else {
+            return false;
+        };
+
+        let Ok(parsed) = serde_json::from_str::<JsonValue>(attributes) else {
+            return false;
+        };
+
+        parsed
+            .get("mpf_subfunds")
+            .and_then(|value| value.as_array())
+            .map(|subfunds| !subfunds.is_empty())
+            .unwrap_or(false)
+    }
+
+    async fn fetch_latest_mpf_unit_price_snapshot(&self) -> Result<MpfUnitPriceSnapshot> {
+        let client = reqwest::Client::new();
+        let listing_response = client
+            .get(MPFA_MONTHLY_UNIT_PRICE_PAGE_URL)
+            .header("User-Agent", MPFA_USER_AGENT)
+            .send()
+            .await
+            .map_err(|err| Error::MarketData(err.into()))?;
+
+        if !listing_response.status().is_success() {
+            return Err(Error::Validation(ValidationError::InvalidInput(format!(
+                "MPFA monthly unit-price page returned HTTP {}",
+                listing_response.status()
+            ))));
+        }
+
+        let page_html = listing_response
+            .text()
+            .await
+            .map_err(|err| Error::MarketData(err.into()))?;
+        let xls_url = Self::extract_mpf_unit_price_xls_url(&page_html).ok_or_else(|| {
+            Error::Validation(ValidationError::InvalidInput(
+                "Unable to locate MPFA monthly unit-price XLS link".to_string(),
+            ))
+        })?;
+
+        let xls_response = client
+            .get(&xls_url)
+            .header("User-Agent", MPFA_USER_AGENT)
+            .send()
+            .await
+            .map_err(|err| Error::MarketData(err.into()))?;
+
+        if !xls_response.status().is_success() {
+            return Err(Error::Validation(ValidationError::InvalidInput(format!(
+                "MPFA unit-price file returned HTTP {}",
+                xls_response.status()
+            ))));
+        }
+
+        let xls_bytes = xls_response
+            .bytes()
+            .await
+            .map_err(|err| Error::MarketData(err.into()))?;
+
+        Self::parse_mpf_unit_price_snapshot(&xls_bytes)
+    }
+
+    fn extract_mpf_unit_price_xls_url(page_html: &str) -> Option<String> {
+        let captures = MPFA_UNIT_PRICE_LINK_REGEX.captures(page_html)?;
+        let path = captures.name("path")?.as_str().trim();
+        if path.starts_with("http://") || path.starts_with("https://") {
+            return Some(path.to_string());
+        }
+
+        Some(format!("{MPFA_BASE_URL}{path}"))
+    }
+
+    fn parse_mpf_unit_price_snapshot(xls_bytes: &[u8]) -> Result<MpfUnitPriceSnapshot> {
+        let mut workbook =
+            open_workbook_auto_from_rs(Cursor::new(xls_bytes.to_vec())).map_err(|err| {
+                Error::Validation(ValidationError::InvalidInput(format!(
+                    "Failed to parse MPFA XLS workbook: {}",
+                    err
+                )))
+            })?;
+
+        let first_sheet = workbook.sheet_names().first().cloned().ok_or_else(|| {
+            Error::Validation(ValidationError::InvalidInput(
+                "MPFA XLS workbook has no worksheets".to_string(),
+            ))
+        })?;
+
+        let range = workbook.worksheet_range(&first_sheet).map_err(|err| {
+            Error::Validation(ValidationError::InvalidInput(format!(
+                "Failed to read MPFA worksheet '{first_sheet}': {}",
+                err
+            )))
+        })?;
+
+        let mut snapshot = MpfUnitPriceSnapshot::default();
+
+        for row in range.rows().take(24) {
+            for column in 0..5 {
+                let cell_text = Self::cell_to_text(row.get(column));
+                if cell_text.is_empty() {
+                    continue;
+                }
+                if let Some(date) = Self::extract_valuation_date_from_text(&cell_text) {
+                    snapshot.valuation_date = Some(date);
+                    break;
+                }
+            }
+
+            if snapshot.valuation_date.is_some() {
+                break;
+            }
+        }
+
+        for row in range.rows() {
+            let fund_name = Self::cell_to_text(row.get(2));
+            if fund_name.is_empty() {
+                continue;
+            }
+            if fund_name.eq_ignore_ascii_case("fund name") || fund_name.contains("成分基金名稱")
+            {
+                continue;
+            }
+
+            let Some(unit_price) = Self::parse_decimal_from_cell(row.get(3)) else {
+                continue;
+            };
+
+            if unit_price <= Decimal::ZERO {
+                continue;
+            }
+
+            let normalized_name = Self::normalize_mpf_fund_name(&fund_name);
+            if normalized_name.is_empty() {
+                continue;
+            }
+
+            snapshot
+                .unit_prices_by_normalized_name
+                .entry(normalized_name)
+                .or_insert(unit_price);
+        }
+
+        if snapshot.unit_prices_by_normalized_name.is_empty() {
+            return Err(Error::Validation(ValidationError::InvalidInput(
+                "MPFA XLS workbook did not contain any parseable unit prices".to_string(),
+            )));
+        }
+
+        Ok(snapshot)
+    }
+
+    fn cell_to_text(cell: Option<&Data>) -> String {
+        match cell {
+            Some(Data::String(value)) => value.trim().to_string(),
+            Some(Data::Float(value)) => value.to_string(),
+            Some(Data::Int(value)) => value.to_string(),
+            Some(Data::Bool(value)) => value.to_string(),
+            Some(Data::DateTime(value)) => value.to_string(),
+            Some(Data::DateTimeIso(value)) => value.clone(),
+            Some(Data::DurationIso(value)) => value.clone(),
+            Some(Data::Error(_)) | Some(Data::Empty) | None => String::new(),
+        }
+    }
+
+    fn parse_decimal_from_cell(cell: Option<&Data>) -> Option<Decimal> {
+        match cell {
+            Some(Data::Float(value)) => Decimal::from_f64_retain(*value),
+            Some(Data::Int(value)) => Some(Decimal::from(*value)),
+            Some(Data::String(value)) => Self::parse_decimal_from_text(value),
+            Some(Data::DateTime(_))
+            | Some(Data::DateTimeIso(_))
+            | Some(Data::DurationIso(_))
+            | Some(Data::Bool(_))
+            | Some(Data::Error(_))
+            | Some(Data::Empty)
+            | None => None,
+        }
+    }
+
+    fn parse_decimal_from_text(raw_value: &str) -> Option<Decimal> {
+        let normalized = raw_value.trim().replace(',', "");
+        if normalized.is_empty() || normalized == "--" {
+            return None;
+        }
+
+        Decimal::from_str(&normalized).ok()
+    }
+
+    fn extract_valuation_date_from_text(raw_text: &str) -> Option<NaiveDate> {
+        let text = raw_text.trim();
+        if text.is_empty() {
+            return None;
+        }
+
+        if let Some(captures) = MPFA_DMY_DATE_REGEX.captures(text) {
+            let day = captures.get(1)?.as_str().parse::<u32>().ok()?;
+            let month = captures.get(2)?.as_str().parse::<u32>().ok()?;
+            let year = captures.get(3)?.as_str().parse::<i32>().ok()?;
+            return NaiveDate::from_ymd_opt(year, month, day);
+        }
+
+        if let Some(captures) = MPFA_YMD_ZH_DATE_REGEX.captures(text) {
+            let year = captures.get(1)?.as_str().parse::<i32>().ok()?;
+            let month = captures.get(2)?.as_str().parse::<u32>().ok()?;
+            let day = captures.get(3)?.as_str().parse::<u32>().ok()?;
+            return NaiveDate::from_ymd_opt(year, month, day);
+        }
+
+        None
+    }
+
+    fn is_cjk_char(character: char) -> bool {
+        matches!(
+            character as u32,
+            0x3400..=0x4DBF | 0x4E00..=0x9FFF | 0xF900..=0xFAFF
+        )
+    }
+
+    fn normalize_mpf_fund_name(name: &str) -> String {
+        let trimmed = name.trim();
+        if trimmed.is_empty() {
+            return String::new();
+        }
+
+        let mut normalized = String::with_capacity(trimmed.len());
+        let mut previous_was_space = false;
+
+        for character in trimmed.chars() {
+            let mapped = if character.is_ascii_alphanumeric() {
+                character.to_ascii_lowercase()
+            } else if character.is_alphanumeric() || Self::is_cjk_char(character) {
+                character
+            } else {
+                ' '
+            };
+
+            if mapped.is_whitespace() {
+                if !previous_was_space {
+                    normalized.push(' ');
+                }
+                previous_was_space = true;
+            } else {
+                normalized.push(mapped);
+                previous_was_space = false;
+            }
+        }
+
+        normalized.trim().to_string()
+    }
+
+    fn json_to_decimal(value: &JsonValue) -> Option<Decimal> {
+        match value {
+            JsonValue::Number(number) => {
+                if let Some(v) = number.as_f64() {
+                    return Decimal::from_f64_retain(v);
+                }
+                Decimal::from_str(&number.to_string()).ok()
+            }
+            JsonValue::String(raw) => Self::parse_decimal_from_text(raw),
+            _ => None,
+        }
+    }
+
+    fn decimal_to_json_value(value: Decimal) -> Option<JsonValue> {
+        let float_value = value.to_f64()?;
+        let number = JsonNumber::from_f64(float_value)?;
+        Some(JsonValue::Number(number))
+    }
+
+    async fn apply_mpf_unit_prices_to_asset(
+        &self,
+        asset: &Asset,
+        snapshot: &MpfUnitPriceSnapshot,
+    ) -> Result<bool> {
+        let mut attributes_value = asset
+            .attributes
+            .as_deref()
+            .and_then(|raw| serde_json::from_str::<JsonValue>(raw).ok())
+            .unwrap_or_else(|| JsonValue::Object(JsonMap::new()));
+
+        let Some(attributes_object) = attributes_value.as_object_mut() else {
+            return Ok(false);
+        };
+
+        let Some(subfunds) = attributes_object
+            .get_mut("mpf_subfunds")
+            .and_then(|value| value.as_array_mut())
+        else {
+            return Ok(false);
+        };
+
+        let mut matched_any_subfund = false;
+        let mut has_market_value = false;
+        let mut total_market_value = Decimal::ZERO;
+
+        for subfund in subfunds.iter_mut() {
+            let Some(subfund_object) = subfund.as_object_mut() else {
+                continue;
+            };
+
+            let Some(subfund_name) = subfund_object
+                .get("name")
+                .and_then(|value| value.as_str())
+                .map(str::trim)
+                .filter(|value| !value.is_empty())
+            else {
+                continue;
+            };
+
+            let normalized_name = Self::normalize_mpf_fund_name(subfund_name);
+            let Some(nav) = snapshot
+                .unit_prices_by_normalized_name
+                .get(&normalized_name)
+                .cloned()
+            else {
+                continue;
+            };
+
+            matched_any_subfund = true;
+            if let Some(nav_json) = Self::decimal_to_json_value(nav.round_dp(6)) {
+                subfund_object.insert("nav".to_string(), nav_json);
+            }
+
+            let units = subfund_object.get("units").and_then(Self::json_to_decimal);
+            if let Some(units_value) = units {
+                if units_value >= Decimal::ZERO {
+                    let market_value = (units_value * nav).round_dp(4);
+                    if let Some(market_value_json) = Self::decimal_to_json_value(market_value) {
+                        subfund_object.insert("market_value".to_string(), market_value_json);
+                        total_market_value += market_value;
+                        has_market_value = true;
+                    }
+                }
+            }
+        }
+
+        if !matched_any_subfund {
+            return Ok(false);
+        }
+
+        if let Some(valuation_date) = snapshot.valuation_date {
+            attributes_object.insert(
+                "valuation_date".to_string(),
+                JsonValue::String(valuation_date.format("%Y-%m-%d").to_string()),
+            );
+        }
+
+        if has_market_value {
+            if let Some(total_market_value_json) =
+                Self::decimal_to_json_value(total_market_value.round_dp(2))
+            {
+                attributes_object.insert("market_value".to_string(), total_market_value_json);
+            }
+        }
+
+        let payload = UpdateAssetProfile {
+            symbol: asset.symbol.clone(),
+            name: asset.name.clone().or_else(|| Some(asset.symbol.clone())),
+            sectors: asset.sectors.clone(),
+            countries: asset.countries.clone(),
+            notes: asset.notes.clone().unwrap_or_default(),
+            asset_sub_class: asset.asset_sub_class.clone(),
+            asset_class: asset.asset_class.clone(),
+            attributes: Some(attributes_value.to_string()),
+        };
+
+        self.asset_repository
+            .update_profile(&asset.id, payload)
+            .await?;
+        Ok(true)
     }
 
     fn calculate_sync_plan(
@@ -1008,5 +1483,57 @@ impl MarketDataService {
             data_source: DataSource::Manual,
             created_at: Utc::now(),
         })
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::MarketDataService;
+    use crate::assets::Asset;
+
+    #[test]
+    fn extracts_latest_mpf_xls_link_from_html() {
+        let html = r#"
+        <li><a href="/en/-/media/files/information-centre/fund-information/monthly-fund-price/consolidated_list_for_dec_25_read_only.xls">31 December 2025</a></li>
+        <li><a href="/en/-/media/files/information-centre/fund-information/monthly-fund-price/consolidated_list_for_nov_25_read_only.xls">28 November 2025</a></li>
+        "#;
+
+        let url = MarketDataService::extract_mpf_unit_price_xls_url(html).unwrap();
+        assert_eq!(
+            url,
+            "https://www.mpfa.org.hk/en/-/media/files/information-centre/fund-information/monthly-fund-price/consolidated_list_for_dec_25_read_only.xls"
+        );
+    }
+
+    #[test]
+    fn normalizes_mpf_fund_names_consistently() {
+        let left =
+            MarketDataService::normalize_mpf_fund_name("Manulife MPF Pacific Asia Equity Fund");
+        let right = MarketDataService::normalize_mpf_fund_name(
+            "  Manulife  MPF  Pacific-Asia  Equity  Fund  ",
+        );
+
+        assert_eq!(left, right);
+    }
+
+    #[test]
+    fn parses_mpf_valuation_dates_from_header_text() {
+        let date = MarketDataService::extract_valuation_date_from_text("as at 31.12.2025").unwrap();
+        assert_eq!(date.format("%Y-%m-%d").to_string(), "2025-12-31");
+    }
+
+    #[test]
+    fn detects_mpf_assets_from_attributes() {
+        let asset = Asset {
+            id: "mpf-asset".to_string(),
+            symbol: "mpf-asset".to_string(),
+            attributes: Some(
+                r#"{"mpf_subfunds":[{"name":"Manulife MPF Japan Equity Fund","units":1.0}]}"#
+                    .to_string(),
+            ),
+            ..Asset::default()
+        };
+
+        assert!(MarketDataService::is_mpf_asset(&asset));
     }
 }

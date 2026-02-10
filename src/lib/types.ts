@@ -524,6 +524,18 @@ export interface UpdateAssetProfile {
   notes: string;
   assetClass: string;
   assetSubClass: string;
+  attributes?: string;
+}
+
+export interface CreateAssetPayload {
+  symbol: string;
+  name?: string;
+  currency: string;
+  dataSource?: string;
+  assetClass?: string;
+  assetSubClass?: string;
+  notes?: string;
+  attributes?: string;
 }
 
 // Rename ComparisonItem to TrackedItem

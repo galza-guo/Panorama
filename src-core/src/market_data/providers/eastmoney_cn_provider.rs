@@ -496,14 +496,18 @@ impl AssetProfiler for EastMoneyCnProvider {
 
         let name = match latest_name {
             Ok(Some(v)) => Some(v),
-            Ok(None) => self.get_name_from_history(&normalized_symbol, &secid).await?,
+            Ok(None) => {
+                self.get_name_from_history(&normalized_symbol, &secid)
+                    .await?
+            }
             Err(err) => {
                 log::debug!(
                     "EASTMONEY_CN latest profile name lookup failed for {}: {}",
                     normalized_symbol,
                     err
                 );
-                self.get_name_from_history(&normalized_symbol, &secid).await?
+                self.get_name_from_history(&normalized_symbol, &secid)
+                    .await?
             }
         };
         let asset_sub_class = Self::infer_asset_sub_class(&normalized_symbol).to_string();

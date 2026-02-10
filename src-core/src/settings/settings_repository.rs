@@ -124,7 +124,8 @@ impl SettingsRepositoryTrait for SettingsRepository {
                         .execute(conn)?;
                 }
 
-                if let Some(handle_exchange_automatically) = settings.handle_exchange_automatically {
+                if let Some(handle_exchange_automatically) = settings.handle_exchange_automatically
+                {
                     diesel::replace_into(app_settings)
                         .values(&AppSetting {
                             setting_key: "handle_exchange_automatically".to_string(),

@@ -8,7 +8,9 @@ use crate::activities::activities_model::*;
 use crate::activities::{ActivityRepositoryTrait, ActivityServiceTrait};
 use crate::assets::AssetServiceTrait;
 use crate::fx::FxServiceTrait;
-use crate::market_data::symbol_normalizer::{normalize_panorama_symbol, SymbolNormalizationOptions};
+use crate::market_data::symbol_normalizer::{
+    normalize_panorama_symbol, SymbolNormalizationOptions,
+};
 use crate::market_data::DATA_SOURCE_TIANTIAN_FUND;
 use crate::Result;
 use uuid::Uuid;

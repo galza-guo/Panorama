@@ -3,13 +3,12 @@ import { PrivacyToggle } from "@/components/privacy-toggle";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useHoldings } from "@/hooks/use-holdings";
 import { useValuationHistory } from "@/hooks/use-valuation-history";
-import { HoldingType, PORTFOLIO_ACCOUNT_ID } from "@/lib/constants";
+import { PORTFOLIO_ACCOUNT_ID } from "@/lib/constants";
 import { useSettingsContext } from "@/lib/settings-provider";
 import { DateRange, TimePeriod } from "@/lib/types";
 import { calculatePerformanceMetrics } from "@/lib/utils";
-import { useAssetsByOwner } from "@/pages/asset/hooks/use-assets";
 import { PortfolioUpdateTrigger } from "@/pages/dashboard/portfolio-update-trigger";
-import { AnimatedToggleGroup, GainAmount, GainPercent, IntervalSelector, Page } from "@wealthfolio/ui";
+import { GainAmount, GainPercent, IntervalSelector, Page } from "@wealthfolio/ui";
 import { subMonths } from "date-fns";
 import { useMemo, useState } from "react";
 import { AccountsSummary } from "./accounts-summary";
@@ -24,46 +23,16 @@ const getInitialDateRange = (): DateRange => ({
 });
 
 const INITIAL_INTERVAL_CODE: TimePeriod = "3M";
-type OwnerView = "COMBINED" | "SELF" | "SPOUSE";
-
-const OWNER_OPTIONS = [
-  { value: "COMBINED" as const, label: "Combined" },
-  { value: "SELF" as const, label: "Self" },
-  { value: "SPOUSE" as const, label: "Spouse" },
-];
 
 export default function DashboardPage() {
   const [dateRange, setDateRange] = useState<DateRange | undefined>(getInitialDateRange());
   const [selectedIntervalDescription, setSelectedIntervalDescription] =
     useState<string>("Last 3 months");
   const [isAllTime, setIsAllTime] = useState<boolean>(false);
-  const [ownerView, setOwnerView] = useState<OwnerView>("COMBINED");
 
   const { holdings, isLoading: isHoldingsLoading } = useHoldings(PORTFOLIO_ACCOUNT_ID);
-  const ownerFilter =
-    ownerView === "SELF" ? "Self" : ownerView === "SPOUSE" ? "Spouse" : undefined;
-  const { assets: ownerAssets, isLoading: isOwnerAssetsLoading } = useAssetsByOwner(ownerFilter);
-
-  const ownerSymbols = useMemo(() => {
-    return new Set(ownerAssets.map((asset) => asset.symbol));
-  }, [ownerAssets]);
-
-  const displayHoldings = useMemo(() => {
-    if (ownerView === "COMBINED") {
-      return holdings;
-    }
-
-    return holdings.filter((holding) => {
-      if (holding.holdingType !== HoldingType.SECURITY) {
-        return false;
-      }
-      const symbol = holding.instrument?.symbol ?? "";
-      return symbol.length > 0 && ownerSymbols.has(symbol);
-    });
-  }, [holdings, ownerSymbols, ownerView]);
-
-  const isDisplayHoldingsLoading =
-    isHoldingsLoading || (ownerView !== "COMBINED" && isOwnerAssetsLoading);
+  const displayHoldings = holdings;
+  const isDisplayHoldingsLoading = isHoldingsLoading;
 
   const totalValue = useMemo(() => {
     return (
@@ -153,15 +122,6 @@ export default function DashboardPage() {
                       {selectedIntervalDescription}
                     </span>
                   )}
-                </div>
-                <div className="mt-3 inline-flex">
-                  <AnimatedToggleGroup
-                    items={OWNER_OPTIONS}
-                    value={ownerView}
-                    onValueChange={(value) => setOwnerView(value as OwnerView)}
-                    variant="secondary"
-                    size="sm"
-                  />
                 </div>
               </div>
             </div>

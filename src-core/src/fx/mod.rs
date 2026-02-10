@@ -1,6 +1,6 @@
+pub mod auto_exchange;
 pub mod currency;
 pub mod currency_converter;
-pub mod auto_exchange;
 pub mod fx_errors;
 pub mod fx_model;
 pub mod fx_repository;

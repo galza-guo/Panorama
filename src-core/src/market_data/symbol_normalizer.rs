@@ -119,8 +119,7 @@ mod tests {
 
     #[test]
     fn normalizes_hk_code_length_and_leading_zeros() {
-        let tencent =
-            normalize_panorama_symbol("00700.HK", SymbolNormalizationOptions::default());
+        let tencent = normalize_panorama_symbol("00700.HK", SymbolNormalizationOptions::default());
         let hutchison =
             normalize_panorama_symbol("00001.HK", SymbolNormalizationOptions::default());
         let baba = normalize_panorama_symbol("09988.HK", SymbolNormalizationOptions::default());

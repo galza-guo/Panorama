@@ -1,10 +1,10 @@
 use super::settings_repository::SettingsRepositoryTrait;
+use crate::errors::ValidationError;
 use crate::errors::{DatabaseError, Error, Result};
 use crate::fx::fx_traits::FxServiceTrait;
 use crate::market_data::market_data_constants::{
     DATA_SOURCE_OPEN_EXCHANGE_RATES, DATA_SOURCE_YAHOO,
 };
-use crate::errors::ValidationError;
 use crate::settings::{Settings, SettingsUpdate};
 use async_trait::async_trait;
 use log::{debug, error};
@@ -60,7 +60,9 @@ impl SettingsServiceTrait for SettingsService {
             }
         }
 
-        self.settings_repository.update_settings(&normalized_update).await?;
+        self.settings_repository
+            .update_settings(&normalized_update)
+            .await?;
         Ok(())
     }
 

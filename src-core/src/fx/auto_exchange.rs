@@ -12,7 +12,8 @@ use crate::market_data::market_data_model::DataSource;
 
 fn normalize_currency(value: &str) -> Option<String> {
     let normalized = normalize_currency_code(value.trim()).to_uppercase();
-    let is_iso_currency = normalized.len() == 3 && normalized.chars().all(|ch| ch.is_ascii_alphabetic());
+    let is_iso_currency =
+        normalized.len() == 3 && normalized.chars().all(|ch| ch.is_ascii_alphabetic());
     if is_iso_currency {
         Some(normalized)
     } else {
@@ -51,7 +52,10 @@ pub async fn ensure_registered_pairs(
     managed_currencies: &HashSet<String>,
 ) -> Result<()> {
     for currency in managed_currencies {
-        if let Err(err) = fx_service.register_currency_pair(currency, base_currency).await {
+        if let Err(err) = fx_service
+            .register_currency_pair(currency, base_currency)
+            .await
+        {
             warn!(
                 "Failed to auto-register exchange pair {}/{}: {}",
                 currency, base_currency, err

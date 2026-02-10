@@ -71,6 +71,7 @@ const COMMANDS: CommandMap = {
   get_assets: { method: "GET", path: "/assets" },
   delete_asset: { method: "DELETE", path: "/assets" },
   get_asset_profile: { method: "GET", path: "/assets/profile" },
+  create_asset_profile: { method: "POST", path: "/assets/profile" },
   update_asset_profile: { method: "PUT", path: "/assets/profile" },
   update_asset_data_source: { method: "PUT", path: "/assets/data-source" },
   // Market data
@@ -344,20 +345,16 @@ export const invokeWeb = async <T>(
       url += `/${encodeURIComponent(limitId)}/deposits`;
       break;
     }
-    case "get_assets": {
-      const { owner } = (payload ?? {}) as { owner?: string };
-      if (owner?.trim()) {
-        const params = new URLSearchParams();
-        params.set("owner", owner.trim());
-        url += `?${params.toString()}`;
-      }
-      break;
-    }
     case "get_asset_profile": {
       const { assetId } = payload as { assetId: string };
       const params = new URLSearchParams();
       params.set("assetId", assetId);
       url += `?${params.toString()}`;
+      break;
+    }
+    case "create_asset_profile": {
+      const { payload: bodyPayload } = payload as { payload: Record<string, unknown> };
+      body = JSON.stringify(bodyPayload);
       break;
     }
     case "update_asset_profile": {
