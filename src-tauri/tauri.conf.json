@@ -16,15 +16,15 @@
       "icons/icon.ico"
     ],
     "copyright": "2026 Panorama Contributors",
-  "category": "Finance",
-  "createUpdaterArtifacts": "v1Compatible",
-  "iOS": {
-    "developmentTeam": "DYDJ2RNL5H"
-  }
+    "category": "Finance",
+    "createUpdaterArtifacts": "v1Compatible",
+    "iOS": {
+      "developmentTeam": "DYDJ2RNL5H"
+    }
   },
   "productName": "Panorama",
   "mainBinaryName": "Panorama",
-  "version": "2.1.0",
+  "version": "0.1.0",
   "identifier": "com.gallantguo.panorama",
   "plugins": {
     "updater": {
@@ -55,7 +55,6 @@
     ],
     "security": {
       "csp": null
+    }
   }
-  }
-
 }

@@ -1,7 +1,7 @@
 {
   "name": "panorama-app",
   "private": true,
-  "version": "2.1.0",
+  "version": "0.1.0",
   "type": "module",
   "workspaces": [
     "packages/*"
@@ -30,6 +30,9 @@
     "type-check": "tsc --noEmit && pnpm -r type-check",
     "type-check:root": "tsc --noEmit",
     "check": "pnpm format:check && pnpm lint:quiet && pnpm type-check",
+    "release:check": "node scripts/release.mjs check",
+    "release:prepare": "node scripts/release.mjs prepare",
+    "release:cut": "node scripts/release.mjs cut",
     "publish:sdk": "cd packages/addon-sdk && npm publish --access public",
     "publish:ui": "cd packages/ui && npm publish --access public",
     "publish:addon-dev-tools": "cd packages/addon-dev-tools && npm publish --access public",
