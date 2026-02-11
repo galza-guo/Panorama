@@ -68,6 +68,12 @@ impl SettingsRepositoryTrait for SettingsRepository {
                 "sync_enabled" => {
                     settings.sync_enabled = value.parse().unwrap_or(true);
                 }
+                "insurance_visible" => {
+                    settings.insurance_visible = value.parse().unwrap_or(true);
+                }
+                "mpf_visible" => {
+                    settings.mpf_visible = value.parse().unwrap_or(true);
+                }
                 _ => {} // Ignore unknown settings
             }
         }
@@ -161,6 +167,24 @@ impl SettingsRepositoryTrait for SettingsRepository {
                         .execute(conn)?;
                 }
 
+                if let Some(insurance_visible) = settings.insurance_visible {
+                    diesel::replace_into(app_settings)
+                        .values(&AppSetting {
+                            setting_key: "insurance_visible".to_string(),
+                            setting_value: insurance_visible.to_string(),
+                        })
+                        .execute(conn)?;
+                }
+
+                if let Some(mpf_visible) = settings.mpf_visible {
+                    diesel::replace_into(app_settings)
+                        .values(&AppSetting {
+                            setting_key: "mpf_visible".to_string(),
+                            setting_value: mpf_visible.to_string(),
+                        })
+                        .execute(conn)?;
+                }
+
                 Ok(())
             })
             .await
@@ -186,6 +210,8 @@ impl SettingsRepositoryTrait for SettingsRepository {
                     "exchange_rate_provider" => "YAHOO",
                     "menu_bar_visible" => "true",
                     "sync_enabled" => "true",
+                    "insurance_visible" => "true",
+                    "mpf_visible" => "true",
                     _ => return Err(Error::from(diesel::result::Error::NotFound)),
                 };
                 Ok(default_value.to_string())

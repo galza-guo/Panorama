@@ -1,6 +1,7 @@
 import { getDynamicNavItems, subscribeToNavigationUpdates } from "@/addons/addons-runtime-context";
 import { Icons } from "@/components/ui/icons";
-import { useEffect, useState } from "react";
+import { useSettingsContext } from "@/lib/settings-provider";
+import { useEffect, useMemo, useState } from "react";
 
 export interface NavLink {
   title: string;
@@ -14,6 +15,11 @@ export interface NavigationProps {
   primary: NavLink[];
   secondary?: NavLink[];
   addons?: NavLink[];
+}
+
+export interface ComponentVisibilitySettings {
+  insuranceVisible?: boolean;
+  mpfVisible?: boolean;
 }
 
 const staticNavigation: NavigationProps = {
@@ -64,8 +70,50 @@ const staticNavigation: NavigationProps = {
   ],
 };
 
+function normalizePath(value: string): string {
+  if (!value) {
+    return "/";
+  }
+
+  if (!value.startsWith("/")) {
+    return `/${value}`;
+  }
+
+  if (value.length > 1 && value.endsWith("/")) {
+    return value.slice(0, -1);
+  }
+
+  return value;
+}
+
+function isInsuranceRoute(pathname: string): boolean {
+  const normalizedPath = normalizePath(pathname);
+  return normalizedPath === "/insurance" || normalizedPath.startsWith("/insurance/");
+}
+
+function isMpfRoute(pathname: string): boolean {
+  const normalizedPath = normalizePath(pathname);
+  return normalizedPath === "/mpf" || normalizedPath.startsWith("/mpf/");
+}
+
+export function isComponentRouteEnabled(
+  pathname: string,
+  settings: ComponentVisibilitySettings | null | undefined,
+): boolean {
+  if (isInsuranceRoute(pathname)) {
+    return settings?.insuranceVisible ?? true;
+  }
+
+  if (isMpfRoute(pathname)) {
+    return settings?.mpfVisible ?? true;
+  }
+
+  return true;
+}
+
 export function useNavigation() {
   const [dynamicItems, setDynamicItems] = useState<NavigationProps["primary"]>([]);
+  const { settings } = useSettingsContext();
 
   // Subscribe to navigation updates from addons
   useEffect(() => {
@@ -85,9 +133,15 @@ export function useNavigation() {
     };
   }, []);
 
+  const filteredPrimary = useMemo(
+    () =>
+      staticNavigation.primary.filter((item) => isComponentRouteEnabled(item.href, settings)),
+    [settings?.insuranceVisible, settings?.mpfVisible],
+  );
+
   // Combine static navigation items with addons grouped separately
   const navigation: NavigationProps = {
-    primary: staticNavigation.primary,
+    primary: filteredPrimary,
     secondary: staticNavigation.secondary,
     addons: dynamicItems,
   };

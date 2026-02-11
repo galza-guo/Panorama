@@ -8,7 +8,7 @@ import { cn } from "@/lib/utils";
 import { MobileNavigationContainer } from "@/pages/layouts/mobile-navigation-container";
 import { ApplicationShell, ErrorBoundary, PageScrollContainer } from "@panorama/ui";
 import { Navigate, Outlet, useLocation } from "react-router-dom";
-import { useNavigation } from "./navigation/app-navigation";
+import { isComponentRouteEnabled, useNavigation } from "./navigation/app-navigation";
 import { AppSidebar } from "./navigation/app-sidebar";
 import { FloatingNavigationBar } from "./navigation/floating-navigation-bar";
 import { MobileNavBar } from "./navigation/mobile-navbar";
@@ -33,6 +33,10 @@ const AppLayoutContent = () => {
 
   if (!settings?.onboardingCompleted && location.pathname !== "/onboarding") {
     return <Navigate to="/onboarding" />;
+  }
+
+  if (!isComponentRouteEnabled(location.pathname, settings)) {
+    return <Navigate to="/dashboard" replace />;
   }
 
   return (

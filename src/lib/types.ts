@@ -348,6 +348,8 @@ export interface Settings {
   exchangeRateProvider: string;
   menuBarVisible: boolean;
   syncEnabled: boolean;
+  insuranceVisible: boolean;
+  mpfVisible: boolean;
 }
 
 export interface SettingsContextType {

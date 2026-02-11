@@ -15,6 +15,8 @@ pub struct Settings {
     pub exchange_rate_provider: String,
     pub menu_bar_visible: bool,
     pub sync_enabled: bool,
+    pub insurance_visible: bool,
+    pub mpf_visible: bool,
 }
 
 impl Default for Settings {
@@ -30,6 +32,8 @@ impl Default for Settings {
             exchange_rate_provider: "YAHOO".to_string(),
             menu_bar_visible: true,
             sync_enabled: true,
+            insurance_visible: true,
+            mpf_visible: true,
         }
     }
 }
@@ -46,6 +50,8 @@ pub struct SettingsUpdate {
     pub exchange_rate_provider: Option<String>,
     pub menu_bar_visible: Option<bool>,
     pub sync_enabled: Option<bool>,
+    pub insurance_visible: Option<bool>,
+    pub mpf_visible: Option<bool>,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]

@@ -19,6 +19,8 @@ interface ExtendedSettingsContextType extends SettingsContextType {
         | "syncEnabled"
         | "handleExchangeAutomatically"
         | "exchangeRateProvider"
+        | "insuranceVisible"
+        | "mpfVisible"
       >
     >,
   ) => Promise<void>;
@@ -52,6 +54,8 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
         | "syncEnabled"
         | "handleExchangeAutomatically"
         | "exchangeRateProvider"
+        | "insuranceVisible"
+        | "mpfVisible"
       >
     >,
   ) => {
