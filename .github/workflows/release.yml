@@ -104,4 +104,6 @@ jobs:
           releaseBody: "See the assets to download and install this version."
           releaseDraft: false
           prerelease: false
+          retryAttempts: 3
+          includeUpdaterJson: ${{ matrix.platform == 'ubuntu-24.04' }}
           args: ${{ matrix.args }}
