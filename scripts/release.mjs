@@ -9,17 +9,6 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const repoRoot = path.resolve(__dirname, "..");
 
-const RELEASE_VERSION_FILES = [
-  "package.json",
-  "src-core/Cargo.lock",
-  "src-core/Cargo.toml",
-  "src-server/Cargo.lock",
-  "src-server/Cargo.toml",
-  "src-tauri/Cargo.toml",
-  "src-tauri/Cargo.lock",
-  "src-tauri/tauri.conf.json",
-];
-
 const RELEASE_WORKFLOW_PATH = ".github/workflows/release.yml";
 const TAURI_CONFIG_PATH = "src-tauri/tauri.conf.json";
 const UPDATER_ENDPOINT =
@@ -31,6 +20,27 @@ function readFile(relPath) {
 
 function writeFile(relPath, content) {
   fs.writeFileSync(path.join(repoRoot, relPath), content, "utf8");
+}
+
+function fileExists(relPath) {
+  return fs.existsSync(path.join(repoRoot, relPath));
+}
+
+function releaseVersionFiles() {
+  const coreLock = "src-core/Cargo.lock";
+  const serverLock = "src-server/Cargo.lock";
+  const tauriLock = "src-tauri/Cargo.lock";
+
+  return [
+    "package.json",
+    ...(fileExists(coreLock) ? [coreLock] : []),
+    "src-core/Cargo.toml",
+    ...(fileExists(serverLock) ? [serverLock] : []),
+    "src-server/Cargo.toml",
+    "src-tauri/Cargo.toml",
+    ...(fileExists(tauriLock) ? [tauriLock] : []),
+    "src-tauri/tauri.conf.json",
+  ];
 }
 
 function run(cmd, options = {}) {
@@ -144,6 +154,9 @@ function readCargoVersion(relPath) {
 }
 
 function readCargoLockPackageVersion(lockPath, packageName) {
+  if (!fileExists(lockPath)) {
+    return null;
+  }
   const content = readFile(lockPath);
   const escaped = packageName.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
   const regex = new RegExp(
@@ -155,6 +168,9 @@ function readCargoLockPackageVersion(lockPath, packageName) {
 }
 
 function writeCargoLockPackageVersion(lockPath, packageName, version) {
+  if (!fileExists(lockPath)) {
+    return;
+  }
   const content = readFile(lockPath);
   const escaped = packageName.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
   const regex = new RegExp(
@@ -412,7 +428,7 @@ function doCut(version, shouldPush) {
 
   ensureTagAbsent(tag);
 
-  const filesToStage = [...RELEASE_VERSION_FILES];
+  const filesToStage = releaseVersionFiles();
   const addCommand = `git add ${filesToStage.map(quote).join(" ")}`;
   run(addCommand);
 
