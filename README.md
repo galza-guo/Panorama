@@ -13,6 +13,10 @@
   </p>
 </div>
 
+<p align="center">
+  <a href="./README.md">English</a> | <a href="./README.zh-CN.md">简体中文</a>
+</p>
+
 ## Introduction
 
 **Panorama App** is a Beautiful and Boring Investment Tracker, with Local Data
