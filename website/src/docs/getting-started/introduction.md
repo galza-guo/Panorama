@@ -3,7 +3,7 @@
 Welcome to **Panorama**, your all-in-one desktop investment tracker with strong
 China market support.
 
-Panorama is a transparent fork of [Wealthfolio](https://wealthfolio.app),
+Panorama is a transparent fork of [Wealthfolio](https://github.com/afadil/wealthfolio),
 enhanced with specialized features for Asian markets and additional asset classes.
 
 ## Why Panorama?

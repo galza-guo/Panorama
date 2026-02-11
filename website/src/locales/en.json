@@ -6,11 +6,10 @@
   },
   "hero": {
     "badge": "Desktop-First Investment Tracking",
-    "title_start": "Your wealth, ",
-    "title_end": "in panorama.",
-    "subtitle": "A beautiful, private, and open-source investment tracker. Forked from Wealthfolio to provide a refined, standalone Desktop experience.",
-    "download": "Download Latest Release",
-    "platform_support": "Always points to the latest release for macOS, Windows, and Linux."
+    "title_start": "Your wealth,\nin ",
+    "title_end": "Panorama.",
+    "subtitle": "A beautiful, private, and open-source investment tracker. \n Forked from <0>Wealthfolio</0> to provide a refined, standalone Desktop <1>All-in-one</1> experience.",
+    "download": "Download"
   },
   "features": {
     "desktop": {
@@ -27,10 +26,10 @@
     }
   },
   "footer": {
-    "disclaimer_title": "Honoring the Source",
+    "disclaimer_title": "Gratitude",
     "disclaimer_text_1": "Panorama is proudly a fork of ",
-    "disclaimer_text_2": ". We love what they've built, but we have a different vision for a pure, robust Desktop experience.",
-    "disclaimer_text_3": "We are not affiliated with Wealthfolio. All credit for the foundation goes to their amazing team.",
+    "disclaimer_text_2": ". We love their work and have greatly enhanced support for Asian markets on top of it.",
+    "disclaimer_text_3": "We are not affiliated with the Wealthfolio team. All credit for the foundation goes to their amazing team.",
     "built_by": "Built by ",
     "source_code": ". The source code is available on "
   },

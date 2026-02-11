@@ -6,11 +6,10 @@
   },
   "hero": {
     "badge": "桌面优先的投资追踪器",
-    "title_start": "全景掌握，",
-    "title_end": "您的财富。",
-    "subtitle": "美观、隐私、开源的投资追踪器。分叉自 Wealthfolio，旨在提供精致、独立的桌面端体验。",
-    "download": "下载最新版本",
-    "platform_support": "始终指向适用于 macOS、Windows 和 Linux 的最新版本。"
+    "title_start": "您的财富，\n",
+    "title_end": "尽收眼底。",
+    "subtitle": "美观、隐私、开源的投资追踪器。 \n 分叉自 <0>Wealthfolio</0>，旨在提供精致、独立的桌面端 <1>All-in-one</1> 体验。",
+    "download": "下载"
   },
   "features": {
     "desktop": {
@@ -27,10 +26,10 @@
     }
   },
   "footer": {
-    "disclaimer_title": "致敬原源",
-    "disclaimer_text_1": "Panorama 自豪地分叉自 ",
-    "disclaimer_text_2": "。我们热爱他们的作品，但我们对纯粹、强大的桌面体验有着不同的愿景。",
-    "disclaimer_text_3": "我们与 Wealthfolio 无关。所有基础功劳归于他们出色的团队。",
+    "disclaimer_title": "关于 Panorama",
+    "disclaimer_text_1": "Panorama 是 ",
+    "disclaimer_text_2": " 的透明 Fork 版本。我们在保留其核心隐私原则的基础上，增加了 A 股、基金、汇率等功能，以更好地服务亚洲市场。",
+    "disclaimer_text_3": "Panorama 与 Wealthfolio 团队没有关联关系，所有基础功能都源于 Wealthfolio 团队的出色工作。",
     "built_by": "由 ",
     "source_code": " 构建。源代码托管于 "
   },

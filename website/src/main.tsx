@@ -4,8 +4,12 @@ import App from "./App.tsx";
 import "./i18n";
 import "./index.css";
 
+import { ThemeProvider } from "./components/ThemeProvider";
+
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
-    <App />
+    <ThemeProvider defaultTheme="dark" storageKey="vite-ui-theme">
+      <App />
+    </ThemeProvider>
   </StrictMode>,
 );

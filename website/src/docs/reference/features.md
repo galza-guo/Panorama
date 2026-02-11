@@ -71,6 +71,24 @@ Comprehensive insurance policy management:
   dates.
 - **Premium Tracking**: Monitor premium payments and due dates.
 
+### 💎 Alternative Assets
+
+Track non-traditional assets with manual valuation updates:
+
+- **Precious Metals**: Gold, silver, platinum with custom spot prices.
+- **Cryptocurrencies**: Bitcoin, Ethereum, and other major coins.
+- **Custom Assets**: Real estate, art, collectibles, and more.
+- **Manual Valuation**: Update asset values manually or set custom price sources.
+
+### 🎯 Example Addons
+
+Panorama includes several built-in addons:
+
+- **Goal Progress Tracker**: Visual goal tracking with calendar interface.
+- **Investment Fees Tracker**: Analyze fees across your portfolio.
+- **Swingfolio**: Advanced swing trading tracker with FIFO/LIFO lot matching,
+  performance analytics, and calendar views.
+
 ---
 
 ## Extensibility

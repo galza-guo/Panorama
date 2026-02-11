@@ -14,8 +14,7 @@
 
 ### 有移动端应用吗？
 
-目前，Panorama 100% 专注于 **桌面** 体验（macOS, Windows,
-Linux）。我们将所有资源致力于打造最好的桌面投资追踪器。
+目前，Panorama 100% 专注于 **桌面** 体验（macOS, Windows, Linux），将所有资源投入到打造最好的桌面投资追踪器。
 
 ### 如何更新 Panorama？
 

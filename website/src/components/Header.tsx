@@ -3,6 +3,8 @@ import { useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
 import { cn } from "../lib/utils";
 
+import { ThemeToggle } from "./ThemeToggle";
+
 interface HeaderProps {
   className?: string;
   showDocsLink?: boolean;
@@ -23,10 +25,10 @@ export default function Header({ className, showDocsLink = true }: HeaderProps) 
         className,
       )}
     >
-      <div className="container flex h-14 max-w-screen-2xl items-center justify-between px-4 sm:px-8">
+      <div className="container mx-auto flex h-14 max-w-screen-2xl items-center justify-between px-4 sm:px-8">
         <div className="flex items-center gap-2 text-lg font-bold">
           <Link to="/" className="flex items-center gap-2 transition-opacity hover:opacity-80">
-            <img src="/logo.png" alt="Panorama Logo" className="size-8" />
+            <img src="/logo.png" alt="Panorama Logo" className="size-8 dark:invert" />
             Panorama
           </Link>
         </div>
@@ -36,6 +38,7 @@ export default function Header({ className, showDocsLink = true }: HeaderProps) 
               {t("header.docs")}
             </Link>
           )}
+          <ThemeToggle />
           <button
             onClick={toggleLanguage}
             className="hover:text-primary flex items-center gap-1 transition-colors"

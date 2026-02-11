@@ -112,7 +112,7 @@ export default function Docs() {
         </button>
       </div>
 
-      <div className="container max-w-screen-2xl flex-1 items-start px-4 md:grid md:grid-cols-[240px_minmax(0,1fr)] md:gap-6 md:px-8 lg:grid-cols-[280px_minmax(0,1fr)] lg:gap-10">
+      <div className="container mx-auto max-w-screen-2xl flex-1 items-start px-4 md:grid md:grid-cols-[240px_minmax(0,1fr)] md:gap-6 md:px-8 lg:grid-cols-[280px_minmax(0,1fr)] lg:gap-10">
         {/* Sidebar */}
         <aside
           className={cn(

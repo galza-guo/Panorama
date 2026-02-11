@@ -42,6 +42,8 @@ for Asian markets and additional asset classes:
   **OXR**.
 - **🇭🇰 Hong Kong MPF**: Dedicated support for tracking MPF assets.
 - **🛡️ Insurance Tracking**: New comprehensive support for insurance policies.
+- **💎 Alternative Assets**: Track precious metals, cryptocurrencies, and other
+  non-traditional assets with manual valuation updates.
 - **✨ And More**: Continuous improvements and local adaptations.
 
 ### ✨ Core Features
@@ -97,11 +99,11 @@ See [ROADMAP.md](./ROADMAP.md).
 
 - **[Addon Documentation Hub](docs/addons/index.md)** - Main entry point for
   addon development
-- **[Getting Started](docs/addons/addon-getting-started.md)** - Guide to get
+- **[Getting Started](docs/addons/getting-started.md)** - Guide to get
   started with addon development
-- **[API Reference](docs/addons/addon-api-reference.md)** - Complete API
+- **[API Reference](docs/addons/api-reference.md)** - Complete API
   documentation with examples
-- **[Architecture](docs/addons/addon-architecture.md)** - Design patterns and
+- **[Architecture](docs/addons/architecture.md)** - Design patterns and
   architecture guide
 
 ### Quick Links
@@ -526,6 +528,8 @@ Check out the [addons/](addons/) directory for sample addons including:
 
 - **Goal Progress Tracker**: Visual goal tracking with calendar like interface
 - **Investment Fees Tracker**: Track and analyze investment fees
+- **Swingfolio**: Advanced swing trading tracker with performance analytics,
+  calendar views, and FIFO/LIFO lot matching
 
 ### Resources
 

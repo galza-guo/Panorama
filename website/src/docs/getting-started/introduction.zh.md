@@ -29,4 +29,4 @@ Panorama 建立在 Wealthfolio 坚实的基础之上，增强了对亚洲市场�
 
 ## 关于 Wealthfolio 的说明
 
-Panorama 自豪地基于 Wealthfolio 团队的出色工作。我们分叉该项目是为了提供增强的亚洲市场支持和专门的资产类别。我们与 Wealthfolio 无关，但我们将永远铭记他们对开源社区的贡献。
+Panorama 自豪地基于 Wealthfolio 团队的出色工作。我们分叉该项目是为了提供增强的亚洲市场支持和专门的资产类别。我们与 Wealthfolio 无关，但我们感谢他们对开源社区的贡献。

@@ -37,6 +37,7 @@ Panorama 在 Wealthfolio 坚实的基础上，针对亚洲市场和更多资产�
 - **💱 增强的汇率数据**：来自 **OXR** 的可靠汇率数据源。
 - **🇭🇰 香港强积金 (MPF)**：专门支持追踪 MPF 资产详情。
 - **🛡️ 保险追踪**：全新支持全面的保险保单管理。
+- **💎 替代资产**：追踪贵金属、加密货币等非传统资产，支持手动估值更新。
 - **✨ 更多功能**：持续的改进和本地化适配。
 
 ### ✨ 核心功能
@@ -81,9 +82,9 @@ Panorama 拥有强大的插件系统，允许开发者扩展功能：
 ### 插件开发
 
 - **[插件文档中心](docs/addons/index.md)** - 插件开发的主要入口
-- **[入门指南](docs/addons/addon-getting-started.md)** - 插件开发入门指南
-- **[API 参考](docs/addons/addon-api-reference.md)** - 包含示例的完整 API 文档
-- **[架构](docs/addons/addon-architecture.md)** - 设计模式和架构指南
+- **[入门指南](docs/addons/getting-started.md)** - 插件开发入门指南
+- **[API 参考](docs/addons/api-reference.md)** - 包含示例的完整 API 文档
+- **[架构](docs/addons/architecture.md)** - 设计模式和架构指南
 
 ### 快速链接
 
@@ -486,12 +487,13 @@ Panorama 支持强大的插件生态系统，允许开发者使用自定义功�
 
 - **Goal Progress Tracker**: 带有日历界面的可视化目标追踪
 - **Investment Fees Tracker**: 追踪并分析投资费用
+- **Swingfolio**: 高级波段交易追踪器，支持绩效分析、日历视图和 FIFO/LIFO 仓位匹配
 
 ### 资源
 
-- **[入门指南](docs/addons/addon-getting-started.md)** - 开始构建插件所需的一切知识
-- **[API 参考](docs/addons/addon-api-reference.md)** - 完整的 API 文档
-- **[架构指南](docs/addons/addon-architecture.md)** - 设计模式和最佳实践
+- **[入门指南](docs/addons/getting-started.md)** - 开始构建插件所需的一切知识
+- **[API 参考](docs/addons/api-reference.md)** - 完整的 API 文档
+- **[架构指南](docs/addons/architecture.md)** - 设计模式和最佳实践
 
 ## 使用的技术
 

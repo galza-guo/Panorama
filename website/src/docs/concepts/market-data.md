@@ -8,17 +8,17 @@ Panorama provides powerful multi-currency and global market support.
 - **Cryptocurrencies**: Bitcoin, Ethereum, and thousands of altcoins.
 - **Currencies**: Forex pairs.
 
-## Ticker Formats
+## Market Data Sources
 
-Panorama supports **Yahoo Finance** formats for most global assets, and specific
-formats for Chinese markets.
+Panorama fetches real-time quotes from multiple public providers:
 
-- **US Stocks**: `AAPL`, `MSFT`
-- **China A-Shares**: `600519.SH` (Shanghai), `000001.SZ` (Shenzhen)
-- **China Funds**: `161725.OF` (Public/OTC Funds)
-- **Hong Kong**: `0700.HK` (Tencent)
-- **London**: `VOD.L`
-- **Crypto**: `BTC-USD`
+- **Global Markets**: Yahoo Finance, Alpha Vantage, and other open APIs.
+- **China A-Shares**: Powered by East Money (东方财富) - no API key required.
+- **Chinese Funds**: NAV data from Tiantian Fund (天天基金).
+- **Exchange Rates**: Sourced from Open Exchange Rates (OXR) for reliable FX data.
+
+All market data queries are made directly from your computer to these providers.
+No intermediate servers are involved.
 
 ## Currency Handling
 
