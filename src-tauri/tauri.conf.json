@@ -7,7 +7,12 @@
   },
   "bundle": {
     "active": true,
-    "targets": "all",
+    "targets": [
+      "app",
+      "dmg",
+      "nsis",
+      "appimage"
+    ],
     "icon": [
       "icons/32x32.png",
       "icons/128x128.png",
@@ -19,7 +24,7 @@
     "category": "Finance",
     "createUpdaterArtifacts": "v1Compatible",
     "iOS": {
-      "developmentTeam": "DYDJ2RNL5H"
+      "developmentTeam": "T96QFDVD9V"
     }
   },
   "productName": "Panorama",
