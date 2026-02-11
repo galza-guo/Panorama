@@ -6,7 +6,7 @@
   <h3 align="center">Panorama</h3>
 
   <p align="center">
-    一款精美且“无聊”的桌面端投资追踪器
+    您的全能桌面投资追踪器，深度支持中国市场
     <br />
     <br />
     <a href="https://github.com/galza-guo/Panorama/releases">下载发布版</a>
@@ -20,7 +20,7 @@
 ## 简介
 
 **Panorama App**
-是一款精美且“无聊”的投资追踪器，支持完全的**本地数据存储**。**无订阅费，无云端依赖**。
+是您的全能桌面投资追踪器，深度支持中国市场，支持完全的**本地数据存储**。**无订阅费，无云端依赖**。
 
 Panorama 是 [Wealthfolio](https://github.com/afadil/wealthfolio)
 的一个透明 Fork 版本，并根据 AGPL-3.0 协议保留了上游的归属说明。

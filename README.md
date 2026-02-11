@@ -6,7 +6,7 @@
   <h3 align="center">Panorama</h3>
 
   <p align="center">
-    A Beautiful and Boring Desktop Investment Tracker
+    Your All-in-One Desktop Investment Tracker with Strong China Support
     <br />
     <br />
     <a href="https://github.com/galza-guo/Panorama/releases">Releases</a>
@@ -19,8 +19,8 @@
 
 ## Introduction
 
-**Panorama App** is a Beautiful and Boring Investment Tracker, with Local Data
-Storage. No Subscriptions, No Cloud.
+**Panorama App** is Your All-in-One Desktop Investment Tracker with Strong China
+Support, with Local Data Storage. No Subscriptions, No Cloud.
 
 Panorama is a transparent fork of
 [Wealthfolio](https://github.com/afadil/wealthfolio), and keeps upstream
