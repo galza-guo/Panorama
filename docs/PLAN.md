@@ -1,91 +1,59 @@
-# Panorama Implementation Plan (Updated 2026-02-09)
+# Panorama Implementation Status (Updated 2026-02-11)
 
 ## 1. Overview
-Panorama is an extension of Panorama focused on localized data (A-shares, CN Funds) and specialized asset classes (Insurance, MPF). We will reuse the existing robust Rust core for market data and FX.
+Panorama extends Wealthfolio with localized data (A-shares, CN Funds) and specialized asset classes (Insurance, MPF), while reusing the robust Rust core for market data and FX.
 
-Authoritative spec for Phase 1 market data: `PANORAMA_MARKET_DATA_SPEC.md`.
+Authoritative spec for market data: `PANORAMA_MARKET_DATA_SPEC.md`.
 
-## 2. Updated Implementation Approach
+## 2. Implementation Status
 
-### Phase 1: Localized Market Data (The "Delta" Providers)
-Instead of building a new price service, we will extend the `ProviderRegistry` with two new Rust providers:
-- **`EASTMONEY_CN`**:
-  - Source: EastMoney public endpoints.
-  - Requirement: No API key needed.
-  - Integration: Implement `MarketDataProvider` trait in `src-core/src/market_data/providers/`.
-- **`TIANTIAN_FUND`**:
-  - Source: Tiantian (1234567) + EastMoney fund API.
-  - Requirement: No API key needed.
-  - Integration: Implement `MarketDataProvider` trait.
+### Phase 1: Localized Market Data ✅ COMPLETED
 
-### Phase 2: Specialized Asset UI (Insurance & MPF)
-We will create dedicated UI modules for Insurance and MPF assets, using the existing `assets` table to maintain simplicity.
-- **Data Model Strategy**:
-  - Reuse the `assets` table.
-  - Store specialized metadata (policy number, guaranteed value, trustee) in the `attributes` (JSON) field.
-  - Add an `owner` field/attribute (Self/Spouse).
-- **UI Components**:
-  - `src/pages/insurance/`: Dedicated list and detail views.
-  - `src/pages/mpf/`: Specialized view for MPF fund allocation.
+| Provider | Status | Location |
+|----------|--------|----------|
+| **EASTMONEY_CN** | ✅ Implemented | `src-core/src/market_data/providers/eastmoney_cn_provider.rs` |
+| **TIANTIAN_FUND** | ✅ Implemented | `src-core/src/market_data/providers/tiantian_fund_provider.rs` |
 
-### Phase 3: UX Refinement
-- **API Settings**: Ensure new providers appear in `MarketDataSettingsPage`.
-- **Family View**: Add a toggle or filter to view "Self", "Spouse", or "Combined" assets in the Dashboard.
+**Features:**
+- No API key required for both providers
+- Symbol format: `600001.SH` / `000001.SZ` (A-shares), `161039.FUND` (funds)
+- DB migration with provider seed data
 
----
+### Phase 2: Specialized Asset UI ✅ COMPLETED
 
-## 3. Detailed Task List
+| Module | Status | Location |
+|--------|--------|----------|
+| **Insurance** | ✅ Implemented | `src/pages/insurance/` |
+| **MPF** | ✅ Implemented | `src/pages/mpf/` |
 
-### P0: Core Data Providers
-- [ ] **EastMoney CN Provider** (`EASTMONEY_CN`, keyless):
-  - [ ] Add `DATA_SOURCE_EASTMONEY_CN` constant in `src-core/src/market_data/market_data_constants.rs`.
-  - [ ] Add `EastMoneyCn` variant to `DataSource` enum in `src-core/src/market_data/market_data_model.rs`.
-  - [ ] Implement `src-core/src/market_data/providers/eastmoney_cn_provider.rs`.
-  - [ ] Add match arm in `src-core/src/market_data/providers/provider_registry.rs`.
-  - [ ] Update keyless check in `provider_registry.rs` lines 52-65 to skip API key lookup.
-  - [ ] Add seed row in DB migration with priority `2`.
-  - [ ] Verify symbol format (Panorama PSS): `600001.SH` / `000001.SZ`.
-- [ ] **Tiantian Fund Provider** (`TIANTIAN_FUND`, keyless):
-  - [ ] Add `DATA_SOURCE_TIANTIAN_FUND` constant in `src-core/src/market_data/market_data_constants.rs`.
-  - [ ] Add `TiantianFund` variant to `DataSource` enum in `src-core/src/market_data/market_data_model.rs`.
-  - [ ] Implement `src-core/src/market_data/providers/tiantian_fund_provider.rs`.
-  - [ ] Add match arm in `src-core/src/market_data/providers/provider_registry.rs`.
-  - [ ] Add seed row in DB migration with priority `1`.
-  - [ ] Verify symbol format (Panorama PSS): `161039.FUND` (and accept `161039` when explicitly chosen as FUND in UI).
-- [ ] **Frontend update**:
-  - [ ] Update `src/pages/settings/market-data/market-data-settings.tsx` to add `EASTMONEY_CN` and `TIANTIAN_FUND` to keyless providers list.
+**Features:**
+- Dedicated Insurance Dashboard and Policy Detail View
+- MPF Dashboard with fund allocation visualization
+- Policy editor sheets for both asset types
+- Extended `attributes` JSON field for specialized metadata
 
-### P1: Insurance & MPF Modules
-- [ ] **Asset Extension**:
-  - [ ] Store `owner` and specialized metadata in the existing `attributes` JSON field (no schema migration needed).
-  - [ ] Document standard JSON keys:
-    ```json
-    {
-      "owner": "Self" | "Spouse",
-      "policy_type": "Life" | "ILP" | "Medical",
-      "guaranteed_value": 50000,
-      "trustee": "Manulife"
-    }
-    ```
-- [ ] **Insurance UI**:
-  - [ ] Create `InsuranceDashboard` in `src/pages/insurance/`.
-  - [ ] Create `PolicyDetailView`.
-- [ ] **MPF UI**:
-  - [ ] Create `MpfDashboard` in `src/pages/mpf/`.
-  - [ ] Implement visualization for MPF fund allocation.
+### Phase 3: UX Refinement ✅ COMPLETED
 
-### P2: Family Dashboard
-- [ ] **Owner Filtering**:
-  - [ ] Implement owner-based filtering in `AssetRepository`.
-  - [ ] Add "Owner" selector in Dashboard UI.
+- ✅ New providers appear in Market Data Settings
+- ✅ Insurance and MPF navigation items added
 
 ---
 
-## 4. Why this approach?
-1.  **Low Risk**: Reuses the stable, tested Panorama core.
-2.  **Maintainable**: Follows the existing architectural patterns (traits, providers, registry).
-3.  **Clean Data**: No massive SQL migrations; uses flexible JSON attributes for non-standard assets.
-4.  **Privacy**: Maintains the local-first, zero-cloud philosophy.
+## 3. Future Considerations
+
+### Potential Enhancements
+- [ ] **Family View**: Toggle for "Self" / "Spouse" / "Combined" asset views
+- [ ] **Owner Filtering**: Implement owner-based filtering in repositories
+- [ ] **Additional Data Sources**: More regional market data providers
 
 ---
-*Plan created by Panorama Architect - 2026-02-09*
+
+## 4. Design Principles
+
+1. **Low Risk**: Reuses the stable, tested Wealthfolio core
+2. **Maintainable**: Follows existing architectural patterns (traits, providers, registry)
+3. **Clean Data**: Uses flexible JSON attributes for non-standard assets (no schema bloat)
+4. **Privacy**: Maintains the local-first, zero-cloud philosophy
+
+---
+*Last updated: 2026-02-11*

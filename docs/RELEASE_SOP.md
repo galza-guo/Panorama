@@ -61,27 +61,6 @@ node scripts/release.mjs cut 0.1.0 --push
   - published release (not draft)
   - release metadata validation step
 
-## One-Time Updater Key Setup
-
-Tauri updater artifacts must be signed. Without this key, every matrix job will
-fail at `pnpm tauri build`.
-
-1. Generate a key pair (one-time):
-
-```bash
-pnpm tauri signer generate -w ~/.tauri/panorama.key
-```
-
-2. Ensure `src-tauri/tauri.conf.json` `plugins.updater.pubkey` matches your
-`~/.tauri/panorama.key.pub` value.
-3. Add repository secrets:
-   - Preferred:
-     - `TAURI_PRIVATE_KEY` = full content of `~/.tauri/panorama.key`
-     - `TAURI_KEY_PASSWORD` = key password
-   - Legacy names also supported by workflow fallback:
-     - `TAURI_SIGNING_PRIVATE_KEY`
-     - `TAURI_SIGNING_PRIVATE_KEY_PASSWORD`
-
 ## CI Enforcement
 
 The release workflow runs:
@@ -91,8 +70,6 @@ node scripts/release.mjs check --tag "${{ github.ref_name }}"
 ```
 
 If metadata is wrong, CI fails with explicit repair commands.
-If signing key secrets are missing, CI now fails early with a clear error before
-running the expensive build matrix.
 
 ## AI Agent Prompt Template
 
