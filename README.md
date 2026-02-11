@@ -9,42 +9,14 @@
     A Beautiful and Boring Desktop Investment Tracker
     <br />
     <br />
-    <a href="https://panorama.app">Website</a>
-    ·
-    <a href="https://discord.gg/WDMCY6aPWK">Discord</a>
-    ·
-    <a href="https://x.com/intent/follow?screen_name=PanoramaApp">Twitter</a>
-    ·
     <a href="https://github.com/galza-guo/Panorama/releases">Releases</a>
   </p>
-</div>
-<div align="center">
-
-[<img src="./public/button-buy-me-a-coffee.png" width="180" alt="Buy me a coffee button"/>](https://www.buymeacoffee.com/afadil)
-
-</div>
-
-<div align="center">
-<a href="https://news.ycombinator.com/item?id=41465735">
-  <img
-    alt="Featured on Hacker News"
-    src="https://hackerbadge.now.sh/api?id=41465735"
-    style="width: 250px; height: 55px;" width="250" height="55"
-  />
-</a>
-  <a href="https://www.producthunt.com/posts/panorama?embed=true&amp;utm_source=badge-featured&amp;utm_medium=badge&amp;utm_souce=badge-panorama" target="_blank"><img src="https://api.producthunt.com/widgets/embed-image/v1/featured.svg?post_id=461640&amp;theme=light" alt="Panorama - A boring, Local first, desktop Investment Tracking app | Product Hunt" class="h-[55px] w-[250px]" width="250" height="55"></a>
-
-  <a href="https://trendshift.io/repositories/11701" target="_blank">
-  <img src="https://trendshift.io/api/badge/repositories/11701" alt="afadil%2Fpanorama | Trendshift" style="width: 250px; height: 55px;" width="250" height="55"/></a>
-
 </div>
 
 ## Introduction
 
-**Panorama App** is a Beautiful and Boring Investment Tracker, with Local
-Data Storage. No Subscriptions, No Cloud.
-
-Visit the app website at [Panorama App](https://panorama.app/).
+**Panorama App** is a Beautiful and Boring Investment Tracker, with Local Data
+Storage. No Subscriptions, No Cloud.
 
 Panorama is a transparent fork of
 [Wealthfolio](https://github.com/afadil/wealthfolio), and keeps upstream
@@ -52,7 +24,23 @@ attribution under AGPL-3.0.
 
 ![Screenshot](public/screenshot.webp)
 
-### ✨ Key Features
+### 🚀 Panorama Features
+
+Panorama builds upon the solid foundation of Wealthfolio with enhanced support
+for Asian markets and additional asset classes:
+
+- **🇨🇳 China Stock Support**: Native support for **A-Shares (A股)** and verified
+  data sources.
+- **📈 Comprehensive Fund Data**: Support for **Public Funds (基金)** and **OTC
+  Funds (场外基金)** powered by **East Money (东方财富)** and **Tiantian Fund
+  (天天基金)**.
+- **💱 Enhanced Currency Rates**: Reliable exchange rate data sourced from
+  **OXR**.
+- **🇭🇰 Hong Kong MPF**: Dedicated support for tracking MPF assets.
+- **🛡️ Insurance Tracking**: New comprehensive support for insurance policies.
+- **✨ And More**: Continuous improvements and local adaptations.
+
+### ✨ Core Features
 
 - **📊 Portfolio Tracking** - Track your investments across multiple accounts
   and asset types
@@ -565,8 +553,8 @@ Check out the [addons/](addons/) directory for sample addons including:
 
 ### Addon System
 
-- **@panorama/addon-sdk**: TypeScript SDK for addon development with full
-  type safety.
+- **@panorama/addon-sdk**: TypeScript SDK for addon development with full type
+  safety.
 - **@panorama/addon-dev-tools**: CLI tools and development server for hot
   reload.
 - **@panorama/ui**: Shared UI component library for consistent styling.
