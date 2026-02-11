@@ -28,7 +28,7 @@
   "identifier": "com.gallantguo.panorama",
   "plugins": {
     "updater": {
-      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDY0RjI4MkRFOUYwRDM3N0QKUldSOU53MmYzb0x5WlBySmErU21wcjVHZFNtMW9zdGcyZTBBRWpVcHRDMkoyKzF1bkQ1VmdKbkYK",
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IEE5RDg2NERCQzY2MjFDNkQKUldSdEhHTEcyMlRZcVd1djNMdTBZZE9rYy9qdU9KQzhzU00zYzhmYTZzVHdwcG9RSHN4R1hDUUQK",
       "endpoints": [
         "https://github.com/galza-guo/Panorama/releases/latest/download/latest.json"
       ],
