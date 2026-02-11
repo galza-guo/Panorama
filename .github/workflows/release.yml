@@ -101,5 +101,6 @@ jobs:
           releaseDraft: false
           prerelease: false
           retryAttempts: 3
-          includeUpdaterJson: ${{ matrix.platform == 'ubuntu-24.04' }}
+          uploadUpdaterJson: ${{ matrix.platform == 'ubuntu-24.04' }}
+          uploadUpdaterSignatures: false
           args: ${{ matrix.args }}

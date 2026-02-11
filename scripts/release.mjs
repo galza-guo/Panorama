@@ -274,6 +274,14 @@ function fixReleaseWorkflow() {
 
   content = content.replace(/tags:\n(?:\s+-\s*".*"\n)+/, 'tags:\n      - "v*.*.*"\n');
   content = content.replace(/releaseDraft:\s*(true|false)/, "releaseDraft: false");
+  content = content.replace(/includeUpdaterJson:/g, "uploadUpdaterJson:");
+
+  if (!content.includes("uploadUpdaterSignatures: false")) {
+    content = content.replace(
+      /(\s+retryAttempts:\s*\d+\n\s+uploadUpdaterJson:[^\n]*\n)/,
+      "$1          uploadUpdaterSignatures: false\n",
+    );
+  }
 
   const validatorCommand = 'node scripts/release.mjs check --tag "${{ github.ref_name }}"';
   if (!content.includes(validatorCommand)) {
@@ -373,6 +381,14 @@ function validateReleaseConfig(expectedVersion, expectedTag) {
 
   if (!releaseWorkflow.includes("releaseDraft: false")) {
     issues.push(`${RELEASE_WORKFLOW_PATH} must set releaseDraft: false`);
+  }
+
+  if (releaseWorkflow.includes("includeUpdaterJson:")) {
+    issues.push(`${RELEASE_WORKFLOW_PATH} must use uploadUpdaterJson (not includeUpdaterJson)`);
+  }
+
+  if (!releaseWorkflow.includes("uploadUpdaterSignatures: false")) {
+    issues.push(`${RELEASE_WORKFLOW_PATH} must disable uploadUpdaterSignatures to avoid clutter`);
   }
 
   if (!releaseWorkflow.includes('node scripts/release.mjs check --tag "${{ github.ref_name }}"')) {
