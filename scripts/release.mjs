@@ -288,6 +288,38 @@ function fixReleaseWorkflow() {
     content = content.replace(checkoutBlockRegex, `$1\n${validatorStep}`);
   }
 
+  content = content.replace(
+    /TAURI_SIGNING_PRIVATE_KEY:\s*\$\{\{\s*secrets\.[^}]+\}\}/,
+    "TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_PRIVATE_KEY || secrets.TAURI_SIGNING_PRIVATE_KEY }}",
+  );
+  content = content.replace(
+    /TAURI_SIGNING_PRIVATE_KEY_PASSWORD:\s*\$\{\{\s*secrets\.[^}]+\}\}/,
+    "TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_KEY_PASSWORD || secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}",
+  );
+
+  const signingValidationStepName = "Validate updater signing secrets";
+  if (!content.includes(signingValidationStepName)) {
+    const installDepsRegex =
+      /(\s+- name: Install frontend dependencies\n(?:\s+.*\n)*?\s+run: pnpm install[^\n]*\n)/;
+    const signingValidationStep = [
+      "      - name: Validate updater signing secrets",
+      "        if: startsWith(github.ref, 'refs/tags/')",
+      "        env:",
+      "          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_PRIVATE_KEY || secrets.TAURI_SIGNING_PRIVATE_KEY }}",
+      "          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_KEY_PASSWORD || secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}",
+      "        run: |",
+      '          if [ -z "$TAURI_SIGNING_PRIVATE_KEY" ]; then',
+      "            echo \"::error::Missing updater signing private key. Set repo secret TAURI_PRIVATE_KEY (preferred) or TAURI_SIGNING_PRIVATE_KEY.\"",
+      "            exit 1",
+      "          fi",
+      '          if [ -z "$TAURI_SIGNING_PRIVATE_KEY_PASSWORD" ]; then',
+      "            echo \"::warning::TAURI signing key password is empty. This is only valid for an unencrypted private key.\"",
+      "          fi",
+      "",
+    ].join("\n");
+    content = content.replace(installDepsRegex, `$1\n${signingValidationStep}`);
+  }
+
   writeFile(RELEASE_WORKFLOW_PATH, content);
 }
 
@@ -349,6 +381,30 @@ function validateReleaseConfig(expectedVersion, expectedTag) {
 
   if (!releaseWorkflow.includes("if: startsWith(github.ref, 'refs/tags/')")) {
     issues.push(`${RELEASE_WORKFLOW_PATH} release validation step must run only for tag refs`);
+  }
+
+  if (!releaseWorkflow.includes("Validate updater signing secrets")) {
+    issues.push(`${RELEASE_WORKFLOW_PATH} must validate updater signing secrets before build`);
+  }
+
+  if (
+    !releaseWorkflow.includes(
+      "TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_PRIVATE_KEY || secrets.TAURI_SIGNING_PRIVATE_KEY }}",
+    )
+  ) {
+    issues.push(
+      `${RELEASE_WORKFLOW_PATH} must use TAURI_PRIVATE_KEY with fallback TAURI_SIGNING_PRIVATE_KEY`,
+    );
+  }
+
+  if (
+    !releaseWorkflow.includes(
+      "TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_KEY_PASSWORD || secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}",
+    )
+  ) {
+    issues.push(
+      `${RELEASE_WORKFLOW_PATH} must use TAURI_KEY_PASSWORD with fallback TAURI_SIGNING_PRIVATE_KEY_PASSWORD`,
+    );
   }
 
   return { issues, versions };
