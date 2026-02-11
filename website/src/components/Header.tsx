@@ -1,6 +1,7 @@
-import { Github, Twitter } from "lucide-react";
+import { Github, Globe, Twitter } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
-import { cn } from "../lib/utils"; // We'll need to create this utility or just use clsx
+import { cn } from "../lib/utils";
 
 interface HeaderProps {
   className?: string;
@@ -8,6 +9,13 @@ interface HeaderProps {
 }
 
 export default function Header({ className, showDocsLink = true }: HeaderProps) {
+  const { t, i18n } = useTranslation();
+
+  const toggleLanguage = () => {
+    const newLang = i18n.language === "en" ? "zh" : "en";
+    i18n.changeLanguage(newLang);
+  };
+
   return (
     <header
       className={cn(
@@ -25,9 +33,17 @@ export default function Header({ className, showDocsLink = true }: HeaderProps) 
         <nav className="flex items-center gap-6 text-sm font-medium">
           {showDocsLink && (
             <Link to="/docs" className="hover:text-primary transition-colors">
-              Docs
+              {t("header.docs")}
             </Link>
           )}
+          <button
+            onClick={toggleLanguage}
+            className="hover:text-primary flex items-center gap-1 transition-colors"
+            aria-label="Toggle Language"
+          >
+            <Globe className="size-4" />
+            <span>{i18n.language === "en" ? "EN" : "中文"}</span>
+          </button>
           <a
             href="https://github.com/galza-guo/Panorama"
             target="_blank"
@@ -35,7 +51,7 @@ export default function Header({ className, showDocsLink = true }: HeaderProps) 
             className="hover:text-primary/80 transition-colors"
           >
             <Github className="size-5" />
-            <span className="sr-only">GitHub</span>
+            <span className="sr-only">{t("header.github")}</span>
           </a>
           <a
             href="https://x.com/Gallant_GUO"
@@ -44,7 +60,7 @@ export default function Header({ className, showDocsLink = true }: HeaderProps) 
             className="hover:text-primary/80 transition-colors"
           >
             <Twitter className="size-5" />
-            <span className="sr-only">X (Twitter)</span>
+            <span className="sr-only">{t("header.twitter")}</span>
           </a>
         </nav>
       </div>

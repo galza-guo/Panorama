@@ -1,0 +1,69 @@
+{
+  "header": {
+    "docs": "Docs",
+    "github": "GitHub",
+    "twitter": "X (Twitter)"
+  },
+  "hero": {
+    "badge": "Desktop-First Investment Tracking",
+    "title_start": "Your wealth, ",
+    "title_end": "in panorama.",
+    "subtitle": "A beautiful, private, and open-source investment tracker. Forked from Wealthfolio to provide a refined, standalone Desktop experience.",
+    "download": "Download Latest Release",
+    "platform_support": "Always points to the latest release for macOS, Windows, and Linux."
+  },
+  "features": {
+    "desktop": {
+      "title": "Desktop Focused",
+      "desc": "Optimized strictly for macOS and Windows. No mobile compromises."
+    },
+    "privacy": {
+      "title": "Local & Private",
+      "desc": "Your data stays on your device. No servers, no tracking, complete privacy."
+    },
+    "opensource": {
+      "title": "Open Source",
+      "desc": "Transparent code. Forked from Wealthfolio, maintained by the community."
+    }
+  },
+  "footer": {
+    "disclaimer_title": "Honoring the Source",
+    "disclaimer_text_1": "Panorama is proudly a fork of ",
+    "disclaimer_text_2": ". We love what they've built, but we have a different vision for a pure, robust Desktop experience.",
+    "disclaimer_text_3": "We are not affiliated with Wealthfolio. All credit for the foundation goes to their amazing team.",
+    "built_by": "Built by ",
+    "source_code": ". The source code is available on "
+  },
+  "docs": {
+    "menu_open": "Menu",
+    "menu_close": "Close Menu",
+    "title": "Documentation",
+    "not_found": "Document not found.",
+    "nav": {
+      "getting_started": "Getting Started",
+      "guides": "Guides",
+      "concepts": "Concepts",
+      "addons": "Addons",
+      "reference": "Reference",
+      "introduction": "Introduction",
+      "installation": "Installation",
+      "privacy": "Privacy",
+      "dashboards": "Dashboards",
+      "activities": "Activities",
+      "accounts": "Accounts",
+      "goals": "Goals",
+      "settings": "Settings",
+      "export": "Export Data",
+      "activity_types": "Activity Types",
+      "performance_metrics": "Performance Metrics",
+      "market_data": "Market Data",
+      "overview": "Overview",
+      "api_reference": "API Reference",
+      "architecture": "Architecture",
+      "packages": "Packages",
+      "query_client": "Query Client Design",
+      "features": "Features",
+      "faq": "FAQ"
+    }
+  }
+}
