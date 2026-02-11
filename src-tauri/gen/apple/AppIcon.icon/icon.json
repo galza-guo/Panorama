@@ -8,15 +8,30 @@
   "groups" : [
     {
       "layers" : [
+
+      ],
+      "shadow" : {
+        "kind" : "neutral",
+        "opacity" : 0.5
+      },
+      "translucency" : {
+        "enabled" : true,
+        "value" : 0.5
+      }
+    },
+    {
+      "layers" : [
         {
-          "fill" : {
-            "linear-gradient" : [
-              "display-p3:1.00000,1.00000,1.00000,1.00000",
-              "display-p3:0.92941,0.81961,0.62745,1.00000"
+          "fill" : "automatic",
+          "image-name" : "Panorama logo (inner) 3.png",
+          "name" : "Panorama logo (inner) 3",
+          "position" : {
+            "scale" : 1,
+            "translation-in-points" : [
+              0.5,
+              0
             ]
-          },
-          "image-name" : "logo-vector.png",
-          "name" : "logo-vector"
+          }
         }
       ],
       "shadow" : {
