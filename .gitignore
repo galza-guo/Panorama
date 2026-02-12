@@ -81,3 +81,7 @@ Thumbs.db
 /blob-report/
 /playwright/.cache/
 /playwright/.auth/
+
+# Local secrets and deployment metadata
+temp-secrets/
+website/.vercel/

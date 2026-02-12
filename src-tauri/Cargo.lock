@@ -3571,7 +3571,7 @@ dependencies = [
 
 [[package]]
 name = "panorama-app"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "anyhow",
  "base64 0.22.1",
@@ -3602,7 +3602,7 @@ dependencies = [
 
 [[package]]
 name = "panorama_core"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "anyhow",
  "async-trait",

@@ -1,10 +1,14 @@
-import { Code, Download, Lock, Monitor } from "lucide-react";
+import { ChevronDown, Code, Download, Lock, Monitor } from "lucide-react";
+import { useState } from "react";
 import { Trans, useTranslation } from "react-i18next";
 import Background from "../components/Background";
+import { DownloadOptions } from "../components/DownloadOptions";
 import Header from "../components/Header";
+import { cn } from "../lib/utils";
 
 export default function Home() {
   const { t, i18n } = useTranslation();
+  const [isDownloadOpen, setIsDownloadOpen] = useState(false);
 
   return (
     <div className="text-foreground selection:bg-primary selection:text-primary-foreground relative min-h-screen font-mono">
@@ -33,21 +37,24 @@ export default function Home() {
                     className="text-primary underline-offset-4 hover:underline"
                     key="wealthfolio-link"
                   />,
-                  <span className="text-foreground font-bold" key="highlight" />,
                 ]}
               />
             </p>
-            <div className="flex flex-col items-center gap-2 pt-4">
-              <div className="space-x-4">
-                <a
-                  href="https://github.com/galza-guo/Panorama/releases/latest"
-                  target="_blank"
-                  rel="noreferrer"
-                  className="focus-visible:ring-ring bg-primary text-primary-foreground hover:bg-primary/90 inline-flex h-11 items-center justify-center rounded-md px-8 text-sm font-medium shadow transition-colors focus-visible:ring-1 focus-visible:outline-none disabled:pointer-events-none disabled:opacity-50"
+            <div className="flex w-full flex-col items-center gap-2 pt-4">
+              <div className="flex flex-wrap items-center justify-center gap-4">
+                <button
+                  onClick={() => setIsDownloadOpen(!isDownloadOpen)}
+                  className="focus-visible:ring-ring bg-primary text-primary-foreground hover:bg-primary/90 inline-flex h-11 cursor-pointer items-center justify-center rounded-md px-8 text-sm font-medium shadow transition-colors focus-visible:ring-1 focus-visible:outline-none disabled:pointer-events-none disabled:opacity-50"
                 >
                   <Download className="mr-2 h-4 w-4" />
                   {t("hero.download")}
-                </a>
+                  <ChevronDown
+                    className={cn(
+                      "ml-2 h-4 w-4 transition-transform duration-200",
+                      isDownloadOpen && "rotate-180",
+                    )}
+                  />
+                </button>
                 <a
                   href="https://github.com/galza-guo/Panorama"
                   target="_blank"
@@ -58,6 +65,8 @@ export default function Home() {
                   {t("header.github")}
                 </a>
               </div>
+
+              <DownloadOptions visible={isDownloadOpen} />
             </div>
           </div>
         </section>

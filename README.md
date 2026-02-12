@@ -81,7 +81,7 @@ functionality:
 
 Documentation for all Activity types, including the required form fields, is
 available in
-[docs/activities/activity-types.md](docs/activities/activity-types.md).
+[docs/concepts/activity-types.md](docs/concepts/activity-types.md).
 
 ## Roadmap
 
