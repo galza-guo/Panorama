@@ -34,9 +34,7 @@ const Particles = ({ color }: { color: string }) => {
       <bufferGeometry>
         <bufferAttribute
           attach="attributes-position"
-          count={particlesPosition.length / 3}
-          array={particlesPosition}
-          itemSize={3}
+          args={[particlesPosition, 3]}
         />
       </bufferGeometry>
       <pointsMaterial
@@ -62,9 +60,6 @@ export default function Background() {
   // Ideally ThemeProvider should expose the *resolved* theme.
   // For now, let's implement a small helper or just duplicate logic slightly or check DOM.
   // Checking DOM is safest for class-based theming.
-
-  const isDark =
-    typeof document !== "undefined" && document.documentElement.classList.contains("dark");
 
   // React state might not update on class change unless we listen to it or use the context.
   // The context 'theme' value is the *preference* (light, dark, system).

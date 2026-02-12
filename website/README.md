@@ -2,6 +2,37 @@
 
 This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
 
+## One-command publish to PersonalSite
+
+If your `PersonalSite` repo is at `/Users/guolite/GitHub/PersonalSite`, you only need:
+
+```bash
+npm run publish:personal-site
+```
+
+This command does:
+
+1. Build website into `website/dist`
+2. Sync files into `PersonalSite/public/panorama`
+
+If your PersonalSite path is different, run:
+
+```bash
+PERSONAL_SITE_PATH=/your/path/to/PersonalSite npm run publish:personal-site
+```
+
+From Panorama repo root, you can also run:
+
+```bash
+pnpm website:publish-personal-site
+```
+
+To auto-commit and push the updated `public/panorama` in PersonalSite:
+
+```bash
+pnpm website:ship-personal-site
+```
+
 Currently, two official plugins are available:
 
 - [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh

@@ -7,7 +7,9 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "sync:personal-site": "node scripts/sync-personal-site.mjs",
+    "publish:personal-site": "pnpm run build && pnpm run sync:personal-site"
   },
   "dependencies": {
     "@radix-ui/react-dialog": "^1.1.15",

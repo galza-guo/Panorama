@@ -182,6 +182,23 @@ Common UI tasks:
 - Desktop dev: `pnpm tauri dev`
 - Tests: `pnpm test` or `pnpm test:watch`
 
+## Website Deployment Flow (Panorama -> PersonalSite)
+
+- Source of truth for the marketing website is in `website/src/**`.
+- `PersonalSite/public/panorama/**` contains build artifacts only. Do not edit
+  those files manually in day-to-day development.
+- Standard update flow for agents:
+  1. Edit website source in `website/`.
+  2. Run one command from Panorama root:
+     - `pnpm website:ship-personal-site`
+  3. This command builds `website`, syncs files to `../PersonalSite/public/panorama`,
+     commits only `public/panorama`, and pushes current branch in `PersonalSite`.
+- Safe preview without committing/pushing:
+  - `pnpm website:ship-personal-site:dry-run`
+- Optional overrides:
+  - `PERSONAL_SITE_PATH` to point to a non-default PersonalSite repo path.
+  - `PERSONAL_SITE_COMMIT_MESSAGE` to customize the auto commit message.
+
 ## Addon Development (Quickstart)
 
 - Scaffold: `npx @panorama/addon-dev-tools create <my-addon>`
