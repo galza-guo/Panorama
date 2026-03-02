@@ -41,6 +41,16 @@ export type { HoldingCategoryFilterId } from "./constants";
 
 export type { ActivitySubtype, ImportRequiredField } from "./constants";
 
+export type JsonValue =
+  | string
+  | number
+  | boolean
+  | null
+  | JsonObject
+  | JsonValue[];
+
+export type JsonObject = { [key: string]: JsonValue };
+
 export interface Account {
   id: string;
   name: string;
@@ -971,7 +981,7 @@ export interface CreateAlternativeAssetRequest {
   /** Optional purchase date in ISO format */
   purchaseDate?: string;
   /** Kind-specific metadata (e.g., property_type, metal_type, unit) */
-  metadata?: Record<string, string>;
+  metadata?: JsonObject;
   /** For liabilities: optional ID of the financed asset (UI-only linking) */
   linkedAssetId?: string;
 }
@@ -1144,7 +1154,7 @@ export interface AlternativeAssetHolding {
   /** Date of the latest valuation (ISO format) */
   valuationDate: string;
   /** Kind-specific metadata */
-  metadata?: Record<string, unknown>;
+  metadata?: JsonObject;
   /** For liabilities: linked asset ID if any */
   linkedAssetId?: string;
   /** Asset notes */

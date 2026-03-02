@@ -127,7 +127,7 @@ pub struct AlternativeHoldingResponse {
 #[serde(rename_all = "camelCase")]
 pub struct UpdateAssetDetailsRequest {
     pub name: Option<String>,
-    pub metadata: std::collections::HashMap<String, String>,
+    pub metadata: std::collections::HashMap<String, Value>,
     pub notes: Option<String>,
 }
 
@@ -246,16 +246,15 @@ async fn update_alternative_asset_metadata(
     State(state): State<Arc<AppState>>,
     Json(request): Json<UpdateAssetDetailsRequest>,
 ) -> ApiResult<StatusCode> {
-    // Convert HashMap<String, String> to HashMap<String, Option<String>>
-    // Empty strings mean "remove this key"
-    let metadata_map: std::collections::HashMap<String, Option<String>> = request
+    // Preserve structured JSON metadata while keeping empty strings as delete markers.
+    let metadata_map: std::collections::HashMap<String, Value> = request
         .metadata
         .into_iter()
         .map(|(k, v)| {
-            if v.is_empty() {
-                (k, None)
+            if v.as_str().is_some_and(str::is_empty) {
+                (k, Value::Null)
             } else {
-                (k, Some(v))
+                (k, v)
             }
         })
         .collect();

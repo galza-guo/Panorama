@@ -152,6 +152,35 @@ impl AlternativeAssetService {
         Some(meta)
     }
 
+    /// Merges a metadata patch into an existing metadata object.
+    ///
+    /// Top-level `null` values delete keys. All other JSON values are preserved
+    /// as-is so Panorama metadata can store structured arrays and objects.
+    fn merge_asset_metadata(
+        existing: Option<&Value>,
+        updates: Option<&std::collections::HashMap<String, Value>>,
+    ) -> Option<Value> {
+        let mut metadata_obj = existing
+            .and_then(|value| value.as_object().cloned())
+            .unwrap_or_default();
+
+        if let Some(new_metadata) = updates {
+            for (key, value) in new_metadata {
+                if value.is_null() {
+                    metadata_obj.remove(key);
+                } else {
+                    metadata_obj.insert(key.clone(), value.clone());
+                }
+            }
+        }
+
+        if metadata_obj.is_empty() {
+            None
+        } else {
+            Some(Value::Object(metadata_obj))
+        }
+    }
+
     /// Derives the display code for an alternative asset from its metadata.
     ///
     /// Uses the unified `sub_type` field (e.g., "gold" → "Gold", "mortgage" → "Mortgage").
@@ -449,53 +478,36 @@ impl AlternativeAssetServiceTrait for AlternativeAssetService {
             ))));
         }
 
-        // Parse existing metadata
-        let mut metadata_obj = asset
-            .metadata
-            .as_ref()
-            .and_then(|v| v.as_object().cloned())
-            .unwrap_or_default();
+        let existing_metadata = asset.metadata.clone();
 
         // Track old purchase info for quote sync
-        let old_purchase_price = metadata_obj
-            .get("purchase_price")
+        let old_purchase_price = existing_metadata
+            .as_ref()
+            .and_then(|metadata| metadata.get("purchase_price"))
             .and_then(|v| v.as_str())
             .map(|s| s.to_string());
-        let old_purchase_date = metadata_obj
-            .get("purchase_date")
+        let old_purchase_date = existing_metadata
+            .as_ref()
+            .and_then(|metadata| metadata.get("purchase_date"))
             .and_then(|v| v.as_str())
             .map(|s| s.to_string());
 
-        // Merge new metadata (None values remove the key)
-        if let Some(new_metadata) = &request.metadata {
-            for (key, value) in new_metadata {
-                match value {
-                    Some(v) if !v.is_empty() => {
-                        metadata_obj.insert(key.clone(), json!(v));
-                    }
-                    _ => {
-                        metadata_obj.remove(key);
-                    }
-                }
-            }
-        }
+        let updated_metadata =
+            Self::merge_asset_metadata(existing_metadata.as_ref(), request.metadata.as_ref());
 
         // Get new purchase info after merge
-        let new_purchase_price = metadata_obj
-            .get("purchase_price")
+        let new_purchase_price = updated_metadata
+            .as_ref()
+            .and_then(|metadata| metadata.get("purchase_price"))
             .and_then(|v| v.as_str())
             .map(|s| s.to_string());
-        let new_purchase_date = metadata_obj
-            .get("purchase_date")
+        let new_purchase_date = updated_metadata
+            .as_ref()
+            .and_then(|metadata| metadata.get("purchase_date"))
             .and_then(|v| v.as_str())
             .map(|s| s.to_string());
 
         // Recalculate display_code from updated metadata
-        let updated_metadata = if metadata_obj.is_empty() {
-            None
-        } else {
-            Some(Value::Object(metadata_obj))
-        };
         let display_code = Self::derive_display_code(&asset.kind, &updated_metadata);
 
         // Persist asset details update
@@ -727,5 +739,59 @@ mod tests {
 
         let removed = AlternativeAssetService::remove_linked_asset_id(Some(metadata));
         assert!(removed.is_none()); // Only had linked_asset_id, so should be None when removed
+    }
+
+    #[test]
+    fn test_merge_asset_metadata_preserves_structured_values() {
+        let existing = json!({
+            "owner": "Alice",
+            "obsolete": "remove-me",
+            "mpf_subfunds": [
+                {
+                    "name": "Existing Fund",
+                    "allocation_pct": 100
+                }
+            ]
+        });
+
+        let updates = std::collections::HashMap::from([
+            ("owner".to_string(), json!("Bob")),
+            (
+                "mpf_subfunds".to_string(),
+                json!([
+                    {
+                        "name": "Core Accumulation",
+                        "allocation_pct": 60.5
+                    },
+                    {
+                        "name": "Equity Fund",
+                        "allocation_pct": 39.5,
+                        "units": 128.25
+                    }
+                ]),
+            ),
+            (
+                "fund_allocation".to_string(),
+                json!({
+                    "Core Accumulation": 60.5,
+                    "Equity Fund": 39.5
+                }),
+            ),
+            ("obsolete".to_string(), Value::Null),
+        ]);
+
+        let merged = AlternativeAssetService::merge_asset_metadata(Some(&existing), Some(&updates))
+            .expect("expected merged metadata");
+
+        assert_eq!(merged.get("owner"), Some(&json!("Bob")));
+        assert!(merged.get("obsolete").is_none());
+        assert_eq!(
+            merged.pointer("/mpf_subfunds/1/units"),
+            Some(&json!(128.25))
+        );
+        assert_eq!(
+            merged.pointer("/fund_allocation/Core Accumulation"),
+            Some(&json!(60.5))
+        );
     }
 }

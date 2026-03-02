@@ -3,6 +3,7 @@ import type {
   AlternativeAssetHolding,
   CreateAlternativeAssetRequest,
   CreateAlternativeAssetResponse,
+  JsonObject,
   UpdateValuationRequest,
   UpdateValuationResponse,
   LinkLiabilityRequest,
@@ -82,7 +83,7 @@ export const getNetWorth = async (date?: string): Promise<NetWorthResponse> => {
  */
 export const updateAlternativeAssetMetadata = async (
   assetId: string,
-  metadata: Record<string, string>,
+  metadata: JsonObject,
   name?: string,
   notes?: string | null,
 ): Promise<void> => {

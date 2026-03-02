@@ -280,19 +280,18 @@ pub async fn update_alternative_asset_valuation(
 pub async fn update_alternative_asset_metadata(
     asset_id: String,
     name: Option<String>,
-    metadata: std::collections::HashMap<String, String>,
+    metadata: std::collections::HashMap<String, serde_json::Value>,
     notes: Option<String>,
     state: State<'_, Arc<ServiceContext>>,
 ) -> Result<(), String> {
-    // Convert HashMap<String, String> to HashMap<String, Option<String>>
-    // Empty strings mean "remove this key"
-    let metadata_map: std::collections::HashMap<String, Option<String>> = metadata
+    // Preserve structured JSON metadata while keeping empty strings as delete markers.
+    let metadata_map: std::collections::HashMap<String, serde_json::Value> = metadata
         .into_iter()
         .map(|(k, v)| {
-            if v.is_empty() {
-                (k, None)
+            if v.as_str().is_some_and(str::is_empty) {
+                (k, serde_json::Value::Null)
             } else {
-                (k, Some(v))
+                (k, v)
             }
         })
         .collect();

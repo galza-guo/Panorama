@@ -40,6 +40,13 @@ const staticNavigation: NavigationProps = {
       label: "View Holdings",
     },
     {
+      icon: <Icons.ShieldCheck className="size-6" />,
+      title: "Insurance",
+      href: "/insurance",
+      keywords: ["insurance", "policy", "protection", "cash value"],
+      label: "View Insurance",
+    },
+    {
       icon: <Icons.Activity className="size-6" />,
       title: "Activities",
       href: "/activities",
