@@ -87,6 +87,14 @@ available in
 
 See [ROADMAP.md](./ROADMAP.md).
 
+## Maintainers
+
+Panorama now treats Wealthfolio as the long-term platform baseline and keeps
+fork-specific behavior in a narrower local layer. If you are doing upstream
+alignment or periodic sync work, start with
+[docs/UPSTREAM_SYNC.md](docs/UPSTREAM_SYNC.md) and the planning docs under
+[docs/plans/](docs/plans/).
+
 ## 📖 Documentation
 
 ### Core Application
