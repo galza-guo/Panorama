@@ -47,6 +47,13 @@ const staticNavigation: NavigationProps = {
       label: "View Insurance",
     },
     {
+      icon: <Icons.Briefcase className="size-6" />,
+      title: "MPF",
+      href: "/mpf",
+      keywords: ["mpf", "mandatory provident fund", "retirement", "subfund"],
+      label: "View MPF",
+    },
+    {
       icon: <Icons.Activity className="size-6" />,
       title: "Activities",
       href: "/activities",

@@ -3,6 +3,8 @@ import { describe, expect, it } from "vitest";
 import { AlternativeAssetKind, type AlternativeAssetHolding } from "./types";
 import {
   asFiniteNumber,
+  buildMpfMetadata,
+  buildMpfMetadataPatch,
   buildFundAllocationFromSubfunds,
   getAssetOwner,
   isInsuranceAsset,
@@ -94,6 +96,62 @@ describe("panorama asset attributes", () => {
     ).toEqual({
       "Bond Fund": 40,
       "Equity Fund": 60,
+    });
+  });
+
+  it("builds mpf metadata and patch payloads with derived allocation data", () => {
+    const subfunds = [
+      {
+        name: "Core Accumulation",
+        units: 125.5,
+        allocation_pct: 60.5,
+      },
+      {
+        name: "Equity Fund",
+        units: 80,
+        allocation_pct: 39.5,
+      },
+    ];
+
+    expect(
+      buildMpfMetadata({
+        owner: "Alice",
+        trustee: "HSBC Trustee",
+        mpf_scheme: "Employer Scheme",
+        valuation_date: "2026-03-02",
+        mpf_subfunds: subfunds,
+      }),
+    ).toEqual({
+      panorama_category: "mpf",
+      sub_type: "mpf",
+      owner: "Alice",
+      trustee: "HSBC Trustee",
+      mpf_scheme: "Employer Scheme",
+      valuation_date: "2026-03-02",
+      mpf_subfunds: subfunds,
+      fund_allocation: {
+        "Core Accumulation": 60.5,
+        "Equity Fund": 39.5,
+      },
+    });
+
+    expect(
+      buildMpfMetadataPatch({
+        owner: "",
+        trustee: "HSBC Trustee",
+        mpf_scheme: "",
+        valuation_date: "2026-03-02",
+        mpf_subfunds: [],
+      }),
+    ).toEqual({
+      panorama_category: "mpf",
+      sub_type: "mpf",
+      owner: null,
+      trustee: "HSBC Trustee",
+      mpf_scheme: null,
+      valuation_date: "2026-03-02",
+      mpf_subfunds: null,
+      fund_allocation: null,
     });
   });
 });

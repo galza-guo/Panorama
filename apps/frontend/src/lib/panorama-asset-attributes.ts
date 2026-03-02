@@ -1,4 +1,4 @@
-import type { AlternativeAssetHolding, JsonObject } from "./types";
+import type { AlternativeAssetHolding, JsonObject, JsonValue } from "./types";
 
 export interface PanoramaMpfSubfund {
   name: string;
@@ -35,6 +35,14 @@ export interface InsuranceMetadataInput {
   valuation_date?: string;
   total_paid_to_date?: number;
   withdrawable_value?: number;
+}
+
+export interface MpfMetadataInput {
+  owner?: string;
+  trustee?: string;
+  mpf_scheme?: string;
+  valuation_date?: string;
+  mpf_subfunds?: PanoramaMpfSubfund[];
 }
 
 function normalizeText(value: unknown): string {
@@ -193,6 +201,69 @@ export function buildInsuranceMetadataPatch(input: InsuranceMetadataInput): Json
     valuation_date: input.valuation_date?.trim() ? input.valuation_date.trim() : null,
     total_paid_to_date: input.total_paid_to_date ?? null,
     withdrawable_value: input.withdrawable_value ?? null,
+  };
+}
+
+function toJsonSubfunds(subfunds: PanoramaMpfSubfund[]): JsonValue[] {
+  return subfunds.map((subfund) => ({
+    name: subfund.name,
+    ...(subfund.code ? { code: subfund.code } : {}),
+    ...(subfund.units !== undefined ? { units: subfund.units } : {}),
+    ...(subfund.nav !== undefined ? { nav: subfund.nav } : {}),
+    ...(subfund.market_value !== undefined ? { market_value: subfund.market_value } : {}),
+    ...(subfund.allocation_pct !== undefined ? { allocation_pct: subfund.allocation_pct } : {}),
+  }));
+}
+
+export function buildMpfMetadata(input: MpfMetadataInput): JsonObject {
+  const normalizedSubfunds = normalizeMpfSubfunds(input.mpf_subfunds ?? []);
+  const fundAllocation = buildFundAllocationFromSubfunds(normalizedSubfunds);
+
+  const metadata: JsonObject = {
+    panorama_category: "mpf",
+    sub_type: "mpf",
+  };
+
+  if (input.owner?.trim()) {
+    metadata.owner = input.owner.trim();
+  }
+
+  if (input.trustee?.trim()) {
+    metadata.trustee = input.trustee.trim();
+  }
+
+  if (input.mpf_scheme?.trim()) {
+    metadata.mpf_scheme = input.mpf_scheme.trim();
+  }
+
+  if (input.valuation_date?.trim()) {
+    metadata.valuation_date = input.valuation_date.trim();
+  }
+
+  if (normalizedSubfunds.length > 0) {
+    metadata.mpf_subfunds = toJsonSubfunds(normalizedSubfunds);
+  }
+
+  if (Object.keys(fundAllocation).length > 0) {
+    metadata.fund_allocation = fundAllocation;
+  }
+
+  return metadata;
+}
+
+export function buildMpfMetadataPatch(input: MpfMetadataInput): JsonObject {
+  const normalizedSubfunds = normalizeMpfSubfunds(input.mpf_subfunds ?? []);
+  const fundAllocation = buildFundAllocationFromSubfunds(normalizedSubfunds);
+
+  return {
+    panorama_category: "mpf",
+    sub_type: "mpf",
+    owner: input.owner?.trim() ? input.owner.trim() : null,
+    trustee: input.trustee?.trim() ? input.trustee.trim() : null,
+    mpf_scheme: input.mpf_scheme?.trim() ? input.mpf_scheme.trim() : null,
+    valuation_date: input.valuation_date?.trim() ? input.valuation_date.trim() : null,
+    mpf_subfunds: normalizedSubfunds.length > 0 ? toJsonSubfunds(normalizedSubfunds) : null,
+    fund_allocation: Object.keys(fundAllocation).length > 0 ? fundAllocation : null,
   };
 }
 
