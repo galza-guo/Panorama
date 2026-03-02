@@ -228,6 +228,20 @@ async fn run_portfolio_job(
                     );
                 }
 
+                match context
+                    .alternative_asset_service()
+                    .sync_panorama_mpf_unit_prices()
+                    .await
+                {
+                    Ok(updated) if updated > 0 => {
+                        info!("Panorama MPF unit-price sync updated {} asset(s)", updated);
+                    }
+                    Ok(_) => {}
+                    Err(err) => {
+                        warn!("Panorama MPF unit-price sync failed: {}", err);
+                    }
+                }
+
                 // Continue to portfolio calculation
                 run_portfolio_calculation(app_handle, context, accounts_to_recalc, force_recalc)
                     .await;

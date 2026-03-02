@@ -640,6 +640,8 @@ export interface Settings {
   autoUpdateCheckEnabled: boolean;
   menuBarVisible: boolean;
   syncEnabled: boolean;
+  insuranceVisible: boolean;
+  mpfVisible: boolean;
 }
 
 export interface SettingsContextType {

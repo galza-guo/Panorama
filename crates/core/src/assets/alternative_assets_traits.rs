@@ -123,6 +123,11 @@ pub trait AlternativeAssetServiceTrait: Send + Sync {
     /// # Returns
     /// A list of alternative holdings with current valuations and gain calculations
     fn get_alternative_holdings(&self) -> Result<Vec<AlternativeHolding>>;
+
+    /// Syncs Panorama MPF subfund metadata against the latest MPFA unit-price snapshot.
+    ///
+    /// Returns the number of MPF assets whose metadata and/or manual valuation was updated.
+    async fn sync_panorama_mpf_unit_prices(&self) -> Result<usize>;
 }
 
 /// Trait for alternative asset repository operations.
