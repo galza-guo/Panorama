@@ -13,6 +13,7 @@ import { logger } from "@/adapters";
 import type {
   CreateAlternativeAssetRequest,
   CreateAlternativeAssetResponse,
+  JsonObject,
   UpdateValuationRequest,
   LinkLiabilityRequest,
 } from "@/lib/types";
@@ -149,7 +150,7 @@ export function useAlternativeAssetMutations(options: UseAlternativeAssetMutatio
       notes,
     }: {
       assetId: string;
-      metadata: Record<string, string>;
+      metadata: JsonObject;
       name?: string;
       notes?: string | null;
     }) => updateAlternativeAssetMetadata(assetId, metadata, name, notes),

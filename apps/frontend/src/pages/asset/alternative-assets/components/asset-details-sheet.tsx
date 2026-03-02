@@ -46,6 +46,7 @@ import {
 } from "./asset-details-sheet-schema";
 import { type LinkableAsset } from "./alternative-asset-quick-add-modal";
 import { AlternativeAssetKind, ALTERNATIVE_ASSET_KIND_DISPLAY_NAMES } from "@/lib/types";
+import type { JsonObject } from "@/lib/types";
 
 /**
  * Asset data required by the sheet.
@@ -77,7 +78,7 @@ interface AssetDetailsSheetProps {
   /** Callback when the user saves changes */
   onSave: (
     assetId: string,
-    metadata: Record<string, string>,
+    metadata: JsonObject,
     name?: string,
     notes?: string | null,
   ) => Promise<void>;

@@ -1105,7 +1105,7 @@ export const invoke = async <T>(command: string, payload?: Record<string, unknow
     case "update_alternative_asset_metadata": {
       const { assetId, metadata } = payload as {
         assetId: string;
-        metadata: Record<string, string>;
+        metadata: Record<string, unknown>;
       };
       url += `/${encodeURIComponent(assetId)}/metadata`;
       body = JSON.stringify(metadata);

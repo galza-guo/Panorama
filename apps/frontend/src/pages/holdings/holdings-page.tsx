@@ -21,7 +21,13 @@ import {
   HOLDING_CATEGORY_FILTERS,
   apiKindToAlternativeAssetKind,
 } from "@/lib/constants";
-import { Account, HoldingType, AlternativeAssetHolding, AlternativeAssetKind } from "@/lib/types";
+import {
+  Account,
+  HoldingType,
+  AlternativeAssetHolding,
+  AlternativeAssetKind,
+  JsonObject,
+} from "@/lib/types";
 import { canAddHoldings } from "@/lib/activity-restrictions";
 import { useIsMobileViewport } from "@/hooks/use-platform";
 import { HoldingsMobileFilterSheet } from "./components/holdings-mobile-filter-sheet";
@@ -147,7 +153,7 @@ export const HoldingsPage = () => {
 
   // Handler to save asset details
   const handleSaveAssetDetails = useCallback(
-    async (assetId: string, metadata: Record<string, string>, name?: string) => {
+    async (assetId: string, metadata: JsonObject, name?: string) => {
       setIsSavingDetails(true);
       try {
         await updateAlternativeAssetMetadata(assetId, metadata, name);

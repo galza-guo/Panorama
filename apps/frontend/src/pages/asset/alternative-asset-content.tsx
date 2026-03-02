@@ -33,7 +33,14 @@ import { LinkedLiabilitiesSection, LinkedAssetSection } from "./linked-liabiliti
 import { useQuoteMutations } from "./hooks/use-quote-mutations";
 import { useBalancePrivacy } from "@/hooks/use-balance-privacy";
 import { useLinkedLiabilities, useAlternativeHoldings } from "@/hooks/use-alternative-assets";
-import type { AlternativeAssetHolding, Quote, Asset, TimePeriod, DateRange } from "@/lib/types";
+import type {
+  AlternativeAssetHolding,
+  Quote,
+  Asset,
+  TimePeriod,
+  DateRange,
+  JsonObject,
+} from "@/lib/types";
 import { AlternativeAssetKind } from "@/lib/types";
 
 interface AlternativeAssetContentProps {
@@ -804,7 +811,7 @@ export function useAlternativeAssetActions({
   // Handle edit sheet save
   const handleEditSave = async (
     _assetId: string,
-    metadata: Record<string, string>,
+    metadata: JsonObject,
     name?: string,
     notes?: string | null,
   ) => {
