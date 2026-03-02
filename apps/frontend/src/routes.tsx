@@ -17,6 +17,7 @@ import HoldingsPage from "@/pages/holdings/holdings-page";
 import IncomePage from "@/pages/income/income-page";
 import InsuranceDashboard from "@/pages/insurance/insurance-dashboard";
 import PortfolioInsightsPage from "@/pages/insights/portfolio-insights";
+import MpfDashboard from "@/pages/mpf/mpf-dashboard";
 import NotFoundPage from "@/pages/not-found";
 import PerformancePage from "@/pages/performance/performance-page";
 import SettingsAccountsPage from "@/pages/settings/accounts/accounts-page";
@@ -88,6 +89,7 @@ export function AppRoutes() {
           <Route path="accounts/:id" element={<AccountPage />} />
           <Route path="income" element={<IncomePage />} />
           <Route path="insurance" element={<InsuranceDashboard />} />
+          <Route path="mpf" element={<MpfDashboard />} />
           <Route path="performance" element={<PerformancePage />} />
           <Route path="insights" element={<PortfolioInsightsPage />} />
           <Route path="health" element={<HealthPage />} />
