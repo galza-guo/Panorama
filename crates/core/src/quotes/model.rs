@@ -18,6 +18,8 @@ pub const DATA_SOURCE_MARKET_DATA_APP: &str = "MARKETDATA_APP";
 pub const DATA_SOURCE_ALPHA_VANTAGE: &str = "ALPHA_VANTAGE";
 pub const DATA_SOURCE_METAL_PRICE_API: &str = "METAL_PRICE_API";
 pub const DATA_SOURCE_FINNHUB: &str = "FINNHUB";
+pub const DATA_SOURCE_EASTMONEY_CN: &str = "EASTMONEY_CN";
+pub const DATA_SOURCE_TIANTIAN_FUND: &str = "TIANTIAN_FUND";
 
 // =============================================================================
 // Data Source
@@ -43,6 +45,10 @@ pub enum DataSource {
     MetalPriceApi,
     /// Finnhub - global stock data with real-time quotes
     Finnhub,
+    /// EastMoney - CN A-shares and ETFs
+    EastmoneyCn,
+    /// Tiantian - CN OTC funds
+    TiantianFund,
     /// Manual entry by user
     #[default]
     Manual,
@@ -57,6 +63,8 @@ impl DataSource {
             DataSource::AlphaVantage => DATA_SOURCE_ALPHA_VANTAGE,
             DataSource::MetalPriceApi => DATA_SOURCE_METAL_PRICE_API,
             DataSource::Finnhub => DATA_SOURCE_FINNHUB,
+            DataSource::EastmoneyCn => DATA_SOURCE_EASTMONEY_CN,
+            DataSource::TiantianFund => DATA_SOURCE_TIANTIAN_FUND,
             DataSource::Manual => DATA_SOURCE_MANUAL,
         }
     }
@@ -76,6 +84,8 @@ impl From<&str> for DataSource {
             DATA_SOURCE_ALPHA_VANTAGE => DataSource::AlphaVantage,
             DATA_SOURCE_METAL_PRICE_API => DataSource::MetalPriceApi,
             DATA_SOURCE_FINNHUB => DataSource::Finnhub,
+            DATA_SOURCE_EASTMONEY_CN => DataSource::EastmoneyCn,
+            DATA_SOURCE_TIANTIAN_FUND => DataSource::TiantianFund,
             _ => DataSource::Manual,
         }
     }
@@ -221,6 +231,11 @@ mod tests {
         );
         assert_eq!(DataSource::from("FINNHUB"), DataSource::Finnhub);
         assert_eq!(DataSource::from("finnhub"), DataSource::Finnhub);
+        assert_eq!(DataSource::from("EASTMONEY_CN"), DataSource::EastmoneyCn);
+        assert_eq!(
+            DataSource::from("tiantian_fund"),
+            DataSource::TiantianFund
+        );
         assert_eq!(DataSource::from("MANUAL"), DataSource::Manual);
         assert_eq!(DataSource::from("unknown"), DataSource::Manual);
     }
@@ -232,6 +247,8 @@ mod tests {
         assert_eq!(DataSource::AlphaVantage.as_str(), "ALPHA_VANTAGE");
         assert_eq!(DataSource::MetalPriceApi.as_str(), "METAL_PRICE_API");
         assert_eq!(DataSource::Finnhub.as_str(), "FINNHUB");
+        assert_eq!(DataSource::EastmoneyCn.as_str(), "EASTMONEY_CN");
+        assert_eq!(DataSource::TiantianFund.as_str(), "TIANTIAN_FUND");
         assert_eq!(DataSource::Manual.as_str(), "MANUAL");
     }
 

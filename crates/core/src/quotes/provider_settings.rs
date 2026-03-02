@@ -89,6 +89,26 @@ impl ProviderCapabilities {
                     "Profiles".to_string(),
                 ],
             }),
+            "EASTMONEY_CN" => Some(Self {
+                instruments: "CN Stocks • ETFs".to_string(),
+                coverage: "Mainland China".to_string(),
+                features: vec![
+                    "Real-time".to_string(),
+                    "Historical".to_string(),
+                    "Search".to_string(),
+                    "Profiles".to_string(),
+                ],
+            }),
+            "TIANTIAN_FUND" => Some(Self {
+                instruments: "CN Mutual Funds".to_string(),
+                coverage: "China funds".to_string(),
+                features: vec![
+                    "Real-time".to_string(),
+                    "Historical".to_string(),
+                    "Search".to_string(),
+                    "Profiles".to_string(),
+                ],
+            }),
             _ => None,
         }
     }
@@ -99,4 +119,26 @@ impl ProviderCapabilities {
 pub struct UpdateMarketDataProviderSetting {
     pub priority: Option<i32>,
     pub enabled: Option<bool>,
+}
+
+#[cfg(test)]
+mod tests {
+    use super::ProviderCapabilities;
+
+    #[test]
+    fn test_provider_capabilities_include_panorama_providers() {
+        let eastmoney =
+            ProviderCapabilities::for_provider("EASTMONEY_CN").expect("missing EASTMONEY_CN caps");
+        assert!(eastmoney.instruments.contains("CN"));
+        assert!(eastmoney.features.iter().any(|feature| feature == "Historical"));
+        assert!(eastmoney.features.iter().any(|feature| feature == "Search"));
+        assert!(eastmoney.features.iter().any(|feature| feature == "Profiles"));
+
+        let tiantian =
+            ProviderCapabilities::for_provider("TIANTIAN_FUND").expect("missing TIANTIAN_FUND caps");
+        assert!(tiantian.instruments.contains("Funds"));
+        assert!(tiantian.coverage.contains("China"));
+        assert!(tiantian.features.iter().any(|feature| feature == "Search"));
+        assert!(tiantian.features.iter().any(|feature| feature == "Profiles"));
+    }
 }

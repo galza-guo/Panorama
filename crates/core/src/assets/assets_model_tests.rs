@@ -3,8 +3,9 @@
 #[cfg(test)]
 mod tests {
     use crate::assets::{
-        canonicalize_market_identity, resolve_quote_ccy_precedence, Asset, AssetKind,
-        InstrumentType, OptionSpec, QuoteCcyResolutionSource, QuoteMode,
+        canonicalize_market_identity, default_market_data_provider_id,
+        resolve_quote_ccy_precedence, Asset, AssetKind, InstrumentType, OptionSpec,
+        QuoteCcyResolutionSource, QuoteMode,
     };
     use chrono::NaiveDateTime;
     use rust_decimal_macros::dec;
@@ -338,6 +339,64 @@ mod tests {
         assert_eq!(canonical.instrument_symbol.as_deref(), Some("AZN"));
         assert_eq!(canonical.instrument_exchange_mic.as_deref(), Some("XLON"));
         assert_eq!(canonical.quote_ccy.as_deref(), Some("GBp"));
+    }
+
+    #[test]
+    fn test_canonicalize_market_identity_supports_panorama_cn_equities() {
+        let canonical = canonicalize_market_identity(
+            Some(InstrumentType::Equity),
+            Some("600519.SH"),
+            None,
+            None,
+        );
+
+        assert_eq!(canonical.instrument_symbol.as_deref(), Some("600519"));
+        assert_eq!(canonical.display_code.as_deref(), Some("600519"));
+        assert_eq!(canonical.instrument_exchange_mic.as_deref(), Some("XSHG"));
+        assert_eq!(canonical.quote_ccy.as_deref(), Some("CNY"));
+    }
+
+    #[test]
+    fn test_canonicalize_market_identity_supports_panorama_funds() {
+        let canonical = canonicalize_market_identity(
+            Some(InstrumentType::Equity),
+            Some("161039.FUND"),
+            None,
+            None,
+        );
+
+        assert_eq!(canonical.instrument_symbol.as_deref(), Some("161039"));
+        assert_eq!(canonical.display_code.as_deref(), Some("161039"));
+        assert_eq!(canonical.instrument_exchange_mic, None);
+        assert_eq!(canonical.quote_ccy.as_deref(), Some("CNY"));
+    }
+
+    #[test]
+    fn test_default_market_data_provider_id_prefers_eastmoney_for_cn_equities() {
+        assert_eq!(
+            default_market_data_provider_id(
+                Some(&InstrumentType::Equity),
+                Some("600519.SH"),
+                Some("XSHG")
+            ),
+            "EASTMONEY_CN"
+        );
+    }
+
+    #[test]
+    fn test_default_market_data_provider_id_prefers_tiantian_for_funds() {
+        assert_eq!(
+            default_market_data_provider_id(Some(&InstrumentType::Equity), Some("161039.FUND"), None),
+            "TIANTIAN_FUND"
+        );
+    }
+
+    #[test]
+    fn test_default_market_data_provider_id_falls_back_to_yahoo() {
+        assert_eq!(
+            default_market_data_provider_id(Some(&InstrumentType::Equity), Some("AAPL"), Some("XNAS")),
+            "YAHOO"
+        );
     }
 
     #[test]

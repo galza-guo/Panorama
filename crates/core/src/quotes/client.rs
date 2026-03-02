@@ -38,10 +38,10 @@ use crate::secrets::SecretStore;
 
 use wealthfolio_market_data::{
     mic_to_currency, mic_to_exchange_name, yahoo_exchange_to_mic, yahoo_suffix_to_mic,
-    AlphaVantageProvider, AssetProfile as MarketAssetProfile, FinnhubProvider,
-    MarketDataAppProvider, MetalPriceApiProvider, ProviderId, ProviderRegistry,
+    AlphaVantageProvider, AssetProfile as MarketAssetProfile, EastmoneyCnProvider,
+    FinnhubProvider, MarketDataAppProvider, MetalPriceApiProvider, ProviderId, ProviderRegistry,
     Quote as MarketQuote, QuoteContext, ResolverChain, SearchResult as MarketSearchResult,
-    SplitEvent, YahooProvider,
+    SplitEvent, TiantianFundProvider, YahooProvider,
 };
 
 /// Market data error types.
@@ -205,6 +205,8 @@ impl MarketDataClient {
                 }
                 Ok(None)
             }
+            DATA_SOURCE_EASTMONEY_CN => Ok(Some(Arc::new(EastmoneyCnProvider::new()))),
+            DATA_SOURCE_TIANTIAN_FUND => Ok(Some(Arc::new(TiantianFundProvider::new()))),
             _ => {
                 warn!("Unknown provider ID: {}", provider_id);
                 Ok(None)
@@ -319,6 +321,8 @@ impl MarketDataClient {
             DATA_SOURCE_MARKET_DATA_APP => DataSource::MarketDataApp,
             DATA_SOURCE_METAL_PRICE_API => DataSource::MetalPriceApi,
             DATA_SOURCE_FINNHUB => DataSource::Finnhub,
+            DATA_SOURCE_EASTMONEY_CN => DataSource::EastmoneyCn,
+            DATA_SOURCE_TIANTIAN_FUND => DataSource::TiantianFund,
             DATA_SOURCE_MANUAL => DataSource::Manual,
             _ => DataSource::Yahoo, // Default fallback
         };
@@ -480,13 +484,18 @@ impl MarketDataClient {
     /// Convert a market-data SearchResult to core SymbolSearchResult.
     ///
     /// Enriches the result with canonical MIC codes and friendly exchange names:
-    /// 1. Try mapping from Yahoo's exchange code (e.g., "NMS" -> "XNAS")
-    /// 2. Try extracting MIC from symbol suffix (e.g., "SHOP.TO" -> "XTSE")
-    /// 3. Look up friendly exchange name from MIC
-    /// 4. Preserve provider-reported currency only (do NOT infer from MIC)
+    /// 1. Prefer provider-supplied MIC/exchange name when available
+    /// 2. Otherwise try mapping from Yahoo's exchange code (e.g., "NMS" -> "XNAS")
+    /// 3. Then try extracting MIC from symbol suffix (e.g., "SHOP.TO" -> "XTSE")
+    /// 4. Look up friendly exchange name from MIC if provider did not supply one
+    /// 5. Preserve provider-reported currency only (do NOT infer from MIC)
     fn convert_search_result(result: MarketSearchResult) -> SymbolSearchResult {
+        let mut exchange_mic = result.exchange_mic.clone();
+
         // Try to determine MIC from Yahoo's exchange code first
-        let mut exchange_mic = yahoo_exchange_to_mic(&result.exchange).map(|mic| mic.to_string());
+        if exchange_mic.is_none() {
+            exchange_mic = yahoo_exchange_to_mic(&result.exchange).map(|mic| mic.to_string());
+        }
 
         // If no MIC from exchange code, try extracting from symbol suffix
         if exchange_mic.is_none() {
@@ -496,11 +505,12 @@ impl MarketDataClient {
             }
         }
 
-        // Get friendly exchange name from MIC
-        let exchange_name = exchange_mic
-            .as_ref()
-            .and_then(|mic| mic_to_exchange_name(mic))
-            .map(String::from);
+        let exchange_name = result.exchange_name.clone().or_else(|| {
+            exchange_mic
+                .as_ref()
+                .and_then(|mic| mic_to_exchange_name(mic))
+                .map(String::from)
+        });
 
         // Determine currency and its provenance
         let (currency, currency_source) = if result.currency.is_some() {
@@ -697,6 +707,8 @@ mod tests {
             ("MARKETDATA_APP", DataSource::MarketDataApp),
             ("METAL_PRICE_API", DataSource::MetalPriceApi),
             ("FINNHUB", DataSource::Finnhub),
+            ("EASTMONEY_CN", DataSource::EastmoneyCn),
+            ("TIANTIAN_FUND", DataSource::TiantianFund),
             ("MANUAL", DataSource::Manual),
             ("UNKNOWN_SOURCE", DataSource::Yahoo), // Fallback
         ];
@@ -718,6 +730,33 @@ mod tests {
                 expected_source
             );
         }
+    }
+
+    struct MockSecretStore;
+
+    impl SecretStore for MockSecretStore {
+        fn set_secret(&self, _service: &str, _secret: &str) -> crate::errors::Result<()> {
+            Ok(())
+        }
+
+        fn get_secret(&self, _service: &str) -> crate::errors::Result<Option<String>> {
+            Ok(None)
+        }
+
+        fn delete_secret(&self, _service: &str) -> crate::errors::Result<()> {
+            Ok(())
+        }
+    }
+
+    #[tokio::test]
+    async fn test_create_provider_supports_panorama_keyless_providers() {
+        let secret_store: Arc<dyn SecretStore> = Arc::new(MockSecretStore);
+
+        let eastmoney = MarketDataClient::create_provider("EASTMONEY_CN", &secret_store).await;
+        assert!(matches!(eastmoney, Ok(Some(_))));
+
+        let tiantian = MarketDataClient::create_provider("TIANTIAN_FUND", &secret_store).await;
+        assert!(matches!(tiantian, Ok(Some(_))));
     }
 
     #[test]
@@ -769,6 +808,30 @@ mod tests {
         assert_eq!(result.exchange_mic.as_deref(), Some("XLON"));
         assert_eq!(result.currency.as_deref(), Some("GBp"));
         assert_eq!(result.currency_source.as_deref(), Some("exchange_inferred"));
+    }
+
+    #[test]
+    fn test_convert_search_result_prefers_provider_exchange_metadata() {
+        let provider_result = MarketSearchResult::new(
+            "600519.SH",
+            "Kweichow Moutai",
+            "SSE",
+            "EQUITY",
+        )
+        .with_exchange_mic("XSHG")
+        .with_exchange_name("Shanghai Stock Exchange")
+        .with_currency("CNY")
+        .with_data_source("EASTMONEY_CN");
+
+        let result = MarketDataClient::convert_search_result(provider_result);
+
+        assert_eq!(result.exchange_mic.as_deref(), Some("XSHG"));
+        assert_eq!(
+            result.exchange_name.as_deref(),
+            Some("Shanghai Stock Exchange")
+        );
+        assert_eq!(result.currency.as_deref(), Some("CNY"));
+        assert_eq!(result.data_source.as_deref(), Some("EASTMONEY_CN"));
     }
 
     // =========================================================================
