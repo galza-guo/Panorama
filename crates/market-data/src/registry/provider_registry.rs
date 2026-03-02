@@ -502,7 +502,7 @@ impl ProviderRegistry {
 
     /// Search for symbols matching the query.
     ///
-    /// Tries providers that support search until one succeeds.
+    /// Aggregates results from all providers that support search.
     pub async fn search(&self, query: &str) -> Result<Vec<SearchResult>, MarketDataError> {
         let providers: Vec<_> = self
             .providers
@@ -518,6 +518,7 @@ impl ProviderRegistry {
         }
 
         let mut last_error: Option<MarketDataError> = None;
+        let mut aggregated_results = Vec::new();
 
         for provider in providers {
             let provider_id: ProviderId = Cow::Borrowed(provider.id());
@@ -532,7 +533,7 @@ impl ProviderRegistry {
             match provider.search(query).await {
                 Ok(results) if !results.is_empty() => {
                     self.circuit_breaker.record_success(&provider_id);
-                    return Ok(results);
+                    aggregated_results.extend(results);
                 }
                 Ok(_) => {
                     debug!(
@@ -560,6 +561,10 @@ impl ProviderRegistry {
             }
         }
 
+        if !aggregated_results.is_empty() {
+            return Ok(aggregated_results);
+        }
+
         Err(last_error.unwrap_or(MarketDataError::AllProvidersFailed))
     }
 
@@ -574,8 +579,8 @@ impl ProviderRegistry {
         context: &QuoteContext,
     ) -> Result<AssetProfile, MarketDataError> {
         let providers: Vec<_> = self
-            .providers
-            .iter()
+            .ordered_providers(context, false)
+            .into_iter()
             .filter(|p| p.capabilities().supports_profile)
             .collect();
 
@@ -845,6 +850,9 @@ mod tests {
         priority: u8,
         call_count: AtomicUsize,
         should_fail: bool,
+        search_results: Vec<SearchResult>,
+        search_should_fail: bool,
+        profile_name: Option<&'static str>,
     }
 
     impl MockProvider {
@@ -854,7 +862,25 @@ mod tests {
                 priority,
                 call_count: AtomicUsize::new(0),
                 should_fail,
+                search_results: Vec::new(),
+                search_should_fail: false,
+                profile_name: None,
             }
+        }
+
+        fn with_search_results(mut self, search_results: Vec<SearchResult>) -> Self {
+            self.search_results = search_results;
+            self
+        }
+
+        fn with_search_failure(mut self) -> Self {
+            self.search_should_fail = true;
+            self
+        }
+
+        fn with_profile(mut self, profile_name: &'static str) -> Self {
+            self.profile_name = Some(profile_name);
+            self
         }
     }
 
@@ -874,8 +900,8 @@ mod tests {
                 coverage: Coverage::global_best_effort(),
                 supports_latest: true,
                 supports_historical: true,
-                supports_search: false,
-                supports_profile: false,
+                supports_search: !self.search_results.is_empty() || self.search_should_fail,
+                supports_profile: self.profile_name.is_some(),
             }
         }
 
@@ -938,6 +964,31 @@ mod tests {
                     currency: "USD".to_string(),
                     source: self.id.to_string(),
                 }])
+            }
+        }
+
+        async fn search(&self, _query: &str) -> Result<Vec<SearchResult>, MarketDataError> {
+            if self.search_should_fail {
+                return Err(MarketDataError::ProviderError {
+                    provider: self.id.to_string(),
+                    message: "Mock search failure".to_string(),
+                });
+            }
+
+            Ok(self.search_results.clone())
+        }
+
+        async fn get_profile(&self, _symbol: &str) -> Result<AssetProfile, MarketDataError> {
+            match self.profile_name {
+                Some(name) => Ok(AssetProfile {
+                    source: Some(self.id.to_string()),
+                    name: Some(name.to_string()),
+                    ..Default::default()
+                }),
+                None => Err(MarketDataError::NotSupported {
+                    operation: "profile".to_string(),
+                    provider: self.id.to_string(),
+                }),
             }
         }
     }
@@ -1259,5 +1310,108 @@ mod tests {
         assert_eq!(ordered[0].id(), "PROVIDER_C");
         assert_eq!(ordered[1].id(), "PROVIDER_A");
         assert_eq!(ordered[2].id(), "PROVIDER_B");
+    }
+
+    #[tokio::test]
+    async fn test_search_aggregates_results_from_multiple_providers() {
+        let providers: Vec<Arc<dyn MarketDataProvider>> = vec![
+            Arc::new(
+                MockProvider::new("EASTMONEY_CN", 2, false).with_search_results(vec![
+                    SearchResult::new("600519.SH", "Kweichow Moutai", "SSE", "EQUITY")
+                        .with_currency("CNY")
+                        .with_data_source("EASTMONEY_CN"),
+                ]),
+            ),
+            Arc::new(
+                MockProvider::new("TIANTIAN_FUND", 9, false).with_search_results(vec![
+                    SearchResult::new("161039.FUND", "Fuguo CSI 1000", "FUND", "MUTUALFUND")
+                        .with_currency("CNY")
+                        .with_data_source("TIANTIAN_FUND"),
+                ]),
+            ),
+        ];
+
+        let resolver = Arc::new(MockResolver);
+        let registry = ProviderRegistry::new(providers, resolver);
+
+        let results = registry.search("161039").await.unwrap();
+
+        assert_eq!(results.len(), 2);
+        assert_eq!(results[0].symbol, "600519.SH");
+        assert_eq!(results[1].symbol, "161039.FUND");
+    }
+
+    #[tokio::test]
+    async fn test_search_returns_results_even_if_one_provider_fails() {
+        let providers: Vec<Arc<dyn MarketDataProvider>> = vec![
+            Arc::new(MockProvider::new("BROKEN", 1, false).with_search_failure()),
+            Arc::new(
+                MockProvider::new("WORKING", 2, false).with_search_results(vec![
+                    SearchResult::new("161039.FUND", "Fuguo CSI 1000", "FUND", "MUTUALFUND")
+                        .with_currency("CNY")
+                        .with_data_source("TIANTIAN_FUND"),
+                ]),
+            ),
+        ];
+
+        let resolver = Arc::new(MockResolver);
+        let registry = ProviderRegistry::new(providers, resolver);
+
+        let results = registry.search("161039").await.unwrap();
+
+        assert_eq!(results.len(), 1);
+        assert_eq!(results[0].symbol, "161039.FUND");
+    }
+
+    #[tokio::test]
+    async fn test_get_profile_prefers_preferred_provider() {
+        let providers: Vec<Arc<dyn MarketDataProvider>> = vec![
+            Arc::new(MockProvider::new("YAHOO", 1, false).with_profile("Yahoo Name")),
+            Arc::new(MockProvider::new("EASTMONEY_CN", 2, false).with_profile("EastMoney Name")),
+        ];
+
+        let resolver = Arc::new(MockResolver);
+        let registry = ProviderRegistry::new(providers, resolver);
+
+        let context = QuoteContext {
+            instrument: InstrumentId::Equity {
+                ticker: Arc::from("600519"),
+                mic: Some(Cow::Borrowed("XSHG")),
+            },
+            overrides: None,
+            currency_hint: None,
+            preferred_provider: Some(Cow::Borrowed("EASTMONEY_CN")),
+        };
+
+        let profile = registry.get_profile(&context).await.unwrap();
+
+        assert_eq!(profile.source.as_deref(), Some("EASTMONEY_CN"));
+        assert_eq!(profile.name.as_deref(), Some("EastMoney Name"));
+    }
+
+    #[tokio::test]
+    async fn test_get_profile_respects_provider_priority() {
+        let providers: Vec<Arc<dyn MarketDataProvider>> = vec![
+            Arc::new(MockProvider::new("LOW_PRIORITY", 10, false).with_profile("Low Priority")),
+            Arc::new(MockProvider::new("HIGH_PRIORITY", 1, false).with_profile("High Priority")),
+        ];
+
+        let resolver = Arc::new(MockResolver);
+        let registry = ProviderRegistry::new(providers, resolver);
+
+        let context = QuoteContext {
+            instrument: InstrumentId::Equity {
+                ticker: Arc::from("600519"),
+                mic: Some(Cow::Borrowed("XSHG")),
+            },
+            overrides: None,
+            currency_hint: None,
+            preferred_provider: None,
+        };
+
+        let profile = registry.get_profile(&context).await.unwrap();
+
+        assert_eq!(profile.source.as_deref(), Some("HIGH_PRIORITY"));
+        assert_eq!(profile.name.as_deref(), Some("High Priority"));
     }
 }

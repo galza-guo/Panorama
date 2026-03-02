@@ -390,15 +390,24 @@ SELECT
             )
         WHEN symbol_mapping IS NOT NULL AND symbol_mapping != '' AND symbol_mapping != symbol THEN
             json_object(
-                'preferred_provider', CASE WHEN data_source IN ('YAHOO', 'ALPHA_VANTAGE', 'MARKETDATA_APP', 'METAL_PRICE_API') THEN data_source ELSE NULL END,
+                'preferred_provider', CASE WHEN data_source IN ('YAHOO', 'ALPHA_VANTAGE', 'MARKETDATA_APP', 'METAL_PRICE_API', 'EASTMONEY_CN', 'TIANTIAN_FUND') THEN data_source ELSE NULL END,
                 'overrides', json_object(COALESCE(data_source, 'YAHOO'), json_object('type', 'equity_symbol', 'symbol', symbol_mapping))
             )
         WHEN symbol LIKE '%.%' AND asset_type NOT IN ('Forex', 'Currency', 'FOREX', 'Cryptocurrency', 'Crypto', 'CRYPTOCURRENCY', 'CRYPTO') THEN
             json_object(
-                'preferred_provider', CASE WHEN data_source IN ('YAHOO', 'ALPHA_VANTAGE', 'MARKETDATA_APP', 'METAL_PRICE_API') THEN data_source ELSE NULL END,
-                'overrides', json_object('YAHOO', json_object('type', 'equity_symbol', 'symbol', symbol))
+                'preferred_provider', CASE WHEN data_source IN ('YAHOO', 'ALPHA_VANTAGE', 'MARKETDATA_APP', 'METAL_PRICE_API', 'EASTMONEY_CN', 'TIANTIAN_FUND') THEN data_source ELSE NULL END,
+                'overrides', json_object(
+                    COALESCE(
+                        CASE
+                            WHEN data_source IN ('YAHOO', 'ALPHA_VANTAGE', 'MARKETDATA_APP', 'METAL_PRICE_API', 'EASTMONEY_CN', 'TIANTIAN_FUND') THEN data_source
+                            ELSE NULL
+                        END,
+                        'YAHOO'
+                    ),
+                    json_object('type', 'equity_symbol', 'symbol', symbol)
+                )
             )
-        WHEN data_source IN ('YAHOO', 'ALPHA_VANTAGE', 'MARKETDATA_APP', 'METAL_PRICE_API') THEN
+        WHEN data_source IN ('YAHOO', 'ALPHA_VANTAGE', 'MARKETDATA_APP', 'METAL_PRICE_API', 'EASTMONEY_CN', 'TIANTIAN_FUND') THEN
             json_object('preferred_provider', data_source)
         ELSE NULL
     END,

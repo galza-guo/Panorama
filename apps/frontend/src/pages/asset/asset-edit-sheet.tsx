@@ -49,6 +49,8 @@ import { useAssetProfileMutations } from "./hooks/use-asset-profile-mutations";
 
 const PROVIDERS = [
   { value: "YAHOO", label: "Yahoo Finance" },
+  { value: "EASTMONEY_CN", label: "EastMoney CN" },
+  { value: "TIANTIAN_FUND", label: "Tiantian Fund" },
   { value: "ALPHA_VANTAGE", label: "Alpha Vantage" },
   { value: "FINNHUB", label: "Finnhub" },
   { value: "MARKETDATA_APP", label: "MarketData.app" },

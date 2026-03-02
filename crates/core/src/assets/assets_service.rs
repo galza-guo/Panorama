@@ -8,9 +8,9 @@ use crate::taxonomies::TaxonomyServiceTrait;
 use futures::stream::{self, StreamExt};
 
 use super::assets_model::{
-    canonicalize_market_identity, resolve_quote_ccy_precedence, Asset, AssetKind, AssetSpec,
-    EnsureAssetsResult, InstrumentType, NewAsset, QuoteCcyResolutionSource, QuoteMode,
-    UpdateAssetProfile,
+    canonicalize_market_identity, default_market_data_provider_id,
+    resolve_quote_ccy_precedence, Asset, AssetKind, AssetSpec, EnsureAssetsResult,
+    InstrumentType, NewAsset, QuoteCcyResolutionSource, QuoteMode, UpdateAssetProfile,
 };
 use super::assets_traits::{AssetRepositoryTrait, AssetServiceTrait};
 use super::auto_classification::{AutoClassificationService, ClassificationInput};
@@ -270,7 +270,15 @@ impl AssetService {
         };
 
         let provider_config = match quote_mode {
-            QuoteMode::Market => Some(serde_json::json!({ "preferred_provider": "YAHOO" })),
+            QuoteMode::Market => Some(serde_json::json!({
+                "preferred_provider": default_market_data_provider_id(
+                    spec.instrument_type.as_ref(),
+                    spec.instrument_symbol
+                        .as_deref()
+                        .or(spec.display_code.as_deref()),
+                    resolved_mic.as_deref(),
+                )
+            })),
             QuoteMode::Manual => None,
         };
 
@@ -728,7 +736,15 @@ impl AssetServiceTrait for AssetService {
 
         // Set preferred provider based on quote mode
         let provider_config = match quote_mode {
-            QuoteMode::Market => Some(serde_json::json!({ "preferred_provider": "YAHOO" })),
+            QuoteMode::Market => Some(serde_json::json!({
+                "preferred_provider": default_market_data_provider_id(
+                    instrument_type.as_ref(),
+                    metadata
+                        .as_ref()
+                        .and_then(|m| m.instrument_symbol.as_deref().or(m.display_code.as_deref())),
+                    exchange_mic.as_deref(),
+                )
+            })),
             QuoteMode::Manual => None,
         };
 

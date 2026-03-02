@@ -75,6 +75,8 @@ impl ProviderId {
     pub const MARKETDATA_APP: &'static str = "MARKETDATA_APP";
     pub const METAL_PRICE_API: &'static str = "METAL_PRICE_API";
     pub const FINNHUB: &'static str = "FINNHUB";
+    pub const EASTMONEY_CN: &'static str = "EASTMONEY_CN";
+    pub const TIANTIAN_FUND: &'static str = "TIANTIAN_FUND";
 
     pub fn new(id: impl Into<String>) -> Self {
         Self(id.into())
@@ -98,6 +100,14 @@ impl ProviderId {
 
     pub fn finnhub() -> Self {
         Self(Self::FINNHUB.to_string())
+    }
+
+    pub fn eastmoney_cn() -> Self {
+        Self(Self::EASTMONEY_CN.to_string())
+    }
+
+    pub fn tiantian_fund() -> Self {
+        Self(Self::TIANTIAN_FUND.to_string())
     }
 
     pub fn as_str(&self) -> &str {
@@ -338,6 +348,8 @@ impl From<DataSource> for QuoteSource {
             DataSource::MarketDataApp => QuoteSource::Provider(ProviderId::marketdata_app()),
             DataSource::MetalPriceApi => QuoteSource::Provider(ProviderId::metal_price_api()),
             DataSource::Finnhub => QuoteSource::Provider(ProviderId::finnhub()),
+            DataSource::EastmoneyCn => QuoteSource::Provider(ProviderId::eastmoney_cn()),
+            DataSource::TiantianFund => QuoteSource::Provider(ProviderId::tiantian_fund()),
         }
     }
 }
@@ -351,6 +363,8 @@ impl From<QuoteSource> for DataSource {
                 ProviderId::ALPHA_VANTAGE => DataSource::AlphaVantage,
                 ProviderId::MARKETDATA_APP => DataSource::MarketDataApp,
                 ProviderId::METAL_PRICE_API => DataSource::MetalPriceApi,
+                ProviderId::EASTMONEY_CN => DataSource::EastmoneyCn,
+                ProviderId::TIANTIAN_FUND => DataSource::TiantianFund,
                 _ => DataSource::Manual, // Unknown providers default to Manual for compatibility
             },
         }
@@ -458,6 +472,14 @@ mod tests {
         assert_eq!(
             DataSource::from(QuoteSource::Provider(ProviderId::yahoo())),
             DataSource::Yahoo
+        );
+        assert_eq!(
+            DataSource::from(QuoteSource::Provider(ProviderId::eastmoney_cn())),
+            DataSource::EastmoneyCn
+        );
+        assert_eq!(
+            DataSource::from(QuoteSource::Provider(ProviderId::tiantian_fund())),
+            DataSource::TiantianFund
         );
     }
 }

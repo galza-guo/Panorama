@@ -25,7 +25,8 @@ use super::sync_state::{QuoteSyncState, SymbolSyncPlan, SyncMode, SyncStateStore
 use super::types::{quote_id, AssetId, Day, QuoteSource};
 use crate::activities::ActivityRepositoryTrait;
 use crate::assets::{
-    Asset, AssetKind, AssetRepositoryTrait, InstrumentType, ProviderProfile, QuoteMode,
+    canonicalize_market_identity, default_market_data_provider_id, Asset, AssetKind,
+    AssetRepositoryTrait, InstrumentType, ProviderProfile, QuoteMode,
 };
 use crate::errors::Result;
 use crate::fx::currency::{get_normalization_rule, normalize_currency_code};
@@ -923,15 +924,35 @@ where
             trimmed_symbol
         };
 
+        let effective_instrument_type = instrument_type.cloned().or(Some(InstrumentType::Equity));
+        let canonical = canonicalize_market_identity(
+            effective_instrument_type.clone(),
+            Some(clean_symbol),
+            exchange_mic,
+            None,
+        );
+        let preferred_provider = default_market_data_provider_id(
+            effective_instrument_type.as_ref(),
+            Some(trimmed_symbol),
+            canonical.instrument_exchange_mic.as_deref(),
+        );
+
         let temp_asset = Asset {
-            id: format!("_QUOTE_RESOLVE_{}", clean_symbol),
+            id: format!("_QUOTE_RESOLVE_{}", canonical.display_code.as_deref().unwrap_or(clean_symbol)),
             kind: AssetKind::Investment,
             quote_mode: QuoteMode::Market,
             quote_ccy: String::new(),
-            instrument_type: instrument_type.cloned().or(Some(InstrumentType::Equity)),
-            instrument_symbol: Some(clean_symbol.to_string()),
-            display_code: Some(clean_symbol.to_string()),
-            instrument_exchange_mic: exchange_mic.map(str::to_string),
+            instrument_type: effective_instrument_type,
+            instrument_symbol: canonical
+                .instrument_symbol
+                .or_else(|| Some(clean_symbol.to_string())),
+            display_code: canonical.display_code.or_else(|| Some(clean_symbol.to_string())),
+            instrument_exchange_mic: canonical
+                .instrument_exchange_mic
+                .or_else(|| exchange_mic.map(str::to_string)),
+            provider_config: Some(serde_json::json!({
+                "preferred_provider": preferred_provider
+            })),
             ..Default::default()
         };
 

@@ -73,13 +73,20 @@ export function isLiabilityAssetKind(kind: AssetKind): boolean {
 // DataSource: Where quote data comes from (used on Quote objects)
 export const DataSource = {
   YAHOO: "YAHOO",
+  EASTMONEY_CN: "EASTMONEY_CN",
+  TIANTIAN_FUND: "TIANTIAN_FUND",
   MANUAL: "MANUAL",
 } as const;
 
 export type DataSource = (typeof DataSource)[keyof typeof DataSource];
 
 // Zod schema for data source validation
-export const dataSourceSchema = z.enum([DataSource.YAHOO, DataSource.MANUAL]);
+export const dataSourceSchema = z.enum([
+  DataSource.YAHOO,
+  DataSource.EASTMONEY_CN,
+  DataSource.TIANTIAN_FUND,
+  DataSource.MANUAL,
+]);
 
 // QuoteMode: How an asset's price is determined (used on Asset/Activity objects)
 export const QuoteMode = {
