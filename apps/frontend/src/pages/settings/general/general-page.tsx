@@ -2,6 +2,7 @@ import { Separator } from "@wealthfolio/ui/components/ui/separator";
 import { usePlatform } from "@/hooks/use-platform";
 import { SettingsHeader } from "../settings-header";
 import { AutoUpdateSettings } from "./auto-update-settings";
+import { ComponentsSettings } from "./components-settings";
 import { BaseCurrencySettings } from "./currency-settings";
 import { ExchangeRatesSettings } from "./exchange-rates/exchange-rates-settings";
 
@@ -18,6 +19,9 @@ export default function GeneralSettingsPage() {
       <BaseCurrencySettings />
       <div className="pt-6">
         <ExchangeRatesSettings />
+      </div>
+      <div className="pt-6">
+        <ComponentsSettings />
       </div>
       {!isMobile && (
         <div className="pt-6">

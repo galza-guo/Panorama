@@ -8,11 +8,13 @@ const {
   useAlternativeAssetMutationsMock,
   getDynamicNavItemsMock,
   subscribeToNavigationUpdatesMock,
+  useSettingsContextMock,
 } = vi.hoisted(() => ({
   useAlternativeHoldingsMock: vi.fn(),
   useAlternativeAssetMutationsMock: vi.fn(),
   getDynamicNavItemsMock: vi.fn(),
   subscribeToNavigationUpdatesMock: vi.fn(),
+  useSettingsContextMock: vi.fn(),
 }));
 
 vi.mock("@/hooks/use-alternative-assets", () => ({
@@ -28,6 +30,10 @@ vi.mock("@/addons/addons-runtime-context", () => ({
   subscribeToNavigationUpdates: subscribeToNavigationUpdatesMock,
 }));
 
+vi.mock("@/lib/settings-provider", () => ({
+  useSettingsContext: useSettingsContextMock,
+}));
+
 import InsuranceDashboard from "./insurance-dashboard";
 import { useNavigation } from "../layouts/navigation/app-navigation";
 
@@ -35,6 +41,27 @@ describe("insurance dashboard", () => {
   beforeEach(() => {
     getDynamicNavItemsMock.mockReturnValue([]);
     subscribeToNavigationUpdatesMock.mockReturnValue(() => {});
+    useSettingsContextMock.mockReturnValue({
+      settings: {
+        theme: "light",
+        font: "font-mono",
+        baseCurrency: "USD",
+        instanceId: "test-instance",
+        onboardingCompleted: true,
+        autoUpdateCheckEnabled: true,
+        menuBarVisible: true,
+        syncEnabled: true,
+        insuranceVisible: true,
+        mpfVisible: true,
+      },
+      isLoading: false,
+      isError: false,
+      updateBaseCurrency: vi.fn(),
+      updateSettings: vi.fn(),
+      refetch: vi.fn(),
+      accountsGrouped: true,
+      setAccountsGrouped: vi.fn(),
+    });
     useAlternativeAssetMutationsMock.mockReturnValue({
       createMutation: { isPending: false, mutateAsync: vi.fn() },
       updateMetadataMutation: { isPending: false, mutateAsync: vi.fn() },
@@ -47,6 +74,7 @@ describe("insurance dashboard", () => {
     useAlternativeAssetMutationsMock.mockReset();
     getDynamicNavItemsMock.mockReset();
     subscribeToNavigationUpdatesMock.mockReset();
+    useSettingsContextMock.mockReset();
   });
 
   it("adds Insurance to primary navigation", () => {
@@ -55,6 +83,34 @@ describe("insurance dashboard", () => {
     expect(
       result.current.primary.some((item) => item.title === "Insurance" && item.href === "/insurance"),
     ).toBe(true);
+  });
+
+  it("hides Insurance navigation when the component setting is disabled", () => {
+    useSettingsContextMock.mockReturnValue({
+      settings: {
+        theme: "light",
+        font: "font-mono",
+        baseCurrency: "USD",
+        instanceId: "test-instance",
+        onboardingCompleted: true,
+        autoUpdateCheckEnabled: true,
+        menuBarVisible: true,
+        syncEnabled: true,
+        insuranceVisible: false,
+        mpfVisible: true,
+      },
+      isLoading: false,
+      isError: false,
+      updateBaseCurrency: vi.fn(),
+      updateSettings: vi.fn(),
+      refetch: vi.fn(),
+      accountsGrouped: true,
+      setAccountsGrouped: vi.fn(),
+    });
+
+    const { result } = renderHook(() => useNavigation());
+
+    expect(result.current.primary.some((item) => item.href === "/insurance")).toBe(false);
   });
 
   it("renders an empty state when there are no insurance assets", () => {
