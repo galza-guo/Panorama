@@ -1,16 +1,16 @@
-Wealthfolio Server
+Panorama Server
 
 Overview
 - This crate runs the HTTP API (Axum) and serves static files for the web build.
-- It uses the shared `src-core` for all business logic, repositories, and migrations.
+- It uses the shared core crates for all business logic, repositories, and migrations.
 
 Run locally (Rust only)
 - From the repo root:
   - `cargo run --manifest-path src-server/Cargo.toml`
 
 Docker image
-- Pull the latest published server image with `docker pull afadil/wealthfolio:latest`.
-- Use that tag (or your locally built image) in the Docker run examples inside the root `README.md`.
+- Build the image locally with `docker build -t panorama .` from the repository root.
+- If you publish your own Panorama image, substitute that tag in the Docker run examples inside the root `README.md`.
 
 Key environment variables
 - `WF_LISTEN_ADDR`: Bind address, default `127.0.0.1:8080`.

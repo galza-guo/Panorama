@@ -3,7 +3,7 @@
 ## Overview
 
 This document describes the design for sharing the React Query client between
-the main Wealthfolio application and addons, enabling automatic cache
+the main Panorama application and addons, enabling automatic cache
 invalidation and data synchronization.
 
 ## Architecture
@@ -204,4 +204,4 @@ queryKey: [QueryKeys.latestValuations, accountIds];
 
 This design provides a robust foundation for data synchronization between the
 main application and addons, ensuring a seamless user experience across all
-components of the Wealthfolio ecosystem.
+components of the Panorama ecosystem.

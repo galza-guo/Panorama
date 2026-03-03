@@ -1,5 +1,5 @@
 /**
- * Permission system types and constants for Wealthfolio addons
+ * Permission system types and constants for Panorama addons
  */
 
 /**

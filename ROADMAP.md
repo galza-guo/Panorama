@@ -1,9 +1,10 @@
-# Wealthfolio Roadmap
+# Panorama Roadmap
 
 ## Vision
 
-To help individuals build their wealth by providing a safe, privacy-focused and
-easy-to-use tool to track their investments and goals.
+To help individuals build their wealth with a safe, privacy-focused, and
+localized tool that tracks global portfolios alongside HK/CN-specific assets
+and workflows.
 
 ## Strategy
 
@@ -11,15 +12,16 @@ easy-to-use tool to track their investments and goals.
 2. Underdo the competition by offering a simpler, more focused alternative
 3. Fight feature creep and resist creating a bloated app
 4. Avoid complexity at all costs
-5. Provide clear insights on how your portfolio is performing against your goals
+5. Provide clear insights on how portfolios are performing against long-term
+   goals
 
 ## What We Believe In
 
 1. **Your Privacy**: Your money info stays on your computer. You retain complete
    control over your financial information.
 2. **Easy to Use**: Anyone can track their investments with our simple design.
-3. **No Lock-in**: Free or pay once to support. Wealthfolio Connect as optional
-   paid subscription to sync broker data and devices.
+3. **No Lock-in**: Local-first by default. Optional upstream services such as
+   Wealthfolio Connect should remain exactly that: optional.
 4. **Extensible**: Through the addons system and catalog, users can easily
    enhance functionality.
 5. **Beautiful and Focused**: We believe in crafting an app that's visually
@@ -44,6 +46,9 @@ easy-to-use tool to track their investments and goals.
 - [x] Cross-platform builds (Windows, macOS, Linux)
 - [x] Advanced CSV import with field mapping
 - [x] Addons system for extending functionality
+- [x] Insurance asset workflow
+- [x] MPF asset workflow
+- [x] CN/HK symbol normalization and localized market data providers
 
 ### Phase 3: Multi-Platform (Current - v3.0)
 
@@ -85,10 +90,10 @@ easy-to-use tool to track their investments and goals.
 
 ---
 
-We're building Wealthfolio to be a great alternative to online investment
-trackers. Our plan might change based on what users tell us they want, but we'll
-always focus on keeping your data private and helping you manage your money
-better.
+We're building Panorama to be a practical, local-first alternative to online
+investment trackers, especially for users who need HK/CN market coverage
+without giving up privacy. The plan will evolve, but the priorities stay the
+same: private data, clear workflows, and focused functionality.
 
-Ideas and feedback welcome - open an issue or join our
-[Discord](https://discord.gg/WDMCY6aPWK).
+Ideas and feedback welcome - open an issue at
+<https://github.com/galza-guo/Panorama/issues>.

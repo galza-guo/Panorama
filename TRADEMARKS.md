@@ -1,53 +1,56 @@
-# Wealthfolio Trademarks
+# Panorama Branding and Upstream Trademarks
 
-"Wealthfolio" (word mark) and the Wealthfolio logos (the “Trademarks”) identify
-the official Wealthfolio project.
+Panorama is a fork of Wealthfolio. This document clarifies how Panorama branding
+relates to the upstream Wealthfolio trademarks.
 
-Open source licenses grant copyright permissions. Trademarks are different: this
-policy explains what you may and may not do with the Trademarks.
+## Upstream marks
 
-## Allowed without permission
+"Wealthfolio" (word mark) and the official Wealthfolio logos identify the
+upstream Wealthfolio project and remain trademarks of Teymz Inc.
 
-You may, without prior written permission:
+Open source licenses grant copyright permissions. They do not grant rights to
+use upstream trademarks in ways that suggest Panorama is the official
+Wealthfolio project.
 
-1. Refer to Wealthfolio in a descriptive way (“Wealthfolio-compatible”, “runs
-   Wealthfolio”, “based on Wealthfolio”) when the reference is accurate and does
-   not imply endorsement.
-2. Use the Trademarks in articles, reviews, tutorials, screenshots, and
-   documentation that discuss Wealthfolio.
-3. Redistribute unmodified official Wealthfolio builds (binaries) and use the
-   Trademarks to identify them as official.
-4. Use the Trademarks to link to the official project (website/repo) in a way
-   that clearly points to the official source.
+## Panorama branding rules
 
-## Not allowed without permission
+When distributing this fork or derivative builds of this fork:
 
-You may not, without prior written permission:
+1. Use the Panorama name and Panorama brand assets only for official Panorama
+   builds and documentation.
+2. Keep clear attribution that Panorama is a fork of Wealthfolio when upstream
+   provenance is relevant.
+3. Do not present Panorama as the official Wealthfolio project.
 
-1. Use the Trademarks in a product, service, company, or domain name (including
-   app store listings) if it could imply you are the official project.
-2. Use the Trademarks for modified versions, forks, or derivative distributions.
-3. Use the Trademarks in a way that suggests sponsorship, affiliation,
-   certification, or endorsement by the official project.
-4. Use logos/wordmarks on a hosted offering (SaaS/managed service) in a way that
-   suggests it is “Wealthfolio” rather than “a fork of Wealthfolio”.
+## Allowed references to Wealthfolio
 
-## Forks and modified builds
+You may accurately say:
 
-Forks and modified builds must:
+- "Forked from Wealthfolio"
+- "Based on Wealthfolio"
+- "Compatible with Wealthfolio v3 addon APIs"
 
-- Use a different name (not “Wealthfolio” or confusingly similar).
-- Remove Wealthfolio logos and other brand assets.
-- Avoid UI/marketing that implies the fork is official.
-- You may say: “Forked from Wealthfolio (https://wealthfolio.app/)” or “Based on
-  Wealthfolio”, prominently, with a disclaimer.
+Link upstream references to the official repository:
+<https://github.com/afadil/wealthfolio>.
+
+## Forks of Panorama
+
+If you fork Panorama and redistribute modified builds, you should:
+
+- Use a distinct product name.
+- Remove Panorama-specific logos and brand assets unless you are redistributing
+  official Panorama builds unchanged.
+- Avoid UI, release notes, or marketing copy that implies endorsement by either
+  Panorama or Wealthfolio.
 
 ## Attribution
 
-When referencing the Trademarks, include: “Wealthfolio is a trademark of Teymz
-Inc.”
+Recommended attribution:
 
-## Permission requests
+- "Panorama is a fork of Wealthfolio."
+- "Wealthfolio is a trademark of Teymz Inc."
 
-If you want to use the Trademarks in ways not covered above, contact:
-hello@wealthfolio.app
+## Questions
+
+If Panorama-specific branding guidance is needed, open an issue at:
+<https://github.com/galza-guo/Panorama/issues>

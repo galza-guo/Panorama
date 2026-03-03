@@ -1,17 +1,17 @@
 # @wealthfolio/ui
 
-Wealthfolio's shared UI component library built on top of shadcn/ui and Tailwind
+Panorama's shared UI component library built on top of shadcn/ui and Tailwind
 CSS.
 
 ## Overview
 
-The `@wealthfolio/ui` package provides a complete design system for Wealthfolio
+The `@wealthfolio/ui` package provides a complete design system for Panorama
 addons, ensuring consistent styling and user experience across all extensions.
 
 ## Features
 
 - 🎨 **Complete shadcn/ui components** - All essential UI primitives
-- 💰 **Wealthfolio-specific components** - Financial data display components
+- 💰 **Panorama-specific components** - Financial data display components
 - 🎭 **Consistent theming** - Dark/light mode support with CSS variables
 - 📦 **Tree-shakeable** - Import only what you need
 - 🔧 **TypeScript ready** - Full type safety
@@ -31,7 +31,7 @@ packages/ui/
 ├── src/
 │   ├── components/
 │   │   ├── ui/           # All shadcn/ui components
-│   │   ├── icons.tsx     # Wealthfolio icons
+│   │   ├── icons.tsx     # Panorama icons
 │   │   ├── amount-display.tsx
 │   │   └── ...           # Financial components
 │   ├── lib/
@@ -123,7 +123,7 @@ Or in your CSS:
 
 ### Core UI (shadcn/ui)
 
-All standard shadcn/ui components with Wealthfolio's Flexoki theme applied:
+All standard shadcn/ui components with Panorama's app theme applied:
 
 - `Button` - Various button styles and sizes
 - `Card` - Container component with header/content/footer
@@ -203,7 +203,7 @@ When updating shared components:
 
 1. `cd packages/ui`
 2. `npx shadcn-ui@latest add [component]`
-3. Customize if needed for Wealthfolio
+3. Customize if needed for Panorama
 4. Export in `src/index.ts`
 5. Build and test with addons
 
@@ -239,5 +239,5 @@ npx shadcn@latest add accordion alert-dialog alert avatar badge button calendar 
 npm run build
 ```
 
-This strategy ensures consistent UI/UX across the entire Wealthfolio ecosystem
+This strategy ensures consistent UI/UX across the entire Panorama ecosystem
 while maintaining developer efficiency and user experience.

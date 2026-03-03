@@ -6,7 +6,7 @@ detection.
 
 ## Overview
 
-Wealthfolio runs in two environments:
+Panorama runs in two environments:
 
 - **Desktop (Tauri)**: Uses Tauri's IPC to invoke Rust commands directly
 - **Web**: Uses REST API calls to a backend server

@@ -2,13 +2,16 @@
 
 [![Version](https://img.shields.io/npm/v/@wealthfolio/addon-sdk?style=flat-square)](https://www.npmjs.com/package/@wealthfolio/addon-sdk)
 [![Downloads](https://img.shields.io/npm/dm/@wealthfolio/addon-sdk?style=flat-square)](https://www.npmjs.com/package/@wealthfolio/addon-sdk)
-[![License](https://img.shields.io/npm/l/@wealthfolio/addon-sdk?style=flat-square)](https://github.com/afadil/wealthfolio/blob/main/LICENSE)
+[![License](https://img.shields.io/npm/l/@wealthfolio/addon-sdk?style=flat-square)](https://github.com/galza-guo/Panorama/blob/main/LICENSE)
 [![TypeScript](https://img.shields.io/badge/TypeScript-Ready-blue?style=flat-square)](https://www.typescriptlang.org/)
 [![Node](https://img.shields.io/node/v/@wealthfolio/addon-sdk?style=flat-square)](https://nodejs.org/)
 
 A comprehensive TypeScript SDK for building secure, feature-rich addons for
-Wealthfolio. Extend your portfolio management experience with custom analytics,
+Panorama. Extend your portfolio management experience with custom analytics,
 integrations, and visualizations.
+
+The package name remains `@wealthfolio/addon-sdk` for compatibility with the
+existing Wealthfolio v3 addon ecosystem.
 
 ## 📚 Table of Contents
 
@@ -222,7 +225,7 @@ Create a `manifest.json` file in your addon root:
 | `main`                  | `string`       | Entry point file (default: "addon.js") |
 | `sdkVersion`            | `string`       | Compatible SDK version                 |
 | `permissions`           | `Permission[]` | Security permissions required          |
-| `minWealthfolioVersion` | `string`       | Minimum Wealthfolio version required   |
+| `minWealthfolioVersion` | `string`       | Minimum compatible host version (field name retained for compatibility) |
 | `keywords`              | `string[]`     | Keywords for discoverability           |
 | `icon`                  | `string`       | Addon icon (base64 or relative path)   |
 
@@ -685,14 +688,14 @@ Your final package should contain:
 
 ## 🚀 Installation & Testing
 
-### Install in Wealthfolio
+### Install in Panorama
 
-1. Open Wealthfolio
+1. Open Panorama
 2. Navigate to Settings → Addons
 3. Click "Install Addon"
 4. Select your ZIP package
 5. Review permissions and approve
-6. Restart Wealthfolio to activate
+6. Restart Panorama to activate
 
 ### Development Testing
 
@@ -702,7 +705,7 @@ For development, you can test addons locally:
 # Build in watch mode
 npm run dev
 
-# Your changes will be reflected after reloading addons in Wealthfolio
+# Your changes will be reflected after reloading addons in Panorama
 ```
 
 ## 📚 API Reference
@@ -842,7 +845,7 @@ if (ctx.api.logger.isLevelEnabled('debug')) {
 
 ### Shared QueryClient Integration
 
-The SDK provides access to Wealthfolio's shared React Query client for
+The SDK provides access to Panorama's shared React Query client for
 consistent data fetching and caching:
 
 ```typescript
@@ -1038,9 +1041,9 @@ If you want to contribute to the SDK itself:
 #### 1. Clone and Setup
 
 ```bash
-# Clone the Wealthfolio repository
-git clone https://github.com/afadil/wealthfolio.git
-cd wealthfolio/packages/addon-sdk
+# Clone the Panorama repository
+git clone https://github.com/galza-guo/Panorama.git
+cd Panorama/packages/addon-sdk
 
 # Install dependencies
 pnpm install
@@ -1124,7 +1127,7 @@ ctx.api.logger.debug('Debug information:', data);
 
 Access the browser's developer console for debugging:
 
-- Open Wealthfolio
+- Open Panorama
 - Press F12 or right-click → Inspect
 - Check Console tab for addon logs
 - Use Network tab to monitor API calls
@@ -1330,7 +1333,7 @@ We welcome contributions to improve the addon SDK!
 | **Scope**        | `@wealthfolio`                                                    |
 | **Registry**     | [npmjs.com](https://www.npmjs.com/package/@wealthfolio/addon-sdk) |
 | **License**      | MIT                                                               |
-| **Repository**   | [GitHub](https://github.com/afadil/wealthfolio)                   |
+| **Repository**   | [GitHub](https://github.com/galza-guo/Panorama)                   |
 
 ### Version History
 
@@ -1342,10 +1345,10 @@ We follow [Semantic Versioning](https://semver.org/) (SemVer):
 
 #### Version Compatibility
 
-| SDK Version | Wealthfolio Version | Node.js   | React   |
-| ----------- | ------------------- | --------- | ------- |
-| 1.0.x       | >= 1.0.0            | >= 18.0.0 | ^18.0.0 |
-| 0.9.x       | >= 0.9.0            | >= 16.0.0 | ^17.0.0 |
+| SDK Version | Panorama Version | Node.js   | React   |
+| ----------- | ---------------- | --------- | ------- |
+| 1.0.x       | >= 1.0.0         | >= 18.0.0 | ^18.0.0 |
+| 0.9.x       | >= 0.9.0         | >= 16.0.0 | ^17.0.0 |
 
 ### Installation from Registry
 
@@ -1376,10 +1379,10 @@ npm install @wealthfolio/addon-sdk@1.1.0-beta.1
 
 ```bash
 # Install directly from GitHub
-npm install github:afadil/wealthfolio#main
+npm install github:galza-guo/Panorama#main
 
 # Or from a specific branch/commit
-npm install github:afladil/wealthfolio#wealthfolio-addons
+npm install github:galza-guo/Panorama#<branch-or-commit>
 ```
 
 ### Package Information Commands
@@ -1502,13 +1505,11 @@ npm pack && tar -tf *.tgz
 
 #### Getting Help
 
-1. **Documentation**: Check this README and
-   [docs](https://docs.wealthfolio.app/addons)
-2. **Issues**: [GitHub Issues](https://github.com/afadil/wealthfolio/issues)
-3. **Discussions**:
-   [GitHub Discussions](https://github.com/afadil/wealthfolio/discussions)
-4. **Discord**: [Community Discord](https://discord.gg/wealthfolio)
-5. **Email**: [support@wealthfolio.app](mailto:support@wealthfolio.app)
+1. **Documentation**: Check this README and the
+   [Panorama addon docs](https://github.com/galza-guo/Panorama/tree/main/docs/addons)
+2. **Issues**: [GitHub Issues](https://github.com/galza-guo/Panorama/issues)
+3. **Upstream Reference**:
+   [Wealthfolio](https://github.com/afadil/wealthfolio)
 
 ## 📄 License
 
@@ -1516,17 +1517,15 @@ MIT - see [LICENSE](LICENSE) for details.
 
 ## 🔗 Links
 
-- [Wealthfolio Homepage](https://wealthfolio.app)
-- [Addon Gallery](https://wealthfolio.app/addons)
-- [Documentation](https://docs.wealthfolio.app/addons)
-- [GitHub Repository](https://github.com/afadil/wealthfolio)
-- [Issue Tracker](https://github.com/afadil/wealthfolio/issues)
+- [Panorama Repository](https://github.com/galza-guo/Panorama)
+- [Panorama Addon Docs](https://github.com/galza-guo/Panorama/tree/main/docs/addons)
+- [Issue Tracker](https://github.com/galza-guo/Panorama/issues)
+- [Upstream Wealthfolio](https://github.com/afadil/wealthfolio)
 
 ## 💬 Support
 
-- [Discord Community](https://discord.gg/wealthfolio)
-- [GitHub Discussions](https://github.com/afadil/wealthfolio/discussions)
-- [Email Support](mailto:support@wealthfolio.app)
+- [GitHub Issues](https://github.com/galza-guo/Panorama/issues)
+- [Panorama Repository](https://github.com/galza-guo/Panorama)
 
 ## 🔧 Troubleshooting
 
@@ -1652,7 +1651,7 @@ npm run dev
 ls -la dist/  # Should update when you save files
 ```
 
-#### 2. Addon Not Loading in Wealthfolio
+#### 2. Addon Not Loading in Panorama
 
 1. Check the addon package structure:
 
@@ -1671,7 +1670,7 @@ ls -la dist/  # Should update when you save files
    cat manifest.json | jq .
    ```
 
-3. Check Wealthfolio logs:
+3. Check Panorama logs:
    - Open Developer Tools (F12)
    - Look for addon-related errors
    - Check Network tab for failed requests
@@ -1752,7 +1751,7 @@ If you're still experiencing issues:
    - Share the code and error logs
 
 3. **Search Existing Issues**:
-   - Check [GitHub Issues](https://github.com/afadil/wealthfolio/issues)
+   - Check [GitHub Issues](https://github.com/galza-guo/Panorama/issues)
    - Look for similar problems and solutions
 
 4. **Provide Complete Information**:

@@ -1,4 +1,4 @@
-# Wealthfolio AI Assistant Architecture
+# Panorama AI Assistant Architecture
 
 ## Overview
 

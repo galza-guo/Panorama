@@ -147,7 +147,7 @@ export function NewAccountsFoundModal({
                   analytics. <strong>Holdings</strong> mode imports snapshots only with limited
                   metrics.{" "}
                   <a
-                    href="https://wealthfolio.app/docs/concepts/activity-types"
+                    href="https://github.com/galza-guo/Panorama/blob/main/docs/activities/activity-types.md"
                     target="_blank"
                     rel="noopener noreferrer"
                     className="hover:text-foreground underline"
