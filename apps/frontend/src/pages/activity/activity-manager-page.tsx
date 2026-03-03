@@ -180,7 +180,7 @@ const ActivityManagerPage = () => {
         actions={
           <Button variant="ghost" size="sm" asChild>
             <a
-              href="https://wealthfolio.app/docs/concepts/activity-types"
+              href="https://github.com/galza-guo/Panorama/blob/main/docs/activities/activity-types.md"
               target="_blank"
               rel="noopener noreferrer"
               className="flex items-center gap-1.5"

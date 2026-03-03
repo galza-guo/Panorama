@@ -78,7 +78,7 @@ export function ActivityForm({ accounts, activity, open, onClose }: ActivityForm
               ? "Update the details of your transaction"
               : "Record a new transaction in your account."}{" "}
             <a
-              href="https://wealthfolio.app/docs/concepts/activity-types"
+              href="https://github.com/galza-guo/Panorama/blob/main/docs/activities/activity-types.md"
               target="_blank"
               rel="noopener noreferrer"
               className="underline"
