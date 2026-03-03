@@ -5,7 +5,7 @@
 - Branch: `codex/upstream-v3-foundation`
 - Prepared on: `2026-03-03`
 - Upstream base: `upstream/main`
-- Divergence vs `upstream/main`: `ahead 7`, `behind 0`
+- Divergence vs `upstream/main`: `ahead 8`, `behind 0`
 - Divergence vs current `origin/main`: `HEAD unique 420`, `origin/main unique 30`
 
 ## Why This Should Not Merge Directly Into Current `main`
@@ -39,6 +39,7 @@ Ordered by commit:
 5. `aa90edd7` `feat: finish panorama specialized asset integration`
 6. `1330d48d` `chore: align panorama branding in v3 surfaces`
 7. `82488f6d` `docs: align panorama release-facing assets`
+8. `e5d1dca1` `docs: add panorama v3 merge plan`
 
 ## Recommended Cutover Strategy
 
@@ -48,7 +49,7 @@ Recommended branch name:
 
 - `panorama-v3`
 
-Create it from `codex/upstream-v3-foundation`, not from the current `main`.
+Create it from `upstream/main`, not from the current `main`.
 
 ### 2. Open the review PR against `panorama-v3`
 
@@ -59,6 +60,9 @@ Recommended PR source and target:
 
 Do not target the current `main`.
 
+This keeps the review focused on the Panorama-specific commits instead of the
+entire legacy pre-v3 codebase.
+
 ### 3. Preserve commit history
 
 Preferred merge mode:
@@ -66,7 +70,7 @@ Preferred merge mode:
 - fast-forward if possible
 - otherwise regular merge commit
 
-Avoid squash merging. The seven commits are already grouped by migration lane
+Avoid squash merging. The eight commits are already grouped by migration lane
 and are useful for future upstream sync archaeology.
 
 ### 4. Freeze the old application line before cutover
