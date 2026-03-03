@@ -37,12 +37,12 @@ export function LoginPage() {
             <div className="flex justify-center">
               <img
                 src="/logo-vantage.png"
-                alt="Wealthfolio logo vantage"
+                alt="Panorama logo"
                 className="h-16 w-16 sm:h-20 sm:w-20"
               />
             </div>
             <div className="space-y-2">
-              <CardTitle>Wealthfolio</CardTitle>
+              <CardTitle>Panorama</CardTitle>
               <CardDescription>Your private portfolio tracker.</CardDescription>
             </div>
           </CardHeader>

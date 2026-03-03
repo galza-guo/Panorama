@@ -70,6 +70,9 @@ async fn is_auto_update_check_enabled(State(state): State<Arc<AppState>>) -> Api
 }
 
 const WEB_RUNTIME_TARGET: &str = "web-docker";
+const RELEASE_METADATA_URL: &str =
+    "https://github.com/galza-guo/Panorama/releases/latest/download/latest.json";
+const RELEASE_PAGE_URL: &str = "https://github.com/galza-guo/Panorama/releases/latest";
 
 #[derive(serde::Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -160,14 +163,11 @@ async fn check_update(State(state): State<Arc<AppState>>) -> ApiResult<Json<Upda
     let current_version_str = env!("CARGO_PKG_VERSION").to_string();
     let target = normalize_target(None);
     let arch = normalize_arch(None);
-    let request_url = format!(
-        "https://wealthfolio.app/releases/{}/{}/{}",
-        target, arch, current_version_str
-    );
+    let request_url = RELEASE_METADATA_URL;
 
     let client = reqwest::Client::new();
     let response = client
-        .get(&request_url)
+        .get(request_url)
         .header("X-Instance-Id", state.instance_id.clone())
         .header("X-Client-Runtime", WEB_RUNTIME_TARGET)
         .send()
@@ -193,15 +193,16 @@ async fn check_update(State(state): State<Arc<AppState>>) -> ApiResult<Json<Upda
 
     let current_version =
         Version::parse(&current_version_str).unwrap_or_else(|_| Version::new(0, 0, 0));
-    let latest_version =
-        Version::parse(&payload.version).unwrap_or_else(|_| current_version.clone());
+    let latest_version = Version::parse(payload.version.trim_start_matches('v'))
+        .unwrap_or_else(|_| current_version.clone());
     let update_available = latest_version > current_version;
 
     let platform_key = format!("{}-{}", target, arch);
     let download_url = payload
         .platforms
         .get(&platform_key)
-        .and_then(|p| p.url.clone());
+        .and_then(|p| p.url.clone())
+        .or_else(|| Some(RELEASE_PAGE_URL.to_string()));
 
     Ok(Json(UpdateCheckResponse {
         update_available,
@@ -267,7 +268,7 @@ async fn backup_database_to_path_route(
         let normalized_backup_dir = normalize_file_path(&target_dir);
 
         let timestamp = chrono::Local::now().format("%Y%m%d_%H%M%S");
-        let backup_filename = format!("wealthfolio_backup_{}.db", timestamp);
+        let backup_filename = format!("panorama_backup_{}.db", timestamp);
         let backup_path = StdPath::new(&normalized_backup_dir).join(&backup_filename);
 
         let backup_path_str = backup_path

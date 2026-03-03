@@ -97,7 +97,7 @@ const settingsSections = [
       {
         title: "Add-ons",
         href: "addons",
-        subtitle: "Extend Wealthfolio with features",
+        subtitle: "Extend Panorama with features",
         icon: <Icons.Package className="size-5" />,
       },
     ],
