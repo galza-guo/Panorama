@@ -186,7 +186,7 @@ export function MpfAssetEditorSheet({
         <SheetHeader>
           <SheetTitle>{mode === "create" ? "Add MPF Asset" : "Edit MPF Asset"}</SheetTitle>
           <SheetDescription>
-            Track trustee, scheme, total value, and subfund units on top of Wealthfolio&apos;s
+            Track trustee, scheme, total value, and subfund units on top of Panorama&apos;s
             alternative asset model.
           </SheetDescription>
         </SheetHeader>

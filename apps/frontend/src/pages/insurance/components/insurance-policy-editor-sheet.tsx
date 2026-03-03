@@ -151,7 +151,7 @@ export function InsurancePolicyEditorSheet({
         <SheetHeader>
           <SheetTitle>{mode === "create" ? "Add Insurance Policy" : "Edit Insurance Policy"}</SheetTitle>
           <SheetDescription>
-            Track policy value, contributions, and provider details on top of Wealthfolio&apos;s
+            Track policy value, contributions, and provider details on top of Panorama&apos;s
             alternative asset model.
           </SheetDescription>
         </SheetHeader>

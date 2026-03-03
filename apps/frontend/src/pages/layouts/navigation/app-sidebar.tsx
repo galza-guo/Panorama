@@ -64,7 +64,7 @@ export function AppSidebar({ navigation }: AppSidebarProps) {
                       },
                     )}
                   >
-                    Wealthfolio
+                    Panorama
                   </span>
                 </div>
 

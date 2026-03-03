@@ -374,7 +374,7 @@ export function AccountForm({ defaultValues, onSuccess = () => undefined }: Acco
               Switch to Transactions tracking?
             </AlertDialogTitle>
             <AlertDialogDescription>
-              Your existing holdings snapshots will be replaced when Wealthfolio calculates history
+              Your existing holdings snapshots will be replaced when Panorama calculates history
               from transactions. This cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
