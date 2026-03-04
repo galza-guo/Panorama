@@ -33,6 +33,28 @@ You may accurately say:
 Link upstream references to the official repository:
 <https://github.com/afadil/wealthfolio>.
 
+## Compatibility and maintenance policy
+
+Panorama should keep `Panorama` as its primary product name in user-facing UI,
+downloads, releases, and website copy.
+
+At the same time, Panorama does not need to remove every internal
+`Wealthfolio` identifier. Some names may remain for compatibility and easier
+upstream sync, including examples such as:
+
+- crate and package names like `wealthfolio-*`
+- addon SDK package names such as `@wealthfolio/*`
+- protocol, deep link, or service identifiers such as `Wealthfolio Connect`
+
+The maintenance rule is:
+
+1. Keep Panorama as the visible brand presented to users.
+2. Keep explicit attribution that Panorama is a fork of Wealthfolio.
+3. Do not rename upstream technical identifiers only for cosmetic reasons if
+   that makes future upstream updates harder.
+4. Prioritize removing user-visible references only when they would reasonably
+   confuse users about whether Panorama is an official Wealthfolio build.
+
 ## Forks of Panorama
 
 If you fork Panorama and redistribute modified builds, you should:
