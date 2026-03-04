@@ -1,19 +1,19 @@
-Wealthfolio addons are TypeScript modules that extend the application's
+Panorama addons are TypeScript modules that extend the application's
 functionality. This guide covers how to build, test, and distribute addons.
 
 **New to addon development?** Start with our
 [Quick Start Guide](/docs/addons/getting-started) to create your first addon.
 
-## What are Wealthfolio Addons?
+## What are Panorama Addons?
 
 Addons are TypeScript/React-based extensions that provide access to
-Wealthfolio's financial data and UI system.
+Panorama's financial data and UI system.
 
 **Technical Foundation** Each addon is a JavaScript function that receives an
 `AddonContext` object with access to APIs, UI components, and event system.
 
 **Integration Capabilities** Addons can register new navigation items, routes,
-and components that integrate directly into Wealthfolio's interface.
+and components that integrate directly into Panorama's interface.
 
 **Development Environment** Built with TypeScript, React, and modern web APIs.
 Includes hot-reload development server and comprehensive type definitions.
@@ -22,7 +22,7 @@ Includes hot-reload development server and comprehensive type definitions.
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│                    Wealthfolio Host Application                 │
+│                     Panorama Host Application                   │
 ├─────────────────────────────────────────────────────────────────┤
 │  ┌─────────────────┐  ┌─────────────────┐  ┌─────────────────┐  │
 │  │  Addon Runtime  │  │  Permission     │  │   API Bridge    │  │
@@ -173,7 +173,7 @@ The development tools include a hot-reload server:
 npm run dev:server
 
 # Available on localhost:3001-3003
-# Auto-discovered by Wealthfolio
+# Auto-discovered by Panorama
 ```
 
 ```
@@ -256,7 +256,7 @@ await ctx.api.secrets.set("api-key", "value");
 
 ## UI Components
 
-Addons have access to Wealthfolio's UI component library:
+Addons have access to Panorama's UI component library:
 
 ```typescript
 import { Button, Card, Dialog, Input, Table } from '@wealthfolio/ui';
@@ -361,8 +361,9 @@ export default defineConfig({
 
 ## Publishing
 
-Users can install addons directly from ZIP files. To publish your addon in the
-Wealthfolio Store, contact **support@wealthfolio.app**.
+Users can install addons directly from ZIP files. Panorama does not maintain a
+separate addon store today; use the Panorama repository and issues tracker for
+distribution guidance.
 
 ## Quick Start
 
@@ -379,15 +380,15 @@ Wealthfolio Store, contact **support@wealthfolio.app**.
     <span class="text-primary">Browse APIs →</span>
   </Card>
 
-  <Card href="https://github.com/afadil/wealthfolio/tree/main/addons/">
+  <Card href="https://github.com/galza-guo/Panorama/tree/main/addons/">
     <h3 class="text-lg font-semibold mb-2">💡 Examples</h3>
     <p class="text-muted-foreground mb-4">See real addon implementations</p>
     <span class="text-primary">Browse Examples →</span>
   </Card>
 
-  <Card href="https://wealthfolio.app/addons">
-    <h3 class="text-lg font-semibold mb-2">🏪 Addon Store</h3>
-    <p class="text-muted-foreground mb-4">Explore available addons</p>
-    <span class="text-primary">Visit Store →</span>
+  <Card href="https://github.com/galza-guo/Panorama/issues">
+    <h3 class="text-lg font-semibold mb-2">🧭 Panorama Project</h3>
+    <p class="text-muted-foreground mb-4">Track fork-specific addon guidance</p>
+    <span class="text-primary">Open Issues →</span>
   </Card>
 </div>

@@ -237,7 +237,7 @@ export function AccountForm({ defaultValues, onSuccess = () => undefined }: Acco
                       Choose how to track this account. This affects what data you enter and what
                       metrics are available.{" "}
                       <a
-                        href="https://wealthfolio.app/docs/concepts/activity-types"
+                        href="https://github.com/galza-guo/Panorama/blob/main/docs/activities/activity-types.md"
                         target="_blank"
                         rel="noopener noreferrer"
                         className="hover:text-foreground underline"
@@ -292,7 +292,7 @@ export function AccountForm({ defaultValues, onSuccess = () => undefined }: Acco
                     <AlertDescription className="text-xs">
                       Performance metrics will be limited without transaction history.{" "}
                       <a
-                        href="https://wealthfolio.app/docs/concepts/activity-types"
+                        href="https://github.com/galza-guo/Panorama/blob/main/docs/activities/activity-types.md"
                         target="_blank"
                         rel="noopener noreferrer"
                         className="hover:text-foreground underline"
@@ -374,7 +374,7 @@ export function AccountForm({ defaultValues, onSuccess = () => undefined }: Acco
               Switch to Transactions tracking?
             </AlertDialogTitle>
             <AlertDialogDescription>
-              Your existing holdings snapshots will be replaced when Wealthfolio calculates history
+              Your existing holdings snapshots will be replaced when Panorama calculates history
               from transactions. This cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>

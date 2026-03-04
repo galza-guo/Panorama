@@ -61,7 +61,20 @@ impl RulesResolver {
         mic: &Option<std::borrow::Cow<'static, str>>,
         provider: &ProviderId,
     ) -> Option<ProviderInstrument> {
-        let symbol = match mic {
+        let symbol = match provider.as_ref() {
+            "EASTMONEY_CN" => match mic.as_deref() {
+                Some("XSHG") => Arc::from(format!("{ticker}.SH")),
+                Some("XSHE") => Arc::from(format!("{ticker}.SZ")),
+                _ => ticker.clone(),
+            },
+            "TIANTIAN_FUND" => {
+                if mic.is_none() && ticker.len() == 6 && ticker.chars().all(|ch| ch.is_ascii_digit()) {
+                    Arc::from(format!("{ticker}.FUND"))
+                } else {
+                    ticker.clone()
+                }
+            }
+            _ => match mic {
             Some(mic) => {
                 // Look up suffix for this MIC and provider, fallback to ticker only if not found
                 match self.exchange_map.get_suffix(mic, provider) {
@@ -76,6 +89,7 @@ impl RulesResolver {
                 // No MIC = assume US market, no suffix needed
                 ticker.clone()
             }
+            },
         };
 
         Some(ProviderInstrument::EquitySymbol { symbol })
@@ -256,6 +270,44 @@ mod tests {
         match resolved.instrument {
             ProviderInstrument::EquitySymbol { symbol } => {
                 assert_eq!(symbol.as_ref(), "AAPL");
+            }
+            _ => panic!("Expected EquitySymbol"),
+        }
+    }
+
+    #[test]
+    fn test_resolve_mainland_equity_eastmoney() {
+        let resolver = RulesResolver::new();
+        let context = make_equity_context("600519", Some("XSHG"));
+
+        let result = resolver.resolve(&"EASTMONEY_CN".into(), &context);
+
+        assert!(result.is_some());
+        let resolved = result.unwrap().unwrap();
+        assert_eq!(resolved.source, ResolutionSource::Rules);
+
+        match resolved.instrument {
+            ProviderInstrument::EquitySymbol { symbol } => {
+                assert_eq!(symbol.as_ref(), "600519.SH");
+            }
+            _ => panic!("Expected EquitySymbol"),
+        }
+    }
+
+    #[test]
+    fn test_resolve_mainland_fund_tiantian() {
+        let resolver = RulesResolver::new();
+        let context = make_equity_context("161039", None);
+
+        let result = resolver.resolve(&"TIANTIAN_FUND".into(), &context);
+
+        assert!(result.is_some());
+        let resolved = result.unwrap().unwrap();
+        assert_eq!(resolved.source, ResolutionSource::Rules);
+
+        match resolved.instrument {
+            ProviderInstrument::EquitySymbol { symbol } => {
+                assert_eq!(symbol.as_ref(), "161039.FUND");
             }
             _ => panic!("Expected EquitySymbol"),
         }

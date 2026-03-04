@@ -9,7 +9,7 @@ export interface BalancePrivacyHook {
 }
 
 /**
- * Custom hook for managing balance privacy across the Wealthfolio ecosystem.
+ * Custom hook for managing balance privacy across the Panorama ecosystem.
  *
  * This hook provides a consistent way to handle balance privacy in both the main app
  * and addons by using localStorage as the source of truth. It automatically syncs

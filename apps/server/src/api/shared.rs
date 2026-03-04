@@ -134,6 +134,19 @@ pub async fn process_portfolio_job(
                         err
                     );
                 }
+                match state
+                    .alternative_asset_service
+                    .sync_panorama_mpf_unit_prices()
+                    .await
+                {
+                    Ok(updated) if updated > 0 => {
+                        tracing::info!("Panorama MPF unit-price sync updated {} asset(s)", updated);
+                    }
+                    Ok(_) => {}
+                    Err(err) => {
+                        tracing::warn!("Panorama MPF unit-price sync failed: {}", err);
+                    }
+                }
             }
             Err(err) => {
                 let err_msg = err.to_string();

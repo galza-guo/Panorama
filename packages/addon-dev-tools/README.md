@@ -1,12 +1,15 @@
 # @wealthfolio/addon-dev-tools
 
-Development tools for Wealthfolio addons including hot reload server and CLI.
+Development tools for Panorama addons including hot reload server and CLI.
 
 ## Installation
 
 ```bash
 npm install -g @wealthfolio/addon-dev-tools
 ```
+
+The package and CLI command name remain `wealthfolio` for compatibility with
+the existing addon ecosystem.
 
 ## CLI Commands
 

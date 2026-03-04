@@ -23,9 +23,11 @@ mod traits;
 
 // Provider implementations (to be implemented)
 pub mod alpha_vantage;
+pub mod eastmoney_cn;
 pub mod finnhub;
 pub mod marketdata_app;
 pub mod metal_price_api;
+pub mod tiantian_fund;
 pub mod yahoo;
 
 // Re-exports

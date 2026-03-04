@@ -1,6 +1,6 @@
 # Addon Development Packages
 
-A comprehensive guide to the packages available for developing Wealthfolio
+A comprehensive guide to the packages available for developing Panorama
 addons.
 
 ## Core Packages
@@ -45,7 +45,7 @@ npm install @wealthfolio/ui
 
 **What it provides:**
 
-- Pre-built UI components consistent with Wealthfolio's design
+- Pre-built UI components consistent with Panorama's design
 - Radix UI primitives
 - Tailwind CSS utilities
 - Financial-specific components
@@ -323,7 +323,7 @@ Template for addon package.json:
 {
   "name": "my-addon",
   "version": "1.0.0",
-  "description": "My Wealthfolio addon",
+  "description": "My Panorama addon",
   "type": "module",
   "main": "dist/addon.js",
   "keywords": ["wealthfolio", "addon"],
@@ -398,7 +398,7 @@ export default defineConfig({
 
 Always use compatible versions:
 
-| SDK Version | Wealthfolio Version | React Version |
+| SDK Version | Panorama Version | React Version |
 | ----------- | ------------------- | ------------- |
 | 1.0.0       | 1.0.0+              | ^19.1.1       |
 
@@ -469,7 +469,7 @@ The development server automatically:
 
 1. **Watches for file changes** in your addon source code
 2. **Rebuilds the addon** when changes are detected
-3. **Notifies Wealthfolio** to reload the addon
+3. **Notifies Panorama** to reload the addon
 4. **Preserves application state** where possible
 
 **Supported file types:**
@@ -487,7 +487,7 @@ The development server runs on ports 3001-3003 by default:
 const DEVELOPMENT_PORTS = [3001, 3002, 3003];
 
 // Server will bind to first available port
-// Wealthfolio automatically discovers addons on these ports
+// Panorama automatically discovers addons on these ports
 ```
 
 #### Package.json Scripts
@@ -511,13 +511,13 @@ Standard development scripts setup:
 **Instant Feedback:**
 
 - Component changes reflect immediately
-- No need to manually reload Wealthfolio
+- No need to manually reload Panorama
 - Preserves addon state when possible
 
 **Error Handling:**
 
 - Build errors shown in terminal
-- Runtime errors displayed in Wealthfolio dev console
+- Runtime errors displayed in Panorama dev console
 - Graceful fallback on reload failures
 
 **Development Utilities:**
@@ -537,11 +537,11 @@ __ADDON_DEV__.discoverAddons(); // Force addon discovery
    npm run dev:server
    ```
 
-2. **Open Wealthfolio** - addons are auto-discovered
+2. **Open Panorama** - addons are auto-discovered
 
 3. **Make changes** to your addon code
 
-4. **See changes instantly** in Wealthfolio
+4. **See changes instantly** in Panorama
 
 5. **Check terminal** for build status and errors
 
@@ -575,7 +575,7 @@ kill -9 <PID>
 **Hot reload not working:**
 
 ```bash
-# Check Wealthfolio console for discovery logs
+# Check Panorama console for discovery logs
 # Verify addon manifest is valid
 cat manifest.json | jq .
 

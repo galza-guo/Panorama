@@ -61,7 +61,7 @@ class AddonScaffold {
       addonName: config.name,
       packageName,
       componentName,
-      description: config.description || `A Wealthfolio addon for ${config.name}`,
+      description: config.description || `A Panorama addon for ${config.name}`,
       author: config.author || "Anonymous",
     };
   }

@@ -9,7 +9,10 @@ use rust_decimal::Decimal;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
-use super::asset_id::{parse_crypto_pair_symbol, parse_symbol_with_exchange_suffix};
+use super::asset_id::{
+    infer_panorama_data_source, parse_crypto_pair_symbol, parse_symbol_with_exchange_suffix,
+};
+use crate::quotes::constants::{DATA_SOURCE_TIANTIAN_FUND, DATA_SOURCE_YAHOO};
 use crate::errors::Result;
 use crate::errors::ValidationError;
 use crate::Error;
@@ -491,7 +494,12 @@ impl From<ProviderProfile> for NewAsset {
         let data_source = profile.data_source.clone();
         if matches!(
             data_source.as_str(),
-            "YAHOO" | "ALPHA_VANTAGE" | "MARKETDATA_APP" | "METAL_PRICE_API"
+            "YAHOO"
+                | "ALPHA_VANTAGE"
+                | "MARKETDATA_APP"
+                | "METAL_PRICE_API"
+                | "EASTMONEY_CN"
+                | "TIANTIAN_FUND"
         ) {
             config.insert(
                 "preferred_provider".to_string(),
@@ -650,6 +658,24 @@ pub fn resolve_quote_ccy_precedence(
         .map(|ccy| (ccy, QuoteCcyResolutionSource::TerminalFallback))
 }
 
+pub fn default_market_data_provider_id(
+    instrument_type: Option<&InstrumentType>,
+    symbol: Option<&str>,
+    exchange_mic: Option<&str>,
+) -> &'static str {
+    if matches!(
+        instrument_type,
+        Some(InstrumentType::Equity | InstrumentType::Option) | None
+    ) {
+        let raw_symbol = symbol.unwrap_or_default();
+        if let Some(provider) = infer_panorama_data_source(raw_symbol, exchange_mic) {
+            return provider;
+        }
+    }
+
+    DATA_SOURCE_YAHOO
+}
+
 fn parse_fx_symbol_parts(symbol: &str) -> Option<(String, String)> {
     let trimmed = symbol.trim().to_uppercase();
     let cleaned = trimmed.strip_suffix("=X").unwrap_or(&trimmed);
@@ -705,6 +731,17 @@ pub fn canonicalize_market_identity(
                     if let Some(ccy) = mic_to_currency(mic) {
                         normalized_quote = normalize_quote_ccy(Some(ccy));
                     }
+                } else if instrument_symbol
+                    .as_deref()
+                    .zip(symbol)
+                    .is_some_and(|(_, raw)| {
+                        matches!(
+                            infer_panorama_data_source(raw, None),
+                            Some(DATA_SOURCE_TIANTIAN_FUND)
+                        )
+                    })
+                {
+                    normalized_quote = Some("CNY".to_string());
                 }
             }
 

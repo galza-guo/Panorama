@@ -6,6 +6,8 @@
 
 use wealthfolio_market_data::{strip_yahoo_suffix, yahoo_exchange_suffixes, yahoo_suffix_to_mic};
 
+use crate::quotes::constants::{DATA_SOURCE_EASTMONEY_CN, DATA_SOURCE_TIANTIAN_FUND};
+
 /// Parse crypto pair symbols like "BTC-USD" or "BTC-USDT" into (base, quote).
 /// Returns None if the symbol doesn't match the expected pair pattern.
 pub fn parse_crypto_pair_symbol(symbol: &str) -> Option<(String, String)> {
@@ -37,6 +39,21 @@ pub fn parse_crypto_pair_symbol(symbol: &str) -> Option<(String, String)> {
 /// - `base_symbol`: The symbol without the suffix (e.g., "SHOP", "VOD", "AAPL")
 /// - `mic`: The exchange MIC if a known suffix was found (e.g., Some("XTSE"), Some("XLON"), None)
 pub fn parse_symbol_with_exchange_suffix(symbol: &str) -> (&str, Option<&'static str>) {
+    let trimmed = symbol.trim();
+
+    if let Some((base, suffix)) = trimmed.rsplit_once('.') {
+        let suffix = suffix.trim();
+        if suffix.eq_ignore_ascii_case("SH") || suffix.eq_ignore_ascii_case("SS") {
+            return (base.trim(), Some("XSHG"));
+        }
+        if suffix.eq_ignore_ascii_case("SZ") {
+            return (base.trim(), Some("XSHE"));
+        }
+        if suffix.eq_ignore_ascii_case("FUND") {
+            return (base.trim(), None);
+        }
+    }
+
     let base_symbol = strip_yahoo_suffix(symbol);
 
     let mic = yahoo_exchange_suffixes()
@@ -48,6 +65,31 @@ pub fn parse_symbol_with_exchange_suffix(symbol: &str) -> (&str, Option<&'static
         });
 
     (base_symbol, mic)
+}
+
+/// Infer Panorama-localized market data provider from a canonical symbol or MIC.
+pub fn infer_panorama_data_source(
+    symbol: &str,
+    exchange_mic: Option<&str>,
+) -> Option<&'static str> {
+    let normalized = symbol.trim().to_uppercase();
+    if normalized.is_empty() {
+        return None;
+    }
+
+    match exchange_mic.map(str::trim).filter(|mic| !mic.is_empty()) {
+        Some("XSHG") | Some("XSHE") => Some(DATA_SOURCE_EASTMONEY_CN),
+        _ => {
+            if normalized
+                .strip_suffix(".FUND")
+                .is_some_and(|code| code.len() == 6 && code.chars().all(|ch| ch.is_ascii_digit()))
+            {
+                Some(DATA_SOURCE_TIANTIAN_FUND)
+            } else {
+                None
+            }
+        }
+    }
 }
 
 #[cfg(test)]
@@ -90,5 +132,30 @@ mod tests {
         let (symbol, mic) = parse_symbol_with_exchange_suffix("BRK.B");
         assert_eq!(symbol, "BRK.B");
         assert_eq!(mic, None);
+
+        let (symbol, mic) = parse_symbol_with_exchange_suffix("600519.SH");
+        assert_eq!(symbol, "600519");
+        assert_eq!(mic, Some("XSHG"));
+
+        let (symbol, mic) = parse_symbol_with_exchange_suffix("161039.FUND");
+        assert_eq!(symbol, "161039");
+        assert_eq!(mic, None);
+    }
+
+    #[test]
+    fn test_infer_panorama_data_source() {
+        assert_eq!(
+            infer_panorama_data_source("600519.SH", Some("XSHG")),
+            Some(DATA_SOURCE_EASTMONEY_CN)
+        );
+        assert_eq!(
+            infer_panorama_data_source("000001.SZ", Some("XSHE")),
+            Some(DATA_SOURCE_EASTMONEY_CN)
+        );
+        assert_eq!(
+            infer_panorama_data_source("161039.FUND", None),
+            Some(DATA_SOURCE_TIANTIAN_FUND)
+        );
+        assert_eq!(infer_panorama_data_source("AAPL", Some("XNAS")), None);
     }
 }

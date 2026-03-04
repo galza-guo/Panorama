@@ -101,6 +101,22 @@ fn handle_portfolio_request(handle: AppHandle, payload_str: &str, force_recalc: 
                                         e
                                     );
                                 }
+                                match context
+                                    .alternative_asset_service()
+                                    .sync_panorama_mpf_unit_prices()
+                                    .await
+                                {
+                                    Ok(updated) if updated > 0 => {
+                                        info!(
+                                            "Panorama MPF unit-price sync updated {} asset(s)",
+                                            updated
+                                        );
+                                    }
+                                    Ok(_) => {}
+                                    Err(err) => {
+                                        warn!("Panorama MPF unit-price sync failed: {}", err);
+                                    }
+                                }
 
                                 // Trigger calculation after successful sync
                                 handle_portfolio_calculation(

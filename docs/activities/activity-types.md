@@ -1,13 +1,13 @@
 # Activity Types Reference
 
 This document provides a comprehensive reference for Activity types used in
-Wealthfolio. Understanding these types is essential for tracking portfolio
+Panorama. Understanding these types is essential for tracking portfolio
 movements and for creating activities programmatically through addons or CSV
 imports.
 
 ## Overview
 
-Wealthfolio uses a closed set of **14 canonical activity types**. Each activity
+Panorama uses a closed set of **14 canonical activity types**. Each activity
 
 - **Cash Balance**: The cash position in the account (by currency)
 - **Asset Quantity**: The number of shares/units held
@@ -108,7 +108,7 @@ for ratio)
 
 #### DEPOSIT
 
-**Purpose**: Incoming funds from outside Wealthfolio (external source).
+**Purpose**: Incoming funds from outside Panorama (external source).
 
 | Impact               | Description                                            |
 | -------------------- | ------------------------------------------------------ |
@@ -169,7 +169,7 @@ calculation.
 
 **Use Cases**:
 
-- Default: Transfer between Wealthfolio accounts (cost basis preserved)
+- Default: Transfer between Panorama accounts (cost basis preserved)
 - External: Adding holdings from outside the portfolio (gifts, inheritance,
   external brokerage)
 
@@ -195,7 +195,7 @@ calculation.
 
 **Use Cases**:
 
-- Default: Transfer between Wealthfolio accounts
+- Default: Transfer between Panorama accounts
 - External: Removing holdings from portfolio (gifts, donations, external
   transfer)
 
