@@ -3,7 +3,7 @@
 欢迎使用
 **Panorama**，这是一款美观、隐私且开源的投资追踪器，以此为基础特别增强了对中国市场的支持。
 
-Panorama 是 [Wealthfolio](https://wealthfolio.app)
+Panorama 是 [Wealthfolio](https://github.com/afadil/wealthfolio)
 的透明分叉版本，专为亚洲市场和额外的资产类别提供了专门的增强功能。
 
 ## 为什么选择 Panorama？

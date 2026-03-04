@@ -31,7 +31,7 @@ export default function Home() {
                 i18nKey="hero.subtitle"
                 components={[
                   <a
-                    href="https://wealthfolio.app"
+                    href="https://github.com/afadil/wealthfolio"
                     target="_blank"
                     rel="noreferrer"
                     className="text-primary underline-offset-4 hover:underline"
@@ -113,7 +113,9 @@ export default function Home() {
             <p className="text-muted-foreground max-w-[85%] leading-normal sm:text-lg sm:leading-7">
               {t("footer.disclaimer_text_1")}
               <a
-                href="https://wealthfolio.app"
+                href="https://github.com/afadil/wealthfolio"
+                target="_blank"
+                rel="noreferrer"
                 className="hover:text-primary underline underline-offset-4"
               >
                 Wealthfolio
