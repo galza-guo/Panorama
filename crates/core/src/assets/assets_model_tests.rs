@@ -4,7 +4,7 @@
 mod tests {
     use crate::assets::{
         canonicalize_market_identity, default_market_data_provider_id,
-        resolve_quote_ccy_precedence, Asset, AssetKind, InstrumentType, OptionSpec,
+        resolve_quote_ccy_precedence, Asset, AssetKind, InstrumentId, InstrumentType, OptionSpec,
         QuoteCcyResolutionSource, QuoteMode,
     };
     use chrono::NaiveDateTime;
@@ -216,6 +216,83 @@ mod tests {
         let json = serde_json::to_string(&spec).unwrap();
         assert!(json.contains("\"underlyingAssetId\":\"AAPL\""));
         assert!(json.contains("\"right\":\"CALL\""));
+    }
+
+    #[test]
+    fn test_to_instrument_id_repairs_legacy_panorama_cn_equity_symbol() {
+        let mut asset = create_test_asset(AssetKind::Investment);
+        asset.instrument_type = Some(InstrumentType::Equity);
+        asset.instrument_symbol = Some("510300.SH".to_string());
+        asset.instrument_exchange_mic = None;
+
+        let instrument = asset.to_instrument_id();
+
+        match instrument {
+            Some(InstrumentId::Equity { ticker, mic }) => {
+                assert_eq!(ticker.as_ref(), "510300");
+                assert_eq!(mic.as_deref(), Some("XSHG"));
+            }
+            other => panic!("Expected equity instrument, got {other:?}"),
+        }
+    }
+
+    #[test]
+    fn test_to_instrument_id_repairs_legacy_panorama_fund_symbol() {
+        let mut asset = create_test_asset(AssetKind::Investment);
+        asset.instrument_type = Some(InstrumentType::Equity);
+        asset.instrument_symbol = Some("004235.FUND".to_string());
+        asset.instrument_exchange_mic = None;
+
+        let instrument = asset.to_instrument_id();
+
+        match instrument {
+            Some(InstrumentId::Equity { ticker, mic }) => {
+                assert_eq!(ticker.as_ref(), "004235");
+                assert_eq!(mic, None);
+            }
+            other => panic!("Expected equity instrument, got {other:?}"),
+        }
+    }
+
+    #[test]
+    fn test_to_instrument_id_falls_back_to_legacy_display_code() {
+        let mut asset = create_test_asset(AssetKind::Investment);
+        asset.instrument_type = Some(InstrumentType::Equity);
+        asset.instrument_symbol = None;
+        asset.display_code = Some("004235.FUND".to_string());
+        asset.instrument_exchange_mic = None;
+
+        let instrument = asset.to_instrument_id();
+
+        match instrument {
+            Some(InstrumentId::Equity { ticker, mic }) => {
+                assert_eq!(ticker.as_ref(), "004235");
+                assert_eq!(mic, None);
+            }
+            other => panic!("Expected equity instrument, got {other:?}"),
+        }
+    }
+
+    #[test]
+    fn test_to_instrument_id_infers_equity_for_legacy_market_fund() {
+        let mut asset = create_test_asset(AssetKind::Investment);
+        asset.instrument_type = None;
+        asset.instrument_symbol = None;
+        asset.display_code = Some("004235.FUND".to_string());
+        asset.instrument_exchange_mic = None;
+        asset.provider_config = Some(json!({
+            "preferred_provider": "TIANTIAN_FUND"
+        }));
+
+        let instrument = asset.to_instrument_id();
+
+        match instrument {
+            Some(InstrumentId::Equity { ticker, mic }) => {
+                assert_eq!(ticker.as_ref(), "004235");
+                assert_eq!(mic, None);
+            }
+            other => panic!("Expected equity instrument, got {other:?}"),
+        }
     }
 
     // Test InstrumentType

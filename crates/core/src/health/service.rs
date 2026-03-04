@@ -255,11 +255,37 @@ impl HealthService {
                             asset_id: instrument.id.clone(),
                             symbol: instrument.symbol.clone(),
                             name: instrument.name.clone(),
-                            exchange_mic: None, // TODO: populate from instrument once holdings model is updated
+                            exchange_mic: None,
+                            preferred_provider: instrument.preferred_provider.clone(),
                             market_value: market_value_f64,
                             uses_market_pricing,
                         });
                 }
+            }
+        }
+
+        if !holdings_map.is_empty() {
+            let held_asset_ids: Vec<String> = holdings_map.keys().cloned().collect();
+            match asset_service.get_assets_by_asset_ids(&held_asset_ids).await {
+                Ok(assets) => {
+                    let exchange_mics_by_asset_id: HashMap<String, Option<String>> = assets
+                        .into_iter()
+                        .map(|asset| (asset.id, asset.instrument_exchange_mic))
+                        .collect();
+
+                    for (asset_id, holding) in holdings_map.iter_mut() {
+                        if holding.exchange_mic.is_none() {
+                            holding.exchange_mic = exchange_mics_by_asset_id
+                                .get(asset_id)
+                                .cloned()
+                                .flatten();
+                        }
+                    }
+                }
+                Err(err) => warn!(
+                    "Failed to load asset exchange MICs for health checks: {}. Falling back to holdings-only context.",
+                    err
+                ),
             }
         }
 
@@ -653,6 +679,7 @@ mod tests {
             symbol: "AAPL".to_string(),
             name: Some("Apple Inc.".to_string()),
             exchange_mic: None,
+            preferred_provider: None,
             market_value: 10_000.0,
             uses_market_pricing: true,
         }];
@@ -691,6 +718,7 @@ mod tests {
             symbol: "AAPL".to_string(),
             name: Some("Apple Inc.".to_string()),
             exchange_mic: None,
+            preferred_provider: None,
             market_value: 10_000.0,
             uses_market_pricing: true,
         }];

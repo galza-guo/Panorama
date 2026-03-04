@@ -24,6 +24,8 @@ pub struct AssetHoldingInfo {
     pub name: Option<String>,
     /// Exchange MIC for market-effective-date calculation (e.g., "XNAS")
     pub exchange_mic: Option<String>,
+    /// Preferred provider for provider-specific staleness handling.
+    pub preferred_provider: Option<String>,
     /// Market value in base currency
     pub market_value: f64,
     /// Whether this asset uses market pricing (vs manual)
@@ -87,11 +89,13 @@ impl PriceStalenessCheck {
                             holding.exchange_mic.as_deref(),
                         );
                         let days_stale = trading_days_since(*quote_time, effective_today);
+                        let adjusted_days_stale =
+                            (days_stale - staleness_grace_trading_days(holding)).max(0);
 
-                        if days_stale >= critical_trading_days {
+                        if adjusted_days_stale >= critical_trading_days {
                             error_assets.push(holding);
                             error_mv += holding.market_value;
-                        } else if days_stale >= warning_trading_days {
+                        } else if adjusted_days_stale >= warning_trading_days {
                             warning_assets.push(holding);
                             warning_mv += holding.market_value;
                         }
@@ -282,6 +286,19 @@ fn trading_days_since(last_quote: DateTime<Utc>, today: NaiveDate) -> i64 {
     trading_days_between(last_date, today)
 }
 
+fn staleness_grace_trading_days(holding: &AssetHoldingInfo) -> i64 {
+    if holding
+        .preferred_provider
+        .as_deref()
+        .is_some_and(|provider| provider == "TIANTIAN_FUND")
+        || holding.symbol.to_uppercase().ends_with(".FUND")
+    {
+        1
+    } else {
+        0
+    }
+}
+
 #[async_trait]
 impl HealthCheck for PriceStalenessCheck {
     fn id(&self) -> &'static str {
@@ -428,6 +445,7 @@ mod tests {
             symbol: "AAPL".to_string(),
             name: Some("Apple Inc.".to_string()),
             exchange_mic: None,
+            preferred_provider: None,
             market_value: 10_000.0,
             uses_market_pricing: true,
         }];
@@ -457,6 +475,7 @@ mod tests {
             symbol: "AAPL".to_string(),
             name: Some("Apple Inc.".to_string()),
             exchange_mic: None,
+            preferred_provider: None,
             market_value: 10_000.0,
             uses_market_pricing: true,
         }];
@@ -487,6 +506,7 @@ mod tests {
             symbol: "AAPL".to_string(),
             name: Some("Apple Inc.".to_string()),
             exchange_mic: None,
+            preferred_provider: None,
             market_value: 10_000.0,
             uses_market_pricing: true,
         }];
@@ -516,6 +536,7 @@ mod tests {
             symbol: "AAPL".to_string(),
             name: Some("Apple Inc.".to_string()),
             exchange_mic: None,
+            preferred_provider: None,
             market_value: 10_000.0,
             uses_market_pricing: true,
         }];
@@ -545,6 +566,7 @@ mod tests {
             symbol: "AAPL".to_string(),
             name: Some("Apple Inc.".to_string()),
             exchange_mic: None,
+            preferred_provider: None,
             market_value: 10_000.0,
             uses_market_pricing: true,
         }];
@@ -569,6 +591,7 @@ mod tests {
             symbol: "AAPL".to_string(),
             name: None,
             exchange_mic: None,
+            preferred_provider: None,
             market_value: 10_000.0,
             uses_market_pricing: true,
         }];
@@ -582,6 +605,35 @@ mod tests {
     }
 
     #[test]
+    fn test_tiantian_fund_allows_one_trading_day_nav_lag() {
+        let check = PriceStalenessCheck::new();
+
+        // Asia/Shanghai evening on 2026-03-04, when many QDII fund NAVs are still T-1.
+        let now = Utc.with_ymd_and_hms(2026, 3, 4, 14, 20, 0).unwrap();
+        let ctx = HealthContext::with_timestamp(HealthConfig::default(), "CNY", 100_000.0, now);
+
+        let holdings = vec![AssetHoldingInfo {
+            asset_id: "fund-050025".to_string(),
+            symbol: "050025.FUND".to_string(),
+            name: Some("Bosera S&P 500 ETF Feeder A".to_string()),
+            exchange_mic: None,
+            preferred_provider: Some("TIANTIAN_FUND".to_string()),
+            market_value: 10_000.0,
+            uses_market_pricing: true,
+        }];
+
+        let mut quote_times = HashMap::new();
+        let latest_nav = Utc.with_ymd_and_hms(2026, 3, 3, 0, 0, 0).unwrap();
+        quote_times.insert("fund-050025".to_string(), latest_nav);
+
+        let issues = check.analyze(&holdings, &quote_times, &ctx);
+        assert!(
+            issues.is_empty(),
+            "T-1 Tiantian fund NAV should not be flagged as stale"
+        );
+    }
+
+    #[test]
     fn test_manual_pricing_skipped() {
         let check = PriceStalenessCheck::new();
         let ctx = HealthContext::new(HealthConfig::default(), "USD", 100_000.0);
@@ -591,6 +643,7 @@ mod tests {
             symbol: "HOUSE".to_string(),
             name: Some("My House".to_string()),
             exchange_mic: None,
+            preferred_provider: None,
             market_value: 500_000.0,
             uses_market_pricing: false, // Manual pricing
         }];
@@ -615,6 +668,7 @@ mod tests {
             symbol: "AAPL".to_string(),
             name: Some("Apple Inc.".to_string()),
             exchange_mic: None,
+            preferred_provider: None,
             market_value: 10_000.0,
             uses_market_pricing: true,
         }];

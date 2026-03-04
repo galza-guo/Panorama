@@ -12,7 +12,9 @@ use serde_json::Value;
 use super::asset_id::{
     infer_panorama_data_source, parse_crypto_pair_symbol, parse_symbol_with_exchange_suffix,
 };
-use crate::quotes::constants::{DATA_SOURCE_TIANTIAN_FUND, DATA_SOURCE_YAHOO};
+use crate::quotes::constants::{
+    DATA_SOURCE_EASTMONEY_CN, DATA_SOURCE_TIANTIAN_FUND, DATA_SOURCE_YAHOO,
+};
 use crate::errors::Result;
 use crate::errors::ValidationError;
 use crate::Error;
@@ -282,17 +284,52 @@ impl Asset {
     /// Convert to canonical instrument for market data resolution.
     /// Returns None for asset kinds that are not resolvable to market data.
     pub fn to_instrument_id(&self) -> Option<InstrumentId> {
-        let inst_type = self.instrument_type.as_ref()?;
-        let symbol = self.instrument_symbol.as_ref()?;
+        let symbol = self
+            .instrument_symbol
+            .as_ref()
+            .or(self.display_code.as_ref())?;
+        let inferred_inst_type = if self.instrument_type.is_none()
+            && self.kind == AssetKind::Investment
+            && self.quote_mode == QuoteMode::Market
+        {
+            let normalized = symbol.trim().to_uppercase();
+            let (_, suffix_mic) = parse_symbol_with_exchange_suffix(symbol);
+            let preferred_provider = self.preferred_provider();
+
+            if parse_crypto_pair_symbol(symbol).is_some() {
+                Some(InstrumentType::Crypto)
+            } else if suffix_mic.is_some()
+                || normalized.ends_with(".FUND")
+                || matches!(
+                    preferred_provider.as_deref(),
+                    Some(DATA_SOURCE_EASTMONEY_CN | DATA_SOURCE_TIANTIAN_FUND)
+                )
+            {
+                Some(InstrumentType::Equity)
+            } else {
+                None
+            }
+        } else {
+            None
+        };
+        let inst_type = self
+            .instrument_type
+            .as_ref()
+            .or(inferred_inst_type.as_ref())?;
 
         match inst_type {
-            InstrumentType::Equity => Some(InstrumentId::Equity {
-                ticker: Arc::from(symbol.as_str()),
-                mic: self
-                    .instrument_exchange_mic
-                    .as_ref()
-                    .map(|s| Cow::Owned(s.clone())),
-            }),
+            InstrumentType::Equity => {
+                let (ticker, suffix_mic) = parse_symbol_with_exchange_suffix(symbol);
+
+                Some(InstrumentId::Equity {
+                    ticker: Arc::from(ticker),
+                    mic: self
+                        .instrument_exchange_mic
+                        .clone()
+                        .or_else(|| suffix_mic.map(str::to_string))
+                        .map(Cow::Owned),
+                })
+            }
             InstrumentType::Crypto => Some(InstrumentId::Crypto {
                 base: Arc::from(symbol.as_str()),
                 quote: Cow::Owned(self.quote_ccy.clone()),
