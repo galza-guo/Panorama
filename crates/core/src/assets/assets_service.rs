@@ -978,9 +978,24 @@ impl AssetServiceTrait for AssetService {
 
         // Auto-classify asset based on provider profile data
         if let Some(taxonomy_service) = &self.taxonomy_service {
+            let fallback_quote_type = existing_asset
+                .metadata
+                .as_ref()
+                .and_then(|metadata| metadata.get("profile"))
+                .and_then(|profile| profile.get("quoteType"))
+                .and_then(|quote_type| quote_type.as_str());
+
+            let classification_quote_type =
+                provider_profile.asset_type.as_deref().or(fallback_quote_type);
+            let classification_name = provider_profile
+                .name
+                .as_deref()
+                .or(existing_asset.name.as_deref());
+
             let classification_input = ClassificationInput::from_provider_profile(
-                provider_profile.asset_type.as_deref(),
-                provider_profile.name.as_deref(),
+                classification_quote_type,
+                classification_name,
+                existing_asset.display_code.as_deref(),
                 None,
                 provider_profile.sectors.as_deref(),
                 None,

@@ -126,9 +126,9 @@ fn infer_asset_class(input: &ClassificationInput) -> Option<&'static str> {
         "fixed income",
         "treasury",
         "municipal",
-        "muni",
         "credit",
         "gilts",
+        "债",
         "债券",
         "纯债",
         "中短债",
@@ -172,14 +172,28 @@ fn infer_country_from_name(name: &str) -> Option<&'static str> {
         "s&p 500",
         "s&p500",
         "sp500",
+        "sp 500",
         "snp500",
         "nasdaq 100",
         "russell 2000",
         "dow jones",
         "us total market",
+        "标普500",
+        "标普 500",
+        "标准普尔500",
     ];
     if contains_any_keyword(&normalized, &us_index_keywords) {
         return Some("United States");
+    }
+
+    let hong_kong_keywords = ["hang seng", "hsi", "hong kong", "恒生", "港股"];
+    if contains_any_keyword(&normalized, &hong_kong_keywords) {
+        return Some("Hong Kong");
+    }
+
+    let germany_keywords = ["germany", "dax", "德国"];
+    if contains_any_keyword(&normalized, &germany_keywords) {
+        return Some("Germany");
     }
 
     let india_keywords = ["india", "nifty", "sensex", "印度"];
@@ -190,6 +204,31 @@ fn infer_country_from_name(name: &str) -> Option<&'static str> {
     let vietnam_keywords = ["vietnam", "viet nam", "vn30", "越南"];
     if contains_any_keyword(&normalized, &vietnam_keywords) {
         return Some("Viet Nam");
+    }
+
+    None
+}
+
+fn infer_country_from_symbol(symbol: &str) -> Option<&'static str> {
+    let normalized = symbol.trim().to_uppercase();
+    if normalized.is_empty() {
+        return None;
+    }
+
+    if normalized.ends_with(".SH")
+        || normalized.ends_with(".SZ")
+        || normalized.ends_with(".BJ")
+        || normalized.ends_with(".FUND")
+    {
+        return Some("China");
+    }
+
+    if normalized.ends_with(".HK") {
+        return Some("Hong Kong");
+    }
+
+    if normalized.len() == 6 && normalized.chars().all(|c| c.is_ascii_digit()) {
+        return Some("China");
     }
 
     None
@@ -363,6 +402,7 @@ pub struct SectorWeight {
 pub struct ClassificationInput {
     pub quote_type: Option<String>,
     pub name: Option<String>,
+    pub symbol: Option<String>,
     pub sectors: Vec<SectorWeight>,
     pub country: Option<String>,
 }
@@ -378,9 +418,11 @@ impl ClassificationInput {
     /// - Single country (for stocks): `country` = "United States"
     /// - Multiple countries (for ETFs): `countries_json` = `[{"name": "United States", "weight": 0.60}, ...]`
     /// - Fallback: `exchange_mic` used to infer fund domicile when provider returns no country
+    /// - Final fallback: infer from symbol suffix/format (e.g. `.SH`, `.SZ`, `.FUND`, 6-digit CN codes)
     pub fn from_provider_profile(
         quote_type: Option<&str>,
         name: Option<&str>,
+        symbol: Option<&str>,
         sector: Option<&str>,
         sectors_json: Option<&str>,
         country: Option<&str>,
@@ -390,6 +432,7 @@ impl ClassificationInput {
         let mut input = ClassificationInput {
             quote_type: quote_type.map(String::from),
             name: name.map(String::from),
+            symbol: symbol.map(String::from),
             ..Default::default()
         };
 
@@ -448,6 +491,15 @@ impl ClassificationInput {
                         "Using exchange MIC {} to infer country: {}",
                         mic, country_name
                     );
+                    input.country = Some(country_name.to_string());
+                }
+            }
+        }
+
+        // Final fallback: infer from symbol suffix / format when provider country and MIC are unavailable.
+        if input.country.is_none() {
+            if let Some(symbol) = &input.symbol {
+                if let Some(country_name) = infer_country_from_symbol(symbol) {
                     input.country = Some(country_name.to_string());
                 }
             }
@@ -560,10 +612,14 @@ impl AutoClassificationService {
         }
 
         // 4. Classify region
+        // Keep region resolution simple and deterministic:
+        // 1) Name override (handles QDII/overseas exposure hints like S&P500/Hang Seng)
+        // 2) Base listing/provider country fallback
         let inferred_country = input
-            .country
+            .name
             .as_deref()
-            .or_else(|| input.name.as_deref().and_then(infer_country_from_name));
+            .and_then(infer_country_from_name)
+            .or(input.country.as_deref());
 
         if let Some(country) = inferred_country {
             let region_category_id = map_country_to_region(country)
@@ -792,6 +848,7 @@ mod tests {
             None,
             None,
             None,
+            None,
             Some(json),
             None,
             None,
@@ -808,6 +865,7 @@ mod tests {
         let input = ClassificationInput::from_provider_profile(
             Some("EQUITY"),
             Some("Apple Inc"),
+            Some("AAPL"),
             Some("Technology"),
             None, // no sectors JSON
             Some("United States"),
@@ -826,6 +884,7 @@ mod tests {
         let input = ClassificationInput::from_provider_profile(
             Some("ETF"),
             Some("Vanguard FTSE Canada ETF"),
+            Some("VFV.TO"),
             None,
             None,
             None,         // no country from provider
@@ -833,6 +892,21 @@ mod tests {
             Some("XTSE"), // Canadian exchange
         );
         assert_eq!(input.country, Some("Canada".to_string()));
+    }
+
+    #[test]
+    fn test_symbol_fallback_for_country() {
+        let input = ClassificationInput::from_provider_profile(
+            Some("MUTUALFUND"),
+            Some("华泰柏瑞沪深300ETF"),
+            Some("510300.SH"),
+            None,
+            None,
+            None,
+            None,
+            None,
+        );
+        assert_eq!(input.country, Some("China".to_string()));
     }
 
     #[test]
@@ -845,9 +919,42 @@ mod tests {
             None,
             None,
             None,
+            None,
         );
 
         assert_eq!(infer_asset_class(&input), Some("FIXED_INCOME"));
+    }
+
+    #[test]
+    fn test_infer_asset_class_for_short_cn_bond_name() {
+        let input = ClassificationInput::from_provider_profile(
+            Some("MUTUALFUND"),
+            Some("平安增利六个月定开债A"),
+            Some("008690"),
+            None,
+            None,
+            None,
+            None,
+            None,
+        );
+
+        assert_eq!(infer_asset_class(&input), Some("FIXED_INCOME"));
+    }
+
+    #[test]
+    fn test_infer_asset_class_does_not_match_muni_substring() {
+        let input = ClassificationInput::from_provider_profile(
+            Some("ETF"),
+            Some("Vanguard Total Stock Market ETF"),
+            Some("VTI"),
+            None,
+            Some(r#"[{"name":"Communication Services","weight":1.0}]"#),
+            None,
+            None,
+            None,
+        );
+
+        assert_eq!(infer_asset_class(&input), Some("EQUITY"));
     }
 
     #[test]
@@ -856,10 +963,31 @@ mod tests {
             infer_country_from_name("SP500 Index ETF"),
             Some("United States")
         );
+        assert_eq!(
+            infer_country_from_name("博时标普500ETF联接A"),
+            Some("United States")
+        );
         assert_eq!(infer_country_from_name("India Equity ETF"), Some("India"));
+        assert_eq!(
+            infer_country_from_name("华夏恒生ETF(QDII)"),
+            Some("Hong Kong")
+        );
+        assert_eq!(
+            infer_country_from_name("华安德国(DAX)联接(QDII)A"),
+            Some("Germany")
+        );
         assert_eq!(
             infer_country_from_name("Viet Nam Opportunity Fund"),
             Some("Viet Nam")
         );
+    }
+
+    #[test]
+    fn test_infer_country_from_symbol() {
+        assert_eq!(infer_country_from_symbol("510300.SH"), Some("China"));
+        assert_eq!(infer_country_from_symbol("159920"), Some("China"));
+        assert_eq!(infer_country_from_symbol("000614.FUND"), Some("China"));
+        assert_eq!(infer_country_from_symbol("0700.HK"), Some("Hong Kong"));
+        assert_eq!(infer_country_from_symbol("VTI"), None);
     }
 }
