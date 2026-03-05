@@ -38,8 +38,8 @@ use crate::secrets::SecretStore;
 
 use wealthfolio_market_data::{
     mic_to_currency, mic_to_exchange_name, yahoo_exchange_to_mic, yahoo_suffix_to_mic,
-    AlphaVantageProvider, AssetProfile as MarketAssetProfile, EastmoneyCnProvider,
-    FinnhubProvider, MarketDataAppProvider, MetalPriceApiProvider, ProviderId, ProviderRegistry,
+    AlphaVantageProvider, AssetProfile as MarketAssetProfile, EastmoneyCnProvider, FinnhubProvider,
+    MarketDataAppProvider, MetalPriceApiProvider, ProviderId, ProviderRegistry,
     Quote as MarketQuote, QuoteContext, ResolverChain, SearchResult as MarketSearchResult,
     SplitEvent, TiantianFundProvider, YahooProvider,
 };
@@ -812,16 +812,12 @@ mod tests {
 
     #[test]
     fn test_convert_search_result_prefers_provider_exchange_metadata() {
-        let provider_result = MarketSearchResult::new(
-            "600519.SH",
-            "Kweichow Moutai",
-            "SSE",
-            "EQUITY",
-        )
-        .with_exchange_mic("XSHG")
-        .with_exchange_name("Shanghai Stock Exchange")
-        .with_currency("CNY")
-        .with_data_source("EASTMONEY_CN");
+        let provider_result =
+            MarketSearchResult::new("600519.SH", "Kweichow Moutai", "SSE", "EQUITY")
+                .with_exchange_mic("XSHG")
+                .with_exchange_name("Shanghai Stock Exchange")
+                .with_currency("CNY")
+                .with_data_source("EASTMONEY_CN");
 
         let result = MarketDataClient::convert_search_result(provider_result);
 

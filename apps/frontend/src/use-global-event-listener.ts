@@ -21,6 +21,7 @@ import {
   listenDatabaseRestored,
   logger,
 } from "@/adapters";
+import { QueryKeys } from "@/lib/query-keys";
 
 const TOAST_IDS = {
   marketSyncStart: "market-sync-start",
@@ -28,6 +29,15 @@ const TOAST_IDS = {
   portfolioUpdateError: "portfolio-update-error",
   brokerSyncStart: "broker-sync-start",
 } as const;
+
+const shouldInvalidateNonAiQueries = ({
+  queryKey,
+}: {
+  queryKey: readonly unknown[];
+}): boolean => {
+  const rootKey = queryKey[0];
+  return rootKey !== QueryKeys.AI_PROVIDERS && rootKey !== QueryKeys.AI_PROVIDER_MODELS;
+};
 
 const useGlobalEventListener = () => {
   const queryClient = useQueryClient();
@@ -143,11 +153,21 @@ const useGlobalEventListener = () => {
       } else {
         toast.dismiss(TOAST_IDS.portfolioUpdateStart);
       }
-      queryClientRef.current.invalidateQueries();
+      queryClientRef.current.invalidateQueries({ predicate: shouldInvalidateNonAiQueries });
     };
 
     const handleDatabaseRestored = () => {
-      queryClientRef.current.invalidateQueries();
+      queryClientRef.current.invalidateQueries({ predicate: shouldInvalidateNonAiQueries });
+      // Mark AI settings/model caches stale after restore so they refresh on next access,
+      // without forcing immediate refetch (which can trigger keychain reads at restore time).
+      queryClientRef.current.invalidateQueries({
+        queryKey: [QueryKeys.AI_PROVIDERS],
+        refetchType: "none",
+      });
+      queryClientRef.current.invalidateQueries({
+        queryKey: [QueryKeys.AI_PROVIDER_MODELS],
+        refetchType: "none",
+      });
       toast.success("Database restored successfully", {
         description: "Please restart the application to ensure all data is properly refreshed.",
       });
@@ -185,7 +205,7 @@ const useGlobalEventListener = () => {
       toast.dismiss(TOAST_IDS.brokerSyncStart);
 
       // Invalidate queries that could be affected by sync
-      queryClientRef.current.invalidateQueries();
+      queryClientRef.current.invalidateQueries({ predicate: shouldInvalidateNonAiQueries });
 
       if (success) {
         // Check if there are new accounts that need configuration

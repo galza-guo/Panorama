@@ -938,7 +938,10 @@ where
         );
 
         let temp_asset = Asset {
-            id: format!("_QUOTE_RESOLVE_{}", canonical.display_code.as_deref().unwrap_or(clean_symbol)),
+            id: format!(
+                "_QUOTE_RESOLVE_{}",
+                canonical.display_code.as_deref().unwrap_or(clean_symbol)
+            ),
             kind: AssetKind::Investment,
             quote_mode: QuoteMode::Market,
             quote_ccy: String::new(),
@@ -946,7 +949,9 @@ where
             instrument_symbol: canonical
                 .instrument_symbol
                 .or_else(|| Some(clean_symbol.to_string())),
-            display_code: canonical.display_code.or_else(|| Some(clean_symbol.to_string())),
+            display_code: canonical
+                .display_code
+                .or_else(|| Some(clean_symbol.to_string())),
             instrument_exchange_mic: canonical
                 .instrument_exchange_mic
                 .or_else(|| exchange_mic.map(str::to_string)),

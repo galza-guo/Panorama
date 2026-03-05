@@ -12,11 +12,11 @@ use serde_json::Value;
 use super::asset_id::{
     infer_panorama_data_source, parse_crypto_pair_symbol, parse_symbol_with_exchange_suffix,
 };
+use crate::errors::Result;
+use crate::errors::ValidationError;
 use crate::quotes::constants::{
     DATA_SOURCE_EASTMONEY_CN, DATA_SOURCE_TIANTIAN_FUND, DATA_SOURCE_YAHOO,
 };
-use crate::errors::Result;
-use crate::errors::ValidationError;
 use crate::Error;
 use wealthfolio_market_data::mic_to_currency;
 

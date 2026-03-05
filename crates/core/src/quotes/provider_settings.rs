@@ -130,15 +130,24 @@ mod tests {
         let eastmoney =
             ProviderCapabilities::for_provider("EASTMONEY_CN").expect("missing EASTMONEY_CN caps");
         assert!(eastmoney.instruments.contains("CN"));
-        assert!(eastmoney.features.iter().any(|feature| feature == "Historical"));
+        assert!(eastmoney
+            .features
+            .iter()
+            .any(|feature| feature == "Historical"));
         assert!(eastmoney.features.iter().any(|feature| feature == "Search"));
-        assert!(eastmoney.features.iter().any(|feature| feature == "Profiles"));
+        assert!(eastmoney
+            .features
+            .iter()
+            .any(|feature| feature == "Profiles"));
 
-        let tiantian =
-            ProviderCapabilities::for_provider("TIANTIAN_FUND").expect("missing TIANTIAN_FUND caps");
+        let tiantian = ProviderCapabilities::for_provider("TIANTIAN_FUND")
+            .expect("missing TIANTIAN_FUND caps");
         assert!(tiantian.instruments.contains("Funds"));
         assert!(tiantian.coverage.contains("China"));
         assert!(tiantian.features.iter().any(|feature| feature == "Search"));
-        assert!(tiantian.features.iter().any(|feature| feature == "Profiles"));
+        assert!(tiantian
+            .features
+            .iter()
+            .any(|feature| feature == "Profiles"));
     }
 }

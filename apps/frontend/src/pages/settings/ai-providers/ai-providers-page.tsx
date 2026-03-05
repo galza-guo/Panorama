@@ -201,7 +201,16 @@ function ProviderSettingsCardWrapper({
       isLast={isLast}
       onToggleEnabled={onToggleEnabled}
       onSetDefault={onSetDefault}
-      onSaveApiKey={(apiKey) => setApiKey.mutate(apiKey)}
+      onSaveApiKey={(apiKey) =>
+        setApiKey.mutate(apiKey, {
+          onSuccess: () => {
+            // Treat saving an API key as explicit provider configuration.
+            if (!provider.enabled) {
+              onToggleEnabled(true);
+            }
+          },
+        })
+      }
       onDeleteApiKey={() => deleteApiKey.mutate()}
       onRevealApiKey={revealApiKey}
       onCustomUrlChange={onCustomUrlChange}

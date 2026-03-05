@@ -1,3 +1,5 @@
+import deepseekFavicon from "@/assets/deepseek-favicon.ico";
+
 // Individual logo components with inline SVGs
 
 // Generic Bot icon for fallback
@@ -118,6 +120,17 @@ const LogoOpenRouter = ({ size = 16, className = "" }: { size?: number; classNam
   </svg>
 );
 
+const LogoDeepSeek = ({ size = 16, className = "" }: { size?: number; className?: string }) => (
+  <img
+    src={deepseekFavicon}
+    alt=""
+    aria-hidden="true"
+    width={size}
+    height={size}
+    className={className}
+  />
+);
+
 // Icon registry mapping icon names from ai_providers.json to React components
 const icons = {
   LogoOllama,
@@ -126,6 +139,7 @@ const icons = {
   LogoOpenAI,
   LogoAnthropic,
   LogoOpenRouter,
+  LogoDeepSeek,
 } as const;
 
 type IconName = keyof typeof icons;

@@ -164,7 +164,10 @@ impl TiantianFundProvider {
         Ok(Some((close, open, timestamp)))
     }
 
-    fn parse_fund_name_fields(json: &str, fund_code: &str) -> Result<Option<String>, MarketDataError> {
+    fn parse_fund_name_fields(
+        json: &str,
+        fund_code: &str,
+    ) -> Result<Option<String>, MarketDataError> {
         if json.trim().is_empty() {
             return Ok(None);
         }
@@ -202,7 +205,9 @@ impl TiantianFundProvider {
     }
 
     fn build_search_candidate(query: &str) -> Option<String> {
-        Self::parse_fund_symbol(query).ok().map(|candidate| candidate.0)
+        Self::parse_fund_symbol(query)
+            .ok()
+            .map(|candidate| candidate.0)
     }
 
     async fn get_fund_name_from_profile_js(
@@ -323,10 +328,17 @@ impl TiantianFundProvider {
         )
     }
 
-    async fn get_latest_quote_from_history(&self, fund_code: &str) -> Result<Quote, MarketDataError> {
+    async fn get_latest_quote_from_history(
+        &self,
+        fund_code: &str,
+    ) -> Result<Quote, MarketDataError> {
         let url = reqwest::Url::parse_with_params(
             HISTORY_URL,
-            &[("fundCode", fund_code), ("pageIndex", "1"), ("pageSize", "1")],
+            &[
+                ("fundCode", fund_code),
+                ("pageIndex", "1"),
+                ("pageSize", "1"),
+            ],
         )
         .map_err(|err| MarketDataError::ProviderError {
             provider: "TIANTIAN_FUND".to_string(),
@@ -364,7 +376,11 @@ impl TiantianFundProvider {
             let nav = Self::parse_decimal(&item.nav);
             if let (Some(date), Some(nav)) = (date, nav) {
                 if let Some(naive) = date.and_hms_opt(0, 0, 0) {
-                    return Ok(Self::quote_from_nav(Utc.from_utc_datetime(&naive), nav, Some(nav)));
+                    return Ok(Self::quote_from_nav(
+                        Utc.from_utc_datetime(&naive),
+                        nav,
+                        Some(nav),
+                    ));
                 }
             }
         }
@@ -523,7 +539,11 @@ impl MarketDataProvider for TiantianFundProvider {
                     None => continue,
                 };
                 if let Some(naive) = date.and_hms_opt(0, 0, 0) {
-                    quotes.push(Self::quote_from_nav(Utc.from_utc_datetime(&naive), nav, Some(nav)));
+                    quotes.push(Self::quote_from_nav(
+                        Utc.from_utc_datetime(&naive),
+                        nav,
+                        Some(nav),
+                    ));
                 }
             }
 
@@ -566,7 +586,11 @@ impl MarketDataProvider for TiantianFundProvider {
             11000.0
         };
 
-        Ok(vec![Self::build_search_result(normalized_symbol, name, score)])
+        Ok(vec![Self::build_search_result(
+            normalized_symbol,
+            name,
+            score,
+        )])
     }
 
     async fn get_profile(&self, symbol: &str) -> Result<AssetProfile, MarketDataError> {
@@ -606,8 +630,7 @@ mod tests {
 
     #[test]
     fn parses_latest_quote_fields_when_json_valid() {
-        let json =
-            r#"{"fundcode":"000083","jzrq":"2026-02-06","dwjz":"5.1210","gsz":"5.1266","gztime":"2026-02-09 15:00"}"#;
+        let json = r#"{"fundcode":"000083","jzrq":"2026-02-06","dwjz":"5.1210","gsz":"5.1266","gztime":"2026-02-09 15:00"}"#;
         let result = TiantianFundProvider::parse_latest_quote_fields(json, "000083")
             .unwrap()
             .unwrap();

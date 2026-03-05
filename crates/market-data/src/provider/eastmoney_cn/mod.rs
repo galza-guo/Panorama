@@ -11,8 +11,8 @@ use serde::Deserialize;
 
 use crate::errors::MarketDataError;
 use crate::models::{
-    AssetProfile, Coverage, InstrumentId, InstrumentKind, ProviderInstrument, Quote,
-    QuoteContext, SearchResult,
+    AssetProfile, Coverage, InstrumentId, InstrumentKind, ProviderInstrument, Quote, QuoteContext,
+    SearchResult,
 };
 use crate::provider::{MarketDataProvider, ProviderCapabilities, RateLimit};
 use crate::resolver::mic_to_exchange_name;
@@ -162,13 +162,21 @@ impl EastmoneyCnProvider {
             };
 
             return exchange_mic
-                .and_then(|mic| Self::parse_cn_symbol(&normalized, Some(mic)).ok().map(|v| (v.0, mic)))
+                .and_then(|mic| {
+                    Self::parse_cn_symbol(&normalized, Some(mic))
+                        .ok()
+                        .map(|v| (v.0, mic))
+                })
                 .into_iter()
                 .collect();
         }
 
         Self::infer_search_exchange_mic(&normalized)
-            .and_then(|mic| Self::parse_cn_symbol(&normalized, Some(mic)).ok().map(|v| (v.0, mic)))
+            .and_then(|mic| {
+                Self::parse_cn_symbol(&normalized, Some(mic))
+                    .ok()
+                    .map(|v| (v.0, mic))
+            })
             .into_iter()
             .collect()
     }
@@ -191,14 +199,12 @@ impl EastmoneyCnProvider {
         normalized_symbol: &str,
         secid: &str,
     ) -> Result<Option<String>, MarketDataError> {
-        let latest_url = reqwest::Url::parse_with_params(
-            LATEST_URL,
-            &[("secid", secid), ("fields", "f58")],
-        )
-        .map_err(|err| MarketDataError::ProviderError {
-            provider: self.id().to_string(),
-            message: format!("failed to build EastMoney profile URL: {err}"),
-        })?;
+        let latest_url =
+            reqwest::Url::parse_with_params(LATEST_URL, &[("secid", secid), ("fields", "f58")])
+                .map_err(|err| MarketDataError::ProviderError {
+                    provider: self.id().to_string(),
+                    message: format!("failed to build EastMoney profile URL: {err}"),
+                })?;
 
         let latest_name = async {
             let response = self
@@ -292,11 +298,11 @@ impl EastmoneyCnProvider {
         let quote_type = Self::infer_quote_type(&normalized_symbol).to_string();
 
         SearchResult::new(normalized_symbol, name, exchange_name, quote_type)
-        .with_exchange_mic(exchange_mic)
-        .with_exchange_name(exchange_name)
-        .with_currency("CNY")
-        .with_score(score)
-        .with_data_source("EASTMONEY_CN")
+            .with_exchange_mic(exchange_mic)
+            .with_exchange_name(exchange_name)
+            .with_currency("CNY")
+            .with_score(score)
+            .with_data_source("EASTMONEY_CN")
     }
 
     fn to_price(raw: Option<f64>) -> Decimal {
@@ -309,9 +315,10 @@ impl EastmoneyCnProvider {
 
     fn parse_timestamp(epoch: Option<i64>) -> DateTime<Utc> {
         match epoch {
-            Some(ts) if ts > 1_000_000_000_000 => {
-                Utc.timestamp_millis_opt(ts).single().unwrap_or_else(Utc::now)
-            }
+            Some(ts) if ts > 1_000_000_000_000 => Utc
+                .timestamp_millis_opt(ts)
+                .single()
+                .unwrap_or_else(Utc::now),
             Some(ts) if ts > 0 => Utc.timestamp_opt(ts, 0).single().unwrap_or_else(Utc::now),
             _ => Utc::now(),
         }
@@ -388,7 +395,10 @@ impl MarketDataProvider for EastmoneyCnProvider {
             Self::parse_cn_symbol(raw_symbol, Self::context_exchange_mic(context))?;
         let url = reqwest::Url::parse_with_params(
             LATEST_URL,
-            &[("secid", secid.as_str()), ("fields", "f43,f44,f45,f46,f47,f86")],
+            &[
+                ("secid", secid.as_str()),
+                ("fields", "f43,f44,f45,f46,f47,f86"),
+            ],
         )
         .map_err(|err| MarketDataError::ProviderError {
             provider: self.id().to_string(),
@@ -428,7 +438,11 @@ impl MarketDataProvider for EastmoneyCnProvider {
             Self::to_price(data.high).max(close),
             {
                 let low = Self::to_price(data.low);
-                if low.is_zero() { close } else { low }
+                if low.is_zero() {
+                    close
+                } else {
+                    low
+                }
             },
             close,
             Self::to_volume(data.volume),

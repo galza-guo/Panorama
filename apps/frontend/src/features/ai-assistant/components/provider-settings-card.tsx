@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect, useRef } from "react";
+import { useState, useMemo, useRef } from "react";
 import { Badge } from "@wealthfolio/ui/components/ui/badge";
 import { Button } from "@wealthfolio/ui/components/ui/button";
 import { Icons } from "@wealthfolio/ui/components/ui/icons";
@@ -102,7 +102,7 @@ export function ProviderSettingsCard({
   const [hasLoadedKey, setHasLoadedKey] = useState(false);
   const [customUrlValue, setCustomUrlValue] = useState(provider.customUrl ?? "");
   const [selectedModelForConfig, setSelectedModelForConfig] = useState<string | null>(null);
-  const hasAutoSelectedRef = useRef(false);
+  const apiKeyInputRef = useRef<HTMLInputElement>(null);
 
   // Support both controlled and uncontrolled combobox state
   const [internalComboboxOpen, setInternalComboboxOpen] = useState(false);
@@ -186,28 +186,16 @@ export function ProviderSettingsCard({
   };
 
   const handleSaveApiKey = () => {
-    if (apiKeyValue && apiKeyValue.trim() !== "") {
-      onSaveApiKey(apiKeyValue);
+    // Read from DOM input first (covers autofill/password-manager values),
+    // then fall back to React state.
+    const nextValue = (apiKeyInputRef.current?.value ?? apiKeyValue).trim();
+    if (nextValue !== "") {
+      setApiKeyValue(nextValue);
+      onSaveApiKey(nextValue);
     } else {
       onDeleteApiKey();
     }
   };
-
-  // Auto-select recommended models on initial mount if no models are selected
-  // This only runs once when the card first expands, not on subsequent updates
-  useEffect(() => {
-    if (isOpen && !hasAutoSelectedRef.current && onSetFavoriteModels && provider.enabled) {
-      hasAutoSelectedRef.current = true; // Mark as run immediately to prevent re-runs
-
-      // Only auto-select if truly empty
-      if (!provider.favoriteModels || provider.favoriteModels.length === 0) {
-        const recommendedModelIds = provider.models.filter((m) => m.isCatalog).map((m) => m.id);
-        if (recommendedModelIds.length > 0) {
-          onSetFavoriteModels(recommendedModelIds);
-        }
-      }
-    }
-  }, [isOpen, provider.enabled, provider.favoriteModels, provider.models, onSetFavoriteModels]);
 
   const handleToggleFavorite = (modelId: string) => {
     if (!onSetFavoriteModels) return;
@@ -350,19 +338,18 @@ export function ProviderSettingsCard({
                     <div className="flex items-center gap-2">
                       <div className="relative flex-1">
                         <Input
+                          ref={apiKeyInputRef}
                           id={`apikey-${provider.id}`}
                           type={showApiKey ? "text" : "password"}
-                          value={
-                            hasLoadedKey || apiKeyValue
-                              ? apiKeyValue
-                              : provider.hasApiKey
-                                ? "••••••••••••••••••••••••"
-                                : ""
-                          }
+                          value={apiKeyValue}
                           onChange={(e) => setApiKeyValue(e.target.value)}
-                          placeholder={provider.hasApiKey ? "" : "Enter API key"}
+                          autoComplete="new-password"
+                          placeholder={
+                            provider.hasApiKey && !hasLoadedKey
+                              ? "Current key saved. Enter new key to replace"
+                              : "Enter API key"
+                          }
                           className="bg-background pr-9 font-mono text-sm"
-                          readOnly={!hasLoadedKey && provider.hasApiKey}
                         />
                         <Button
                           type="button"
@@ -386,7 +373,7 @@ export function ProviderSettingsCard({
                         onClick={handleSaveApiKey}
                         size="default"
                         className="shrink-0"
-                        disabled={!hasLoadedKey && provider.hasApiKey}
+                        disabled={isLoadingKey}
                       >
                         Save
                       </Button>

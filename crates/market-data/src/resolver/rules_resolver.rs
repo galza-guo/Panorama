@@ -68,27 +68,30 @@ impl RulesResolver {
                 _ => ticker.clone(),
             },
             "TIANTIAN_FUND" => {
-                if mic.is_none() && ticker.len() == 6 && ticker.chars().all(|ch| ch.is_ascii_digit()) {
+                if mic.is_none()
+                    && ticker.len() == 6
+                    && ticker.chars().all(|ch| ch.is_ascii_digit())
+                {
                     Arc::from(format!("{ticker}.FUND"))
                 } else {
                     ticker.clone()
                 }
             }
             _ => match mic {
-            Some(mic) => {
-                // Look up suffix for this MIC and provider, fallback to ticker only if not found
-                match self.exchange_map.get_suffix(mic, provider) {
-                    Some(suffix) => Arc::from(format!("{}{}", ticker, suffix)),
-                    None => {
-                        // No mapping found - try ticker only (works for many US/global symbols)
-                        ticker.clone()
+                Some(mic) => {
+                    // Look up suffix for this MIC and provider, fallback to ticker only if not found
+                    match self.exchange_map.get_suffix(mic, provider) {
+                        Some(suffix) => Arc::from(format!("{}{}", ticker, suffix)),
+                        None => {
+                            // No mapping found - try ticker only (works for many US/global symbols)
+                            ticker.clone()
+                        }
                     }
                 }
-            }
-            None => {
-                // No MIC = assume US market, no suffix needed
-                ticker.clone()
-            }
+                None => {
+                    // No MIC = assume US market, no suffix needed
+                    ticker.clone()
+                }
             },
         };
 

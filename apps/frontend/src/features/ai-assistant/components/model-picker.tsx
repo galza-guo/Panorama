@@ -30,9 +30,8 @@ export const ModelPicker: FC = () => {
     const favoriteIds = currentProvider.favoriteModels ?? [];
     const allModels: MergedModel[] = currentProvider.models ?? [];
 
-    // If no favorites set, fall back to all catalog models
     if (favoriteIds.length === 0) {
-      return allModels;
+      return [];
     }
 
     // Map favorite IDs to full model info
@@ -86,6 +85,25 @@ export const ModelPicker: FC = () => {
     setOpen(false);
     navigate("/settings/ai-providers");
   };
+
+  // If only one model, just show the name without dropdown
+  if (selectedModels.length === 0) {
+    return (
+      <div className="flex items-center">
+        <Button
+          variant="ghost"
+          size="sm"
+          className="text-muted-foreground hover:text-foreground h-8 gap-1.5 px-3 text-xs font-normal"
+          onClick={handleAddModels}
+          aria-label="Add models"
+        >
+          <Icons.Plus className="size-3 opacity-70" />
+          <span>Add models...</span>
+        </Button>
+        <ThinkingToggle />
+      </div>
+    );
+  }
 
   // If only one model, just show the name without dropdown
   if (selectedModels.length <= 1) {

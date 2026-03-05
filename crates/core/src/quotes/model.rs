@@ -232,10 +232,7 @@ mod tests {
         assert_eq!(DataSource::from("FINNHUB"), DataSource::Finnhub);
         assert_eq!(DataSource::from("finnhub"), DataSource::Finnhub);
         assert_eq!(DataSource::from("EASTMONEY_CN"), DataSource::EastmoneyCn);
-        assert_eq!(
-            DataSource::from("tiantian_fund"),
-            DataSource::TiantianFund
-        );
+        assert_eq!(DataSource::from("tiantian_fund"), DataSource::TiantianFund);
         assert_eq!(DataSource::from("MANUAL"), DataSource::Manual);
         assert_eq!(DataSource::from("unknown"), DataSource::Manual);
     }

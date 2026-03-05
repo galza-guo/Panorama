@@ -463,7 +463,11 @@ mod tests {
     #[test]
     fn test_default_market_data_provider_id_prefers_tiantian_for_funds() {
         assert_eq!(
-            default_market_data_provider_id(Some(&InstrumentType::Equity), Some("161039.FUND"), None),
+            default_market_data_provider_id(
+                Some(&InstrumentType::Equity),
+                Some("161039.FUND"),
+                None
+            ),
             "TIANTIAN_FUND"
         );
     }
@@ -471,7 +475,11 @@ mod tests {
     #[test]
     fn test_default_market_data_provider_id_falls_back_to_yahoo() {
         assert_eq!(
-            default_market_data_provider_id(Some(&InstrumentType::Equity), Some("AAPL"), Some("XNAS")),
+            default_market_data_provider_id(
+                Some(&InstrumentType::Equity),
+                Some("AAPL"),
+                Some("XNAS")
+            ),
             "YAHOO"
         );
     }

@@ -30,6 +30,30 @@ export interface ChatModelState {
   toggleThinking: () => void;
 }
 
+function resolveProviderModelId(
+  provider: MergedProvider,
+  preferredModelId?: string,
+): string | undefined {
+  const favoriteIds = provider.favoriteModels ?? [];
+  if (favoriteIds.length === 0) {
+    return undefined;
+  }
+
+  if (preferredModelId && favoriteIds.includes(preferredModelId)) {
+    return preferredModelId;
+  }
+
+  if (provider.selectedModel && favoriteIds.includes(provider.selectedModel)) {
+    return provider.selectedModel;
+  }
+
+  if (favoriteIds.includes(provider.defaultModel)) {
+    return provider.defaultModel;
+  }
+
+  return favoriteIds[0];
+}
+
 export function useChatModel(): ChatModelState {
   const { data: settings, isLoading } = useQuery({
     queryKey: [QueryKeys.AI_PROVIDERS],
@@ -41,35 +65,22 @@ export function useChatModel(): ChatModelState {
     null,
   );
 
-  // Get enabled providers
-  // Local providers (like Ollama) don't require API keys
-  // API providers require hasApiKey to be true
+  // Show all enabled providers.
+  // API providers without keys remain visible and will return actionable errors when used.
   const enabledProviders = useMemo(() => {
-    return (
-      settings?.providers.filter((p) => {
-        if (!p.enabled) return false;
-        // Local providers don't need API keys
-        if (p.type === "local") return true;
-        // API providers require an API key
-        return p.hasApiKey;
-      }) ?? []
-    );
+    return settings?.providers.filter((p) => p.enabled) ?? [];
   }, [settings?.providers]);
 
   // Determine current provider and model
   const { currentProviderId, currentModelId } = useMemo(() => {
-    // Use the stored selection if it matches an enabled provider and model
+    // Use the stored selection if it matches an enabled provider.
     if (storedSelection) {
       const provider = enabledProviders.find((p) => p.id === storedSelection.providerId);
       if (provider) {
-        // Check if model is in catalog models or user's favorite models
-        const isInCatalog = provider.models.some((m) => m.id === storedSelection.modelId);
-        const isInFavorites = provider.favoriteModels?.includes(storedSelection.modelId);
-        if (isInCatalog || isInFavorites) {
-          return { currentProviderId: provider.id, currentModelId: storedSelection.modelId };
-        }
-        // Provider exists but model doesn't - use provider's default model
-        return { currentProviderId: provider.id, currentModelId: provider.defaultModel };
+        return {
+          currentProviderId: provider.id,
+          currentModelId: resolveProviderModelId(provider, storedSelection.modelId),
+        };
       }
     }
 
@@ -77,26 +88,39 @@ export function useChatModel(): ChatModelState {
     if (settings?.defaultProvider) {
       const provider = enabledProviders.find((p) => p.id === settings.defaultProvider);
       if (provider) {
-        const selectedModel = provider.selectedModel ?? provider.defaultModel;
-        const model = provider.models.find((m) => m.id === selectedModel);
         return {
           currentProviderId: provider.id,
-          currentModelId: model ? model.id : provider.defaultModel,
+          currentModelId: resolveProviderModelId(provider),
         };
       }
     }
 
-    // Fall back to first enabled provider's default model
-    const firstProvider = enabledProviders[0];
+    // Fall back to first ready provider.
+    const firstReadyProvider = enabledProviders.find((p) => p.type === "local" || p.hasApiKey);
+    const firstProvider = firstReadyProvider ?? enabledProviders[0];
     if (firstProvider) {
       return {
         currentProviderId: firstProvider.id,
-        currentModelId: firstProvider.selectedModel ?? firstProvider.defaultModel,
+        currentModelId: resolveProviderModelId(firstProvider),
       };
     }
 
     return { currentProviderId: undefined, currentModelId: undefined };
   }, [enabledProviders, settings?.defaultProvider, storedSelection]);
+
+  // Keep local storage in sync with resolved provider/model to avoid stale selections.
+  useEffect(() => {
+    if (!currentProviderId || !currentModelId) return;
+
+    if (
+      storedSelection?.providerId === currentProviderId &&
+      storedSelection.modelId === currentModelId
+    ) {
+      return;
+    }
+
+    setStoredSelection({ providerId: currentProviderId, modelId: currentModelId });
+  }, [currentProviderId, currentModelId, setStoredSelection, storedSelection]);
 
   // Get current provider object
   const currentProvider = useMemo(() => {
@@ -135,10 +159,8 @@ export function useChatModel(): ChatModelState {
       const provider = enabledProviders.find((p) => p.id === providerId);
       if (!provider) return;
 
-      // Check if model is in catalog models or user's favorite models
-      const isInCatalog = provider.models.some((m) => m.id === modelId);
-      const isInFavorites = provider.favoriteModels?.includes(modelId);
-      const selectedModel = isInCatalog || isInFavorites ? modelId : provider.defaultModel;
+      const selectedModel = resolveProviderModelId(provider, modelId);
+      if (!selectedModel) return;
       setStoredSelection({ providerId, modelId: selectedModel });
     },
     [enabledProviders, setStoredSelection],

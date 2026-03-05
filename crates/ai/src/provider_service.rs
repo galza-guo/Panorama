@@ -597,3 +597,112 @@ impl AiProviderServiceTrait for AiProviderService {
         })
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::collections::HashMap;
+    use std::sync::RwLock;
+    use wealthfolio_core::errors::Result as CoreResult;
+    use wealthfolio_core::secrets::SecretStore;
+    use wealthfolio_core::settings::{Settings, SettingsRepositoryTrait, SettingsUpdate};
+
+    #[derive(Default)]
+    struct MockSettingsRepository {
+        settings: RwLock<HashMap<String, String>>,
+    }
+
+    #[async_trait]
+    impl SettingsRepositoryTrait for MockSettingsRepository {
+        fn get_settings(&self) -> CoreResult<Settings> {
+            Ok(Settings::default())
+        }
+
+        async fn update_settings(&self, _new_settings: &SettingsUpdate) -> CoreResult<()> {
+            Ok(())
+        }
+
+        fn get_setting(&self, setting_key: &str) -> CoreResult<String> {
+            self.settings
+                .read()
+                .unwrap()
+                .get(setting_key)
+                .cloned()
+                .ok_or_else(|| {
+                    wealthfolio_core::errors::Error::Validation(
+                        wealthfolio_core::errors::ValidationError::InvalidInput(format!(
+                            "missing setting: {}",
+                            setting_key
+                        )),
+                    )
+                })
+        }
+
+        async fn update_setting(&self, setting_key: &str, setting_value: &str) -> CoreResult<()> {
+            self.settings
+                .write()
+                .unwrap()
+                .insert(setting_key.to_string(), setting_value.to_string());
+            Ok(())
+        }
+
+        fn get_distinct_currencies_excluding_base(
+            &self,
+            _base_currency: &str,
+        ) -> CoreResult<Vec<String>> {
+            Ok(Vec::new())
+        }
+    }
+
+    #[derive(Default)]
+    struct MockSecretStore {
+        secrets: RwLock<HashMap<String, String>>,
+    }
+
+    impl SecretStore for MockSecretStore {
+        fn set_secret(&self, service: &str, secret: &str) -> CoreResult<()> {
+            self.secrets
+                .write()
+                .unwrap()
+                .insert(service.to_string(), secret.to_string());
+            Ok(())
+        }
+
+        fn get_secret(&self, service: &str) -> CoreResult<Option<String>> {
+            Ok(self.secrets.read().unwrap().get(service).cloned())
+        }
+
+        fn delete_secret(&self, service: &str) -> CoreResult<()> {
+            self.secrets.write().unwrap().remove(service);
+            Ok(())
+        }
+    }
+
+    #[test]
+    fn test_get_ai_providers_includes_deepseek() {
+        let service = AiProviderService::new(
+            Arc::new(MockSettingsRepository::default()),
+            Arc::new(MockSecretStore::default()),
+            include_str!("ai_providers.json"),
+        )
+        .expect("catalog should load");
+
+        let response = service.get_ai_providers().expect("providers should load");
+        let provider = response
+            .providers
+            .iter()
+            .find(|provider| provider.id == "deepseek")
+            .expect("deepseek provider should be present");
+
+        assert_eq!(provider.name, "DeepSeek");
+        assert_eq!(provider.default_model, "deepseek-chat");
+        assert_eq!(
+            provider.custom_url.as_deref(),
+            Some("https://api.deepseek.com")
+        );
+        assert!(provider
+            .models
+            .iter()
+            .any(|model| model.id == "deepseek-reasoner" && model.capabilities.thinking));
+    }
+}

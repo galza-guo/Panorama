@@ -92,6 +92,18 @@ crates/
 
 ---
 
+## Upstream Maintenance SOP
+
+- Patch inventory: `docs/maintenance/panorama-patch-inventory.md`
+- Sync log and monthly procedure: `docs/maintenance/upstream-sync-log.md`
+- Default sync cadence: monthly
+- Default sync target: latest upstream release tag (not daily `upstream/main`)
+- Conflict handling: resolve by lane from patch inventory (`CN_MARKET_DATA`,
+  `SPECIALIZED_ASSETS`, `BRANDING_RELEASE`, `COMPATIBILITY`)
+- Post-sync requirement: update both documents after each sync PR
+
+---
+
 ## Agent Playbook
 
 ### Adding a feature with backend data

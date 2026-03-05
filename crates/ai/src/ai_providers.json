@@ -212,6 +212,45 @@
       "titleModelId": "gpt-5-nano",
       "documentationUrl": "https://platform.openai.com/docs/introduction"
     },
+    "deepseek": {
+      "name": "DeepSeek",
+      "type": "api",
+      "icon": "LogoDeepSeek",
+      "description": "Reasoning and chat models from DeepSeek",
+      "envKey": "DEEPSEEK_API_KEY",
+      "defaultConfig": {
+        "enabled": false,
+        "priority": 45,
+        "url": "https://api.deepseek.com"
+      },
+      "connectionFields": [
+        {
+          "key": "apiKey",
+          "label": "API Key",
+          "type": "password",
+          "placeholder": "Enter your DeepSeek API key",
+          "required": true
+        },
+        {
+          "key": "baseUrl",
+          "label": "Custom Endpoint",
+          "type": "text",
+          "placeholder": "Leave empty to use default",
+          "required": false
+        }
+      ],
+      "models": {
+        "deepseek-chat": {
+          "capabilities": { "tools": true, "thinking": false, "vision": false }
+        },
+        "deepseek-reasoner": {
+          "capabilities": { "tools": true, "thinking": true, "vision": false }
+        }
+      },
+      "defaultModel": "deepseek-chat",
+      "titleModelId": "deepseek-chat",
+      "documentationUrl": "https://api-docs.deepseek.com/"
+    },
     "openrouter": {
       "name": "OpenRouter",
       "type": "api",

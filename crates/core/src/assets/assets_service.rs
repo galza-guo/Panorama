@@ -8,9 +8,9 @@ use crate::taxonomies::TaxonomyServiceTrait;
 use futures::stream::{self, StreamExt};
 
 use super::assets_model::{
-    canonicalize_market_identity, default_market_data_provider_id,
-    resolve_quote_ccy_precedence, Asset, AssetKind, AssetSpec, EnsureAssetsResult,
-    InstrumentType, NewAsset, QuoteCcyResolutionSource, QuoteMode, UpdateAssetProfile,
+    canonicalize_market_identity, default_market_data_provider_id, resolve_quote_ccy_precedence,
+    Asset, AssetKind, AssetSpec, EnsureAssetsResult, InstrumentType, NewAsset,
+    QuoteCcyResolutionSource, QuoteMode, UpdateAssetProfile,
 };
 use super::assets_traits::{AssetRepositoryTrait, AssetServiceTrait};
 use super::auto_classification::{AutoClassificationService, ClassificationInput};

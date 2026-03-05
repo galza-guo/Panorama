@@ -474,6 +474,8 @@ pub struct StoredProviderConfig {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::env::test_env::MockEnvironment;
+    use std::sync::Arc;
 
     #[test]
     fn test_provider_catalog_loads() {
@@ -481,6 +483,7 @@ mod tests {
         assert!(!catalog.providers.is_empty());
         assert!(catalog.providers.contains_key("openai"));
         assert!(catalog.providers.contains_key("ollama"));
+        assert!(catalog.providers.contains_key("deepseek"));
     }
 
     #[test]
@@ -488,5 +491,32 @@ mod tests {
         let catalog = &*PROVIDER_CATALOG;
         assert!(catalog.capabilities.contains_key("tools"));
         assert!(catalog.capabilities.contains_key("thinking"));
+    }
+
+    #[test]
+    fn test_deepseek_provider_defaults() {
+        let env = Arc::new(MockEnvironment::new());
+        let service = ProviderService::new(env);
+
+        assert_eq!(
+            service.get_provider_url("deepseek"),
+            Some("https://api.deepseek.com".to_string())
+        );
+        assert_eq!(
+            service.get_title_model("deepseek"),
+            Some("deepseek-chat".to_string())
+        );
+
+        let chat_caps = service.get_model_capabilities("deepseek", "deepseek-chat");
+        assert!(chat_caps.tools);
+        assert!(!chat_caps.thinking);
+        assert!(!chat_caps.vision);
+        assert!(chat_caps.streaming);
+
+        let reasoner_caps = service.get_model_capabilities("deepseek", "deepseek-reasoner");
+        assert!(reasoner_caps.tools);
+        assert!(reasoner_caps.thinking);
+        assert!(!reasoner_caps.vision);
+        assert!(reasoner_caps.streaming);
     }
 }
