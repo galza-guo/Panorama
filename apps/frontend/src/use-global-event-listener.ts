@@ -30,13 +30,37 @@ const TOAST_IDS = {
   brokerSyncStart: "broker-sync-start",
 } as const;
 
+const CLOUD_SYNC_INVALIDATION_EXCLUSIONS = new Set<string>([
+  QueryKeys.BROKER_CONNECTIONS,
+  QueryKeys.BROKER_ACCOUNTS,
+  QueryKeys.BROKER_SYNC_STATES,
+  QueryKeys.IMPORT_RUNS,
+  QueryKeys.USER_INFO,
+  QueryKeys.SUBSCRIPTION_PLANS,
+  QueryKeys.SUBSCRIPTION_PLANS_PUBLIC,
+  QueryKeys.SYNCED_ACCOUNTS,
+  QueryKeys.PLATFORMS,
+]);
+
 const shouldInvalidateNonAiQueries = ({
   queryKey,
 }: {
   queryKey: readonly unknown[];
 }): boolean => {
   const rootKey = queryKey[0];
-  return rootKey !== QueryKeys.AI_PROVIDERS && rootKey !== QueryKeys.AI_PROVIDER_MODELS;
+  if (rootKey === QueryKeys.AI_PROVIDERS || rootKey === QueryKeys.AI_PROVIDER_MODELS) {
+    return false;
+  }
+
+  if (typeof rootKey === "string" && CLOUD_SYNC_INVALIDATION_EXCLUSIONS.has(rootKey)) {
+    return false;
+  }
+
+  if (rootKey === "sync") {
+    return false;
+  }
+
+  return true;
 };
 
 const useGlobalEventListener = () => {

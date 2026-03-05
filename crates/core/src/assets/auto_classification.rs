@@ -6,7 +6,7 @@
 //! - sector (Technology, Healthcare) → industries_gics taxonomy
 //! - country (United States, Canada) → regions taxonomy
 
-use crate::taxonomies::{NewAssetTaxonomyAssignment, TaxonomyServiceTrait};
+use crate::taxonomies::{Category, NewAssetTaxonomyAssignment, TaxonomyServiceTrait};
 use log::{debug, warn};
 use std::sync::Arc;
 
@@ -64,6 +64,135 @@ fn map_quote_type_to_asset_class(quote_type: &str) -> Option<&'static str> {
         "ECNQUOTE" | "NONE" => None,
         _ => None,
     }
+}
+
+fn normalize_country_token(value: &str) -> String {
+    value
+        .trim()
+        .to_lowercase()
+        .chars()
+        .filter(|c| c.is_alphanumeric())
+        .collect()
+}
+
+fn normalize_label_token(value: &str) -> String {
+    value
+        .trim()
+        .to_lowercase()
+        .chars()
+        .filter(|c| c.is_alphanumeric())
+        .collect()
+}
+
+fn normalize_text(value: &str) -> String {
+    value.trim().to_lowercase()
+}
+
+fn contains_any_keyword(haystack: &str, keywords: &[&str]) -> bool {
+    keywords
+        .iter()
+        .any(|keyword| haystack.contains(&keyword.to_lowercase()))
+}
+
+fn infer_asset_class(input: &ClassificationInput) -> Option<&'static str> {
+    let quote_type = input.quote_type.as_deref()?;
+    let quote_type_upper = quote_type.to_uppercase();
+
+    // Keep direct mappings for non-fund instruments.
+    if !matches!(
+        quote_type_upper.as_str(),
+        "ETF" | "MUTUALFUND" | "MUTUAL FUND" | "INDEX"
+    ) {
+        return map_quote_type_to_asset_class(quote_type);
+    }
+
+    let mut hint_text = String::new();
+    if let Some(name) = &input.name {
+        hint_text.push_str(name);
+        hint_text.push(' ');
+    }
+    if let Some(raw_country) = &input.country {
+        hint_text.push_str(raw_country);
+        hint_text.push(' ');
+    }
+    for sector in &input.sectors {
+        hint_text.push_str(&sector.name);
+        hint_text.push(' ');
+    }
+    let hint_text = normalize_text(&hint_text);
+
+    let fixed_income_keywords = [
+        "bond",
+        "fixed income",
+        "treasury",
+        "municipal",
+        "muni",
+        "credit",
+        "gilts",
+        "债券",
+        "纯债",
+        "中短债",
+        "可转债",
+    ];
+    if contains_any_keyword(&hint_text, &fixed_income_keywords) {
+        return Some("FIXED_INCOME");
+    }
+
+    let money_market_keywords = ["money market", "cash management", "货币基金", "货币市场"];
+    if contains_any_keyword(&hint_text, &money_market_keywords) {
+        return Some("CASH_BANK_DEPOSITS");
+    }
+
+    let real_estate_keywords = ["reit", "real estate", "房地产", "不动产"];
+    if contains_any_keyword(&hint_text, &real_estate_keywords) {
+        return Some("REAL_ESTATE");
+    }
+
+    let commodity_keywords = [
+        "commodity",
+        "gold",
+        "silver",
+        "oil",
+        "metals",
+        "商品",
+        "黄金",
+    ];
+    if contains_any_keyword(&hint_text, &commodity_keywords) {
+        return Some("COMMODITIES");
+    }
+
+    // Keep prior behavior as default for broad ETFs/mutual funds/index funds.
+    Some("EQUITY")
+}
+
+fn infer_country_from_name(name: &str) -> Option<&'static str> {
+    let normalized = normalize_text(name);
+
+    let us_index_keywords = [
+        "s&p 500",
+        "s&p500",
+        "sp500",
+        "snp500",
+        "nasdaq 100",
+        "russell 2000",
+        "dow jones",
+        "us total market",
+    ];
+    if contains_any_keyword(&normalized, &us_index_keywords) {
+        return Some("United States");
+    }
+
+    let india_keywords = ["india", "nifty", "sensex", "印度"];
+    if contains_any_keyword(&normalized, &india_keywords) {
+        return Some("India");
+    }
+
+    let vietnam_keywords = ["vietnam", "viet nam", "vn30", "越南"];
+    if contains_any_keyword(&normalized, &vietnam_keywords) {
+        return Some("Viet Nam");
+    }
+
+    None
 }
 
 /// Maps Yahoo sector name to GICS sector category ID
@@ -157,53 +286,67 @@ fn mic_to_country(mic: &str) -> Option<&'static str> {
 /// Regions hierarchy: R10=Europe, R20=Americas, R2010=North America, R2040=South America,
 ///                    R30=Asia, R3030=East Asia, R40=Africa, R50=Oceania
 fn map_country_to_region(country: &str) -> Option<&'static str> {
-    // Normalize country name
-    let country_lower = country.to_lowercase();
-
-    match country_lower.as_str() {
-        // ========== Countries with specific entries ==========
+    // Keep explicit aliases/codes first; dynamic taxonomy lookup handles the long tail.
+    match normalize_country_token(country).as_str() {
         // North America
-        "united states" | "usa" | "us" => Some("country_US"),
-        "canada" => Some("country_CA"),
+        "unitedstates" | "usa" | "us" | "america" => Some("country_US"),
+        "canada" | "ca" => Some("country_CA"),
+        "mexico" | "mx" | "méxico" => Some("country_MX"),
 
-        // East Asia
-        "japan" | "日本" => Some("country_JP"),
-        "china" | "中国" => Some("country_CN"),
-        "hong kong" | "香港" => Some("country_HK"),
+        // Europe
+        "unitedkingdom" | "uk" | "greatbritain" | "england" | "gb" => Some("country_GB"),
+        "germany" | "deutschland" | "de" => Some("country_DE"),
+        "france" | "fr" => Some("country_FR"),
+        "switzerland" | "schweiz" | "ch" => Some("country_CH"),
+        "netherlands" | "holland" | "nl" => Some("country_NL"),
+        "spain" | "españa" | "es" => Some("country_ES"),
+        "italy" | "italia" | "it" => Some("country_IT"),
+        "ireland" | "ie" => Some("country_IE"),
+        "belgium" | "be" => Some("country_BE"),
+        "denmark" | "danmark" | "dk" => Some("country_DK"),
+        "norway" | "norge" | "no" => Some("country_NO"),
+        "sweden" | "sverige" | "se" => Some("country_SE"),
+        "finland" | "suomi" | "fi" => Some("country_FI"),
+        "austria" | "österreich" | "at" => Some("country_AT"),
+        "portugal" | "pt" => Some("country_PT"),
+        "poland" | "polska" | "pl" => Some("country_PL"),
+        "greece" | "gr" => Some("country_GR"),
+        "czechrepublic" | "czechia" | "cz" => Some("country_CZ"),
+        "russia" | "ru" => Some("country_RU"),
+
+        // Asia
+        "japan" | "日本" | "jp" => Some("country_JP"),
+        "china" | "中国" | "cn" => Some("country_CN"),
+        "hongkong" | "香港" | "hk" => Some("country_HK"),
+        "southkorea" | "korea" | "대한민국" | "kr" => Some("country_KR"),
+        "taiwan" | "臺灣" | "tw" => Some("country_TW"),
+        "singapore" | "sg" => Some("country_SG"),
+        "india" | "भारत" | "in" => Some("country_IN"),
+        "indonesia" | "id" => Some("country_ID"),
+        "malaysia" | "my" => Some("country_MY"),
+        "thailand" | "th" => Some("country_TH"),
+        "vietnam" | "việtnam" | "vn" => Some("country_VN"),
+        "philippines" | "ph" => Some("country_PH"),
 
         // Oceania
-        "australia" => Some("country_AU"),
+        "australia" | "au" => Some("country_AU"),
+        "newzealand" | "nz" => Some("country_NZ"),
 
-        // ========== Countries mapped to regional groups ==========
-        // Europe (R10)
-        "united kingdom" | "uk" | "great britain" | "england" | "germany" | "deutschland"
-        | "france" | "switzerland" | "schweiz" | "netherlands" | "holland" | "spain" | "españa"
-        | "italy" | "italia" | "sweden" | "sverige" | "ireland" | "belgium" | "denmark"
-        | "danmark" | "norway" | "norge" | "finland" | "suomi" | "austria" | "österreich"
-        | "portugal" | "poland" | "polska" | "greece" | "czech republic" | "czechia" | "russia" => {
-            Some("R10")
-        } // Europe
+        // South America
+        "brazil" | "brasil" | "br" => Some("country_BR"),
+        "argentina" | "ar" => Some("country_AR"),
+        "chile" | "cl" => Some("country_CL"),
+        "colombia" | "co" => Some("country_CO"),
+        "peru" | "pe" => Some("country_PE"),
 
-        // North America (R2010) - countries without specific entries
-        "mexico" | "méxico" => Some("R2010"),
+        // Africa
+        "southafrica" | "za" => Some("country_ZA"),
+        "nigeria" | "ng" => Some("country_NG"),
+        "egypt" | "eg" => Some("country_EG"),
 
-        // South America (R2040)
-        "brazil" | "brasil" | "argentina" | "chile" | "colombia" | "peru" => Some("R2040"),
+        // Middle East
+        "israel" | "il" => Some("country_IL"),
 
-        // East Asia (R3030) - countries without specific entries
-        "south korea" | "korea" | "대한민국" | "taiwan" | "臺灣" => Some("R3030"),
-
-        // Asia (R30) - other Asian countries
-        "singapore" | "india" | "भारत" | "indonesia" | "malaysia" | "thailand" | "vietnam"
-        | "philippines" => Some("R30"),
-
-        // Oceania (R50)
-        "new zealand" => Some("R50"),
-
-        // Africa (R40)
-        "south africa" | "nigeria" | "egypt" => Some("R40"),
-
-        // For unmapped countries, skip
         _ => None,
     }
 }
@@ -219,6 +362,7 @@ pub struct SectorWeight {
 #[derive(Debug, Clone, Default)]
 pub struct ClassificationInput {
     pub quote_type: Option<String>,
+    pub name: Option<String>,
     pub sectors: Vec<SectorWeight>,
     pub country: Option<String>,
 }
@@ -236,6 +380,7 @@ impl ClassificationInput {
     /// - Fallback: `exchange_mic` used to infer fund domicile when provider returns no country
     pub fn from_provider_profile(
         quote_type: Option<&str>,
+        name: Option<&str>,
         sector: Option<&str>,
         sectors_json: Option<&str>,
         country: Option<&str>,
@@ -244,6 +389,7 @@ impl ClassificationInput {
     ) -> Self {
         let mut input = ClassificationInput {
             quote_type: quote_type.map(String::from),
+            name: name.map(String::from),
             ..Default::default()
         };
 
@@ -333,6 +479,8 @@ impl AutoClassificationService {
         // 1. Classify instrument type
         if let Some(quote_type) = &input.quote_type {
             if let Some(category_id) = map_quote_type_to_instrument_type(quote_type) {
+                self.clear_auto_assignments_for_taxonomy(asset_id, "instrument_type")
+                    .await;
                 match self
                     .assign_to_taxonomy(asset_id, "instrument_type", category_id, 10000)
                     .await
@@ -354,7 +502,9 @@ impl AutoClassificationService {
             }
 
             // 2. Classify asset class (EQUITY, DEBT, CASH, COMMODITY, REAL_ESTATE)
-            if let Some(category_id) = map_quote_type_to_asset_class(quote_type) {
+            if let Some(category_id) = infer_asset_class(input) {
+                self.clear_auto_assignments_for_taxonomy(asset_id, "asset_classes")
+                    .await;
                 match self
                     .assign_to_taxonomy(asset_id, "asset_classes", category_id, 10000)
                     .await
@@ -374,10 +524,16 @@ impl AutoClassificationService {
         }
 
         // 3. Classify sectors (industries_gics)
+        let mut cleared_sectors = false;
         for sector in &input.sectors {
             if let Some(category_id) = map_sector_to_gics(&sector.name) {
                 // Convert weight from 0-1 to basis points (0-10000)
                 let weight_bp = (sector.weight * 10000.0).round() as i32;
+                if !cleared_sectors {
+                    self.clear_auto_assignments_for_taxonomy(asset_id, "industries_gics")
+                        .await;
+                    cleared_sectors = true;
+                }
                 match self
                     .assign_to_taxonomy(asset_id, "industries_gics", category_id, weight_bp)
                     .await
@@ -404,15 +560,26 @@ impl AutoClassificationService {
         }
 
         // 4. Classify region
-        if let Some(country) = &input.country {
-            if let Some(category_id) = map_country_to_region(country) {
+        let inferred_country = input
+            .country
+            .as_deref()
+            .or_else(|| input.name.as_deref().and_then(infer_country_from_name));
+
+        if let Some(country) = inferred_country {
+            let region_category_id = map_country_to_region(country)
+                .map(String::from)
+                .or_else(|| self.find_region_category_by_name(country));
+
+            if let Some(category_id) = region_category_id {
+                self.clear_auto_assignments_for_taxonomy(asset_id, "regions")
+                    .await;
                 match self
-                    .assign_to_taxonomy(asset_id, "regions", category_id, 10000)
+                    .assign_to_taxonomy(asset_id, "regions", &category_id, 10000)
                     .await
                 {
                     Ok(_) => {
                         debug!("Auto-classified {} as {} in regions", asset_id, category_id);
-                        result.region = Some(category_id.to_string());
+                        result.region = Some(category_id);
                     }
                     Err(e) => {
                         warn!("Failed to auto-classify {} regions: {}", asset_id, e);
@@ -422,6 +589,68 @@ impl AutoClassificationService {
         }
 
         Ok(result)
+    }
+
+    async fn clear_auto_assignments_for_taxonomy(&self, asset_id: &str, taxonomy_id: &str) {
+        let assignments = match self.taxonomy_service.get_asset_assignments(asset_id) {
+            Ok(assignments) => assignments,
+            Err(e) => {
+                warn!(
+                    "Failed to load existing assignments for {}: {}",
+                    asset_id, e
+                );
+                return;
+            }
+        };
+
+        for assignment in assignments
+            .into_iter()
+            .filter(|a| a.taxonomy_id == taxonomy_id && a.source.eq_ignore_ascii_case("AUTO"))
+        {
+            if let Err(e) = self
+                .taxonomy_service
+                .remove_asset_assignment(&assignment.id)
+                .await
+            {
+                warn!(
+                    "Failed to remove stale AUTO assignment {} for {}: {}",
+                    assignment.id, asset_id, e
+                );
+            }
+        }
+    }
+
+    fn find_region_category_by_name(&self, country_name: &str) -> Option<String> {
+        let normalized_target = normalize_label_token(country_name);
+        if normalized_target.is_empty() {
+            return None;
+        }
+
+        let regions = self
+            .taxonomy_service
+            .get_taxonomy("regions")
+            .ok()
+            .flatten()?;
+
+        self.find_region_in_categories(&regions.categories, &normalized_target)
+    }
+
+    fn find_region_in_categories(
+        &self,
+        categories: &[Category],
+        normalized_target: &str,
+    ) -> Option<String> {
+        if normalized_target.len() == 2 {
+            let iso_category = format!("country_{}", normalized_target.to_uppercase());
+            if categories.iter().any(|c| c.id == iso_category) {
+                return Some(iso_category);
+            }
+        }
+
+        categories
+            .iter()
+            .find(|category| normalize_label_token(&category.name) == normalized_target)
+            .map(|category| category.id.clone())
     }
 
     /// Helper to assign an asset to a taxonomy category
@@ -534,24 +763,23 @@ mod tests {
         // Specific country entries
         assert_eq!(map_country_to_region("United States"), Some("country_US"));
         assert_eq!(map_country_to_region("USA"), Some("country_US"));
+        assert_eq!(map_country_to_region("US"), Some("country_US"));
         assert_eq!(map_country_to_region("Canada"), Some("country_CA"));
         assert_eq!(map_country_to_region("Japan"), Some("country_JP"));
         assert_eq!(map_country_to_region("China"), Some("country_CN"));
         assert_eq!(map_country_to_region("Hong Kong"), Some("country_HK"));
         assert_eq!(map_country_to_region("Australia"), Some("country_AU"));
+        assert_eq!(map_country_to_region("India"), Some("country_IN"));
+        assert_eq!(map_country_to_region("Viet Nam"), Some("country_VN"));
+        assert_eq!(map_country_to_region("Vietnam"), Some("country_VN"));
+        assert_eq!(map_country_to_region("VN"), Some("country_VN"));
 
-        // European countries -> Europe region (R10)
-        assert_eq!(map_country_to_region("United Kingdom"), Some("R10"));
-        assert_eq!(map_country_to_region("Germany"), Some("R10"));
-        assert_eq!(map_country_to_region("France"), Some("R10"));
-        assert_eq!(map_country_to_region("Switzerland"), Some("R10"));
-
-        // South American countries -> South America region (R2040)
-        assert_eq!(map_country_to_region("Brazil"), Some("R2040"));
-
-        // Asian countries -> Asia region (R30)
-        assert_eq!(map_country_to_region("Singapore"), Some("R30"));
-        assert_eq!(map_country_to_region("India"), Some("R30"));
+        // More countries to ensure we map to concrete country categories
+        assert_eq!(map_country_to_region("United Kingdom"), Some("country_GB"));
+        assert_eq!(map_country_to_region("Germany"), Some("country_DE"));
+        assert_eq!(map_country_to_region("France"), Some("country_FR"));
+        assert_eq!(map_country_to_region("Brazil"), Some("country_BR"));
+        assert_eq!(map_country_to_region("Singapore"), Some("country_SG"));
 
         // Unknown
         assert_eq!(map_country_to_region("Unknown Country"), None);
@@ -560,8 +788,15 @@ mod tests {
     #[test]
     fn test_parse_sectors_json() {
         let json = r#"[{"name":"Technology","weight":0.30},{"name":"Healthcare","weight":0.15}]"#;
-        let input =
-            ClassificationInput::from_provider_profile(None, None, Some(json), None, None, None);
+        let input = ClassificationInput::from_provider_profile(
+            None,
+            None,
+            None,
+            Some(json),
+            None,
+            None,
+            None,
+        );
         assert_eq!(input.sectors.len(), 2);
         assert_eq!(input.sectors[0].name, "Technology");
         assert_eq!(input.sectors[0].weight, 0.30);
@@ -572,6 +807,7 @@ mod tests {
         // For stocks: single sector with 100% weight
         let input = ClassificationInput::from_provider_profile(
             Some("EQUITY"),
+            Some("Apple Inc"),
             Some("Technology"),
             None, // no sectors JSON
             Some("United States"),
@@ -589,6 +825,7 @@ mod tests {
         // For ETFs: no country from provider, use exchange MIC
         let input = ClassificationInput::from_provider_profile(
             Some("ETF"),
+            Some("Vanguard FTSE Canada ETF"),
             None,
             None,
             None,         // no country from provider
@@ -596,5 +833,33 @@ mod tests {
             Some("XTSE"), // Canadian exchange
         );
         assert_eq!(input.country, Some("Canada".to_string()));
+    }
+
+    #[test]
+    fn test_infer_asset_class_for_bond_fund_name() {
+        let input = ClassificationInput::from_provider_profile(
+            Some("MUTUALFUND"),
+            Some("Global Treasury Bond Fund"),
+            None,
+            None,
+            None,
+            None,
+            None,
+        );
+
+        assert_eq!(infer_asset_class(&input), Some("FIXED_INCOME"));
+    }
+
+    #[test]
+    fn test_infer_country_from_name() {
+        assert_eq!(
+            infer_country_from_name("SP500 Index ETF"),
+            Some("United States")
+        );
+        assert_eq!(infer_country_from_name("India Equity ETF"), Some("India"));
+        assert_eq!(
+            infer_country_from_name("Viet Nam Opportunity Fund"),
+            Some("Viet Nam")
+        );
     }
 }

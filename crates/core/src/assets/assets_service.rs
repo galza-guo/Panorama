@@ -944,7 +944,10 @@ impl AssetServiceTrait for AssetService {
         // Build profile update from provider data
         let mut update = UpdateAssetProfile {
             display_code: existing_asset.display_code.clone(),
-            name: provider_profile.name.or(existing_asset.name.clone()),
+            name: provider_profile
+                .name
+                .clone()
+                .or(existing_asset.name.clone()),
             notes: existing_asset.notes.clone().unwrap_or_default(),
             kind: None,
             quote_mode: Some(existing_asset.quote_mode),
@@ -977,6 +980,7 @@ impl AssetServiceTrait for AssetService {
         if let Some(taxonomy_service) = &self.taxonomy_service {
             let classification_input = ClassificationInput::from_provider_profile(
                 provider_profile.asset_type.as_deref(),
+                provider_profile.name.as_deref(),
                 None,
                 provider_profile.sectors.as_deref(),
                 None,
@@ -1398,6 +1402,12 @@ impl AssetServiceTrait for AssetService {
 
         let new_assets: Vec<NewAsset> = specs_for_create
             .iter()
+            .filter(|(spec, _)| {
+                spec.id
+                    .as_ref()
+                    .map(|id| !existing_ids.contains(id))
+                    .unwrap_or(true)
+            })
             .map(|(spec, _)| self.new_asset_from_spec(spec))
             .collect();
 
