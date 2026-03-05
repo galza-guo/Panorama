@@ -193,6 +193,7 @@ export {
   unlinkLiability,
   getNetWorth,
   updateAlternativeAssetMetadata,
+  syncPanoramaMpfUnitPrices,
   getAlternativeHoldings,
   getNetWorthHistory,
 } from "../shared/alternative-assets";

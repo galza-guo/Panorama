@@ -52,6 +52,7 @@ const ALTERNATIVE_ASSET_KINDS = new Set<AssetKind>([
   "VEHICLE",
   "COLLECTIBLE",
   "PRECIOUS_METAL",
+  "MPF",
   "LIABILITY",
   "OTHER",
 ]);
@@ -331,6 +332,7 @@ export const AssetKind = {
   VEHICLE: "VEHICLE",
   COLLECTIBLE: "COLLECTIBLE",
   PRECIOUS_METAL: "PRECIOUS_METAL",
+  MPF: "MPF",
   PRIVATE_EQUITY: "PRIVATE_EQUITY",
   LIABILITY: "LIABILITY",
   OTHER: "OTHER",
@@ -346,6 +348,7 @@ export const ASSET_KIND_DISPLAY_NAMES: Record<AssetKind, string> = {
   VEHICLE: "Vehicle",
   COLLECTIBLE: "Collectible",
   PRECIOUS_METAL: "Precious Metal",
+  MPF: "MPF",
   PRIVATE_EQUITY: "Private Equity",
   LIABILITY: "Liability",
   OTHER: "Other",
@@ -360,6 +363,7 @@ export const EDITABLE_ASSET_KINDS: AssetKind[] = [
   "VEHICLE",
   "COLLECTIBLE",
   "PRECIOUS_METAL",
+  "MPF",
   "LIABILITY",
   "OTHER",
 ];
@@ -370,6 +374,7 @@ export const AlternativeAssetKind = {
   VEHICLE: "VEHICLE",
   COLLECTIBLE: "COLLECTIBLE",
   PRECIOUS_METAL: "PRECIOUS_METAL",
+  MPF: "MPF",
   LIABILITY: "LIABILITY",
   OTHER: "OTHER",
 } as const;
@@ -382,6 +387,7 @@ export const ALTERNATIVE_ASSET_KIND_DISPLAY_NAMES: Record<AlternativeAssetKind, 
   [AlternativeAssetKind.VEHICLE]: "Vehicle",
   [AlternativeAssetKind.COLLECTIBLE]: "Collectible",
   [AlternativeAssetKind.PRECIOUS_METAL]: "Precious Metal",
+  [AlternativeAssetKind.MPF]: "MPF",
   [AlternativeAssetKind.LIABILITY]: "Liability",
   [AlternativeAssetKind.OTHER]: "Other",
 };
@@ -392,6 +398,7 @@ export const ALTERNATIVE_ASSET_DEFAULT_GROUPS: Record<AlternativeAssetKind, stri
   [AlternativeAssetKind.VEHICLE]: "Vehicles",
   [AlternativeAssetKind.COLLECTIBLE]: "Collectibles",
   [AlternativeAssetKind.PRECIOUS_METAL]: "Precious Metals",
+  [AlternativeAssetKind.MPF]: "MPF",
   [AlternativeAssetKind.LIABILITY]: "Liabilities",
   [AlternativeAssetKind.OTHER]: "Other Assets",
 };
@@ -402,6 +409,7 @@ const API_KIND_TO_ENUM: Record<string, AlternativeAssetKind> = {
   vehicle: AlternativeAssetKind.VEHICLE,
   collectible: AlternativeAssetKind.COLLECTIBLE,
   precious: AlternativeAssetKind.PRECIOUS_METAL,
+  mpf: AlternativeAssetKind.MPF,
   liability: AlternativeAssetKind.LIABILITY,
   other: AlternativeAssetKind.OTHER,
 };
@@ -449,7 +457,7 @@ export const HOLDING_CATEGORY_FILTERS = [
   {
     id: "assets",
     label: "Personal Assets",
-    assetKinds: ["PROPERTY", "VEHICLE", "COLLECTIBLE", "PRECIOUS_METAL", "OTHER"],
+    assetKinds: ["PROPERTY", "VEHICLE", "COLLECTIBLE", "PRECIOUS_METAL", "MPF", "OTHER"],
   },
   { id: "liabilities", label: "Liabilities", assetKinds: ["LIABILITY"] },
 ] as const;
@@ -476,9 +484,10 @@ export const HOLDING_GROUP_ORDER: Record<string, number> = {
   Vehicles: 3,
   Collectibles: 4,
   "Precious Metals": 5,
-  "Other Assets": 6,
-  Liabilities: 7,
-  Cash: 8,
+  MPF: 6,
+  "Other Assets": 7,
+  Liabilities: 8,
+  Cash: 9,
 };
 
 // =============================================================================

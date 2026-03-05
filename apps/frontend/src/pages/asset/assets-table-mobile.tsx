@@ -27,7 +27,13 @@ import { ASSET_KIND_DISPLAY_NAMES, LatestQuoteSnapshot } from "@/lib/types";
 import { cn, formatAmount, formatDate } from "@/lib/utils";
 import { useSettingsContext } from "@/lib/settings-provider";
 import { ScrollArea, Separator } from "@wealthfolio/ui";
-import { isStaleQuote, ParsedAsset } from "./asset-utils";
+import {
+  getAssetKindForDisplay,
+  getPanoramaAssetCategory,
+  isStaleQuote,
+  ParsedAsset,
+  type PanoramaAssetCategory,
+} from "./asset-utils";
 
 interface AssetsTableMobileProps {
   assets: ParsedAsset[];
@@ -60,6 +66,9 @@ export function AssetsTableMobile({
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedDataSources, setSelectedDataSources] = useState<string[]>([]);
   const [selectedAssetKinds, setSelectedAssetKinds] = useState<string[]>([]);
+  const [selectedAssetCategories, setSelectedAssetCategories] = useState<PanoramaAssetCategory[]>(
+    [],
+  );
   const [selectedPriceStatus, setSelectedPriceStatus] = useState<string[]>([]);
   const [isFilterSheetOpen, setIsFilterSheetOpen] = useState(false);
 
@@ -71,8 +80,19 @@ export function AssetsTableMobile({
 
   // Get unique asset kinds
   const assetKindOptions = useMemo(() => {
-    const kinds = new Set(assets.map((asset) => asset.kind).filter((k) => !!k));
+    const kinds = new Set(assets.map((asset) => getAssetKindForDisplay(asset)).filter((k) => !!k));
     return Array.from(kinds).sort();
+  }, [assets]);
+
+  const assetCategoryOptions = useMemo(() => {
+    const categories = new Set<PanoramaAssetCategory>();
+    for (const asset of assets) {
+      const category = getPanoramaAssetCategory(asset);
+      if (category) {
+        categories.add(category);
+      }
+    }
+    return Array.from(categories).sort();
   }, [assets]);
 
   const filteredAssets = useMemo(() => {
@@ -82,9 +102,12 @@ export function AssetsTableMobile({
     if (searchQuery) {
       const query = searchQuery.toLowerCase();
       filtered = filtered.filter((asset) =>
-        [asset.displayCode ?? "", asset.name ?? "", asset.kind ?? ""].some((value) =>
-          value.toLowerCase().includes(query),
-        ),
+        [
+          asset.displayCode ?? "",
+          asset.name ?? "",
+          asset.kind ?? "",
+          getPanoramaAssetCategory(asset) ?? "",
+        ].some((value) => value.toLowerCase().includes(query)),
       );
     }
 
@@ -95,7 +118,16 @@ export function AssetsTableMobile({
 
     // Filter by asset kind
     if (selectedAssetKinds.length > 0) {
-      filtered = filtered.filter((asset) => asset.kind && selectedAssetKinds.includes(asset.kind));
+      filtered = filtered.filter((asset) =>
+        selectedAssetKinds.includes(getAssetKindForDisplay(asset)),
+      );
+    }
+
+    if (selectedAssetCategories.length > 0) {
+      filtered = filtered.filter((asset) => {
+        const category = getPanoramaAssetCategory(asset);
+        return category ? selectedAssetCategories.includes(category) : false;
+      });
     }
 
     // Filter by price status
@@ -116,6 +148,7 @@ export function AssetsTableMobile({
     searchQuery,
     selectedDataSources,
     selectedAssetKinds,
+    selectedAssetCategories,
     selectedPriceStatus,
     latestQuotes,
   ]);
@@ -123,11 +156,13 @@ export function AssetsTableMobile({
   const hasActiveFilters =
     selectedDataSources.length > 0 ||
     selectedAssetKinds.length > 0 ||
+    selectedAssetCategories.length > 0 ||
     selectedPriceStatus.length > 0;
 
   const handleResetFilters = () => {
     setSelectedDataSources([]);
     setSelectedAssetKinds([]);
+    setSelectedAssetCategories([]);
     setSelectedPriceStatus([]);
   };
 
@@ -177,115 +212,127 @@ export function AssetsTableMobile({
         >
           <Icons.ListFilter className="h-4 w-4" />
           {hasActiveFilters && (
-            <span className="bg-destructive absolute right-0 top-0.5 h-2 w-2 rounded-full" />
+            <span className="bg-destructive absolute top-0.5 right-0 h-2 w-2 rounded-full" />
           )}
         </Button>
       </div>
 
       <div className="space-y-2">
-        {filteredAssets.map((asset) => (
-          <Card key={asset.id} className="p-4">
-            <div className="flex items-center gap-3">
-              <button
-                type="button"
-                onClick={() => navigate(`/holdings/${encodeURIComponent(asset.id)}`)}
-                className="hover:bg-muted/60 focus-visible:ring-ring flex flex-1 items-center gap-3 overflow-hidden rounded-md text-left transition"
-              >
-                <TickerAvatar
-                  symbol={asset.displayCode ?? ""}
-                  className="h-10 w-10 flex-shrink-0"
-                />
-                <div className="min-w-0 flex-1">
-                  <div className="flex items-center gap-2">
-                    <p className="truncate font-semibold">
-                      {asset.displayCode ?? asset.name ?? "Unknown"}
-                    </p>
-                    <Badge variant="secondary" className="text-[10px] uppercase">
-                      {asset.quoteCcy}
-                    </Badge>
-                  </div>
-                  <p className="text-muted-foreground truncate text-sm">{asset.name ?? "-"}</p>
-                </div>
-              </button>
+        {filteredAssets.map((asset) => {
+          const category = getPanoramaAssetCategory(asset);
+          const isMpfAsset = category === "MPF";
 
-              <div className="flex flex-shrink-0 items-center gap-2">
-                <div className="text-right text-sm">
-                  {latestQuotes[asset.id]?.quote ? (
-                    <>
-                      <div className="flex items-center justify-end gap-1 font-semibold">
-                        {formatAmount(
-                          latestQuotes[asset.id].quote.close,
-                          latestQuotes[asset.id].quote.currency ?? asset.quoteCcy ?? baseCurrency,
-                        )}
-                        {isStaleQuote(latestQuotes[asset.id], asset) ? (
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <Icons.AlertTriangle
-                                className="text-destructive h-3.5 w-3.5"
-                                aria-label="Quote is behind market day"
-                              />
-                            </TooltipTrigger>
-                            <TooltipContent>
-                              Latest quote is behind the current market day
-                            </TooltipContent>
-                          </Tooltip>
-                        ) : null}
-                      </div>
-                      <p className="text-muted-foreground text-xs">
-                        {formatDate(latestQuotes[asset.id].quote.timestamp)}
+          return (
+            <Card key={asset.id} className="p-4">
+              <div className="flex items-center gap-3">
+                <button
+                  type="button"
+                  onClick={() => navigate(`/holdings/${encodeURIComponent(asset.id)}`)}
+                  className="hover:bg-muted/60 focus-visible:ring-ring flex flex-1 items-center gap-3 overflow-hidden rounded-md text-left transition"
+                >
+                  <TickerAvatar
+                    symbol={asset.displayCode ?? ""}
+                    className="h-10 w-10 flex-shrink-0"
+                  />
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-2">
+                      <p className="truncate font-semibold">
+                        {asset.displayCode ?? asset.name ?? "Unknown"}
                       </p>
-                    </>
-                  ) : (
-                    <span className="text-muted-foreground text-xs">No quotes</span>
-                  )}
-                </div>
+                      <Badge variant="secondary" className="text-[10px] uppercase">
+                        {asset.quoteCcy}
+                      </Badge>
+                      {category ? (
+                        <Badge variant="outline" className="text-[10px] uppercase">
+                          {category}
+                        </Badge>
+                      ) : null}
+                    </div>
+                    <p className="text-muted-foreground truncate text-sm">{asset.name ?? "-"}</p>
+                  </div>
+                </button>
 
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <button
-                      type="button"
-                      className="hover:bg-muted text-muted-foreground inline-flex h-9 w-9 items-center justify-center rounded-md border transition"
-                      aria-label="Open actions"
-                    >
-                      <Icons.MoreVertical className="h-4 w-4" />
-                    </button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
-                    <DropdownMenuItem
-                      onClick={() => onUpdateQuotes(asset)}
-                      disabled={isUpdatingQuotes}
-                    >
-                      Update quotes
-                    </DropdownMenuItem>
-                    <DropdownMenuItem
-                      onClick={() => onRefetchQuotes(asset)}
-                      disabled={isRefetchingQuotes}
-                    >
-                      Refetch quotes
-                    </DropdownMenuItem>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem onClick={() => onClassify?.(asset)}>
-                      <Icons.Tag className="mr-2 h-4 w-4" />
-                      Classify
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => onEdit(asset)}>Edit</DropdownMenuItem>
-                    <DropdownMenuItem
-                      className="text-destructive focus:text-destructive"
-                      onSelect={() => onDelete(asset)}
-                    >
-                      Delete
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
+                <div className="flex flex-shrink-0 items-center gap-2">
+                  <div className="text-right text-sm">
+                    {latestQuotes[asset.id]?.quote ? (
+                      <>
+                        <div className="flex items-center justify-end gap-1 font-semibold">
+                          {formatAmount(
+                            latestQuotes[asset.id].quote.close,
+                            latestQuotes[asset.id].quote.currency ?? asset.quoteCcy ?? baseCurrency,
+                          )}
+                          {isStaleQuote(latestQuotes[asset.id], asset) ? (
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Icons.AlertTriangle
+                                  className="text-destructive h-3.5 w-3.5"
+                                  aria-label="Quote is behind market day"
+                                />
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                Latest quote is behind the current market day
+                              </TooltipContent>
+                            </Tooltip>
+                          ) : null}
+                        </div>
+                        <p className="text-muted-foreground text-xs">
+                          {formatDate(latestQuotes[asset.id].quote.timestamp)}
+                        </p>
+                      </>
+                    ) : (
+                      <span className="text-muted-foreground text-xs">No quotes</span>
+                    )}
+                  </div>
+
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <button
+                        type="button"
+                        className="hover:bg-muted text-muted-foreground inline-flex h-9 w-9 items-center justify-center rounded-md border transition"
+                        aria-label="Open actions"
+                      >
+                        <Icons.MoreVertical className="h-4 w-4" />
+                      </button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuItem
+                        onClick={() => onUpdateQuotes(asset)}
+                        disabled={isUpdatingQuotes}
+                      >
+                        {isMpfAsset ? "Sync MPF prices" : "Update quotes"}
+                      </DropdownMenuItem>
+                      <DropdownMenuItem
+                        onClick={() => onRefetchQuotes(asset)}
+                        disabled={isRefetchingQuotes}
+                      >
+                        {isMpfAsset ? "Force sync MPF prices" : "Refetch quotes"}
+                      </DropdownMenuItem>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem onClick={() => onClassify?.(asset)}>
+                        <Icons.Tag className="mr-2 h-4 w-4" />
+                        Classify
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => onEdit(asset)}>
+                        {isMpfAsset ? "Edit MPF" : "Edit"}
+                      </DropdownMenuItem>
+                      <DropdownMenuItem
+                        className="text-destructive focus:text-destructive"
+                        onSelect={() => onDelete(asset)}
+                      >
+                        Delete
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </div>
               </div>
-            </div>
-          </Card>
-        ))}
+            </Card>
+          );
+        })}
       </div>
 
       {/* Filter Sheet */}
       <Sheet open={isFilterSheetOpen} onOpenChange={setIsFilterSheetOpen}>
-        <SheetContent side="bottom" className="rounded-t-4xl mx-1 flex h-[70vh] flex-col">
+        <SheetContent side="bottom" className="mx-1 flex h-[70vh] flex-col rounded-t-4xl">
           <SheetHeader className="text-left">
             <SheetTitle>Filter Options</SheetTitle>
           </SheetHeader>
@@ -294,7 +341,7 @@ export function AssetsTableMobile({
               {/* Data Source Filter */}
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
-                  <h4 className="text-muted-foreground text-xs font-medium uppercase tracking-wider">
+                  <h4 className="text-muted-foreground text-xs font-medium tracking-wider uppercase">
                     Data Source
                   </h4>
                   {selectedDataSources.length > 0 && (
@@ -355,7 +402,7 @@ export function AssetsTableMobile({
               {/* Asset Kind Filter */}
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
-                  <h4 className="text-muted-foreground text-xs font-medium uppercase tracking-wider">
+                  <h4 className="text-muted-foreground text-xs font-medium tracking-wider uppercase">
                     Asset Kind
                   </h4>
                   {selectedAssetKinds.length > 0 && (
@@ -372,7 +419,7 @@ export function AssetsTableMobile({
                 <div className="space-y-2">
                   {assetKindOptions.map((kind) => {
                     const isSelected = selectedAssetKinds.includes(kind);
-                    const count = assets.filter((a) => a.kind === kind).length;
+                    const count = assets.filter((a) => getAssetKindForDisplay(a) === kind).length;
                     return (
                       <button
                         key={kind}
@@ -401,7 +448,7 @@ export function AssetsTableMobile({
                             {isSelected && <Icons.Check className="text-secondary h-3 w-3" />}
                           </div>
                           <span className="font-medium">
-                            {ASSET_KIND_DISPLAY_NAMES[kind] ?? kind}
+                            {kind === "MPF" ? "MPF" : (ASSET_KIND_DISPLAY_NAMES[kind] ?? kind)}
                           </span>
                         </div>
                         <Badge variant="secondary" className="ml-auto">
@@ -415,10 +462,79 @@ export function AssetsTableMobile({
 
               <Separator />
 
+              {assetCategoryOptions.length > 0 ? (
+                <>
+                  {/* Panorama Category Filter */}
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <h4 className="text-muted-foreground text-xs font-medium tracking-wider uppercase">
+                        Category
+                      </h4>
+                      {selectedAssetCategories.length > 0 && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-auto p-0 text-xs"
+                          onClick={() => setSelectedAssetCategories([])}
+                        >
+                          Clear
+                        </Button>
+                      )}
+                    </div>
+                    <div className="space-y-2">
+                      {assetCategoryOptions.map((category) => {
+                        const isSelected = selectedAssetCategories.includes(category);
+                        const count = assets.filter(
+                          (asset) => getPanoramaAssetCategory(asset) === category,
+                        ).length;
+                        return (
+                          <button
+                            key={category}
+                            type="button"
+                            onClick={() => {
+                              setSelectedAssetCategories((prev) =>
+                                isSelected
+                                  ? prev.filter((value) => value !== category)
+                                  : [...prev, category],
+                              );
+                            }}
+                            className={cn(
+                              "flex w-full items-center justify-between rounded-lg border p-3 text-sm transition-colors",
+                              isSelected
+                                ? "border-primary/50 bg-primary/5"
+                                : "hover:bg-muted/50 border-border",
+                            )}
+                          >
+                            <div className="flex items-center gap-2">
+                              <div
+                                className={cn(
+                                  "flex h-5 w-5 items-center justify-center rounded border-2 transition-colors",
+                                  isSelected
+                                    ? "border-primary bg-primary"
+                                    : "border-muted-foreground/30",
+                                )}
+                              >
+                                {isSelected && <Icons.Check className="text-secondary h-3 w-3" />}
+                              </div>
+                              <span className="font-medium">{category}</span>
+                            </div>
+                            <Badge variant="secondary" className="ml-auto">
+                              {count}
+                            </Badge>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  <Separator />
+                </>
+              ) : null}
+
               {/* Price Status Filter */}
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
-                  <h4 className="text-muted-foreground text-xs font-medium uppercase tracking-wider">
+                  <h4 className="text-muted-foreground text-xs font-medium tracking-wider uppercase">
                     Price Status
                   </h4>
                   {selectedPriceStatus.length > 0 && (

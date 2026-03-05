@@ -96,6 +96,13 @@ export const updateAlternativeAssetMetadata = async (
 };
 
 /**
+ * Sync Panorama MPF unit prices from MPFA and update MPF asset valuations.
+ */
+export const syncPanoramaMpfUnitPrices = async (): Promise<number> => {
+  return invoke<number>("sync_panorama_mpf_unit_prices", {});
+};
+
+/**
  * Get all alternative holdings (assets with their latest valuations).
  * This retrieves all alternative assets (Property, Vehicle, Collectible,
  * PhysicalPrecious, Liability, Other) formatted for display in the Holdings page.

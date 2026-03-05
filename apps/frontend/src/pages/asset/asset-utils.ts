@@ -10,6 +10,61 @@ export interface ParsedAsset extends Asset {
   countriesList: WeightedBreakdown[];
 }
 
+export type PanoramaAssetCategory = "MPF";
+export type DisplayAssetKind = Asset["kind"] | PanoramaAssetCategory;
+
+function getMetadataObject(metadata: Asset["metadata"]): Record<string, unknown> | null {
+  if (!metadata || typeof metadata !== "object" || Array.isArray(metadata)) {
+    return null;
+  }
+
+  return metadata as Record<string, unknown>;
+}
+
+function normalizedMetadataText(
+  metadata: Record<string, unknown>,
+  key: "panorama_category" | "sub_type",
+): string {
+  const value = metadata[key];
+  return typeof value === "string" ? value.trim().toLowerCase() : "";
+}
+
+export function getPanoramaAssetCategory(
+  asset: Pick<Asset, "kind" | "metadata">,
+): PanoramaAssetCategory | undefined {
+  if (asset.kind === "MPF") {
+    return "MPF";
+  }
+
+  if (asset.kind !== "OTHER") {
+    return undefined;
+  }
+
+  const metadata = getMetadataObject(asset.metadata);
+  if (!metadata) {
+    return undefined;
+  }
+
+  const panoramaCategory = normalizedMetadataText(metadata, "panorama_category");
+  const subType = normalizedMetadataText(metadata, "sub_type");
+  const hasMpfSubfunds = Array.isArray(metadata.mpf_subfunds) && metadata.mpf_subfunds.length > 0;
+
+  if (panoramaCategory === "mpf" || subType === "mpf" || hasMpfSubfunds) {
+    return "MPF";
+  }
+
+  return undefined;
+}
+
+export function getAssetKindForDisplay(asset: Pick<Asset, "kind" | "metadata">): DisplayAssetKind {
+  const category = getPanoramaAssetCategory(asset);
+  if (category === "MPF") {
+    return "MPF";
+  }
+
+  return asset.kind;
+}
+
 export const isStaleQuote = (snapshot?: LatestQuoteSnapshot, asset?: ParsedAsset): boolean => {
   if (!snapshot || asset?.isActive === false) {
     return true;

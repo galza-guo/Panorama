@@ -429,6 +429,7 @@ impl ActivityService {
                 "VEHICLE" | "VEH" => return (AssetKind::Vehicle, None),
                 "COLLECTIBLE" | "COLL" => return (AssetKind::Collectible, None),
                 "PRECIOUS_METAL" | "PREC" => return (AssetKind::PreciousMetal, None),
+                "MPF" => return (AssetKind::Mpf, None),
                 "PRIVATE_EQUITY" | "PEQ" => return (AssetKind::PrivateEquity, None),
                 "LIABILITY" | "LIAB" => return (AssetKind::Liability, None),
                 "OTHER" | "ALT" => return (AssetKind::Other, None),

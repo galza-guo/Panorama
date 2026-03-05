@@ -103,6 +103,8 @@ function AssetKindIcon({ kind, size = 20 }: { kind: string; size?: number }) {
       return <Icons.CollectibleDuotone size={size} />;
     case "precious":
       return <Icons.PreciousDuotone size={size} />;
+    case "mpf":
+      return <Icons.Briefcase size={size} />;
     case "liability":
       return <Icons.LiabilityDuotone size={size} />;
     default:

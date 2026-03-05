@@ -51,7 +51,6 @@ describe("insurance dashboard", () => {
         autoUpdateCheckEnabled: true,
         menuBarVisible: true,
         syncEnabled: true,
-        insuranceVisible: true,
         mpfVisible: true,
       },
       isLoading: false,
@@ -77,40 +76,14 @@ describe("insurance dashboard", () => {
     useSettingsContextMock.mockReset();
   });
 
-  it("adds Insurance to primary navigation", () => {
+  it("does not include Insurance in primary navigation", () => {
     const { result } = renderHook(() => useNavigation());
 
     expect(
-      result.current.primary.some((item) => item.title === "Insurance" && item.href === "/insurance"),
-    ).toBe(true);
-  });
-
-  it("hides Insurance navigation when the component setting is disabled", () => {
-    useSettingsContextMock.mockReturnValue({
-      settings: {
-        theme: "light",
-        font: "font-mono",
-        baseCurrency: "USD",
-        instanceId: "test-instance",
-        onboardingCompleted: true,
-        autoUpdateCheckEnabled: true,
-        menuBarVisible: true,
-        syncEnabled: true,
-        insuranceVisible: false,
-        mpfVisible: true,
-      },
-      isLoading: false,
-      isError: false,
-      updateBaseCurrency: vi.fn(),
-      updateSettings: vi.fn(),
-      refetch: vi.fn(),
-      accountsGrouped: true,
-      setAccountsGrouped: vi.fn(),
-    });
-
-    const { result } = renderHook(() => useNavigation());
-
-    expect(result.current.primary.some((item) => item.href === "/insurance")).toBe(false);
+      result.current.primary.some(
+        (item) => item.title === "Insurance" && item.href === "/insurance",
+      ),
+    ).toBe(false);
   });
 
   it("renders an empty state when there are no insurance assets", () => {

@@ -1,0 +1,110 @@
+PRAGMA legacy_alter_table = ON;
+
+ALTER TABLE assets RENAME TO assets_old;
+
+DROP INDEX IF EXISTS idx_assets_instrument_key;
+DROP INDEX IF EXISTS idx_assets_kind;
+DROP INDEX IF EXISTS idx_assets_is_active;
+DROP INDEX IF EXISTS idx_assets_display_code;
+
+CREATE TABLE assets (
+    id TEXT PRIMARY KEY NOT NULL DEFAULT (lower(hex(randomblob(4))) || '-' || lower(hex(randomblob(2))) || '-' || '4' || substr(lower(hex(randomblob(2))),2) || '-' || substr('89ab', 1 + (abs(random()) % 4), 1) || substr(lower(hex(randomblob(2))),2) || '-' || lower(hex(randomblob(6)))),
+
+    kind TEXT NOT NULL,
+    name TEXT,
+    display_code TEXT,
+    notes TEXT,
+    metadata TEXT,
+
+    is_active INTEGER NOT NULL DEFAULT 1,
+
+    quote_mode TEXT NOT NULL,
+    quote_ccy TEXT NOT NULL,
+
+    instrument_type TEXT,
+    instrument_symbol TEXT,
+    instrument_exchange_mic TEXT,
+
+    instrument_key TEXT GENERATED ALWAYS AS (
+        CASE
+            WHEN instrument_type IS NULL OR instrument_symbol IS NULL THEN NULL
+            WHEN instrument_type IN ('FX', 'CRYPTO')
+                THEN instrument_type || ':' || instrument_symbol || '/' || quote_ccy
+            WHEN instrument_exchange_mic IS NOT NULL
+                THEN instrument_type || ':' || instrument_symbol || '@' || instrument_exchange_mic
+            ELSE instrument_type || ':' || instrument_symbol
+        END
+    ) STORED,
+
+    provider_config TEXT,
+
+    created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')),
+    updated_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')),
+
+    CHECK (kind IN (
+        'INVESTMENT',
+        'PROPERTY', 'VEHICLE', 'COLLECTIBLE', 'PRECIOUS_METAL',
+        'MPF', 'PRIVATE_EQUITY', 'LIABILITY', 'OTHER',
+        'FX'
+    )),
+    CHECK (quote_mode IN ('MARKET', 'MANUAL')),
+    CHECK (is_active IN (0, 1)),
+    CHECK (metadata IS NULL OR json_valid(metadata)),
+    CHECK (provider_config IS NULL OR json_valid(provider_config))
+);
+
+INSERT INTO assets (
+    id,
+    kind,
+    name,
+    display_code,
+    notes,
+    metadata,
+    is_active,
+    quote_mode,
+    quote_ccy,
+    instrument_type,
+    instrument_symbol,
+    instrument_exchange_mic,
+    provider_config,
+    created_at,
+    updated_at
+)
+SELECT
+    id,
+    CASE
+        WHEN kind = 'OTHER' AND metadata IS NOT NULL
+             AND (
+                 lower(COALESCE(json_extract(metadata, '$.panorama_category'), '')) = 'mpf'
+                 OR lower(COALESCE(json_extract(metadata, '$.sub_type'), '')) = 'mpf'
+                 OR json_type(metadata, '$.mpf_subfunds') = 'array'
+             )
+            THEN 'MPF'
+        ELSE kind
+    END AS kind,
+    name,
+    display_code,
+    notes,
+    metadata,
+    is_active,
+    quote_mode,
+    quote_ccy,
+    instrument_type,
+    instrument_symbol,
+    instrument_exchange_mic,
+    provider_config,
+    created_at,
+    updated_at
+FROM assets_old;
+
+DROP TABLE assets_old;
+
+CREATE UNIQUE INDEX idx_assets_instrument_key
+ON assets(instrument_key)
+WHERE instrument_key IS NOT NULL;
+
+CREATE INDEX idx_assets_kind ON assets(kind);
+CREATE INDEX idx_assets_is_active ON assets(is_active);
+CREATE INDEX idx_assets_display_code ON assets(display_code);
+
+PRAGMA legacy_alter_table = OFF;

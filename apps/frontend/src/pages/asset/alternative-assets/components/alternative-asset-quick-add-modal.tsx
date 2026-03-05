@@ -74,6 +74,15 @@ const ASSET_TYPES = [
     borderColor: "border-orange-400/50",
   },
   {
+    kind: AlternativeAssetKind.MPF,
+    label: "MPF",
+    description: "Mandatory Provident Fund",
+    icon: Icons.Briefcase,
+    iconColor: "text-emerald-400",
+    selectedBg: "bg-emerald-400/15",
+    borderColor: "border-emerald-400/50",
+  },
+  {
     kind: AlternativeAssetKind.LIABILITY,
     label: "Liability",
     description: "Loans & debt",
@@ -99,6 +108,7 @@ const kindToApiKind: Record<AlternativeAssetKind, AlternativeAssetKindApi> = {
   [AlternativeAssetKind.VEHICLE]: "vehicle",
   [AlternativeAssetKind.COLLECTIBLE]: "collectible",
   [AlternativeAssetKind.PRECIOUS_METAL]: "precious",
+  [AlternativeAssetKind.MPF]: "mpf",
   [AlternativeAssetKind.LIABILITY]: "liability",
   [AlternativeAssetKind.OTHER]: "other",
 };
@@ -307,6 +317,8 @@ export function AlternativeAssetQuickAddModal({
         return "Home Mortgage, Car Loan...";
       case AlternativeAssetKind.COLLECTIBLE:
         return "Rolex Daytona, Picasso Print...";
+      case AlternativeAssetKind.MPF:
+        return "Employer MPF Account...";
       default:
         return "Asset name...";
     }
@@ -387,7 +399,7 @@ export function AlternativeAssetQuickAddModal({
                           <motion.div
                             initial={{ scale: 0 }}
                             animate={{ scale: 1 }}
-                            className="absolute right-2 top-2"
+                            className="absolute top-2 right-2"
                           >
                             <div className="bg-primary flex h-5 w-5 items-center justify-center rounded-full">
                               <Icons.Check className="text-primary-foreground h-3 w-3" />

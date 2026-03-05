@@ -33,6 +33,7 @@ export const ASSET_KIND_OPTIONS = [
   { value: AlternativeAssetKind.VEHICLE, label: "Vehicle" },
   { value: AlternativeAssetKind.COLLECTIBLE, label: "Collectible" },
   { value: AlternativeAssetKind.PRECIOUS_METAL, label: "Precious Metal" },
+  { value: AlternativeAssetKind.MPF, label: "MPF" },
   { value: AlternativeAssetKind.LIABILITY, label: "Liability" },
   { value: AlternativeAssetKind.OTHER, label: "Other" },
 ] as const;
@@ -46,6 +47,7 @@ export const alternativeAssetQuickAddSchema = z
       AlternativeAssetKind.VEHICLE,
       AlternativeAssetKind.COLLECTIBLE,
       AlternativeAssetKind.PRECIOUS_METAL,
+      AlternativeAssetKind.MPF,
       AlternativeAssetKind.LIABILITY,
       AlternativeAssetKind.OTHER,
     ]),

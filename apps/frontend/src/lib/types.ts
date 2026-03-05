@@ -41,13 +41,7 @@ export type { HoldingCategoryFilterId } from "./constants";
 
 export type { ActivitySubtype, ImportRequiredField } from "./constants";
 
-export type JsonValue =
-  | string
-  | number
-  | boolean
-  | null
-  | JsonObject
-  | JsonValue[];
+export type JsonValue = string | number | boolean | null | JsonObject | JsonValue[];
 
 export type JsonObject = { [key: string]: JsonValue };
 
@@ -958,6 +952,7 @@ export type AlternativeAssetKindApi =
   | "vehicle"
   | "collectible"
   | "precious"
+  | "mpf"
   | "liability"
   | "other";
 

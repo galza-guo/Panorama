@@ -44,6 +44,7 @@ pub enum AlternativeAssetKind {
     Vehicle,
     Collectible,
     Precious,
+    Mpf,
     Liability,
     Other,
 }
@@ -55,6 +56,7 @@ impl AlternativeAssetKind {
             AlternativeAssetKind::Vehicle => AssetKind::Vehicle,
             AlternativeAssetKind::Collectible => AssetKind::Collectible,
             AlternativeAssetKind::Precious => AssetKind::PreciousMetal,
+            AlternativeAssetKind::Mpf => AssetKind::Mpf,
             AlternativeAssetKind::Liability => AssetKind::Liability,
             AlternativeAssetKind::Other => AssetKind::Other,
         }
@@ -299,6 +301,27 @@ async fn delete_alternative_asset(
     Ok(StatusCode::NO_CONTENT)
 }
 
+/// POST /alternative-assets/mpf/sync - Sync Panorama MPF unit prices and update MPF assets
+async fn sync_panorama_mpf_unit_prices(
+    State(state): State<Arc<AppState>>,
+) -> ApiResult<Json<usize>> {
+    let updated = state
+        .alternative_asset_service
+        .sync_panorama_mpf_unit_prices()
+        .await?;
+
+    enqueue_portfolio_job(
+        state.clone(),
+        PortfolioJobConfig {
+            account_ids: None,
+            market_sync_mode: MarketSyncMode::None,
+            force_full_recalculation: false,
+        },
+    );
+
+    Ok(Json(updated))
+}
+
 /// POST /alternative-assets/:id/link-liability - Links a liability to a target asset
 async fn link_liability(
     Path(liability_id): Path<String>,
@@ -346,6 +369,7 @@ async fn get_alternative_holdings(
                 AssetKind::Vehicle => "vehicle",
                 AssetKind::Collectible => "collectible",
                 AssetKind::PreciousMetal => "precious",
+                AssetKind::Mpf => "mpf",
                 AssetKind::Liability => "liability",
                 AssetKind::Other => "other",
                 _ => "other",
@@ -380,6 +404,10 @@ async fn get_alternative_holdings(
 pub fn router() -> Router<Arc<AppState>> {
     Router::new()
         .route("/alternative-assets", post(create_alternative_asset))
+        .route(
+            "/alternative-assets/mpf/sync",
+            post(sync_panorama_mpf_unit_prices),
+        )
         .route(
             "/alternative-assets/{id}/valuation",
             put(update_alternative_asset_valuation),

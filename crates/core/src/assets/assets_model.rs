@@ -37,6 +37,7 @@ pub enum AssetKind {
     Vehicle,       // Cars, motorcycles, boats, RVs
     Collectible,   // Art, wine, watches, jewelry, memorabilia
     PreciousMetal, // Physical gold/silver bars, coins (not ETFs)
+    Mpf,           // Mandatory Provident Fund assets
     PrivateEquity, // Private shares, startup equity
     Liability,     // Debts (mortgages, loans, credit cards)
     Other,         // Catch-all for uncategorized assets
@@ -170,6 +171,7 @@ impl AssetKind {
             AssetKind::Vehicle => "VEHICLE",
             AssetKind::Collectible => "COLLECTIBLE",
             AssetKind::PreciousMetal => "PRECIOUS_METAL",
+            AssetKind::Mpf => "MPF",
             AssetKind::PrivateEquity => "PRIVATE_EQUITY",
             AssetKind::Liability => "LIABILITY",
             AssetKind::Other => "OTHER",
@@ -185,6 +187,7 @@ impl AssetKind {
             AssetKind::Vehicle => "Vehicle",
             AssetKind::Collectible => "Collectible",
             AssetKind::PreciousMetal => "Precious Metal",
+            AssetKind::Mpf => "MPF",
             AssetKind::PrivateEquity => "Private Equity",
             AssetKind::Liability => "Liability",
             AssetKind::Other => "Other",
@@ -201,6 +204,7 @@ impl AssetKind {
                 | AssetKind::Vehicle
                 | AssetKind::Collectible
                 | AssetKind::PreciousMetal
+                | AssetKind::Mpf
                 | AssetKind::Liability
                 | AssetKind::Other
         )
@@ -224,6 +228,7 @@ impl AssetKind {
             "VEHICLE" => Some(AssetKind::Vehicle),
             "COLLECTIBLE" => Some(AssetKind::Collectible),
             "PRECIOUS_METAL" => Some(AssetKind::PreciousMetal),
+            "MPF" => Some(AssetKind::Mpf),
             "PRIVATE_EQUITY" => Some(AssetKind::PrivateEquity),
             "LIABILITY" => Some(AssetKind::Liability),
             "OTHER" => Some(AssetKind::Other),

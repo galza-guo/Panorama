@@ -71,7 +71,9 @@ function mergeSubfunds(
   nextRows: MpfAssetFormValues["subfunds"],
 ): PanoramaMpfSubfund[] {
   const existingByName = new Map(
-    normalizeMpfSubfunds(existingRaw).map((subfund) => [subfund.name.trim().toLowerCase(), subfund] as const),
+    normalizeMpfSubfunds(existingRaw).map(
+      (subfund) => [subfund.name.trim().toLowerCase(), subfund] as const,
+    ),
   );
 
   return nextRows
@@ -90,7 +92,9 @@ function mergeSubfunds(
         ...(units !== undefined ? { units } : {}),
         ...(existing?.nav !== undefined ? { nav: existing.nav } : {}),
         ...(existing?.market_value !== undefined ? { market_value: existing.market_value } : {}),
-        ...(existing?.allocation_pct !== undefined ? { allocation_pct: existing.allocation_pct } : {}),
+        ...(existing?.allocation_pct !== undefined
+          ? { allocation_pct: existing.allocation_pct }
+          : {}),
       } satisfies PanoramaMpfSubfund;
     })
     .filter((entry): entry is PanoramaMpfSubfund => Boolean(entry));
@@ -125,8 +129,13 @@ export default function MpfDashboard() {
         };
       });
 
-      const derivedSubfundTotal = subfunds.reduce((sum, subfund) => sum + (subfund.totalValue ?? 0), 0);
-      const totalValue = asFiniteNumber(holding.marketValue) ?? (derivedSubfundTotal > 0 ? derivedSubfundTotal : undefined);
+      const derivedSubfundTotal = subfunds.reduce(
+        (sum, subfund) => sum + (subfund.totalValue ?? 0),
+        0,
+      );
+      const totalValue =
+        asFiniteNumber(holding.marketValue) ??
+        (derivedSubfundTotal > 0 ? derivedSubfundTotal : undefined);
       const trustee = typeof attributes.trustee === "string" ? attributes.trustee.trim() : "";
 
       return {
@@ -136,7 +145,8 @@ export default function MpfDashboard() {
         trustee: trustee || "Unspecified",
         currency: holding.currency,
         totalValue,
-        valuationDate: typeof attributes.valuation_date === "string" ? attributes.valuation_date : undefined,
+        valuationDate:
+          typeof attributes.valuation_date === "string" ? attributes.valuation_date : undefined,
         subfunds,
         subfundCount: subfunds.length,
       };
@@ -205,7 +215,7 @@ export default function MpfDashboard() {
     } else {
       const subfunds = mergeSubfunds([], values.subfunds);
       const response = await createMutation.mutateAsync({
-        kind: "other",
+        kind: "mpf",
         name: values.name,
         currency: values.currency,
         currentValue: values.currentValue,
@@ -244,7 +254,8 @@ export default function MpfDashboard() {
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">MPF</h1>
           <p className="text-muted-foreground text-sm">
-            Monitor MPF accounts, trustee metadata, and subfund unit breakdowns with Panorama metadata.
+            Monitor MPF accounts, trustee metadata, and subfund unit breakdowns with Panorama
+            metadata.
           </p>
         </div>
 
@@ -287,7 +298,12 @@ export default function MpfDashboard() {
           <CardHeader>
             <div className="flex items-center justify-between gap-3">
               <CardTitle>MPF Accounts</CardTitle>
-              <Button type="button" size="sm" variant="outline" onClick={() => setEditorState({ mode: "create" })}>
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                onClick={() => setEditorState({ mode: "create" })}
+              >
                 <Icons.Plus className="mr-2 h-3 w-3" />
                 Add MPF Asset
               </Button>
@@ -389,7 +405,10 @@ export default function MpfDashboard() {
                               </span>
                               {typeof subfund.totalValue === "number" ? (
                                 <span className="font-medium">
-                                  <AmountDisplay value={subfund.totalValue} currency={row.currency} />
+                                  <AmountDisplay
+                                    value={subfund.totalValue}
+                                    currency={row.currency}
+                                  />
                                 </span>
                               ) : (
                                 <span className="text-muted-foreground">Value: -</span>

@@ -252,6 +252,7 @@ export const COMMANDS: CommandMap = {
   link_liability: { method: "POST", path: "/alternative-assets" },
   unlink_liability: { method: "DELETE", path: "/alternative-assets" },
   update_alternative_asset_metadata: { method: "PUT", path: "/alternative-assets" },
+  sync_panorama_mpf_unit_prices: { method: "POST", path: "/alternative-assets/mpf/sync" },
   get_alternative_holdings: { method: "GET", path: "/alternative-holdings" },
 };
 
@@ -1111,6 +1112,7 @@ export const invoke = async <T>(command: string, payload?: Record<string, unknow
       body = JSON.stringify(metadata);
       break;
     }
+    case "sync_panorama_mpf_unit_prices":
     case "get_alternative_holdings":
       break;
     // AI Providers

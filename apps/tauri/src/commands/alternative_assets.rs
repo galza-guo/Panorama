@@ -34,6 +34,7 @@ pub enum AlternativeAssetKind {
     Vehicle,
     Collectible,
     Precious,
+    Mpf,
     Liability,
     Other,
 }
@@ -45,6 +46,7 @@ impl AlternativeAssetKind {
             AlternativeAssetKind::Vehicle => AssetKind::Vehicle,
             AlternativeAssetKind::Collectible => AssetKind::Collectible,
             AlternativeAssetKind::Precious => AssetKind::PreciousMetal,
+            AlternativeAssetKind::Mpf => AssetKind::Mpf,
             AlternativeAssetKind::Liability => AssetKind::Liability,
             AlternativeAssetKind::Other => AssetKind::Other,
         }
@@ -317,6 +319,21 @@ pub async fn update_alternative_asset_metadata(
     Ok(())
 }
 
+/// Syncs Panorama MPF unit prices from MPFA and updates MPF assets.
+#[tauri::command]
+pub async fn sync_panorama_mpf_unit_prices(
+    state: State<'_, Arc<ServiceContext>>,
+) -> Result<usize, String> {
+    state
+        .alternative_asset_service()
+        .sync_panorama_mpf_unit_prices()
+        .await
+        .map_err(|e| {
+            error!("Failed to sync panorama MPF unit prices: {}", e);
+            format!("Failed to sync MPF unit prices: {}", e)
+        })
+}
+
 /// Deletes an alternative asset and related data.
 #[tauri::command]
 pub async fn delete_alternative_asset(
@@ -394,6 +411,7 @@ pub async fn get_alternative_holdings(
                 AssetKind::Vehicle => "vehicle",
                 AssetKind::Collectible => "collectible",
                 AssetKind::PreciousMetal => "precious",
+                AssetKind::Mpf => "mpf",
                 AssetKind::Liability => "liability",
                 AssetKind::Other => "other",
                 _ => "other",

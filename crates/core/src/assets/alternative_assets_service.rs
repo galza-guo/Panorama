@@ -93,6 +93,7 @@ impl AlternativeAssetService {
             | AssetKind::Vehicle
             | AssetKind::Collectible
             | AssetKind::PreciousMetal
+            | AssetKind::Mpf
             | AssetKind::PrivateEquity
             | AssetKind::Liability
             | AssetKind::Other => Ok(()),
@@ -233,6 +234,10 @@ impl AlternativeAssetService {
     }
 
     fn is_panorama_mpf_asset(asset: &Asset) -> bool {
+        if asset.kind == AssetKind::Mpf {
+            return true;
+        }
+
         let Some(metadata) = asset.metadata.as_ref() else {
             return false;
         };

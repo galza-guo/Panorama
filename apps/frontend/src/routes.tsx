@@ -1,5 +1,5 @@
 import { Suspense, useEffect, useState } from "react";
-import { BrowserRouter, Route, Routes } from "react-router-dom";
+import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 
 import { AppLayout } from "@/pages/layouts/app-layout";
 import { OnboardingLayout } from "@/pages/layouts/onboarding-layout";
@@ -15,9 +15,7 @@ import AssetsPage from "@/pages/asset/assets-page";
 import PortfolioPage from "@/pages/dashboard/portfolio-page";
 import HoldingsPage from "@/pages/holdings/holdings-page";
 import IncomePage from "@/pages/income/income-page";
-import InsuranceDashboard from "@/pages/insurance/insurance-dashboard";
 import PortfolioInsightsPage from "@/pages/insights/portfolio-insights";
-import MpfDashboard from "@/pages/mpf/mpf-dashboard";
 import NotFoundPage from "@/pages/not-found";
 import PerformancePage from "@/pages/performance/performance-page";
 import SettingsAccountsPage from "@/pages/settings/accounts/accounts-page";
@@ -88,8 +86,7 @@ export function AppRoutes() {
           <Route path="import" element={<ActivityImportPage />} />
           <Route path="accounts/:id" element={<AccountPage />} />
           <Route path="income" element={<IncomePage />} />
-          <Route path="insurance" element={<InsuranceDashboard />} />
-          <Route path="mpf" element={<MpfDashboard />} />
+          <Route path="mpf" element={<Navigate to="/settings/securities" replace />} />
           <Route path="performance" element={<PerformancePage />} />
           <Route path="insights" element={<PortfolioInsightsPage />} />
           <Route path="health" element={<HealthPage />} />

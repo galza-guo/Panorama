@@ -1,6 +1,5 @@
 import { getDynamicNavItems, subscribeToNavigationUpdates } from "@/addons/addons-runtime-context";
 import { Icons } from "@wealthfolio/ui/components/ui/icons";
-import { useSettingsContext } from "@/lib/settings-provider";
 import { useEffect, useState } from "react";
 
 export interface NavLink {
@@ -15,11 +14,6 @@ export interface NavigationProps {
   primary: NavLink[];
   secondary?: NavLink[];
   addons?: NavLink[];
-}
-
-interface ComponentVisibilitySettings {
-  insuranceVisible?: boolean;
-  mpfVisible?: boolean;
 }
 
 const staticNavigation: NavigationProps = {
@@ -46,20 +40,6 @@ const staticNavigation: NavigationProps = {
       label: "View Holdings",
     },
     {
-      icon: <Icons.ShieldCheck className="size-6" />,
-      title: "Insurance",
-      href: "/insurance",
-      keywords: ["insurance", "policy", "protection", "cash value"],
-      label: "View Insurance",
-    },
-    {
-      icon: <Icons.Briefcase className="size-6" />,
-      title: "MPF",
-      href: "/mpf",
-      keywords: ["mpf", "mandatory provident fund", "retirement", "subfund"],
-      label: "View MPF",
-    },
-    {
       icon: <Icons.Activity className="size-6" />,
       title: "Activities",
       href: "/activities",
@@ -84,50 +64,8 @@ const staticNavigation: NavigationProps = {
   ],
 };
 
-function normalizePath(value: string): string {
-  if (!value) {
-    return "/";
-  }
-
-  if (!value.startsWith("/")) {
-    return `/${value}`;
-  }
-
-  if (value.length > 1 && value.endsWith("/")) {
-    return value.slice(0, -1);
-  }
-
-  return value;
-}
-
-function isInsuranceRoute(pathname: string): boolean {
-  const normalizedPath = normalizePath(pathname);
-  return normalizedPath === "/insurance" || normalizedPath.startsWith("/insurance/");
-}
-
-function isMpfRoute(pathname: string): boolean {
-  const normalizedPath = normalizePath(pathname);
-  return normalizedPath === "/mpf" || normalizedPath.startsWith("/mpf/");
-}
-
-function isComponentRouteEnabled(
-  pathname: string,
-  settings: ComponentVisibilitySettings | null | undefined,
-): boolean {
-  if (isInsuranceRoute(pathname)) {
-    return settings?.insuranceVisible ?? true;
-  }
-
-  if (isMpfRoute(pathname)) {
-    return settings?.mpfVisible ?? true;
-  }
-
-  return true;
-}
-
 export function useNavigation() {
   const [dynamicItems, setDynamicItems] = useState<NavigationProps["addons"]>([]);
-  const { settings } = useSettingsContext();
 
   // Subscribe to navigation updates from addons
   useEffect(() => {
@@ -147,13 +85,9 @@ export function useNavigation() {
     };
   }, []);
 
-  const filteredPrimary = staticNavigation.primary.filter((item) =>
-    isComponentRouteEnabled(item.href, settings),
-  );
-
   // Combine static navigation items with addons grouped separately
   const navigation: NavigationProps = {
-    primary: filteredPrimary,
+    primary: staticNavigation.primary,
     secondary: staticNavigation.secondary,
     addons: dynamicItems,
   };

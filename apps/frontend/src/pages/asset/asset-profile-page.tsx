@@ -8,6 +8,7 @@ import { useQuoteHistory } from "@/hooks/use-quote-history";
 import { useSyncMarketDataMutation } from "@/hooks/use-sync-market-data";
 import { useAssetTaxonomyAssignments, useTaxonomy } from "@/hooks/use-taxonomies";
 import { PORTFOLIO_ACCOUNT_ID } from "@/lib/constants";
+import { isMpfAsset } from "@/lib/panorama-asset-attributes";
 import { QueryKeys } from "@/lib/query-keys";
 import { useSettingsContext } from "@/lib/settings-provider";
 import { AssetKind, Holding, Quote } from "@/lib/types";
@@ -43,6 +44,7 @@ const ALTERNATIVE_ASSET_KINDS: AssetKind[] = [
   "VEHICLE",
   "COLLECTIBLE",
   "PRECIOUS_METAL",
+  "MPF",
   "LIABILITY",
   "OTHER",
 ];
@@ -306,6 +308,11 @@ export const AssetProfilePage = () => {
   const { data: allAltHoldings = [] } = useAlternativeHoldings({
     enabled: isAltAsset,
   });
+  const isMpfAltHolding = Boolean(
+    isAltAsset &&
+      altHolding &&
+      (altHolding.kind.toLowerCase() === "mpf" || isMpfAsset(altHolding)),
+  );
 
   const profile = useMemo(() => {
     const instrument = holding?.instrument;
@@ -736,7 +743,7 @@ export const AssetProfilePage = () => {
                         items: [
                           {
                             icon: Icons.Pencil,
-                            label: "Edit Details",
+                            label: isMpfAltHolding ? "Edit MPF" : "Edit Details",
                             onClick: () => altAssetActions.openEditDetails(),
                           },
                           ...(altAssetActions.isLinkableAsset
@@ -821,7 +828,7 @@ export const AssetProfilePage = () => {
         <div className="flex items-center gap-2" data-tauri-drag-region="true">
           {isAltAsset && altHolding ? (
             <div className="bg-muted flex h-9 w-9 items-center justify-center rounded-full">
-              <AlternativeAssetIcon kind={altHolding.kind} size={20} />
+              <AlternativeAssetIcon kind={isMpfAltHolding ? "mpf" : altHolding.kind} size={20} />
             </div>
           ) : (
             (profile?.symbol ?? holding?.instrument?.symbol ?? assetProfile?.displayCode) && (
@@ -842,7 +849,7 @@ export const AssetProfilePage = () => {
             </h1>
             <p className="text-muted-foreground flex items-center gap-1.5 text-xs leading-tight md:text-sm">
               {isAltAsset && altHolding ? (
-                getAlternativeAssetKindLabel(altHolding.kind)
+                getAlternativeAssetKindLabel(isMpfAltHolding ? "mpf" : altHolding.kind)
               ) : (
                 <>
                   {assetProfile?.displayCode ?? holding?.instrument?.symbol ?? assetId}
@@ -1121,6 +1128,8 @@ function AlternativeAssetIcon({ kind, size = 20 }: { kind: string; size?: number
       return <Icons.CollectibleDuotone size={size} />;
     case "precious":
       return <Icons.PreciousDuotone size={size} />;
+    case "mpf":
+      return <Icons.Briefcase size={size} />;
     case "liability":
       return <Icons.LiabilityDuotone size={size} />;
     default:
@@ -1135,6 +1144,7 @@ function getAlternativeAssetKindLabel(kind: string): string {
     vehicle: "Vehicle",
     collectible: "Collectible",
     precious: "Precious Metal",
+    mpf: "MPF",
     liability: "Liability",
     other: "Other Asset",
   };

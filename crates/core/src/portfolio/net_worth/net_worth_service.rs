@@ -76,6 +76,7 @@ impl NetWorthService {
             AssetKind::Vehicle => AssetCategory::Vehicle,
             AssetKind::Collectible => AssetCategory::Collectible,
             AssetKind::PreciousMetal => AssetCategory::PreciousMetal,
+            AssetKind::Mpf => AssetCategory::Other,
             AssetKind::Liability => AssetCategory::Liability,
             AssetKind::Fx => AssetCategory::Other, // Fx is not holdable
             AssetKind::Other => AssetCategory::Other,

@@ -29,7 +29,12 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@wealthfolio/ui/compone
 import { ASSET_KIND_DISPLAY_NAMES, LatestQuoteSnapshot } from "@/lib/types";
 import { formatAmount, formatDate } from "@/lib/utils";
 import { useSettingsContext } from "@/lib/settings-provider";
-import { isStaleQuote, ParsedAsset } from "./asset-utils";
+import {
+  getAssetKindForDisplay,
+  getPanoramaAssetCategory,
+  isStaleQuote,
+  ParsedAsset,
+} from "./asset-utils";
 
 interface AssetsTableProps {
   assets: ParsedAsset[];
@@ -74,6 +79,7 @@ export function AssetsTable({
         cell: ({ row }) => {
           const asset = row.original;
           const displaySymbol = asset.displayCode ?? asset.name ?? "Unknown";
+          const panoramaCategory = getPanoramaAssetCategory(asset);
           return (
             <button
               type="button"
@@ -82,8 +88,15 @@ export function AssetsTable({
             >
               <TickerAvatar symbol={asset.displayCode ?? ""} className="h-8 w-8 shrink-0" />
               <div className="min-w-0 flex-1">
-                <div className="group-hover:text-primary font-semibold leading-tight transition-colors">
-                  {displaySymbol}
+                <div className="flex items-center gap-2">
+                  <div className="group-hover:text-primary leading-tight font-semibold transition-colors">
+                    {displaySymbol}
+                  </div>
+                  {panoramaCategory ? (
+                    <Badge variant="secondary" className="text-[10px] uppercase">
+                      {panoramaCategory}
+                    </Badge>
+                  ) : null}
                 </div>
                 <div className="text-muted-foreground line-clamp-2 text-xs leading-tight">
                   {asset.name ?? "—"}
@@ -141,7 +154,20 @@ export function AssetsTable({
         enableHiding: false,
       },
       {
-        accessorKey: "kind",
+        id: "kind",
+        accessorFn: (row) => getAssetKindForDisplay(row),
+        header: () => null,
+        cell: () => null,
+        enableHiding: false,
+        filterFn: (row, id, value) => {
+          const filterValue = value as string[];
+          const cellValue = row.getValue(id);
+          return filterValue.includes(cellValue as string);
+        },
+      },
+      {
+        id: "panoramaCategory",
+        accessorFn: (row) => getPanoramaAssetCategory(row) ?? "__none__",
         header: () => null,
         cell: () => null,
         enableHiding: false,
@@ -215,6 +241,7 @@ export function AssetsTable({
         minSize: 56,
         cell: ({ row }) => {
           const asset = row.original;
+          const isMpfAsset = getPanoramaAssetCategory(asset) === "MPF";
           return (
             <div className="flex justify-end">
               <DropdownMenu>
@@ -228,19 +255,21 @@ export function AssetsTable({
                   </button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
-                  <DropdownMenuItem onClick={() => onEdit(asset)}>Edit</DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => onEdit(asset)}>
+                    {getPanoramaAssetCategory(asset) === "MPF" ? "Edit MPF" : "Edit"}
+                  </DropdownMenuItem>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem
                     onClick={() => onUpdateQuotes(asset)}
                     disabled={isUpdatingQuotes}
                   >
-                    Update quotes
+                    {isMpfAsset ? "Sync MPF prices" : "Update quotes"}
                   </DropdownMenuItem>
                   <DropdownMenuItem
                     onClick={() => onRefetchQuotes(asset)}
                     disabled={isRefetchingQuotes}
                   >
-                    Refetch quotes
+                    {isMpfAsset ? "Force sync MPF prices" : "Refetch quotes"}
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem
@@ -279,15 +308,28 @@ export function AssetsTable({
 
   // Build filter options from assets (kind)
   const kindOptions = useMemo(() => {
-    const kinds = new Set(assets.map((asset) => asset.kind).filter(Boolean));
+    const kinds = new Set(assets.map((asset) => getAssetKindForDisplay(asset)).filter(Boolean));
     return Array.from(kinds).map((kind) => ({
-      label: ASSET_KIND_DISPLAY_NAMES[kind] ?? kind,
+      label: kind === "MPF" ? "MPF" : (ASSET_KIND_DISPLAY_NAMES[kind] ?? kind),
       value: kind,
     }));
   }, [assets]);
 
-  const filters: DataTableFacetedFilterProps<ParsedAsset, unknown>[] = useMemo(
-    () => [
+  const filters: DataTableFacetedFilterProps<ParsedAsset, unknown>[] = useMemo(() => {
+    const options = new Set<string>();
+    for (const asset of assets) {
+      const category = getPanoramaAssetCategory(asset);
+      if (category) {
+        options.add(category);
+      }
+    }
+
+    const categoryOptions = Array.from(options).map((category) => ({
+      label: category,
+      value: category,
+    }));
+
+    const nextFilters: DataTableFacetedFilterProps<ParsedAsset, unknown>[] = [
       {
         id: "kind",
         title: "Kind",
@@ -298,14 +340,24 @@ export function AssetsTable({
         title: "Mode",
         options: quoteModeOptions,
       },
-      {
-        id: "isStale",
-        title: "Market Data",
-        options: PRICE_STALE_OPTIONS,
-      },
-    ],
-    [kindOptions, quoteModeOptions],
-  );
+    ];
+
+    if (categoryOptions.length > 0) {
+      nextFilters.push({
+        id: "panoramaCategory",
+        title: "Category",
+        options: categoryOptions,
+      });
+    }
+
+    nextFilters.push({
+      id: "isStale",
+      title: "Market Data",
+      options: PRICE_STALE_OPTIONS,
+    });
+
+    return nextFilters;
+  }, [assets, kindOptions, quoteModeOptions]);
 
   // Add computed field for stale status to enable filtering
   const assetsWithStaleFlag = useMemo(

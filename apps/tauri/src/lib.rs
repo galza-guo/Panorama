@@ -90,6 +90,24 @@ mod desktop {
         // The frontend will trigger the initial portfolio update and update check after it's mounted
         emit_app_ready(&handle);
 
+        // Run one MPF unit-price sync on startup.
+        let startup_mpf_context = Arc::clone(&context);
+        tauri::async_runtime::spawn(async move {
+            match startup_mpf_context
+                .alternative_asset_service()
+                .sync_panorama_mpf_unit_prices()
+                .await
+            {
+                Ok(updated) if updated > 0 => {
+                    log::info!("Startup MPF unit-price sync updated {} asset(s)", updated);
+                }
+                Ok(_) => {}
+                Err(err) => {
+                    log::warn!("Startup MPF unit-price sync failed: {}", err);
+                }
+            }
+        });
+
         // Trigger startup sync (async, non-blocking)
         // After this, user manually triggers sync via button
         let startup_handle = handle.clone();
@@ -159,6 +177,27 @@ mod mobile {
                     // The frontend will trigger the initial portfolio update after it's mounted
                     // For mobile, foreground sync is triggered from frontend via app lifecycle events
                     emit_app_ready(&handle);
+
+                    // Run one MPF unit-price sync on startup.
+                    let startup_mpf_context = Arc::clone(&context);
+                    tauri::async_runtime::spawn(async move {
+                        match startup_mpf_context
+                            .alternative_asset_service()
+                            .sync_panorama_mpf_unit_prices()
+                            .await
+                        {
+                            Ok(updated) if updated > 0 => {
+                                log::info!(
+                                    "Startup MPF unit-price sync updated {} asset(s)",
+                                    updated
+                                );
+                            }
+                            Ok(_) => {}
+                            Err(err) => {
+                                log::warn!("Startup MPF unit-price sync failed: {}", err);
+                            }
+                        }
+                    });
                 }
                 Err(e) => {
                     error!("Failed to initialize context on mobile: {}", e);
@@ -323,6 +362,7 @@ pub fn run() {
             commands::alternative_assets::delete_alternative_asset,
             commands::alternative_assets::link_liability,
             commands::alternative_assets::unlink_liability,
+            commands::alternative_assets::sync_panorama_mpf_unit_prices,
             commands::alternative_assets::get_net_worth,
             commands::alternative_assets::get_net_worth_history,
             commands::alternative_assets::get_alternative_holdings,

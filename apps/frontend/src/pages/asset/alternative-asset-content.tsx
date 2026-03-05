@@ -33,6 +33,18 @@ import { LinkedLiabilitiesSection, LinkedAssetSection } from "./linked-liabiliti
 import { useQuoteMutations } from "./hooks/use-quote-mutations";
 import { useBalancePrivacy } from "@/hooks/use-balance-privacy";
 import { useLinkedLiabilities, useAlternativeHoldings } from "@/hooks/use-alternative-assets";
+import {
+  asFiniteNumber,
+  buildMpfMetadataPatch,
+  isMpfAsset,
+  normalizeMpfSubfunds,
+  parsePanoramaAssetAttributes,
+  type PanoramaMpfSubfund,
+} from "@/lib/panorama-asset-attributes";
+import {
+  MpfAssetEditorSheet,
+  type MpfAssetFormValues,
+} from "@/pages/mpf/components/mpf-asset-editor-sheet";
 import type {
   AlternativeAssetHolding,
   Quote,
@@ -50,6 +62,58 @@ interface AlternativeAssetContentProps {
   quoteHistory: Quote[];
   activeTab: "overview" | "history";
   isMobile?: boolean;
+}
+
+function toIsoDate(value: Date): string {
+  return value.toISOString().slice(0, 10);
+}
+
+function parseOptionalNumber(value: string): number | undefined {
+  const trimmed = value.trim();
+  if (!trimmed) {
+    return undefined;
+  }
+
+  const parsed = Number(trimmed);
+  if (!Number.isFinite(parsed) || parsed < 0) {
+    return undefined;
+  }
+
+  return parsed;
+}
+
+function mergeMpfSubfunds(
+  existingRaw: unknown,
+  nextRows: MpfAssetFormValues["subfunds"],
+): PanoramaMpfSubfund[] {
+  const existingByName = new Map(
+    normalizeMpfSubfunds(existingRaw).map(
+      (subfund) => [subfund.name.trim().toLowerCase(), subfund] as const,
+    ),
+  );
+
+  return nextRows
+    .map((row) => {
+      const name = row.name.trim();
+      if (!name) {
+        return null;
+      }
+
+      const units = parseOptionalNumber(row.units);
+      const existing = existingByName.get(name.toLowerCase());
+
+      return {
+        name,
+        ...(existing?.code ? { code: existing.code } : {}),
+        ...(units !== undefined ? { units } : {}),
+        ...(existing?.nav !== undefined ? { nav: existing.nav } : {}),
+        ...(existing?.market_value !== undefined ? { market_value: existing.market_value } : {}),
+        ...(existing?.allocation_pct !== undefined
+          ? { allocation_pct: existing.allocation_pct }
+          : {}),
+      } satisfies PanoramaMpfSubfund;
+    })
+    .filter((entry): entry is PanoramaMpfSubfund => Boolean(entry));
 }
 
 /**
@@ -161,6 +225,7 @@ export const AlternativeAssetContent: React.FC<AlternativeAssetContentProps> = (
   };
 
   const isLiability = holding.kind.toLowerCase() === "liability";
+  const isMpfHolding = holding.kind.toLowerCase() === "mpf" || isMpfAsset(holding);
   const marketValue = parseFloat(holding.marketValue);
 
   // Calculate net equity for linkable assets
@@ -258,6 +323,7 @@ export const AlternativeAssetContent: React.FC<AlternativeAssetContentProps> = (
             hasLinkedLiabilities={linkedLiabilities.length > 0}
             linkedLiabilities={isLinkableAsset ? linkedLiabilities : []}
             isLiability={isLiability}
+            isMpf={isMpfHolding}
             className="col-span-1"
           />
         </div>
@@ -269,7 +335,7 @@ export const AlternativeAssetContent: React.FC<AlternativeAssetContentProps> = (
           {/* Kind and subtype badges */}
           <div className="flex flex-wrap items-center gap-2">
             {(() => {
-              const kind = holding.kind.toLowerCase();
+              const kind = isMpfHolding ? "mpf" : holding.kind.toLowerCase();
               const kindConfig = KIND_CONFIG[kind] || KIND_CONFIG.other;
               const subtypeLabel = getSubtypeLabel(kind, holding.metadata || {});
 
@@ -333,6 +399,7 @@ const KIND_CONFIG: Record<string, { label: string; color: string }> = {
   vehicle: { label: "Vehicle", color: "#6b7280" },
   collectible: { label: "Collectible", color: "#6b7280" },
   precious: { label: "Precious Metal", color: "#6b7280" },
+  mpf: { label: "MPF", color: "#6b7280" },
   liability: { label: "Liability", color: "#6b7280" },
   other: { label: "Other", color: "#6b7280" },
 };
@@ -391,6 +458,7 @@ interface AlternativeAssetDetailCardProps {
   linkedLiabilities: AlternativeAssetHolding[];
   className?: string;
   isLiability?: boolean;
+  isMpf?: boolean;
 }
 
 /**
@@ -422,6 +490,10 @@ function getSubtypeLabel(kind: string, metadata: Record<string, unknown>): strin
       const liabilityType = subType || (metadata.liability_type as string | undefined);
       return liabilityType ? LIABILITY_TYPE_LABELS[liabilityType] || liabilityType : null;
     }
+    case "mpf": {
+      const scheme = metadata.mpf_scheme as string | undefined;
+      return scheme?.trim() ? scheme : null;
+    }
     default:
       return null;
   }
@@ -441,12 +513,35 @@ const AlternativeAssetDetailCard: React.FC<AlternativeAssetDetailCardProps> = ({
   hasLinkedLiabilities,
   linkedLiabilities,
   isLiability,
+  isMpf = false,
   className,
 }) => {
   const { isBalanceHidden } = useBalancePrivacy();
 
   const metadata = holding.metadata || {};
-  const kind = holding.kind.toLowerCase();
+  const kind = isMpf ? "mpf" : holding.kind.toLowerCase();
+  const mpfSubfundRows = useMemo(() => {
+    if (!isMpf) {
+      return [];
+    }
+
+    return normalizeMpfSubfunds(metadata.mpf_subfunds).map((subfund) => {
+      const units = asFiniteNumber(subfund.units);
+      const nav = asFiniteNumber(subfund.nav);
+      const marketValue =
+        asFiniteNumber(subfund.market_value) ??
+        (units !== undefined && nav !== undefined ? units * nav : undefined);
+      const allocationPct = asFiniteNumber(subfund.allocation_pct);
+
+      return {
+        name: subfund.name,
+        units,
+        nav,
+        marketValue,
+        allocationPct,
+      };
+    });
+  }, [isMpf, metadata.mpf_subfunds]);
 
   // Build detail rows based on asset type
   const detailRows = getDetailRows(kind, metadata, holding, isBalanceHidden);
@@ -587,6 +682,59 @@ const AlternativeAssetDetailCard: React.FC<AlternativeAssetDetailCardProps> = ({
               </div>
             ))}
           </div>
+        )}
+
+        {isMpf && (
+          <>
+            <Separator className="my-4" />
+            <div className="space-y-2">
+              <div className="text-muted-foreground text-xs font-medium uppercase tracking-wide">
+                Subfunds
+              </div>
+              {mpfSubfundRows.length === 0 ? (
+                <p className="text-muted-foreground text-xs">No subfund records yet.</p>
+              ) : (
+                <div className="space-y-2">
+                  {mpfSubfundRows.map((subfund, idx) => (
+                    <div
+                      key={`${subfund.name}-${idx}`}
+                      className="bg-muted/30 border-border/60 rounded-md border p-2"
+                    >
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="min-w-0">
+                          <p className="truncate text-sm font-medium">{subfund.name}</p>
+                          <p className="text-muted-foreground text-xs">
+                            {typeof subfund.units === "number"
+                              ? `${subfund.units.toLocaleString(undefined, { maximumFractionDigits: 4 })} units`
+                              : "Units: -"}
+                            {typeof subfund.nav === "number" ? ` · NAV ${subfund.nav}` : ""}
+                          </p>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-sm font-medium">
+                            {typeof subfund.marketValue === "number" ? (
+                              <AmountDisplay
+                                value={subfund.marketValue}
+                                currency={holding.currency}
+                                isHidden={isBalanceHidden}
+                              />
+                            ) : (
+                              <span className="text-muted-foreground">-</span>
+                            )}
+                          </p>
+                          <p className="text-muted-foreground text-xs">
+                            {typeof subfund.allocationPct === "number"
+                              ? `${subfund.allocationPct.toFixed(2)}%`
+                              : ""}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </>
         )}
 
         {/* Linked Asset (for liabilities) */}
@@ -738,6 +886,41 @@ function getDetailRows(
       break;
     }
 
+    case "mpf": {
+      const owner = metadata.owner as string | undefined;
+      if (owner?.trim()) {
+        rows.push({ label: "Owner", value: owner.trim() });
+      }
+
+      const trustee = metadata.trustee as string | undefined;
+      if (trustee?.trim()) {
+        rows.push({ label: "Trustee", value: trustee.trim() });
+      }
+
+      const scheme = metadata.mpf_scheme as string | undefined;
+      if (scheme?.trim()) {
+        rows.push({ label: "Scheme", value: scheme.trim() });
+      }
+
+      const valuationDate = metadata.valuation_date as string | undefined;
+      if (valuationDate?.trim()) {
+        const parsed = new Date(valuationDate);
+        rows.push({
+          label: "Valuation Date",
+          value: Number.isNaN(parsed.getTime()) ? valuationDate : format(parsed, "MMM d, yyyy"),
+        });
+      }
+
+      const subfundCount = normalizeMpfSubfunds(metadata.mpf_subfunds).length;
+      if (subfundCount > 0) {
+        rows.push({
+          label: "Subfunds",
+          value: `${subfundCount} ${subfundCount === 1 ? "fund" : "funds"}`,
+        });
+      }
+      break;
+    }
+
     case "other":
     default: {
       const description = metadata.description as string | undefined;
@@ -769,17 +952,25 @@ export function useAlternativeAssetActions({
   // Modal state
   const [updateValuationOpen, setUpdateValuationOpen] = useState(false);
   const [editDetailsOpen, setEditDetailsOpen] = useState(false);
+  const [editMpfOpen, setEditMpfOpen] = useState(false);
   const [addLiabilityOpen, setAddLiabilityOpen] = useState(false);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
 
   // Mutations
-  const { deleteMutation, updateMetadataMutation, linkLiabilityMutation, unlinkLiabilityMutation } =
-    useAlternativeAssetMutations({
-      onDeleteSuccess: onNavigateBack,
-    });
+  const {
+    deleteMutation,
+    updateMetadataMutation,
+    updateValuationMutation,
+    linkLiabilityMutation,
+    unlinkLiabilityMutation,
+  } = useAlternativeAssetMutations({
+    onDeleteSuccess: onNavigateBack,
+  });
 
   // Fetch linked liabilities for property/vehicle
   const holdingKind = holding?.kind?.toLowerCase() ?? "";
+  const isMpfHolding =
+    holdingKind === "mpf" || (holding ? isMpfAsset(holding) : false);
   const isLinkableAsset = holdingKind === "property" || holdingKind === "vehicle";
   const { data: linkedLiabilities = [] } = useLinkedLiabilities({
     assetId: holding?.id ?? "",
@@ -822,6 +1013,43 @@ export function useAlternativeAssetActions({
       name,
       notes,
     });
+  };
+
+  const handleMpfSave = async (values: MpfAssetFormValues) => {
+    if (!holding) return;
+
+    const valuationDate = toIsoDate(values.valuationDate);
+    const existingAttributes = parsePanoramaAssetAttributes(holding.metadata);
+    const mergedSubfunds = mergeMpfSubfunds(existingAttributes.mpf_subfunds, values.subfunds);
+
+    await updateMetadataMutation.mutateAsync({
+      assetId: holding.id,
+      name: values.name,
+      notes: values.notes || null,
+      metadata: buildMpfMetadataPatch({
+        owner: values.owner,
+        trustee: values.trustee,
+        mpf_scheme: values.scheme,
+        valuation_date: valuationDate,
+        mpf_subfunds: mergedSubfunds,
+      }),
+    });
+
+    const existingQuoteDate = holding.valuationDate.slice(0, 10);
+    const valuationChanged =
+      holding.marketValue !== values.currentValue || existingQuoteDate !== valuationDate;
+
+    if (valuationChanged) {
+      await updateValuationMutation.mutateAsync({
+        assetId: holding.id,
+        request: {
+          value: values.currentValue,
+          date: valuationDate,
+        },
+      });
+    }
+
+    setEditMpfOpen(false);
   };
 
   // Handle mortgage linking
@@ -871,27 +1099,38 @@ export function useAlternativeAssetActions({
       />
 
       {/* Edit Details Sheet */}
-      <AssetDetailsSheet
-        open={editDetailsOpen}
-        onOpenChange={setEditDetailsOpen}
-        asset={editSheetAsset}
-        onSave={handleEditSave}
-        linkedAssetName={linkedAssetName}
-        linkableAssets={linkableAssets.map((a) => ({ id: a.id, name: a.name }))}
-        linkedLiabilities={linkedLiabilities.map((l) => ({
-          id: l.id,
-          name: l.name,
-          balance: l.marketValue,
-        }))}
-        availableMortgages={availableMortgages.map((m) => ({
-          id: m.id,
-          name: m.name,
-          balance: m.marketValue,
-        }))}
-        onLinkMortgage={handleLinkMortgage}
-        onUnlinkMortgage={handleUnlinkMortgage}
-        isSaving={updateMetadataMutation.isPending}
-      />
+      {isMpfHolding ? (
+        <MpfAssetEditorSheet
+          open={editMpfOpen}
+          onOpenChange={setEditMpfOpen}
+          mode="edit"
+          holding={holding}
+          onSubmit={handleMpfSave}
+          isSubmitting={updateMetadataMutation.isPending || updateValuationMutation.isPending}
+        />
+      ) : (
+        <AssetDetailsSheet
+          open={editDetailsOpen}
+          onOpenChange={setEditDetailsOpen}
+          asset={editSheetAsset}
+          onSave={handleEditSave}
+          linkedAssetName={linkedAssetName}
+          linkableAssets={linkableAssets.map((a) => ({ id: a.id, name: a.name }))}
+          linkedLiabilities={linkedLiabilities.map((l) => ({
+            id: l.id,
+            name: l.name,
+            balance: l.marketValue,
+          }))}
+          availableMortgages={availableMortgages.map((m) => ({
+            id: m.id,
+            name: m.name,
+            balance: m.marketValue,
+          }))}
+          onLinkMortgage={handleLinkMortgage}
+          onUnlinkMortgage={handleUnlinkMortgage}
+          isSaving={updateMetadataMutation.isPending}
+        />
+      )}
 
       {/* Add Liability Modal */}
       <AlternativeAssetQuickAddModal
@@ -937,7 +1176,13 @@ export function useAlternativeAssetActions({
 
   return {
     openUpdateValuation: () => setUpdateValuationOpen(true),
-    openEditDetails: () => setEditDetailsOpen(true),
+    openEditDetails: () => {
+      if (isMpfHolding) {
+        setEditMpfOpen(true);
+        return;
+      }
+      setEditDetailsOpen(true);
+    },
     openAddLiability: () => setAddLiabilityOpen(true),
     openDeleteConfirm: () => setDeleteConfirmOpen(true),
     modals,
