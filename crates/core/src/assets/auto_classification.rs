@@ -8,6 +8,7 @@
 
 use crate::taxonomies::{Category, NewAssetTaxonomyAssignment, TaxonomyServiceTrait};
 use log::{debug, warn};
+use std::collections::HashMap;
 use std::sync::Arc;
 
 /// Maps Yahoo quote_type to instrument_type taxonomy category ID
@@ -41,6 +42,113 @@ fn map_quote_type_to_instrument_type(quote_type: &str) -> Option<&'static str> {
         "NONE" => None,
         // CURRENCY/FOREX not mapped to instrument type (it's an FX rate, not a security)
         _ => None,
+    }
+}
+
+fn is_six_digit_numeric(value: &str) -> bool {
+    value.len() == 6 && value.chars().all(|c| c.is_ascii_digit())
+}
+
+fn contains_etf_keyword(name: &str) -> bool {
+    contains_any_keyword(name, &["etf", "exchange traded fund"])
+}
+
+fn contains_fund_keyword(name: &str) -> bool {
+    contains_any_keyword(
+        name,
+        &[
+            "基金", "联接", "混合", "债券", "指数", "lof", "qdii", "fof", "发起", "增强", "货币",
+            "money market", "fixed income",
+        ],
+    )
+}
+
+fn contains_stock_keyword(name: &str) -> bool {
+    contains_any_keyword(
+        name,
+        &[
+            "inc",
+            "corp",
+            "corporation",
+            "holdings",
+            "ltd",
+            "bank",
+            "股份",
+            "控股",
+            "银行",
+            "集团",
+            "公司",
+            "光电",
+            "科技",
+        ],
+    )
+}
+
+fn infer_instrument_type_from_symbol_and_name(
+    symbol: Option<&str>,
+    name: Option<&str>,
+) -> Option<&'static str> {
+    let normalized_name = name.map(normalize_text).unwrap_or_default();
+
+    // Strong name signal first.
+    if !normalized_name.is_empty() && contains_etf_keyword(&normalized_name) {
+        return Some("ETF");
+    }
+
+    if let Some(symbol) = symbol {
+        let symbol_upper = symbol.trim().to_uppercase();
+        if !symbol_upper.is_empty() {
+            if symbol_upper.ends_with(".HK") {
+                return Some("STOCK_COMMON");
+            }
+
+            if symbol_upper.ends_with(".SH")
+                || symbol_upper.ends_with(".SZ")
+                || symbol_upper.ends_with(".BJ")
+            {
+                let code = symbol_upper.split('.').next().unwrap_or_default();
+                if is_six_digit_numeric(code) {
+                    if code.starts_with('5') || code.starts_with("159") {
+                        return Some("ETF");
+                    }
+                    return Some("STOCK_COMMON");
+                }
+            }
+
+            if is_six_digit_numeric(&symbol_upper) {
+                if symbol_upper.starts_with("159") {
+                    return Some("ETF");
+                }
+                // Raw 6-digit symbols are ambiguous, rely on name hints.
+            }
+        }
+    }
+
+    if !normalized_name.is_empty()
+        && contains_stock_keyword(&normalized_name)
+        && !contains_fund_keyword(&normalized_name)
+    {
+        return Some("STOCK_COMMON");
+    }
+
+    None
+}
+
+fn infer_instrument_type(input: &ClassificationInput) -> Option<&'static str> {
+    let quote_type = input.quote_type.as_deref().map(str::trim).unwrap_or_default();
+    let quote_type_upper = quote_type.to_uppercase();
+
+    match quote_type_upper.as_str() {
+        // Provider often labels CN equities/ETFs as MUTUALFUND.
+        // Use symbol/name hints to recover ETF/stock, then fall back to mutual fund.
+        "MUTUALFUND" | "MUTUAL FUND" => infer_instrument_type_from_symbol_and_name(
+            input.symbol.as_deref(),
+            input.name.as_deref(),
+        )
+        .or(Some("FUND_MUTUAL")),
+        _ => map_quote_type_to_instrument_type(quote_type).or_else(|| {
+            infer_instrument_type_from_symbol_and_name(input.symbol.as_deref(), input.name.as_deref())
+        }),
     }
 }
 
@@ -254,6 +362,139 @@ fn map_sector_to_gics(sector: &str) -> Option<&'static str> {
         "real estate" | "realestate" => Some("60"),
         _ => None,
     }
+}
+
+fn infer_sector_from_name(name: &str) -> Option<&'static str> {
+    let normalized = normalize_text(name);
+    if normalized.is_empty() {
+        return None;
+    }
+
+    let sector_rules: [(&str, &[&str]); 11] = [
+        ("10", &["energy", "oil", "gas", "能源", "石油", "天然气", "煤炭"]),
+        ("15", &["materials", "metal", "mining", "黄金", "有色", "材料", "化工"]),
+        (
+            "20",
+            &[
+                "industrial",
+                "defense",
+                "aerospace",
+                "航空",
+                "航天",
+                "军工",
+                "通用航空",
+                "制造",
+            ],
+        ),
+        (
+            "25",
+            &[
+                "consumer discretionary",
+                "consumer cyclical",
+                "可选消费",
+                "汽车",
+                "家电",
+                "零售",
+            ],
+        ),
+        (
+            "30",
+            &[
+                "consumer staples",
+                "consumer defensive",
+                "白酒",
+                "食品",
+                "饮料",
+                "消费",
+            ],
+        ),
+        (
+            "35",
+            &[
+                "health care",
+                "healthcare",
+                "medical",
+                "biotech",
+                "医药",
+                "医疗",
+                "创新药",
+                "生物",
+                "卫生",
+                "制药",
+            ],
+        ),
+        (
+            "40",
+            &[
+                "financial",
+                "bank",
+                "insurance",
+                "证券",
+                "保险",
+                "银行",
+                "金融",
+                "非银",
+            ],
+        ),
+        (
+            "45",
+            &[
+                "information technology",
+                "technology",
+                "semiconductor",
+                "chip",
+                "software",
+                "电子",
+                "光电",
+                "半导体",
+                "芯片",
+                "计算机",
+                "科技",
+                "科创",
+            ],
+        ),
+        (
+            "50",
+            &[
+                "communication",
+                "telecom",
+                "media",
+                "internet",
+                "传媒",
+                "通信",
+                "互联网",
+                "电信",
+            ],
+        ),
+        ("55", &["utilities", "utility", "公用事业", "电力"]),
+        ("60", &["real estate", "reit", "地产", "房地产", "不动产"]),
+    ];
+
+    let mut matched = Vec::new();
+    for (category_id, keywords) in sector_rules {
+        if contains_any_keyword(&normalized, keywords) {
+            matched.push(category_id);
+        }
+    }
+
+    matched.sort_unstable();
+    matched.dedup();
+
+    if matched.len() == 1 {
+        return Some(matched[0]);
+    }
+
+    None
+}
+
+fn is_fund_like_quote_type(quote_type: Option<&str>) -> bool {
+    let Some(quote_type) = quote_type else {
+        return false;
+    };
+    matches!(
+        quote_type.trim().to_uppercase().as_str(),
+        "ETF" | "MUTUALFUND" | "MUTUAL FUND" | "INDEX"
+    )
 }
 
 /// Maps exchange MIC to country name for fallback region classification.
@@ -529,30 +770,30 @@ impl AutoClassificationService {
         let mut result = ClassificationResult::default();
 
         // 1. Classify instrument type
-        if let Some(quote_type) = &input.quote_type {
-            if let Some(category_id) = map_quote_type_to_instrument_type(quote_type) {
-                self.clear_auto_assignments_for_taxonomy(asset_id, "instrument_type")
-                    .await;
-                match self
-                    .assign_to_taxonomy(asset_id, "instrument_type", category_id, 10000)
-                    .await
-                {
-                    Ok(_) => {
-                        debug!(
-                            "Auto-classified {} as {} in instrument_type",
-                            asset_id, category_id
-                        );
-                        result.security_type = Some(category_id.to_string());
-                    }
-                    Err(e) => {
-                        warn!(
-                            "Failed to auto-classify {} instrument_type: {}",
-                            asset_id, e
-                        );
-                    }
+        if let Some(category_id) = infer_instrument_type(input) {
+            self.clear_auto_assignments_for_taxonomy(asset_id, "instrument_type")
+                .await;
+            match self
+                .assign_to_taxonomy(asset_id, "instrument_type", category_id, 10000)
+                .await
+            {
+                Ok(_) => {
+                    debug!(
+                        "Auto-classified {} as {} in instrument_type",
+                        asset_id, category_id
+                    );
+                    result.security_type = Some(category_id.to_string());
+                }
+                Err(e) => {
+                    warn!(
+                        "Failed to auto-classify {} instrument_type: {}",
+                        asset_id, e
+                    );
                 }
             }
+        }
 
+        if input.quote_type.is_some() {
             // 2. Classify asset class (EQUITY, DEBT, CASH, COMMODITY, REAL_ESTATE)
             if let Some(category_id) = infer_asset_class(input) {
                 self.clear_auto_assignments_for_taxonomy(asset_id, "asset_classes")
@@ -576,30 +817,46 @@ impl AutoClassificationService {
         }
 
         // 3. Classify sectors (industries_gics)
-        let mut cleared_sectors = false;
+        let mut sector_weights_bp: HashMap<&'static str, i32> = HashMap::new();
         for sector in &input.sectors {
             if let Some(category_id) = map_sector_to_gics(&sector.name) {
                 // Convert weight from 0-1 to basis points (0-10000)
                 let weight_bp = (sector.weight * 10000.0).round() as i32;
-                if !cleared_sectors {
-                    self.clear_auto_assignments_for_taxonomy(asset_id, "industries_gics")
-                        .await;
-                    cleared_sectors = true;
+                *sector_weights_bp.entry(category_id).or_insert(0) += weight_bp;
+            }
+        }
+
+        if sector_weights_bp.is_empty() {
+            if let Some(name) = input.name.as_deref() {
+                if let Some(category_id) = infer_sector_from_name(name) {
+                    sector_weights_bp.insert(category_id, 10000);
                 }
+            }
+        }
+
+        if !sector_weights_bp.is_empty() {
+            // Preserve manual edits, replace stale migrated/AUTO assignments.
+            self.clear_non_manual_assignments_for_taxonomy(asset_id, "industries_gics")
+                .await;
+
+            let mut sector_assignments: Vec<(&'static str, i32)> =
+                sector_weights_bp.into_iter().collect();
+            sector_assignments.sort_by_key(|(category_id, _)| *category_id);
+
+            for (category_id, weight_bp) in sector_assignments {
                 match self
                     .assign_to_taxonomy(asset_id, "industries_gics", category_id, weight_bp)
                     .await
                 {
                     Ok(_) => {
+                        let weight = f64::from(weight_bp) / 10000.0;
                         debug!(
                             "Auto-classified {} as {} ({}%) in industries_gics",
                             asset_id,
                             category_id,
-                            sector.weight * 100.0
+                            weight * 100.0
                         );
-                        result
-                            .sectors
-                            .push((category_id.to_string(), sector.weight));
+                        result.sectors.push((category_id.to_string(), weight));
                     }
                     Err(e) => {
                         warn!(
@@ -609,6 +866,11 @@ impl AutoClassificationService {
                     }
                 }
             }
+        } else if is_fund_like_quote_type(input.quote_type.as_deref()) {
+            // Fund names often have stale migrated sectors but no reliable provider sectors.
+            // Clear non-manual assignments to avoid misleading single-sector output.
+            self.clear_non_manual_assignments_for_taxonomy(asset_id, "industries_gics")
+                .await;
         }
 
         // 4. Classify region
@@ -670,6 +932,34 @@ impl AutoClassificationService {
             {
                 warn!(
                     "Failed to remove stale AUTO assignment {} for {}: {}",
+                    assignment.id, asset_id, e
+                );
+            }
+        }
+    }
+
+    async fn clear_non_manual_assignments_for_taxonomy(&self, asset_id: &str, taxonomy_id: &str) {
+        let assignments = match self.taxonomy_service.get_asset_assignments(asset_id) {
+            Ok(assignments) => assignments,
+            Err(e) => {
+                warn!(
+                    "Failed to load existing assignments for {}: {}",
+                    asset_id, e
+                );
+                return;
+            }
+        };
+
+        for assignment in assignments.into_iter().filter(|a| {
+            a.taxonomy_id == taxonomy_id && !a.source.eq_ignore_ascii_case("MANUAL")
+        }) {
+            if let Err(e) = self
+                .taxonomy_service
+                .remove_asset_assignment(&assignment.id)
+                .await
+            {
+                warn!(
+                    "Failed to remove stale assignment {} for {}: {}",
                     assignment.id, asset_id, e
                 );
             }
@@ -778,6 +1068,51 @@ mod tests {
     }
 
     #[test]
+    fn test_infer_instrument_type_for_cn_etf_from_mutualfund() {
+        let input = ClassificationInput::from_provider_profile(
+            Some("MUTUALFUND"),
+            Some("华泰柏瑞沪深300ETF"),
+            Some("510300.SH"),
+            None,
+            None,
+            None,
+            None,
+            None,
+        );
+        assert_eq!(infer_instrument_type(&input), Some("ETF"));
+    }
+
+    #[test]
+    fn test_infer_instrument_type_for_cn_stock_from_mutualfund() {
+        let input = ClassificationInput::from_provider_profile(
+            Some("MUTUALFUND"),
+            Some("交通银行"),
+            Some("601328.SH"),
+            None,
+            None,
+            None,
+            None,
+            None,
+        );
+        assert_eq!(infer_instrument_type(&input), Some("STOCK_COMMON"));
+    }
+
+    #[test]
+    fn test_infer_instrument_type_for_fund_from_mutualfund() {
+        let input = ClassificationInput::from_provider_profile(
+            Some("MUTUALFUND"),
+            Some("中欧价值智选混合C"),
+            Some("004235.FUND"),
+            None,
+            None,
+            None,
+            None,
+            None,
+        );
+        assert_eq!(infer_instrument_type(&input), Some("FUND_MUTUAL"));
+    }
+
+    #[test]
     fn test_map_asset_class() {
         // Equity class
         assert_eq!(map_quote_type_to_asset_class("EQUITY"), Some("EQUITY"));
@@ -812,6 +1147,28 @@ mod tests {
         assert_eq!(map_sector_to_gics("Financial Services"), Some("40"));
         assert_eq!(map_sector_to_gics("Consumer Cyclical"), Some("25"));
         assert_eq!(map_sector_to_gics("unknown sector"), None);
+    }
+
+    #[test]
+    fn test_infer_sector_from_name() {
+        assert_eq!(
+            infer_sector_from_name("天弘中证银行ETF联接A"),
+            Some("40")
+        );
+        assert_eq!(
+            infer_sector_from_name("国泰CES半导体芯片ETF"),
+            Some("45")
+        );
+        assert_eq!(infer_sector_from_name("广发中证传媒ETF"), Some("50"));
+        assert_eq!(
+            infer_sector_from_name("华安黄金ETF联接"),
+            Some("15")
+        );
+    }
+
+    #[test]
+    fn test_infer_sector_from_name_returns_none_when_ambiguous() {
+        assert_eq!(infer_sector_from_name("中银金融地产混合A"), None);
     }
 
     #[test]

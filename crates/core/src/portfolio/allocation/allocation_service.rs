@@ -135,7 +135,36 @@ impl AllocationService {
                     .collect();
 
                 if taxonomy_assignments.is_empty() {
-                    // No assignment for this taxonomy - count as "Unknown"
+                    // No explicit assignment for this taxonomy.
+                    if taxonomy_id == "instrument_type" {
+                        if let Some(inferred_type) =
+                            infer_instrument_type_for_unassigned_holding(holding)
+                        {
+                            let category_id = if rollup_to_top_level {
+                                top_level_map.get(inferred_type).copied().unwrap_or(inferred_type)
+                            } else {
+                                inferred_type
+                            };
+                            *rolled_up_values
+                                .entry(category_id.to_string())
+                                .or_insert(Decimal::ZERO) += market_value;
+                            continue;
+                        }
+                    }
+
+                    // For risk taxonomy, infer a simple fallback from existing classifications.
+                    if taxonomy_id == "risk_category" {
+                        if let Some(inferred_risk) =
+                            infer_risk_category_from_assignments(asset_assignments)
+                        {
+                            *rolled_up_values
+                                .entry(inferred_risk.to_string())
+                                .or_insert(Decimal::ZERO) += market_value;
+                            continue;
+                        }
+                    }
+
+                    // Otherwise count as "Unknown"
                     *rolled_up_values
                         .entry("__UNKNOWN__".to_string())
                         .or_insert(Decimal::ZERO) += market_value;
@@ -168,6 +197,22 @@ impl AllocationService {
                     }
                 }
             } else {
+                if taxonomy_id == "instrument_type" {
+                    if let Some(inferred_type) =
+                        infer_instrument_type_for_unassigned_holding(holding)
+                    {
+                        let category_id = if rollup_to_top_level {
+                            top_level_map.get(inferred_type).copied().unwrap_or(inferred_type)
+                        } else {
+                            inferred_type
+                        };
+                        *rolled_up_values
+                            .entry(category_id.to_string())
+                            .or_insert(Decimal::ZERO) += market_value;
+                        continue;
+                    }
+                }
+
                 // No assignments at all - count as "Unknown"
                 *rolled_up_values
                     .entry("__UNKNOWN__".to_string())
@@ -284,6 +329,271 @@ impl AllocationService {
             Some(Some(parent_id)) => self.find_top_level_ancestor(parent_id, parent_map),
             _ => category_id, // No parent - this is the top level
         }
+    }
+}
+
+fn is_six_digit_numeric(value: &str) -> bool {
+    value.len() == 6 && value.chars().all(|c| c.is_ascii_digit())
+}
+
+fn infer_instrument_type_for_unassigned_holding(holding: &Holding) -> Option<&'static str> {
+    let instrument = holding.instrument.as_ref()?;
+    let symbol_upper = instrument.symbol.trim().to_uppercase();
+    let name_upper = instrument
+        .name
+        .as_deref()
+        .map(str::trim)
+        .unwrap_or_default()
+        .to_uppercase();
+
+    if symbol_upper.contains("ETF") || name_upper.contains("ETF") {
+        return Some("ETF");
+    }
+
+    let inferred_from_code = |code_with_optional_suffix: &str| -> Option<&'static str> {
+        if code_with_optional_suffix.ends_with(".HK") {
+            return Some("STOCK_COMMON");
+        }
+        if code_with_optional_suffix.ends_with(".SH")
+            || code_with_optional_suffix.ends_with(".SZ")
+            || code_with_optional_suffix.ends_with(".BJ")
+        {
+            let code = code_with_optional_suffix.split('.').next().unwrap_or_default();
+            if is_six_digit_numeric(code) {
+                if code.starts_with('5') || code.starts_with("159") {
+                    return Some("ETF");
+                }
+                return Some("STOCK_COMMON");
+            }
+        }
+        if is_six_digit_numeric(code_with_optional_suffix) {
+            if code_with_optional_suffix.starts_with('5')
+                || code_with_optional_suffix.starts_with("159")
+            {
+                return Some("ETF");
+            }
+        }
+        None
+    };
+
+    inferred_from_code(&symbol_upper).or_else(|| inferred_from_code(&name_upper))
+}
+
+fn infer_risk_category_from_assignments(
+    asset_assignments: &[(String, String, i32)],
+) -> Option<&'static str> {
+    let best_asset_class = asset_assignments
+        .iter()
+        .filter(|(taxonomy_id, _, _)| taxonomy_id == "asset_classes")
+        .max_by_key(|(_, _, weight)| *weight)
+        .map(|(_, category_id, _)| category_id.as_str());
+
+    if let Some(category_id) = best_asset_class {
+        if category_id.starts_with("CASH")
+            || category_id == "FIXED_INCOME"
+            || category_id.starts_with("FI_")
+        {
+            return Some("LOW");
+        }
+        if category_id.starts_with("EQUITY")
+            || category_id == "REAL_ESTATE"
+            || category_id.starts_with("RE_")
+        {
+            return Some("MEDIUM");
+        }
+        if category_id == "COMMODITIES"
+            || category_id.starts_with("COMM_")
+            || category_id == "ALTERNATIVES"
+            || category_id.starts_with("ALT_")
+            || category_id == "DIGITAL_ASSETS"
+            || category_id.starts_with("DA_")
+        {
+            return Some("HIGH");
+        }
+    }
+
+    let best_instrument_type = asset_assignments
+        .iter()
+        .filter(|(taxonomy_id, _, _)| taxonomy_id == "instrument_type")
+        .max_by_key(|(_, _, weight)| *weight)
+        .map(|(_, category_id, _)| category_id.as_str());
+
+    if let Some(category_id) = best_instrument_type {
+        if category_id.starts_with("BOND_")
+            || category_id.starts_with("MONEY_MARKET")
+            || category_id == "CASH"
+            || category_id == "DEPOSIT"
+            || category_id == "FX_POSITION"
+        {
+            return Some("LOW");
+        }
+        if category_id.starts_with("STOCK_")
+            || category_id == "ETF"
+            || category_id == "ETN"
+            || category_id == "ETC"
+            || category_id.starts_with("FUND_")
+        {
+            return Some("MEDIUM");
+        }
+        if category_id.starts_with("CRYPTO")
+            || category_id == "OPTION"
+            || category_id == "FUTURE"
+            || category_id == "OTC_DERIVATIVE"
+            || category_id == "CFD"
+        {
+            return Some("HIGH");
+        }
+    }
+
+    None
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{infer_instrument_type_for_unassigned_holding, infer_risk_category_from_assignments};
+    use crate::portfolio::holdings::{Holding, HoldingType, Instrument, MonetaryValue};
+    use chrono::NaiveDate;
+    use rust_decimal::Decimal;
+
+    fn make_security_holding(symbol: &str, name: Option<&str>) -> Holding {
+        Holding {
+            id: "H1".to_string(),
+            account_id: "A1".to_string(),
+            holding_type: HoldingType::Security,
+            instrument: Some(Instrument {
+                id: "ASSET1".to_string(),
+                symbol: symbol.to_string(),
+                name: name.map(str::to_string),
+                currency: "CNY".to_string(),
+                notes: None,
+                pricing_mode: "MARKET".to_string(),
+                preferred_provider: None,
+                classifications: None,
+            }),
+            asset_kind: None,
+            quantity: Decimal::ONE,
+            open_date: None,
+            lots: None,
+            local_currency: "CNY".to_string(),
+            base_currency: "CNY".to_string(),
+            fx_rate: Some(Decimal::ONE),
+            market_value: MonetaryValue {
+                local: Decimal::ONE,
+                base: Decimal::ONE,
+            },
+            cost_basis: None,
+            price: None,
+            purchase_price: None,
+            unrealized_gain: None,
+            unrealized_gain_pct: None,
+            realized_gain: None,
+            realized_gain_pct: None,
+            total_gain: None,
+            total_gain_pct: None,
+            day_change: None,
+            day_change_pct: None,
+            prev_close_value: None,
+            weight: Decimal::ZERO,
+            as_of_date: NaiveDate::from_ymd_opt(2026, 1, 1).expect("valid date"),
+            metadata: None,
+        }
+    }
+
+    #[test]
+    fn infer_risk_from_asset_class() {
+        let assignments = vec![(
+            "asset_classes".to_string(),
+            "CASH_BANK_DEPOSITS".to_string(),
+            10000,
+        )];
+        assert_eq!(
+            infer_risk_category_from_assignments(&assignments),
+            Some("LOW")
+        );
+
+        let assignments = vec![("asset_classes".to_string(), "EQUITY".to_string(), 10000)];
+        assert_eq!(
+            infer_risk_category_from_assignments(&assignments),
+            Some("MEDIUM")
+        );
+
+        let assignments = vec![(
+            "asset_classes".to_string(),
+            "COMM_PRECIOUS_GOLD".to_string(),
+            10000,
+        )];
+        assert_eq!(
+            infer_risk_category_from_assignments(&assignments),
+            Some("HIGH")
+        );
+    }
+
+    #[test]
+    fn infer_risk_from_instrument_type_when_asset_class_missing() {
+        let assignments = vec![(
+            "instrument_type".to_string(),
+            "BOND_CORPORATE".to_string(),
+            10000,
+        )];
+        assert_eq!(
+            infer_risk_category_from_assignments(&assignments),
+            Some("LOW")
+        );
+
+        let assignments = vec![(
+            "instrument_type".to_string(),
+            "STOCK_COMMON".to_string(),
+            10000,
+        )];
+        assert_eq!(
+            infer_risk_category_from_assignments(&assignments),
+            Some("MEDIUM")
+        );
+
+        let assignments = vec![("instrument_type".to_string(), "OPTION".to_string(), 10000)];
+        assert_eq!(
+            infer_risk_category_from_assignments(&assignments),
+            Some("HIGH")
+        );
+    }
+
+    #[test]
+    fn asset_class_takes_precedence_over_instrument_type() {
+        let assignments = vec![
+            ("instrument_type".to_string(), "STOCK_COMMON".to_string(), 10000),
+            ("asset_classes".to_string(), "CASH_BANK_DEPOSITS".to_string(), 10000),
+        ];
+        assert_eq!(
+            infer_risk_category_from_assignments(&assignments),
+            Some("LOW")
+        );
+    }
+
+    #[test]
+    fn infer_risk_unknown_when_no_signal() {
+        let assignments = vec![("regions".to_string(), "country_CN".to_string(), 10000)];
+        assert_eq!(infer_risk_category_from_assignments(&assignments), None);
+    }
+
+    #[test]
+    fn infer_security_type_from_unassigned_holding() {
+        let etf = make_security_holding("510300.SH", Some("华泰柏瑞沪深300ETF"));
+        assert_eq!(
+            infer_instrument_type_for_unassigned_holding(&etf),
+            Some("ETF")
+        );
+
+        let stock = make_security_holding("601328.SH", Some("交通银行"));
+        assert_eq!(
+            infer_instrument_type_for_unassigned_holding(&stock),
+            Some("STOCK_COMMON")
+        );
+
+        let hk_from_name = make_security_holding("U63103", Some("U63103.HK"));
+        assert_eq!(
+            infer_instrument_type_for_unassigned_holding(&hk_from_name),
+            Some("STOCK_COMMON")
+        );
     }
 }
 
