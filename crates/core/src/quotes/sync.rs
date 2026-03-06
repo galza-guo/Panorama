@@ -194,6 +194,45 @@ impl std::fmt::Display for AssetSkipReason {
     }
 }
 
+fn get_skip_reason_for_request(
+    asset: &Asset,
+    allow_inactive_assets: bool,
+) -> Option<AssetSkipReason> {
+    if asset.quote_mode != QuoteMode::Market {
+        return Some(AssetSkipReason::ManualPricing);
+    }
+
+    if !asset.is_active && !allow_inactive_assets {
+        return Some(AssetSkipReason::Inactive);
+    }
+
+    None
+}
+
+fn should_attempt_latest_quote_fallback(plan: &SymbolSyncPlan, error: &Error) -> bool {
+    if plan.purge_provider_quotes {
+        return false;
+    }
+
+    if !matches!(
+        plan.category,
+        SyncCategory::Active | SyncCategory::New | SyncCategory::RecentlyClosed
+    ) {
+        return false;
+    }
+
+    matches!(
+        error,
+        Error::MarketData(
+            MarketDataError::RateLimitExceeded(_)
+                | MarketDataError::Timeout(_)
+                | MarketDataError::ProviderError(_)
+                | MarketDataError::ProviderExhausted(_)
+                | MarketDataError::NoProvidersAvailable
+        )
+    )
+}
+
 /// Aggregate result of a sync operation.
 #[derive(Debug, Clone, Default)]
 pub struct SyncResult {
@@ -421,20 +460,25 @@ where
         self.get_skip_reason(asset).is_none()
     }
 
+    /// Check if an asset should be synced for a specific request.
+    fn should_sync_asset_for_request(&self, asset: &Asset, allow_inactive_assets: bool) -> bool {
+        self.get_skip_reason_for_request(asset, allow_inactive_assets)
+            .is_none()
+    }
+
     /// Get the reason why an asset should be skipped, if any.
     /// Returns None if the asset should be synced.
     fn get_skip_reason(&self, asset: &Asset) -> Option<AssetSkipReason> {
-        // Only sync market-priced assets (including FX rates for currency conversion)
-        if asset.quote_mode != QuoteMode::Market {
-            return Some(AssetSkipReason::ManualPricing);
-        }
+        get_skip_reason_for_request(asset, false)
+    }
 
-        // Only sync active assets
-        if !asset.is_active {
-            return Some(AssetSkipReason::Inactive);
-        }
-
-        None
+    /// Get the reason why an asset should be skipped for a specific request, if any.
+    fn get_skip_reason_for_request(
+        &self,
+        asset: &Asset,
+        allow_inactive_assets: bool,
+    ) -> Option<AssetSkipReason> {
+        get_skip_reason_for_request(asset, allow_inactive_assets)
     }
 
     /// Build sync plan for a single asset.
@@ -715,111 +759,41 @@ where
         let start_dt = Utc.from_utc_datetime(&plan.start_date.and_hms_opt(0, 0, 0).unwrap());
         let end_dt = Utc.from_utc_datetime(&plan.end_date.and_hms_opt(23, 59, 59).unwrap());
 
-        // Fetch quotes via MarketDataClient
-        let client = self.client.read().await;
-        match client
-            .fetch_historical_quotes(asset, start_dt, end_dt)
-            .await
-        {
-            Ok(mut quotes) => {
-                // Sort quotes by timestamp to ensure correct ordering
-                // This is important because we use first()/last() to determine date ranges
-                quotes.sort_by_key(|q| q.timestamp);
+        let fetch_result = {
+            let client = self.client.read().await;
+            client
+                .fetch_historical_quotes(asset, start_dt, end_dt)
+                .await
+        };
 
-                let quotes_count = quotes.len();
+        match fetch_result {
+            Ok(mut quotes) => self.save_quotes(asset, plan, &asset_id, &mut quotes).await,
+            Err(e) => {
+                if should_attempt_latest_quote_fallback(plan, &e) {
+                    info!(
+                        "Historical sync failed for {} ({}). Trying latest quote fallback.",
+                        asset.id, e
+                    );
 
-                if quotes_count > 0 {
-                    // Purge stale provider quotes before inserting fresh data
-                    if plan.purge_provider_quotes {
-                        if let Err(e) = self
-                            .quote_store
-                            .delete_provider_quotes_for_asset(&asset_id)
-                            .await
-                        {
-                            warn!("Failed to purge provider quotes for {}: {:?}", asset.id, e);
+                    let latest_result = {
+                        let client = self.client.read().await;
+                        client.fetch_latest_quote(asset).await
+                    };
+
+                    match latest_result {
+                        Ok(latest_quote) => {
+                            let mut quotes = vec![latest_quote];
+                            return self.save_quotes(asset, plan, &asset_id, &mut quotes).await;
                         }
-                    }
-
-                    // Save to store
-                    match self.quote_store.upsert_quotes(&quotes).await {
-                        Ok(_) => {
-                            debug!("Saved {} quotes for {}", quotes_count, asset.id);
-
-                            // Split sync is temporarily disabled due to bad Yahoo split data.
-                            // self._sync_splits(asset, plan.start_date, plan.end_date)
-                            //     .await;
-
-                            // Update sync state after a successful sync attempt.
-                            if let Err(e) = self.sync_state_store.update_after_sync(&asset.id).await
-                            {
-                                warn!("Failed to update sync state for {}: {:?}", asset.id, e);
-                            }
-
-                            // Persist the actual provider used so future planning reads correct quote bounds.
-                            if let Some(actual_source) =
-                                quotes.first().map(|q| q.data_source.as_str().to_string())
-                            {
-                                match self.sync_state_store.get_by_asset_id(&asset.id) {
-                                    Ok(Some(mut state)) if state.data_source != actual_source => {
-                                        state.data_source = actual_source;
-                                        if let Err(e) = self.sync_state_store.upsert(&state).await {
-                                            warn!(
-                                                "Failed to persist actual source for {}: {:?}",
-                                                asset.id, e
-                                            );
-                                        }
-                                    }
-                                    Ok(_) => {}
-                                    Err(e) => {
-                                        warn!(
-                                            "Failed to load sync state for {}: {:?}",
-                                            asset.id, e
-                                        );
-                                    }
-                                }
-                            }
-
-                            AssetSyncResult {
-                                asset_id,
-                                quotes_added: quotes_count,
-                                status: SyncStatus::Success,
-                                error: None,
-                            }
+                        Err(latest_error) => {
+                            warn!(
+                                "Latest quote fallback failed for {}: {:?}",
+                                asset.id, latest_error
+                            );
                         }
-                        Err(e) => {
-                            error!("Failed to save quotes for {}: {:?}", asset.id, e);
-                            if let Err(state_err) = self
-                                .sync_state_store
-                                .update_after_failure(&asset.id, &format!("Storage error: {}", e))
-                                .await
-                            {
-                                warn!(
-                                    "Failed to update sync state for {}: {:?}",
-                                    asset.id, state_err
-                                );
-                            }
-                            AssetSyncResult {
-                                asset_id,
-                                quotes_added: 0,
-                                status: SyncStatus::Failed,
-                                error: Some(format!("Storage error: {}", e)),
-                            }
-                        }
-                    }
-                } else {
-                    debug!("No quotes returned for {}", asset.id);
-                    if let Err(e) = self.sync_state_store.update_after_sync(&asset.id).await {
-                        warn!("Failed to update sync state for {}: {:?}", asset.id, e);
-                    }
-                    AssetSyncResult {
-                        asset_id,
-                        quotes_added: 0,
-                        status: SyncStatus::Success,
-                        error: None,
                     }
                 }
-            }
-            Err(e) => {
+
                 if should_treat_backfill_error_as_non_fatal(&plan.category, &e) {
                     info!(
                         "Backfill reached provider data boundary for {} ({}). Treating as complete.",
@@ -861,6 +835,95 @@ where
                     quotes_added: 0,
                     status: SyncStatus::Failed,
                     error: Some(e.to_string()),
+                }
+            }
+        }
+    }
+
+    async fn save_quotes(
+        &self,
+        asset: &Asset,
+        plan: &SymbolSyncPlan,
+        asset_id: &AssetId,
+        quotes: &mut Vec<crate::quotes::Quote>,
+    ) -> AssetSyncResult {
+        quotes.sort_by_key(|q| q.timestamp);
+
+        let quotes_count = quotes.len();
+
+        if quotes_count == 0 {
+            debug!("No quotes returned for {}", asset.id);
+            if let Err(e) = self.sync_state_store.update_after_sync(&asset.id).await {
+                warn!("Failed to update sync state for {}: {:?}", asset.id, e);
+            }
+            return AssetSyncResult {
+                asset_id: asset_id.clone(),
+                quotes_added: 0,
+                status: SyncStatus::Success,
+                error: None,
+            };
+        }
+
+        if plan.purge_provider_quotes {
+            if let Err(e) = self
+                .quote_store
+                .delete_provider_quotes_for_asset(asset_id)
+                .await
+            {
+                warn!("Failed to purge provider quotes for {}: {:?}", asset.id, e);
+            }
+        }
+
+        match self.quote_store.upsert_quotes(quotes).await {
+            Ok(_) => {
+                debug!("Saved {} quotes for {}", quotes_count, asset.id);
+
+                if let Err(e) = self.sync_state_store.update_after_sync(&asset.id).await {
+                    warn!("Failed to update sync state for {}: {:?}", asset.id, e);
+                }
+
+                if let Some(actual_source) = quotes
+                    .first()
+                    .map(|quote| quote.data_source.as_str().to_string())
+                {
+                    match self.sync_state_store.get_by_asset_id(&asset.id) {
+                        Ok(Some(mut state)) if state.data_source != actual_source => {
+                            state.data_source = actual_source;
+                            if let Err(e) = self.sync_state_store.upsert(&state).await {
+                                warn!("Failed to persist actual source for {}: {:?}", asset.id, e);
+                            }
+                        }
+                        Ok(_) => {}
+                        Err(e) => {
+                            warn!("Failed to load sync state for {}: {:?}", asset.id, e);
+                        }
+                    }
+                }
+
+                AssetSyncResult {
+                    asset_id: asset_id.clone(),
+                    quotes_added: quotes_count,
+                    status: SyncStatus::Success,
+                    error: None,
+                }
+            }
+            Err(e) => {
+                error!("Failed to save quotes for {}: {:?}", asset.id, e);
+                if let Err(state_err) = self
+                    .sync_state_store
+                    .update_after_failure(&asset.id, &format!("Storage error: {}", e))
+                    .await
+                {
+                    warn!(
+                        "Failed to update sync state for {}: {:?}",
+                        asset.id, state_err
+                    );
+                }
+                AssetSyncResult {
+                    asset_id: asset_id.clone(),
+                    quotes_added: 0,
+                    status: SyncStatus::Failed,
+                    error: Some(format!("Storage error: {}", e)),
                 }
             }
         }
@@ -1142,12 +1205,19 @@ where
     }
 
     /// Ensure sync states exist for the given assets.
-    async fn ensure_sync_states_for_assets(&self, assets: &[Asset]) -> Result<()> {
+    async fn ensure_sync_states_for_assets(
+        &self,
+        assets: &[Asset],
+        allow_inactive_assets: bool,
+    ) -> Result<()> {
         debug!("Ensuring sync states for {} assets...", assets.len());
 
         let mut new_states = Vec::new();
 
-        for asset in assets.iter().filter(|a| self.should_sync_asset(a)) {
+        for asset in assets
+            .iter()
+            .filter(|a| self.should_sync_asset_for_request(a, allow_inactive_assets))
+        {
             let existing = self.sync_state_store.get_by_asset_id(&asset.id)?;
             if existing.is_none() {
                 // Don't set data_source here - it will be populated after first successful sync
@@ -1172,7 +1242,7 @@ where
     /// Ensure sync states exist for all syncable assets.
     async fn ensure_sync_states_for_all_assets(&self) -> Result<()> {
         let assets = self.asset_repo.list()?;
-        self.ensure_sync_states_for_assets(&assets).await
+        self.ensure_sync_states_for_assets(&assets, false).await
     }
 }
 
@@ -1187,12 +1257,17 @@ where
     async fn sync(&self, mode: SyncMode, asset_ids: Option<Vec<String>>) -> Result<SyncResult> {
         debug!("Starting sync (mode: {}) for {:?}", mode, asset_ids);
 
+        let allow_inactive_assets = matches!(asset_ids.as_ref(), Some(ids) if !ids.is_empty());
+
         let assets = match asset_ids {
             Some(ids) if !ids.is_empty() => self.asset_repo.list_by_asset_ids(&ids)?,
             _ => self.asset_repo.list()?,
         };
 
-        if let Err(e) = self.ensure_sync_states_for_assets(&assets).await {
+        if let Err(e) = self
+            .ensure_sync_states_for_assets(&assets, allow_inactive_assets)
+            .await
+        {
             warn!("Failed to ensure sync states: {:?}", e);
         }
 
@@ -1201,7 +1276,7 @@ where
         let mut syncable: Vec<&Asset> = Vec::new();
 
         for asset in &assets {
-            if let Some(reason) = self.get_skip_reason(asset) {
+            if let Some(reason) = self.get_skip_reason_for_request(asset, allow_inactive_assets) {
                 debug!("Skipping asset {} for sync: {}", asset.id, reason);
                 result.add_skipped(asset.id.clone(), reason);
             } else {
@@ -1504,6 +1579,7 @@ where
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::assets::{Asset, AssetKind};
     use crate::quotes::sync_state::MarketSyncMode;
 
     #[test]
@@ -1707,6 +1783,64 @@ mod tests {
     #[test]
     fn test_asset_skip_reason_display_inactive() {
         assert_eq!(AssetSkipReason::Inactive.to_string(), "Inactive asset");
+    }
+
+    fn create_sync_test_asset(is_active: bool) -> Asset {
+        Asset {
+            id: "TEST_ASSET".to_string(),
+            kind: AssetKind::Investment,
+            quote_mode: QuoteMode::Market,
+            quote_ccy: "USD".to_string(),
+            is_active,
+            created_at: Utc::now().naive_utc(),
+            updated_at: Utc::now().naive_utc(),
+            ..Default::default()
+        }
+    }
+
+    #[test]
+    fn test_explicit_sync_allows_inactive_assets() {
+        let asset = create_sync_test_asset(false);
+
+        assert_eq!(get_skip_reason_for_request(&asset, true), None);
+    }
+
+    #[test]
+    fn test_latest_quote_fallback_for_active_incremental_failures() {
+        let plan = SymbolSyncPlan {
+            asset_id: "TEST_ASSET".to_string(),
+            category: SyncCategory::Active,
+            start_date: NaiveDate::from_ymd_opt(2026, 3, 4).unwrap(),
+            end_date: NaiveDate::from_ymd_opt(2026, 3, 5).unwrap(),
+            priority: 100,
+            data_source: "YAHOO".to_string(),
+            quote_symbol: None,
+            currency: "USD".to_string(),
+            purge_provider_quotes: false,
+        };
+
+        let error = Error::MarketData(MarketDataError::RateLimitExceeded("YAHOO".to_string()));
+
+        assert!(should_attempt_latest_quote_fallback(&plan, &error));
+    }
+
+    #[test]
+    fn test_latest_quote_fallback_skips_backfill_purge_runs() {
+        let plan = SymbolSyncPlan {
+            asset_id: "TEST_ASSET".to_string(),
+            category: SyncCategory::Active,
+            start_date: NaiveDate::from_ymd_opt(2026, 3, 4).unwrap(),
+            end_date: NaiveDate::from_ymd_opt(2026, 3, 5).unwrap(),
+            priority: 100,
+            data_source: "YAHOO".to_string(),
+            quote_symbol: None,
+            currency: "USD".to_string(),
+            purge_provider_quotes: true,
+        };
+
+        let error = Error::MarketData(MarketDataError::RateLimitExceeded("YAHOO".to_string()));
+
+        assert!(!should_attempt_latest_quote_fallback(&plan, &error));
     }
 
     #[test]

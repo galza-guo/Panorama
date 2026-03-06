@@ -402,7 +402,14 @@ impl MarketDataProvider for TiantianFundProvider {
     fn capabilities(&self) -> ProviderCapabilities {
         ProviderCapabilities {
             instrument_kinds: &[InstrumentKind::Equity],
-            coverage: Coverage::global_best_effort(),
+            // Tiantian serves OTC-style fund codes. It should not claim exchange-traded
+            // equities/ETFs that already have a resolved venue MIC.
+            coverage: Coverage {
+                equity_mic_allow: Some(&[]),
+                equity_mic_deny: None,
+                allow_unknown_mic: true,
+                metal_quote_ccy_allow: None,
+            },
             supports_latest: true,
             supports_historical: true,
             supports_search: true,
@@ -609,6 +616,10 @@ impl MarketDataProvider for TiantianFundProvider {
 #[cfg(test)]
 mod tests {
     use super::TiantianFundProvider;
+    use crate::provider::MarketDataProvider;
+    use crate::InstrumentId;
+    use std::borrow::Cow;
+    use std::sync::Arc;
     use rust_decimal::Decimal;
 
     #[test]
@@ -651,5 +662,27 @@ mod tests {
         let candidate = TiantianFundProvider::build_search_candidate("600519.SH");
 
         assert!(candidate.is_none());
+    }
+
+    #[test]
+    fn rejects_exchange_traded_mainland_equities_in_coverage() {
+        let provider = TiantianFundProvider::new();
+        let instrument = InstrumentId::Equity {
+            ticker: Arc::from("513050"),
+            mic: Some(Cow::Borrowed("XSHG")),
+        };
+
+        assert!(!provider.capabilities().coverage.supports(&instrument));
+    }
+
+    #[test]
+    fn accepts_unknown_mic_fund_codes_in_coverage() {
+        let provider = TiantianFundProvider::new();
+        let instrument = InstrumentId::Equity {
+            ticker: Arc::from("161725"),
+            mic: None,
+        };
+
+        assert!(provider.capabilities().coverage.supports(&instrument));
     }
 }

@@ -8,6 +8,22 @@ use axum::{
     Json, Router,
 };
 
+async fn refresh_market_data_client_if_needed(
+    state: &Arc<AppState>,
+    secret_key: &str,
+) -> ApiResult<()> {
+    let providers = state.quote_service.get_providers_info().await?;
+
+    if let Some(provider) = providers.into_iter().find(|p| p.id == secret_key) {
+        state
+            .quote_service
+            .update_provider_settings(&provider.id, provider.priority, provider.enabled)
+            .await?;
+    }
+
+    Ok(())
+}
+
 #[derive(serde::Deserialize)]
 struct SecretSetBody {
     #[serde(rename = "secretKey")]
@@ -22,6 +38,7 @@ async fn set_secret(
     state
         .secret_store
         .set_secret(&body.secret_key, &body.secret)?;
+    refresh_market_data_client_if_needed(&state, &body.secret_key).await?;
     Ok(StatusCode::NO_CONTENT)
 }
 
@@ -44,6 +61,7 @@ async fn delete_secret(
     Query(q): Query<SecretQuery>,
 ) -> ApiResult<StatusCode> {
     state.secret_store.delete_secret(&q.secret_key)?;
+    refresh_market_data_client_if_needed(&state, &q.secret_key).await?;
     Ok(StatusCode::NO_CONTENT)
 }
 
