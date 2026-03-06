@@ -9,8 +9,8 @@ use futures::stream::{self, StreamExt};
 
 use super::assets_model::{
     canonicalize_market_identity, default_market_data_provider_id, resolve_quote_ccy_precedence,
-    Asset, AssetKind, AssetSpec, EnsureAssetsResult, InstrumentType, NewAsset,
-    QuoteCcyResolutionSource, QuoteMode, UpdateAssetProfile,
+    Asset, AssetKind, AssetProfileEnrichmentStats, AssetSpec, EnsureAssetsResult, InstrumentType,
+    NewAsset, QuoteCcyResolutionSource, QuoteMode, UpdateAssetProfile,
 };
 use super::assets_traits::{AssetRepositoryTrait, AssetServiceTrait};
 use super::auto_classification::{AutoClassificationService, ClassificationInput};
@@ -1083,6 +1083,70 @@ impl AssetServiceTrait for AssetService {
         );
 
         Ok((enriched_count, skipped_count, failed_count))
+    }
+
+    async fn re_enrich_assets(
+        &self,
+        asset_ids: Vec<String>,
+    ) -> Result<AssetProfileEnrichmentStats> {
+        if asset_ids.is_empty() {
+            return Ok(AssetProfileEnrichmentStats::default());
+        }
+
+        let unique_ids: Vec<String> = asset_ids
+            .into_iter()
+            .collect::<HashSet<_>>()
+            .into_iter()
+            .collect();
+
+        if unique_ids.is_empty() {
+            return Ok(AssetProfileEnrichmentStats::default());
+        }
+
+        let mut stats = AssetProfileEnrichmentStats::default();
+
+        for asset_id in unique_ids {
+            let existing_asset = match self.asset_repository.get_by_id(&asset_id) {
+                Ok(asset) => asset,
+                Err(e) => {
+                    debug!(
+                        "Failed to load asset {} for manual enrichment: {}",
+                        asset_id, e
+                    );
+                    stats.failed += 1;
+                    continue;
+                }
+            };
+
+            if existing_asset.quote_mode != QuoteMode::Market {
+                debug!(
+                    "Skipping manual enrichment for {} - quote mode is {:?}",
+                    asset_id, existing_asset.quote_mode
+                );
+                stats.skipped += 1;
+                continue;
+            }
+
+            match self.enrich_asset_profile(&asset_id).await {
+                Ok(_) => {
+                    if let Err(e) = self.quote_service.mark_profile_enriched(&asset_id).await {
+                        warn!("Failed to mark profile enriched for {}: {}", asset_id, e);
+                    }
+                    stats.enriched += 1;
+                }
+                Err(e) => {
+                    debug!("Failed to manually enrich asset {}: {}", asset_id, e);
+                    stats.failed += 1;
+                }
+            }
+        }
+
+        info!(
+            "Manual asset enrichment complete: {} enriched, {} skipped, {} failed",
+            stats.enriched, stats.skipped, stats.failed
+        );
+
+        Ok(stats)
     }
 
     async fn cleanup_legacy_metadata(&self, asset_id: &str) -> Result<()> {

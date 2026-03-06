@@ -10,7 +10,8 @@ use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
 use super::asset_id::{
-    infer_panorama_data_source, parse_crypto_pair_symbol, parse_symbol_with_exchange_suffix,
+    infer_mainland_exchange_mic, infer_panorama_data_source, parse_crypto_pair_symbol,
+    parse_symbol_with_exchange_suffix,
 };
 use crate::errors::Result;
 use crate::errors::ValidationError;
@@ -325,6 +326,11 @@ impl Asset {
         match inst_type {
             InstrumentType::Equity => {
                 let (ticker, suffix_mic) = parse_symbol_with_exchange_suffix(symbol);
+                let inferred_mic = if symbol.trim().to_uppercase().ends_with(".FUND") {
+                    None
+                } else {
+                    infer_mainland_exchange_mic(ticker)
+                };
 
                 Some(InstrumentId::Equity {
                     ticker: Arc::from(ticker),
@@ -332,6 +338,7 @@ impl Asset {
                         .instrument_exchange_mic
                         .clone()
                         .or_else(|| suffix_mic.map(str::to_string))
+                        .or_else(|| inferred_mic.map(str::to_string))
                         .map(Cow::Owned),
                 })
             }
@@ -617,6 +624,15 @@ pub struct UpdateAssetProfile {
     pub metadata: Option<Value>,
 }
 
+/// Result summary for a manual asset profile enrichment batch.
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct AssetProfileEnrichmentStats {
+    pub enriched: usize,
+    pub skipped: usize,
+    pub failed: usize,
+}
+
 /// Optional asset metadata that can be passed during activity creation.
 /// Allows users to provide/override asset details inline.
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
@@ -761,10 +777,18 @@ pub fn canonicalize_market_identity(
         | Some(InstrumentType::Metal) => {
             if let Some(raw) = instrument_symbol.as_deref() {
                 let (base, suffix_mic) = parse_symbol_with_exchange_suffix(raw);
-                instrument_symbol = Some(base.to_uppercase());
+                let base = base.to_uppercase();
+                let inferred_mic = if raw.trim().to_uppercase().ends_with(".FUND") {
+                    None
+                } else {
+                    infer_mainland_exchange_mic(&base)
+                };
                 if instrument_exchange_mic.is_none() {
-                    instrument_exchange_mic = suffix_mic.map(str::to_string);
+                    instrument_exchange_mic = suffix_mic
+                        .map(str::to_string)
+                        .or_else(|| inferred_mic.map(str::to_string));
                 }
+                instrument_symbol = Some(base);
             }
 
             // Exchange MIC provides a fallback quote currency when no explicit quote is supplied.

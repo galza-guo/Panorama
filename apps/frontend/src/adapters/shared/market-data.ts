@@ -14,6 +14,12 @@ import type { MarketDataProviderSetting } from "../types";
 
 import { invoke, logger } from "./platform";
 
+export interface AssetProfileEnrichmentResult {
+  enriched: number;
+  skipped: number;
+  failed: number;
+}
+
 export const searchTicker = async (query: string): Promise<SymbolSearchResult[]> => {
   try {
     return await invoke<SymbolSearchResult[]>("search_symbol", { query });
@@ -66,6 +72,17 @@ export const updateAssetProfile = async (payload: UpdateAssetProfile): Promise<A
     return await invoke<Asset>("update_asset_profile", { id: payload.id, payload });
   } catch (error) {
     logger.error("Error updating asset profile.");
+    throw error;
+  }
+};
+
+export const reEnrichAssetProfiles = async (
+  assetIds: string[],
+): Promise<AssetProfileEnrichmentResult> => {
+  try {
+    return await invoke<AssetProfileEnrichmentResult>("re_enrich_asset_profiles", { assetIds });
+  } catch (error) {
+    logger.error("Error re-enriching asset profiles.");
     throw error;
   }
 };

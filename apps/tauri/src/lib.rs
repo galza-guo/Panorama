@@ -353,6 +353,7 @@ pub fn run() {
             commands::asset::get_asset_profile,
             commands::asset::get_assets,
             commands::asset::update_asset_profile,
+            commands::asset::re_enrich_asset_profiles,
             commands::asset::update_quote_mode,
             commands::asset::delete_asset,
             // Alternative asset commands

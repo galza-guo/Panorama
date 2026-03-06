@@ -152,6 +152,7 @@ export {
   getAssets,
   getLatestQuotes,
   updateAssetProfile,
+  reEnrichAssetProfiles,
   deleteAsset,
   updateQuoteMode,
   updateQuote,

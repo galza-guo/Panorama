@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use crate::context::ServiceContext;
 use tauri::State;
-use wealthfolio_core::assets::{Asset, UpdateAssetProfile};
+use wealthfolio_core::assets::{Asset, AssetProfileEnrichmentStats, UpdateAssetProfile};
 
 #[tauri::command]
 pub async fn get_asset_profile(
@@ -32,6 +32,18 @@ pub async fn update_asset_profile(
     state
         .asset_service()
         .update_asset_profile(&id, payload)
+        .await
+        .map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+pub async fn re_enrich_asset_profiles(
+    asset_ids: Vec<String>,
+    state: State<'_, Arc<ServiceContext>>,
+) -> Result<AssetProfileEnrichmentStats, String> {
+    state
+        .asset_service()
+        .re_enrich_assets(asset_ids)
         .await
         .map_err(|e| e.to_string())
 }

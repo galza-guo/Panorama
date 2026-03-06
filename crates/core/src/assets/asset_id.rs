@@ -8,6 +8,26 @@ use wealthfolio_market_data::{strip_yahoo_suffix, yahoo_exchange_suffixes, yahoo
 
 use crate::quotes::constants::{DATA_SOURCE_EASTMONEY_CN, DATA_SOURCE_TIANTIAN_FUND};
 
+/// Infer mainland China exchange MIC from a bare 6-digit code when the prefix is unambiguous.
+///
+/// This intentionally avoids ambiguous fund/LOF prefixes such as `16xxxx`.
+pub fn infer_mainland_exchange_mic(symbol: &str) -> Option<&'static str> {
+    let normalized = symbol.trim().to_uppercase();
+    if normalized.len() != 6 || !normalized.chars().all(|ch| ch.is_ascii_digit()) {
+        return None;
+    }
+
+    if normalized.starts_with("159") {
+        return Some("XSHE");
+    }
+
+    match normalized.chars().next() {
+        Some('5') | Some('6') => Some("XSHG"),
+        Some('0') | Some('2') | Some('3') => Some("XSHE"),
+        _ => None,
+    }
+}
+
 /// Parse crypto pair symbols like "BTC-USD" or "BTC-USDT" into (base, quote).
 /// Returns None if the symbol doesn't match the expected pair pattern.
 pub fn parse_crypto_pair_symbol(symbol: &str) -> Option<(String, String)> {
@@ -80,7 +100,9 @@ pub fn infer_panorama_data_source(
     match exchange_mic.map(str::trim).filter(|mic| !mic.is_empty()) {
         Some("XSHG") | Some("XSHE") => Some(DATA_SOURCE_EASTMONEY_CN),
         _ => {
-            if normalized
+            if infer_mainland_exchange_mic(&normalized).is_some() {
+                Some(DATA_SOURCE_EASTMONEY_CN)
+            } else if normalized
                 .strip_suffix(".FUND")
                 .is_some_and(|code| code.len() == 6 && code.chars().all(|ch| ch.is_ascii_digit()))
             {
@@ -156,6 +178,23 @@ mod tests {
             infer_panorama_data_source("161039.FUND", None),
             Some(DATA_SOURCE_TIANTIAN_FUND)
         );
+        assert_eq!(
+            infer_panorama_data_source("513050", None),
+            Some(DATA_SOURCE_EASTMONEY_CN)
+        );
+        assert_eq!(
+            infer_panorama_data_source("159941", None),
+            Some(DATA_SOURCE_EASTMONEY_CN)
+        );
         assert_eq!(infer_panorama_data_source("AAPL", Some("XNAS")), None);
+    }
+
+    #[test]
+    fn test_infer_mainland_exchange_mic() {
+        assert_eq!(infer_mainland_exchange_mic("513050"), Some("XSHG"));
+        assert_eq!(infer_mainland_exchange_mic("159941"), Some("XSHE"));
+        assert_eq!(infer_mainland_exchange_mic("600519"), Some("XSHG"));
+        assert_eq!(infer_mainland_exchange_mic("AAPL"), None);
+        assert_eq!(infer_mainland_exchange_mic("161039"), None);
     }
 }

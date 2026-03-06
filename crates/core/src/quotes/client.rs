@@ -29,7 +29,7 @@ use std::sync::Arc;
 use chrono::{DateTime, Utc};
 use log::{debug, info, warn};
 
-use crate::assets::{Asset, ProviderProfile};
+use crate::assets::{default_market_data_provider_id, Asset, ProviderProfile};
 use crate::errors::Result;
 use crate::quotes::constants::*;
 use crate::quotes::model::{DataSource, SymbolSearchResult};
@@ -302,8 +302,33 @@ impl MarketDataClient {
                 .map(Cow::Borrowed)
         };
 
-        // Preferred provider from asset
-        let preferred_provider: Option<ProviderId> = asset.preferred_provider().map(Cow::Owned);
+        // Heal legacy bare CN codes that were previously defaulted to YAHOO.
+        let inferred_exchange_mic = match &instrument {
+            wealthfolio_market_data::InstrumentId::Equity { mic, .. } => mic.as_deref(),
+            _ => None,
+        };
+        let inferred_provider = default_market_data_provider_id(
+            asset.instrument_type.as_ref(),
+            asset
+                .instrument_symbol
+                .as_deref()
+                .or(asset.display_code.as_deref()),
+            inferred_exchange_mic,
+        );
+        let preferred_provider: Option<ProviderId> = match asset.preferred_provider() {
+            Some(existing)
+                if existing == DATA_SOURCE_YAHOO
+                    && asset.instrument_exchange_mic.is_none()
+                    && inferred_provider != DATA_SOURCE_YAHOO =>
+            {
+                Some(Cow::Borrowed(inferred_provider))
+            }
+            Some(existing) => Some(Cow::Owned(existing)),
+            None if inferred_provider != DATA_SOURCE_YAHOO => {
+                Some(Cow::Borrowed(inferred_provider))
+            }
+            None => None,
+        };
 
         Ok(QuoteContext {
             instrument,
@@ -959,6 +984,28 @@ mod tests {
         let context = client.build_quote_context(&asset).unwrap();
 
         assert_eq!(context.currency_hint.as_deref(), Some("CAD"));
+    }
+
+    #[test]
+    fn test_build_quote_context_prefers_eastmoney_for_bare_cn_etf_codes() {
+        let mut asset = create_test_asset(AssetKind::Investment, "513050", "CNY");
+        asset.instrument_exchange_mic = None;
+        asset.provider_config = Some(serde_json::json!({
+            "preferred_provider": "YAHOO"
+        }));
+        let client = create_test_client();
+
+        let context = client.build_quote_context(&asset).unwrap();
+
+        match context.instrument {
+            wealthfolio_market_data::InstrumentId::Equity { ticker, mic } => {
+                assert_eq!(ticker.as_ref(), "513050");
+                assert_eq!(mic.as_deref(), Some("XSHG"));
+            }
+            _ => panic!("Expected Equity instrument"),
+        }
+
+        assert_eq!(context.preferred_provider.as_deref(), Some("EASTMONEY_CN"));
     }
 
     // =========================================================================

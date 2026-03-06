@@ -44,12 +44,13 @@ import {
   type LinkableAsset,
   type LinkedLiability,
 } from "@/pages/asset/alternative-assets";
-import { updateAlternativeAssetMetadata } from "@/adapters";
+import { reEnrichAssetProfiles, updateAlternativeAssetMetadata } from "@/adapters";
 import { ClassificationSheet } from "@/components/classification/classification-sheet";
 import { useUpdatePortfolioMutation } from "@/hooks/use-calculate-portfolio";
-import { useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { QueryKeys } from "@/lib/query-keys";
 import { useSettingsContext } from "@/lib/settings-provider";
+import { toast } from "@wealthfolio/ui/components/ui/use-toast";
 
 export const HoldingsPage = () => {
   const isMobileViewport = useIsMobileViewport();
@@ -300,35 +301,84 @@ export const HoldingsPage = () => {
   );
 
   // Process investment holdings
-  const { nonCashHoldings, filteredHoldings } = useMemo(() => {
+  const { nonCashHoldings, investmentHoldings, filteredHoldings } = useMemo(() => {
     const nonCash =
       holdings?.filter((holding) => holding.holdingType?.toLowerCase() !== HoldingType.CASH) ?? [];
 
-    let filtered = nonCash;
+    let investments = nonCash;
     if (investmentsFilter?.assetKinds) {
       const allowedKinds = investmentsFilter.assetKinds as readonly string[];
-      filtered = nonCash.filter((holding) => {
+      investments = nonCash.filter((holding) => {
         return holding.assetKind && allowedKinds.includes(holding.assetKind);
       });
     }
 
+    let filtered = investments;
     if (selectedTypes.length > 0) {
-      filtered = filtered.filter((holding) => {
+      filtered = investments.filter((holding) => {
         const assetType = holding.instrument?.classifications?.assetType?.name;
         return assetType && selectedTypes.includes(assetType);
       });
     }
 
-    return { nonCashHoldings: nonCash, filteredHoldings: filtered };
+    return {
+      nonCashHoldings: nonCash,
+      investmentHoldings: investments,
+      filteredHoldings: filtered,
+    };
   }, [holdings, selectedTypes, investmentsFilter]);
+
+  const investmentAssetIds = useMemo(
+    () =>
+      Array.from(
+        new Set(
+          investmentHoldings
+            .map((holding) => holding.instrument?.id ?? holding.id)
+            .filter((assetId): assetId is string => Boolean(assetId)),
+        ),
+      ),
+    [investmentHoldings],
+  );
 
   // Combined loading state
   const isDataLoading = isLoading || isAccountsLoading || isAlternativeHoldingsLoading;
 
   // Empty state checks
-  const hasNoInvestments = !isDataLoading && (!nonCashHoldings || nonCashHoldings.length === 0);
+  const hasNoInvestments =
+    !isDataLoading && (!investmentHoldings || investmentHoldings.length === 0);
   const hasNoAssets = !isDataLoading && assetsHoldings.length === 0;
   const hasNoLiabilities = !isDataLoading && liabilitiesHoldings.length === 0;
+
+  const reEnrichProfilesMutation = useMutation({
+    mutationFn: async () => reEnrichAssetProfiles(investmentAssetIds),
+    onSuccess: (stats) => {
+      queryClient.invalidateQueries({ queryKey: [QueryKeys.HOLDINGS] });
+      queryClient.invalidateQueries({ queryKey: [QueryKeys.ASSETS] });
+      queryClient.invalidateQueries({ queryKey: [QueryKeys.ASSET_DATA] });
+      queryClient.invalidateQueries({ queryKey: [QueryKeys.ACTIVITY_DATA] });
+
+      const parts = [`${stats.enriched} updated`];
+      if (stats.skipped > 0) {
+        parts.push(`${stats.skipped} skipped`);
+      }
+      if (stats.failed > 0) {
+        parts.push(`${stats.failed} failed`);
+      }
+
+      toast({
+        title: "Profile enrichment finished.",
+        description: parts.join(", "),
+        variant: stats.failed > 0 ? "destructive" : "success",
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Profile enrichment failed.",
+        description: error instanceof Error ? error.message : "Unable to re-enrich asset profiles.",
+        variant: "destructive",
+      });
+    },
+  });
 
   // Investments content
   const investmentsContent = (
@@ -537,6 +587,21 @@ export const HoldingsPage = () => {
             label: "Add Activity",
             onClick: () => navigate("/activities/manage"),
           },
+          ...(currentTab === "investments" && investmentAssetIds.length > 0
+            ? [
+                {
+                  icon: Icons.Sparkles,
+                  label: reEnrichProfilesMutation.isPending
+                    ? "Re-enriching Profiles..."
+                    : "Re-enrich Profiles",
+                  onClick: () => {
+                    if (!reEnrichProfilesMutation.isPending) {
+                      reEnrichProfilesMutation.mutate();
+                    }
+                  },
+                },
+              ]
+            : []),
           {
             icon: Icons.Refresh,
             label: "Update Prices",
@@ -545,7 +610,13 @@ export const HoldingsPage = () => {
         ],
       },
     ],
-    [navigate, updatePortfolioMutation],
+    [
+      currentTab,
+      investmentAssetIds.length,
+      navigate,
+      reEnrichProfilesMutation,
+      updatePortfolioMutation,
+    ],
   );
 
   // Shared actions for header

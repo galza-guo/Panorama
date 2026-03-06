@@ -171,6 +171,13 @@ mod tests {
             Ok((0, 0, 0))
         }
 
+        async fn re_enrich_assets(
+            &self,
+            _asset_ids: Vec<String>,
+        ) -> Result<crate::assets::AssetProfileEnrichmentStats> {
+            Ok(crate::assets::AssetProfileEnrichmentStats::default())
+        }
+
         async fn cleanup_legacy_metadata(&self, _asset_id: &str) -> Result<()> {
             Ok(())
         }

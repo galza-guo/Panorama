@@ -1,5 +1,6 @@
 use super::assets_model::{
-    Asset, AssetMetadata, AssetSpec, EnsureAssetsResult, NewAsset, UpdateAssetProfile,
+    Asset, AssetMetadata, AssetProfileEnrichmentStats, AssetSpec, EnsureAssetsResult, NewAsset,
+    UpdateAssetProfile,
 };
 use crate::errors::Result;
 
@@ -46,6 +47,10 @@ pub trait AssetServiceTrait: Send + Sync {
     /// Checks if each asset needs enrichment before fetching profile data.
     /// Returns (enriched_count, skipped_count, failed_count).
     async fn enrich_assets(&self, asset_ids: Vec<String>) -> Result<(usize, usize, usize)>;
+
+    /// Re-enriches existing assets in batch, bypassing the sync-state skip check.
+    async fn re_enrich_assets(&self, asset_ids: Vec<String>)
+        -> Result<AssetProfileEnrichmentStats>;
 
     /// Removes the $.legacy structure from asset metadata after migration.
     /// Preserves $.identifiers if present.

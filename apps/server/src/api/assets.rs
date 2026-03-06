@@ -4,10 +4,12 @@ use crate::{error::ApiResult, main_lib::AppState};
 use axum::{
     extract::{Path, Query, State},
     http::StatusCode,
-    routing::{delete, get, put},
+    routing::{delete, get, post, put},
     Json, Router,
 };
-use wealthfolio_core::assets::{Asset as CoreAsset, UpdateAssetProfile};
+use wealthfolio_core::assets::{
+    Asset as CoreAsset, AssetProfileEnrichmentStats, UpdateAssetProfile,
+};
 
 #[derive(serde::Deserialize)]
 struct AssetQuery {
@@ -42,6 +44,20 @@ async fn update_asset_profile(
 }
 
 #[derive(serde::Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct ReEnrichAssetProfilesBody {
+    asset_ids: Vec<String>,
+}
+
+async fn re_enrich_asset_profiles(
+    State(state): State<Arc<AppState>>,
+    Json(body): Json<ReEnrichAssetProfilesBody>,
+) -> ApiResult<Json<AssetProfileEnrichmentStats>> {
+    let stats = state.asset_service.re_enrich_assets(body.asset_ids).await?;
+    Ok(Json(stats))
+}
+
+#[derive(serde::Deserialize)]
 struct QuoteModeBody {
     #[serde(alias = "pricingMode", alias = "quoteMode")]
     quote_mode: String,
@@ -72,6 +88,7 @@ pub fn router() -> Router<Arc<AppState>> {
         .route("/assets", get(list_assets))
         .route("/assets/{id}", delete(delete_asset))
         .route("/assets/profile", get(get_asset_profile))
+        .route("/assets/profile/enrich", post(re_enrich_asset_profiles))
         .route("/assets/profile/{id}", put(update_asset_profile))
         .route("/assets/pricing-mode/{id}", put(update_quote_mode))
 }
