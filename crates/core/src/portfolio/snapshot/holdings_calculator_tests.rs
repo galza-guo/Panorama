@@ -2535,23 +2535,24 @@ mod tests {
         assert_eq!(position.quantity, dec!(10));
         assert_eq!(position.currency, "USD");
 
-        // Cash is booked in ACTIVITY currency (USD) per design spec, not converted to account currency
+        // With fx_rate provided, broker cash movement should be booked in account currency.
         // Cost in USD: (10 * 100) + 5 = 1005 USD
         let expected_cost_usd = dec!(10) * dec!(100) + dec!(5);
+        let expected_cost_cad = expected_cost_usd * activity_fx_rate;
 
         assert_eq!(
             next_state.cash_balances.get(activity_currency),
-            Some(&(-expected_cost_usd)), // -1005 USD
-            "Cash should be booked in activity currency (USD)"
+            None,
+            "No USD cash bucket when fx_rate is provided"
         );
-
-        // cash_total_account_currency uses FxService rate for cash conversion
-        // Note: activity.fx_rate is used for position calculations, not cash total
-        // Total: -1005 USD * 1.30 (service rate) = -1306.50 CAD
-        let expected_cash_total_cad = -expected_cost_usd * service_rate;
         assert_eq!(
-            next_state.cash_total_account_currency, expected_cash_total_cad,
-            "cash_total_account_currency uses FxService rate"
+            next_state.cash_balances.get(account_currency),
+            Some(&(-expected_cost_cad)),
+            "Cash should be booked in account currency using activity fx_rate"
+        );
+        assert_eq!(
+            next_state.cash_total_account_currency, -expected_cost_cad,
+            "cash_total_account_currency should reflect the booked account-currency cash"
         );
     }
 
@@ -2830,22 +2831,24 @@ mod tests {
         assert!(result.is_ok(), "Calculation failed: {:?}", result.err());
         let next_state = result.unwrap().snapshot;
 
-        // Cash is booked in ACTIVITY currency (USD) per design spec
+        // With fx_rate provided, broker cash movement should be booked in account currency.
         // Proceeds in USD: (10 * 120) - 5 = 1195 USD
         let proceeds_usd = dec!(10) * dec!(120) - dec!(5);
+        let expected_proceeds_cad = proceeds_usd * activity_fx_rate;
 
         assert_eq!(
             next_state.cash_balances.get(activity_currency),
-            Some(&proceeds_usd), // 1195 USD
-            "Sell proceeds should be booked in activity currency (USD)"
+            None,
+            "No USD cash bucket when fx_rate is provided"
         );
-
-        // cash_total_account_currency uses FxService rate for cash conversion
-        // 1195 USD * 1.30 = 1553.50 CAD
-        let expected_cash_total_cad = proceeds_usd * service_rate;
         assert_eq!(
-            next_state.cash_total_account_currency, expected_cash_total_cad,
-            "cash_total_account_currency uses FxService rate"
+            next_state.cash_balances.get(account_currency),
+            Some(&expected_proceeds_cad),
+            "Sell proceeds should be booked in account currency using activity fx_rate"
+        );
+        assert_eq!(
+            next_state.cash_total_account_currency, expected_proceeds_cad,
+            "cash_total_account_currency should reflect the booked account-currency cash"
         );
     }
 
@@ -2963,6 +2966,53 @@ mod tests {
         assert_eq!(
             next_state.cash_total_account_currency, expected_cash_total_cad,
             "cash_total_account_currency uses FxService rate"
+        );
+    }
+
+    #[test]
+    fn test_withdrawal_with_negative_amount_from_csv_import() {
+        let mock_fx_service = Arc::new(MockFxService::new());
+        let target_date_str = "2025-03-10";
+        let target_date = NaiveDate::from_str(target_date_str).unwrap();
+        let account_currency = "CNY";
+
+        let base_currency = Arc::new(RwLock::new(account_currency.to_string()));
+        let calculator = create_calculator(mock_fx_service, base_currency);
+
+        let mut previous_snapshot =
+            create_initial_snapshot("acc_csv_import", account_currency, "2025-03-09");
+        previous_snapshot
+            .cash_balances
+            .insert(account_currency.to_string(), dec!(20135.50));
+        previous_snapshot.net_contribution = dec!(20208.24);
+        previous_snapshot.net_contribution_base = dec!(20208.24);
+
+        let withdrawal_activity = create_cash_activity(
+            "act_withdraw_csv",
+            ActivityType::Withdrawal,
+            dec!(-10118),
+            dec!(0),
+            account_currency,
+            target_date_str,
+        );
+
+        let result = calculator.calculate_next_holdings(
+            &previous_snapshot,
+            &vec![withdrawal_activity],
+            target_date,
+        );
+        assert!(result.is_ok(), "Calculation failed: {:?}", result.err());
+        let next_state = result.unwrap().snapshot;
+
+        assert_eq!(
+            next_state.cash_balances.get(account_currency),
+            Some(&dec!(10017.50)),
+            "Cash should decrease by the withdrawal amount"
+        );
+        assert_eq!(
+            next_state.net_contribution,
+            dec!(10090.24),
+            "Net contribution should decrease by the withdrawal amount"
         );
     }
 
@@ -3445,6 +3495,53 @@ mod tests {
     }
 
     #[test]
+    fn test_transfer_out_with_negative_amount_from_csv_import() {
+        let mock_fx_service = Arc::new(MockFxService::new());
+        let target_date_str = "2025-03-10";
+        let target_date = NaiveDate::from_str(target_date_str).unwrap();
+        let account_currency = "CNY";
+
+        let base_currency = Arc::new(RwLock::new(account_currency.to_string()));
+        let calculator = create_calculator(mock_fx_service, base_currency);
+
+        let mut previous_snapshot =
+            create_initial_snapshot("acc_transfer_out_csv", account_currency, "2025-03-09");
+        previous_snapshot
+            .cash_balances
+            .insert(account_currency.to_string(), dec!(10000));
+        previous_snapshot.net_contribution = dec!(8000);
+        previous_snapshot.net_contribution_base = dec!(8000);
+
+        let transfer_out_activity = create_cash_activity(
+            "act_transfer_out_csv",
+            ActivityType::TransferOut,
+            dec!(-5000),
+            dec!(0),
+            account_currency,
+            target_date_str,
+        );
+
+        let result = calculator.calculate_next_holdings(
+            &previous_snapshot,
+            &vec![transfer_out_activity],
+            target_date,
+        );
+        assert!(result.is_ok(), "Calculation failed: {:?}", result.err());
+        let next_state = result.unwrap().snapshot;
+
+        assert_eq!(
+            next_state.cash_balances.get(account_currency),
+            Some(&dec!(5000)),
+            "Cash should decrease by the transfer-out amount"
+        );
+        assert_eq!(
+            next_state.net_contribution,
+            dec!(3000),
+            "Net contribution should decrease by the transfer-out amount"
+        );
+    }
+
+    #[test]
     fn test_external_transfer_in_activity_currency_equals_position_currency_with_fx_rate() {
         // Scenario from user bug report:
         // - Account currency: CAD
@@ -3607,13 +3704,18 @@ mod tests {
         // Cost basis in position currency (USD): (10 * 150) + 5 = 1505 USD
         assert_eq!(position.total_cost_basis, dec!(1505));
 
-        // Cash is booked in ACTIVITY currency (USD) per design spec
-        // Cost in USD: (10 * 150) + 5 = 1505 USD
-        let expected_usd_cash = -dec!(1505);
+        // With fx_rate provided, broker cash movement should be booked in account currency.
+        // Cost in CAD: 1505 USD * 1.35 = 2031.75 CAD
+        let expected_cad_cash = -dec!(1505) * activity_fx_rate;
         assert_eq!(
             next_state.cash_balances.get(activity_currency),
-            Some(&expected_usd_cash), // -1505 USD
-            "Cash should be booked in activity currency (USD)"
+            None,
+            "No USD cash bucket when fx_rate is provided"
+        );
+        assert_eq!(
+            next_state.cash_balances.get(account_currency),
+            Some(&expected_cad_cash),
+            "Cash should be booked in account currency using activity fx_rate"
         );
     }
 }

@@ -141,7 +141,10 @@ impl AllocationService {
                             infer_instrument_type_for_unassigned_holding(holding)
                         {
                             let category_id = if rollup_to_top_level {
-                                top_level_map.get(inferred_type).copied().unwrap_or(inferred_type)
+                                top_level_map
+                                    .get(inferred_type)
+                                    .copied()
+                                    .unwrap_or(inferred_type)
                             } else {
                                 inferred_type
                             };
@@ -202,7 +205,10 @@ impl AllocationService {
                         infer_instrument_type_for_unassigned_holding(holding)
                     {
                         let category_id = if rollup_to_top_level {
-                            top_level_map.get(inferred_type).copied().unwrap_or(inferred_type)
+                            top_level_map
+                                .get(inferred_type)
+                                .copied()
+                                .unwrap_or(inferred_type)
                         } else {
                             inferred_type
                         };
@@ -358,7 +364,10 @@ fn infer_instrument_type_for_unassigned_holding(holding: &Holding) -> Option<&'s
             || code_with_optional_suffix.ends_with(".SZ")
             || code_with_optional_suffix.ends_with(".BJ")
         {
-            let code = code_with_optional_suffix.split('.').next().unwrap_or_default();
+            let code = code_with_optional_suffix
+                .split('.')
+                .next()
+                .unwrap_or_default();
             if is_six_digit_numeric(code) {
                 if code.starts_with('5') || code.starts_with("159") {
                     return Some("ETF");
@@ -450,7 +459,9 @@ fn infer_risk_category_from_assignments(
 
 #[cfg(test)]
 mod tests {
-    use super::{infer_instrument_type_for_unassigned_holding, infer_risk_category_from_assignments};
+    use super::{
+        infer_instrument_type_for_unassigned_holding, infer_risk_category_from_assignments,
+    };
     use crate::portfolio::holdings::{Holding, HoldingType, Instrument, MonetaryValue};
     use chrono::NaiveDate;
     use rust_decimal::Decimal;
@@ -560,8 +571,16 @@ mod tests {
     #[test]
     fn asset_class_takes_precedence_over_instrument_type() {
         let assignments = vec![
-            ("instrument_type".to_string(), "STOCK_COMMON".to_string(), 10000),
-            ("asset_classes".to_string(), "CASH_BANK_DEPOSITS".to_string(), 10000),
+            (
+                "instrument_type".to_string(),
+                "STOCK_COMMON".to_string(),
+                10000,
+            ),
+            (
+                "asset_classes".to_string(),
+                "CASH_BANK_DEPOSITS".to_string(),
+                10000,
+            ),
         ];
         assert_eq!(
             infer_risk_category_from_assignments(&assignments),

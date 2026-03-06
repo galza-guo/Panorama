@@ -2598,10 +2598,9 @@ mod tests {
         assert_eq!(pos.currency, "USD");
         assert_eq!(pos.total_cost_basis, dec!(1500)); // USD cost basis
 
-        // Cash is debited in activity currency (USD)
-        // CAD cash unchanged by USD activity, USD cash debited
-        assert_eq!(frame.cash_balances.get("CAD"), Some(&dec!(10000)));
-        assert_eq!(frame.cash_balances.get("USD"), Some(&dec!(-1500)));
+        // With fx_rate provided, broker cash movement is booked in account currency.
+        assert_eq!(frame.cash_balances.get("CAD"), Some(&dec!(7975)));
+        assert_eq!(frame.cash_balances.get("USD"), None);
     }
 
     // ==================== MULTI-ACCOUNT TESTS ====================

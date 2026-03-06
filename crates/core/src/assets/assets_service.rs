@@ -985,8 +985,10 @@ impl AssetServiceTrait for AssetService {
                 .and_then(|profile| profile.get("quoteType"))
                 .and_then(|quote_type| quote_type.as_str());
 
-            let classification_quote_type =
-                provider_profile.asset_type.as_deref().or(fallback_quote_type);
+            let classification_quote_type = provider_profile
+                .asset_type
+                .as_deref()
+                .or(fallback_quote_type);
             let classification_name = provider_profile
                 .name
                 .as_deref()

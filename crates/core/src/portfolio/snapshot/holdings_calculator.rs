@@ -275,28 +275,47 @@ impl HoldingsCalculator {
             fx_rate_used,
         )?;
 
-        // Book cash outflow in ACTIVITY currency
+        // When fx_rate is provided for a cross-currency trade, the broker has already
+        // converted cash at transaction time, so the cash leg belongs in account currency.
         let total_cost = (activity.qty() * activity.price()) + activity.fee_amt();
-        add_cash(state, activity_currency, -total_cost);
+        if activity_currency != account_currency {
+            if let Some(fx_rate) = activity.fx_rate.filter(|r| *r != Decimal::ZERO) {
+                add_cash(state, account_currency, -(total_cost * fx_rate));
+            } else {
+                add_cash(state, activity_currency, -total_cost);
+            }
+        } else {
+            add_cash(state, activity_currency, -total_cost);
+        }
 
         Ok(())
     }
 
     /// Handle SELL activity.
-    /// Books cash inflow in ACTIVITY currency.
+    /// Books cash inflow in account currency when fx_rate is provided,
+    /// otherwise in activity currency.
     fn handle_sell(
         &self,
         activity: &Activity,
         state: &mut AccountStateSnapshot,
-        _account_currency: &str,
+        account_currency: &str,
         _asset_currency_cache: &mut HashMap<String, (String, bool)>,
     ) -> Result<()> {
         let activity_currency = &activity.currency;
         let asset_id = activity.asset_id.as_deref().unwrap_or("");
 
-        // Book cash inflow in ACTIVITY currency (proceeds = qty * price - fee)
+        // When fx_rate is provided for a cross-currency trade, the broker has already
+        // converted cash at transaction time, so the cash leg belongs in account currency.
         let total_proceeds = (activity.qty() * activity.price()) - activity.fee_amt();
-        add_cash(state, activity_currency, total_proceeds);
+        if activity_currency != account_currency {
+            if let Some(fx_rate) = activity.fx_rate.filter(|r| *r != Decimal::ZERO) {
+                add_cash(state, account_currency, total_proceeds * fx_rate);
+            } else {
+                add_cash(state, activity_currency, total_proceeds);
+            }
+        } else {
+            add_cash(state, activity_currency, total_proceeds);
+        }
 
         if let Some(position) = state.positions.get_mut(asset_id) {
             // reduce_lots_fifo only needs quantity, not price
@@ -370,11 +389,12 @@ impl HoldingsCalculator {
     ) -> Result<()> {
         let activity_currency = &activity.currency;
         let activity_date = activity.activity_date.naive_utc().date();
-        let activity_amount = activity.amt();
+        let activity_amount = -activity.amt().abs();
 
-        // Book cash outflow in ACTIVITY currency (amount + fee)
-        let net_amount = activity_amount + activity.fee_amt();
-        add_cash(state, activity_currency, -net_amount);
+        // Use the activity type to determine direction so CSV imports with negative
+        // withdrawal amounts do not get double-negated.
+        let net_amount = activity_amount - activity.fee_amt();
+        add_cash(state, activity_currency, net_amount);
 
         // Convert for net_contribution (pre-fee amount in account currency)
         let amount_acct = self.convert_to_account_currency(
@@ -402,8 +422,8 @@ impl HoldingsCalculator {
             }
         };
 
-        state.net_contribution -= amount_acct;
-        state.net_contribution_base -= amount_base;
+        state.net_contribution += amount_acct;
+        state.net_contribution_base += amount_base;
         Ok(())
     }
 
@@ -634,13 +654,14 @@ impl HoldingsCalculator {
         _asset_currency_cache: &mut HashMap<String, (String, bool)>,
     ) -> Result<()> {
         let activity_currency = &activity.currency;
-        let activity_amount = activity.amt();
+        let activity_amount = -activity.amt().abs();
         let asset_id = activity.asset_id.as_deref().unwrap_or("");
 
         if asset_id.is_empty() {
-            // Cash transfer: book outflow in ACTIVITY currency (amount + fee)
-            let net_amount = activity_amount + activity.fee_amt();
-            add_cash(state, activity_currency, -net_amount);
+            // Use the activity type to determine direction so CSV imports with negative
+            // transfer-out amounts do not get double-negated.
+            let net_amount = activity_amount - activity.fee_amt();
+            add_cash(state, activity_currency, net_amount);
 
             let activity_date = activity.activity_date.naive_utc().date();
             let amount_acct = self.convert_to_account_currency(
@@ -667,8 +688,8 @@ impl HoldingsCalculator {
                 }
             };
 
-            state.net_contribution -= amount_acct;
-            state.net_contribution_base -= amount_base;
+            state.net_contribution += amount_acct;
+            state.net_contribution_base += amount_base;
         } else {
             // Asset transfer
             let activity_date = activity.activity_date.naive_utc().date();
