@@ -181,6 +181,52 @@ diesel::table! {
 }
 
 diesel::table! {
+    folder_sync_config (id) {
+        id -> Integer,
+        shared_folder_path -> Text,
+        device_id -> Text,
+        is_enabled -> Integer,
+        initialized_at -> Nullable<Text>,
+        created_at -> Text,
+        updated_at -> Text,
+    }
+}
+
+diesel::table! {
+    folder_sync_history (id) {
+        id -> Integer,
+        event_type -> Text,
+        status -> Text,
+        message -> Text,
+        event_id -> Nullable<Text>,
+        source_device_id -> Nullable<Text>,
+        created_at -> Text,
+    }
+}
+
+diesel::table! {
+    folder_sync_imported_events (event_id) {
+        event_id -> Text,
+        source_device_id -> Text,
+        file_path -> Text,
+        imported_at -> Text,
+    }
+}
+
+diesel::table! {
+    folder_sync_status (id) {
+        id -> Integer,
+        sync_state -> Text,
+        last_checked_at -> Nullable<Text>,
+        last_successful_sync_at -> Nullable<Text>,
+        last_local_export_at -> Nullable<Text>,
+        last_remote_apply_at -> Nullable<Text>,
+        last_error -> Nullable<Text>,
+        updated_at -> Text,
+    }
+}
+
+diesel::table! {
     goals (id) {
         id -> Text,
         title -> Text,
@@ -445,6 +491,10 @@ diesel::allow_tables_to_appear_in_same_query!(
     brokers_sync_state,
     contribution_limits,
     daily_account_valuation,
+    folder_sync_config,
+    folder_sync_history,
+    folder_sync_imported_events,
+    folder_sync_status,
     goals,
     goals_allocation,
     health_issue_dismissals,

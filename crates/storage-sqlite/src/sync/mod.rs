@@ -1,6 +1,7 @@
 //! SQLite storage implementation for sync (platforms, app sync state, import runs).
 
 pub mod app_sync;
+pub mod folder_sync;
 pub mod import_run;
 pub mod platform;
 pub mod state;
@@ -26,6 +27,10 @@ pub(crate) use app_sync::flush_projected_outbox;
 pub use app_sync::{
     insert_outbox_event, AppSyncRepository, OutboxWriteRequest, SqliteSyncEngineDbPorts,
     SyncLocalDataSummary, SyncTableRowCount,
+};
+pub use folder_sync::{
+    FolderSyncConfigRecord, FolderSyncHistoryEntryRecord, FolderSyncRepository,
+    FolderSyncStatusRecord, FolderSyncStatusUpdate,
 };
 pub use import_run::{ImportRunDB, ImportRunRepository};
 pub use platform::{Platform, PlatformDB, PlatformRepository};
