@@ -127,6 +127,14 @@ export {
   getPlatform,
 } from "./settings";
 
+export {
+  getFolderSyncState,
+  initializeFolderSync,
+  joinFolderSync,
+  retryFolderSyncNow,
+  disableFolderSync,
+} from "./folder-sync";
+
 // Addon Commands (platform-specific)
 export {
   extractAddonZip,

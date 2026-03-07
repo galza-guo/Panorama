@@ -23,6 +23,7 @@ export const QueryKeys = {
 
   // Settings related keys
   SETTINGS: "settings",
+  FOLDER_SYNC: "folderSync",
   EXCHANGE_RATES: "exchangeRates",
 
   // New keys for exchange rates

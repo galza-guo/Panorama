@@ -647,6 +647,48 @@ export interface SettingsContextType {
   setAccountsGrouped: (value: boolean) => void;
 }
 
+export interface FolderSyncConfig {
+  sharedFolderPath: string;
+  deviceId: string;
+  isEnabled: boolean;
+  initializedAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface FolderSyncStatus {
+  syncState: string;
+  lastCheckedAt: string | null;
+  lastSuccessfulSyncAt: string | null;
+  lastLocalExportAt: string | null;
+  lastRemoteApplyAt: string | null;
+  lastError: string | null;
+  updatedAt: string;
+}
+
+export interface FolderSyncHistoryEntry {
+  id: number;
+  eventType: string;
+  status: string;
+  message: string;
+  eventId: string | null;
+  sourceDeviceId: string | null;
+  createdAt: string;
+}
+
+export interface FolderSyncState {
+  config: FolderSyncConfig | null;
+  status: FolderSyncStatus;
+  history: FolderSyncHistoryEntry[];
+}
+
+export interface FolderSyncCommandResult {
+  status: string;
+  message: string;
+  snapshotId: string | null;
+  backupPath: string | null;
+}
+
 export interface Goal {
   id: string;
   title: string;

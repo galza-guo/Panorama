@@ -248,6 +248,14 @@ export {
   listAiModels,
 } from "../shared/ai-providers";
 
+export {
+  getFolderSyncState,
+  initializeFolderSync,
+  joinFolderSync,
+  retryFolderSyncNow,
+  disableFolderSync,
+} from "./folder-sync";
+
 // AI Threads Commands
 export {
   listAiThreads,
