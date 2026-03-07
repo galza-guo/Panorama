@@ -21,22 +21,15 @@ const unsupportedResult: FolderSyncCommandResult = {
   backupPath: null,
 };
 
-export const getFolderSyncState = async (): Promise<FolderSyncState> => {
-  return unsupportedState;
-};
+export const getFolderSyncState = (): Promise<FolderSyncState> => Promise.resolve(unsupportedState);
 
-export const initializeFolderSync = async (): Promise<FolderSyncCommandResult> => {
-  return unsupportedResult;
-};
+export const initializeFolderSync = (): Promise<FolderSyncCommandResult> =>
+  Promise.resolve(unsupportedResult);
 
-export const joinFolderSync = async (): Promise<FolderSyncCommandResult> => {
-  return unsupportedResult;
-};
+export const joinFolderSync = (): Promise<FolderSyncCommandResult> => Promise.resolve(unsupportedResult);
 
-export const retryFolderSyncNow = async (): Promise<FolderSyncCommandResult> => {
-  return unsupportedResult;
-};
+export const retryFolderSyncNow = (): Promise<FolderSyncCommandResult> =>
+  Promise.resolve(unsupportedResult);
 
-export const disableFolderSync = async (): Promise<FolderSyncCommandResult> => {
-  return unsupportedResult;
-};
+export const disableFolderSync = (): Promise<FolderSyncCommandResult> =>
+  Promise.resolve(unsupportedResult);

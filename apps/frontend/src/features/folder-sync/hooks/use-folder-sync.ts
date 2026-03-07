@@ -65,13 +65,18 @@ export function useFolderSync() {
   };
 
   return {
-    ...query,
+    data: query.data,
+    error: query.error,
+    isError: query.isError,
+    isFetching: query.isFetching,
     state: query.data ?? null,
     config: query.data?.config ?? null,
     status: query.data?.status ?? null,
     history: query.data?.history ?? [],
     lastError: query.data?.status.lastError ?? null,
+    isLoading: query.isLoading,
     refresh,
+    refetch: query.refetch,
     selectSharedFolder,
     initialize,
     join,

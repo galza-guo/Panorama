@@ -41,9 +41,12 @@ function createWrapper() {
     defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
   });
 
-  return ({ children }: { children: ReactNode }) => (
+  const Wrapper = ({ children }: { children: ReactNode }) => (
     <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
   );
+
+  Wrapper.displayName = "FolderSyncTestWrapper";
+  return Wrapper;
 }
 
 describe("useFolderSync", () => {
