@@ -9,5 +9,7 @@ pub mod folder_sync_fs;
 pub mod folder_sync_importer;
 #[allow(dead_code)]
 pub mod folder_sync_snapshot;
+#[allow(dead_code)]
+pub mod folder_sync_runtime;
 
 pub use connect_service::{cloud_api_base_url, ConnectService};

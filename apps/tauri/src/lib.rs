@@ -116,6 +116,8 @@ mod desktop {
             scheduler::run_startup_sync(&startup_handle, &startup_context).await;
         });
 
+        context.folder_sync_runtime().trigger_startup();
+
         // Start background device sync engine (self-skips when device is not READY).
         #[cfg(feature = "device-sync")]
         {
@@ -585,6 +587,7 @@ pub fn run() {
                 if let Some(context) = _handle.try_state::<Arc<context::ServiceContext>>() {
                     let context = Arc::clone(context.inner());
                     tauri::async_runtime::block_on(async move {
+                        context.folder_sync_runtime().stop().await;
                         if let Err(err) =
                             crate::commands::device_sync::ensure_background_engine_stopped(context)
                                 .await
@@ -592,6 +595,12 @@ pub fn run() {
                             warn!("Failed to stop background device sync engine: {}", err);
                         }
                     });
+                }
+            }
+            #[cfg(desktop)]
+            if matches!(event, tauri::RunEvent::Resumed) {
+                if let Some(context) = _handle.try_state::<Arc<context::ServiceContext>>() {
+                    context.folder_sync_runtime().trigger_foreground();
                 }
             }
         });

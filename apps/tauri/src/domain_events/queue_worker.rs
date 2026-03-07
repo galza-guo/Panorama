@@ -168,6 +168,8 @@ async fn process_event_batch(
             });
         }
     }
+
+    context.folder_sync_runtime().trigger_local_mutation();
 }
 
 /// Runs a portfolio job directly (not via event emission).

@@ -2,7 +2,7 @@ use super::ai_environment::TauriAiEnvironment;
 use super::registry::ServiceContext;
 use crate::domain_events::TauriDomainEventSink;
 use crate::secret_store::shared_secret_store;
-use crate::services::ConnectService;
+use crate::services::{folder_sync_runtime::FolderSyncRuntime, ConnectService};
 use std::sync::{Arc, RwLock};
 use tokio::sync::mpsc;
 use wealthfolio_ai::{AiProviderService, ChatConfig, ChatService};
@@ -45,7 +45,10 @@ use wealthfolio_storage_sqlite::{
     market_data::{MarketDataRepository, QuoteSyncStateRepository},
     portfolio::{snapshot::SnapshotRepository, valuation::ValuationRepository},
     settings::SettingsRepository,
-    sync::{AppSyncRepository, BrokerSyncStateRepository, ImportRunRepository, PlatformRepository},
+    sync::{
+        AppSyncRepository, BrokerSyncStateRepository, FolderSyncRepository, ImportRunRepository,
+        PlatformRepository,
+    },
     taxonomies::TaxonomyRepository,
 };
 
@@ -78,6 +81,7 @@ pub async fn initialize_context(
     let fx_repository = Arc::new(FxRepository::new(pool.clone(), writer.clone()));
     let snapshot_repository = Arc::new(SnapshotRepository::new(pool.clone(), writer.clone()));
     let app_sync_repository = Arc::new(AppSyncRepository::new(pool.clone(), writer.clone()));
+    let folder_sync_repository = Arc::new(FolderSyncRepository::new(pool.clone(), writer.clone()));
     let valuation_repository = Arc::new(ValuationRepository::new(pool.clone(), writer.clone()));
     let platform_repository = Arc::new(PlatformRepository::new(pool.clone(), writer.clone()));
     let broker_sync_state_repository =
@@ -305,6 +309,11 @@ pub async fn initialize_context(
     let health_dismissal_repository =
         Arc::new(HealthDismissalRepository::new(pool.clone(), writer.clone()));
     let health_service = Arc::new(HealthService::new(health_dismissal_repository));
+    let folder_sync_runtime = Arc::new(FolderSyncRuntime::spawn(
+        app_sync_repository.clone(),
+        folder_sync_repository.clone(),
+        std::time::Duration::from_secs(10),
+    ));
 
     Ok(ContextInitResult {
         context: ServiceContext {
@@ -324,6 +333,8 @@ pub async fn initialize_context(
             snapshot_service,
             snapshot_repository,
             app_sync_repository,
+            folder_sync_repository,
+            folder_sync_runtime,
             holdings_service,
             allocation_service,
             valuation_service,

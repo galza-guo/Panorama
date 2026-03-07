@@ -9,11 +9,11 @@ use wealthfolio_core::{
 };
 use wealthfolio_device_sync::{engine::DeviceSyncRuntimeState, DeviceEnrollService};
 use wealthfolio_storage_sqlite::{
-    portfolio::snapshot::SnapshotRepository, sync::AppSyncRepository,
+    portfolio::snapshot::SnapshotRepository, sync::{AppSyncRepository, FolderSyncRepository},
 };
 
 use super::TauriAiEnvironment;
-use crate::services::ConnectService;
+use crate::services::{folder_sync_runtime::FolderSyncRuntime, ConnectService};
 
 pub struct ServiceContext {
     pub base_currency: Arc<RwLock<String>>,
@@ -41,6 +41,9 @@ pub struct ServiceContext {
     pub snapshot_service: Arc<dyn portfolio::snapshot::SnapshotServiceTrait>,
     pub snapshot_repository: Arc<SnapshotRepository>,
     pub app_sync_repository: Arc<AppSyncRepository>,
+    #[allow(dead_code)]
+    pub folder_sync_repository: Arc<FolderSyncRepository>,
+    pub folder_sync_runtime: Arc<FolderSyncRuntime>,
     pub holdings_service: Arc<dyn portfolio::holdings::HoldingsServiceTrait>,
     pub allocation_service: Arc<dyn portfolio::allocation::AllocationServiceTrait>,
     pub valuation_service: Arc<dyn portfolio::valuation::ValuationServiceTrait>,
@@ -119,6 +122,15 @@ impl ServiceContext {
 
     pub fn app_sync_repository(&self) -> Arc<AppSyncRepository> {
         Arc::clone(&self.app_sync_repository)
+    }
+
+    #[allow(dead_code)]
+    pub fn folder_sync_repository(&self) -> Arc<FolderSyncRepository> {
+        Arc::clone(&self.folder_sync_repository)
+    }
+
+    pub fn folder_sync_runtime(&self) -> Arc<FolderSyncRuntime> {
+        Arc::clone(&self.folder_sync_runtime)
     }
 
     pub fn allocation_service(&self) -> Arc<dyn portfolio::allocation::AllocationServiceTrait> {
