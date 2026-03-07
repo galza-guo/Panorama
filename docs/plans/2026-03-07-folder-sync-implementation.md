@@ -481,3 +481,27 @@ Expected: all scenarios behave as designed.
 git add docs/plans/2026-03-07-folder-sync-implementation.md
 git commit -m "docs: verify folder sync implementation plan"
 ```
+
+## Verification Log (2026-03-07)
+
+Automated verification completed on March 7, 2026.
+
+- `cargo test`
+  - Initial sandboxed run failed in `wealthfolio-device-sync` because several snapshot upload tests bind a local listener and the sandbox denied socket binding (`Os { code: 1, kind: PermissionDenied, message: "Operation not permitted" }`).
+  - Re-ran `cargo test` outside the sandbox. Result: PASS.
+- `pnpm test`
+  - Result: PASS.
+  - Frontend suite summary: 26 files passed, 334 tests passed.
+- `pnpm type-check`
+  - Result: PASS.
+- `pnpm lint`
+  - Result: PASS with existing repository warnings.
+  - No lint errors remain in the folder sync changes.
+
+Manual verification status:
+
+- Two-device end-to-end validation has not been run in the Codex environment.
+- Required follow-up:
+  - initialize folder sync on device A
+  - join the same shared folder on device B
+  - verify automatic catch-up after edits, offline replay, and missing-folder degraded state
