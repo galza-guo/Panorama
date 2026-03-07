@@ -286,14 +286,70 @@ fn trading_days_since(last_quote: DateTime<Utc>, today: NaiveDate) -> i64 {
     trading_days_between(last_date, today)
 }
 
-fn staleness_grace_trading_days(holding: &AssetHoldingInfo) -> i64 {
-    if holding
+fn is_tiantian_fund(holding: &AssetHoldingInfo) -> bool {
+    holding
         .preferred_provider
         .as_deref()
         .is_some_and(|provider| provider == "TIANTIAN_FUND")
         || holding.symbol.to_uppercase().ends_with(".FUND")
-    {
-        1
+}
+
+fn has_overseas_fund_nav_lag(name: &str) -> bool {
+    let normalized = name.trim().to_lowercase();
+    if normalized.is_empty() {
+        return false;
+    }
+
+    let overseas_keywords = [
+        "qdii",
+        "海外",
+        "境外",
+        "s&p 500",
+        "s&p500",
+        "sp500",
+        "sp 500",
+        "snp500",
+        "nasdaq 100",
+        "russell 2000",
+        "dow jones",
+        "us total market",
+        "标普500",
+        "标普 500",
+        "标准普尔500",
+        "hang seng",
+        "hsi",
+        "hong kong",
+        "恒生",
+        "港股",
+        "germany",
+        "dax",
+        "德国",
+        "india",
+        "nifty",
+        "sensex",
+        "印度",
+        "vietnam",
+        "viet nam",
+        "vn30",
+        "越南",
+    ];
+
+    overseas_keywords
+        .iter()
+        .any(|keyword| normalized.contains(keyword))
+}
+
+fn staleness_grace_trading_days(holding: &AssetHoldingInfo) -> i64 {
+    if is_tiantian_fund(holding) {
+        if holding
+            .name
+            .as_deref()
+            .is_some_and(has_overseas_fund_nav_lag)
+        {
+            2
+        } else {
+            1
+        }
     } else {
         0
     }
@@ -631,6 +687,61 @@ mod tests {
             issues.is_empty(),
             "T-1 Tiantian fund NAV should not be flagged as stale"
         );
+    }
+
+    #[test]
+    fn test_overseas_tiantian_fund_allows_two_trading_day_nav_lag() {
+        let check = PriceStalenessCheck::new();
+
+        // Asia/Shanghai evening on 2026-03-05, when many overseas/QDII funds are still T-2.
+        let now = Utc.with_ymd_and_hms(2026, 3, 5, 14, 20, 0).unwrap();
+        let ctx = HealthContext::with_timestamp(HealthConfig::default(), "CNY", 100_000.0, now);
+
+        let holdings = vec![AssetHoldingInfo {
+            asset_id: "fund-050025".to_string(),
+            symbol: "050025.FUND".to_string(),
+            name: Some("博时标普500ETF联接A".to_string()),
+            exchange_mic: None,
+            preferred_provider: Some("TIANTIAN_FUND".to_string()),
+            market_value: 10_000.0,
+            uses_market_pricing: true,
+        }];
+
+        let mut quote_times = HashMap::new();
+        let latest_nav = Utc.with_ymd_and_hms(2026, 3, 3, 0, 0, 0).unwrap();
+        quote_times.insert("fund-050025".to_string(), latest_nav);
+
+        let issues = check.analyze(&holdings, &quote_times, &ctx);
+        assert!(
+            issues.is_empty(),
+            "T-2 overseas Tiantian fund NAV should not be flagged as stale"
+        );
+    }
+
+    #[test]
+    fn test_domestic_tiantian_fund_still_flags_two_trading_day_nav_lag() {
+        let check = PriceStalenessCheck::new();
+
+        let now = Utc.with_ymd_and_hms(2026, 3, 5, 14, 20, 0).unwrap();
+        let ctx = HealthContext::with_timestamp(HealthConfig::default(), "CNY", 100_000.0, now);
+
+        let holdings = vec![AssetHoldingInfo {
+            asset_id: "fund-110022".to_string(),
+            symbol: "110022.FUND".to_string(),
+            name: Some("易方达消费行业股票".to_string()),
+            exchange_mic: None,
+            preferred_provider: Some("TIANTIAN_FUND".to_string()),
+            market_value: 10_000.0,
+            uses_market_pricing: true,
+        }];
+
+        let mut quote_times = HashMap::new();
+        let latest_nav = Utc.with_ymd_and_hms(2026, 3, 3, 0, 0, 0).unwrap();
+        quote_times.insert("fund-110022".to_string(), latest_nav);
+
+        let issues = check.analyze(&holdings, &quote_times, &ctx);
+        assert_eq!(issues.len(), 1);
+        assert_eq!(issues[0].severity, Severity::Warning);
     }
 
     #[test]
