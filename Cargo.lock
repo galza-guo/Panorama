@@ -7688,6 +7688,7 @@ dependencies = [
  "tauri-plugin-updater",
  "tauri-plugin-web-auth",
  "tauri-plugin-window-state",
+ "tempfile",
  "tokio",
  "urlencoding",
  "uuid",
