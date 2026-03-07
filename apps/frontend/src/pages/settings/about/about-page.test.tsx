@@ -2,11 +2,14 @@ import { render, screen } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const { getAppInfoMock, usePlatformMock, useCheckForUpdatesMock } = vi.hoisted(() => ({
+const { getAppInfoMock, usePlatformMock, useCheckForUpdatesMock, FolderSyncCardMock } = vi.hoisted(
+  () => ({
   getAppInfoMock: vi.fn(),
   usePlatformMock: vi.fn(),
   useCheckForUpdatesMock: vi.fn(),
-}));
+    FolderSyncCardMock: vi.fn(() => <div>Folder Sync Card</div>),
+  }),
+);
 
 vi.mock("@/adapters", () => ({
   getAppInfo: getAppInfoMock,
@@ -18,6 +21,10 @@ vi.mock("@/hooks/use-platform", () => ({
 
 vi.mock("@/hooks/use-updater", () => ({
   useCheckForUpdates: useCheckForUpdatesMock,
+}));
+
+vi.mock("@/features/folder-sync/components/folder-sync-card", () => ({
+  FolderSyncCard: FolderSyncCardMock,
 }));
 
 import AboutSettingsPage from "./about-page";
@@ -59,6 +66,7 @@ describe("about settings page", () => {
         .getAllByRole("link", { name: "Repository" })
         .every((link) => link.getAttribute("href") === "https://github.com/galza-guo/Panorama"),
     ).toBe(true);
+    expect(screen.getByText("Folder Sync Card")).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Report Issue" })).toHaveAttribute(
       "href",
       "https://github.com/galza-guo/Panorama/issues",
