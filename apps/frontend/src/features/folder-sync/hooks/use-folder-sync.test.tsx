@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { renderHook, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { QueryKeys } from "@/lib/query-keys";
 
 const {
   getFolderSyncStateMock,
@@ -46,7 +47,7 @@ function createWrapper() {
   );
 
   Wrapper.displayName = "FolderSyncTestWrapper";
-  return Wrapper;
+  return { Wrapper, queryClient };
 }
 
 describe("useFolderSync", () => {
@@ -90,7 +91,8 @@ describe("useFolderSync", () => {
   });
 
   it("loads current folder sync state", async () => {
-    const { result } = renderHook(() => useFolderSync(), { wrapper: createWrapper() });
+    const { Wrapper } = createWrapper();
+    const { result } = renderHook(() => useFolderSync(), { wrapper: Wrapper });
 
     expect(result.current.isLoading).toBe(true);
 
@@ -99,19 +101,33 @@ describe("useFolderSync", () => {
   });
 
   it("exposes sync history entries", async () => {
-    const { result } = renderHook(() => useFolderSync(), { wrapper: createWrapper() });
+    const { Wrapper } = createWrapper();
+    const { result } = renderHook(() => useFolderSync(), { wrapper: Wrapper });
 
     await waitFor(() => expect(result.current.history).toHaveLength(1));
     expect(result.current.history[0]?.message).toContain("Imported 1 remote event");
   });
 
   it("invokes retryNow action", async () => {
-    const { result } = renderHook(() => useFolderSync(), { wrapper: createWrapper() });
+    const { Wrapper } = createWrapper();
+    const { result } = renderHook(() => useFolderSync(), { wrapper: Wrapper });
 
     await waitFor(() => expect(result.current.isLoading).toBe(false));
     await result.current.retryNow();
 
     expect(retryFolderSyncNowMock).toHaveBeenCalledTimes(1);
+  });
+
+  it("invalidates other app queries after applying folder sync changes", async () => {
+    const { Wrapper, queryClient } = createWrapper();
+    queryClient.setQueryData([QueryKeys.ACCOUNTS], [{ id: "account-1" }]);
+
+    const { result } = renderHook(() => useFolderSync(), { wrapper: Wrapper });
+
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+    await result.current.retryNow();
+
+    expect(queryClient.getQueryState([QueryKeys.ACCOUNTS])?.isInvalidated).toBe(true);
   });
 
   it("surfaces attention states from backend status", async () => {
@@ -129,7 +145,8 @@ describe("useFolderSync", () => {
       history: [],
     });
 
-    const { result } = renderHook(() => useFolderSync(), { wrapper: createWrapper() });
+    const { Wrapper } = createWrapper();
+    const { result } = renderHook(() => useFolderSync(), { wrapper: Wrapper });
 
     await waitFor(() => expect(result.current.isLoading).toBe(false));
     expect(result.current.state?.status.syncState).toBe("folder_unavailable");

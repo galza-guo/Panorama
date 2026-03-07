@@ -31,7 +31,7 @@ export function useFolderSync() {
     action: () => Promise<FolderSyncCommandResult>,
   ): Promise<FolderSyncCommandResult> => {
     const result = await action();
-    await queryClient.invalidateQueries({ queryKey: [QueryKeys.FOLDER_SYNC] });
+    await queryClient.invalidateQueries();
     await refresh();
     return result;
   };
