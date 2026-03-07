@@ -351,6 +351,11 @@ pub fn run() {
             commands::utilities::backup_database,
             commands::utilities::backup_database_to_path,
             commands::utilities::restore_database,
+            commands::folder_sync::get_folder_sync_state,
+            commands::folder_sync::initialize_folder_sync,
+            commands::folder_sync::join_folder_sync,
+            commands::folder_sync::retry_folder_sync_now,
+            commands::folder_sync::disable_folder_sync,
             // Asset commands
             commands::asset::get_asset_profile,
             commands::asset::get_assets,

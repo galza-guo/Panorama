@@ -317,9 +317,11 @@ pub async fn initialize_context(
 
     Ok(ContextInitResult {
         context: ServiceContext {
+            app_data_dir: Arc::new(app_data_dir.to_string()),
             base_currency,
             instance_id,
             domain_event_sink,
+            settings_repository,
             settings_service,
             account_service,
             activity_service,

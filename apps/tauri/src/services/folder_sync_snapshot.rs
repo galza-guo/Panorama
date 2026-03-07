@@ -194,24 +194,21 @@ impl FolderSyncSnapshotService {
     }
 
     fn collect_shared_settings(&self) -> Result<Option<BTreeMap<String, String>>, String> {
-        let mut settings = BTreeMap::new();
-        for key in ["base_currency"] {
-            if !is_shared_setting_key(key) {
-                continue;
-            }
-            let value = self
-                .settings_repository
-                .get_setting(key)
-                .map_err(|err| err.to_string())?;
-            if !value.trim().is_empty() {
-                settings.insert(key.to_string(), value);
-            }
+        let current_settings = self
+            .settings_repository
+            .get_settings()
+            .map_err(|err| err.to_string())?;
+        let mut shared_settings = BTreeMap::new();
+        if is_shared_setting_key("base_currency")
+            && !current_settings.base_currency.trim().is_empty()
+        {
+            shared_settings.insert("base_currency".to_string(), current_settings.base_currency);
         }
 
-        if settings.is_empty() {
+        if shared_settings.is_empty() {
             Ok(None)
         } else {
-            Ok(Some(settings))
+            Ok(Some(shared_settings))
         }
     }
 

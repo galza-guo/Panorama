@@ -9,13 +9,16 @@ use wealthfolio_core::{
 };
 use wealthfolio_device_sync::{engine::DeviceSyncRuntimeState, DeviceEnrollService};
 use wealthfolio_storage_sqlite::{
-    portfolio::snapshot::SnapshotRepository, sync::{AppSyncRepository, FolderSyncRepository},
+    portfolio::snapshot::SnapshotRepository,
+    settings::SettingsRepository,
+    sync::{AppSyncRepository, FolderSyncRepository},
 };
 
 use super::TauriAiEnvironment;
 use crate::services::{folder_sync_runtime::FolderSyncRuntime, ConnectService};
 
 pub struct ServiceContext {
+    pub app_data_dir: Arc<String>,
     pub base_currency: Arc<RwLock<String>>,
     pub instance_id: Arc<String>,
 
@@ -28,6 +31,7 @@ pub struct ServiceContext {
     pub domain_event_sink: Arc<dyn DomainEventSink>,
 
     // Services
+    pub settings_repository: Arc<SettingsRepository>,
     pub settings_service: Arc<dyn settings::SettingsServiceTrait>,
     pub activity_service: Arc<dyn activities::ActivityServiceTrait>,
     pub account_service: Arc<dyn accounts::AccountServiceTrait>,
@@ -60,8 +64,16 @@ pub struct ServiceContext {
 }
 
 impl ServiceContext {
+    pub fn app_data_dir(&self) -> String {
+        self.app_data_dir.as_ref().clone()
+    }
+
     pub fn get_base_currency(&self) -> String {
         self.base_currency.read().unwrap().clone()
+    }
+
+    pub fn settings_repository(&self) -> Arc<SettingsRepository> {
+        Arc::clone(&self.settings_repository)
     }
 
     pub fn update_base_currency(&self, new_currency: String) {
