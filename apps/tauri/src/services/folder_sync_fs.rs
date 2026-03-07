@@ -292,6 +292,7 @@ mod tests {
             created_at: "2026-03-07T14:20:00.000Z".to_string(),
             tables: vec!["accounts".to_string(), "assets".to_string()],
             latest_event_id: Some("evt-2".to_string()),
+            shared_settings: None,
         }
     }
 

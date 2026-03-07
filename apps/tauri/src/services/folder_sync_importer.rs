@@ -39,6 +39,13 @@ impl FolderSyncImporter {
     }
 
     pub async fn import_remote_events(&self) -> Result<FolderSyncImportResult, String> {
+        self.import_remote_events_after(None).await
+    }
+
+    pub async fn import_remote_events_after(
+        &self,
+        covered_through_event_id: Option<&str>,
+    ) -> Result<FolderSyncImportResult, String> {
         let started_at = Utc::now().to_rfc3339();
         self.folder_sync_repository
             .update_status(FolderSyncStatusUpdate {
@@ -83,6 +90,22 @@ impl FolderSyncImporter {
         let mut skipped_event_ids = Vec::new();
 
         for event_ref in event_refs {
+            if covered_through_event_id
+                .is_some_and(|cutoff| event_ref.event_id.as_str() <= cutoff)
+            {
+                self.folder_sync_repository
+                    .mark_event_imported(
+                        event_ref.event_id.clone(),
+                        event_ref.device_id.clone(),
+                        event_ref.path.to_string_lossy().into_owned(),
+                        Utc::now().to_rfc3339(),
+                    )
+                    .await
+                    .map_err(|err| err.to_string())?;
+                skipped_event_ids.push(event_ref.event_id.clone());
+                continue;
+            }
+
             if self
                 .folder_sync_repository
                 .is_event_imported(&event_ref.event_id)

@@ -1,5 +1,7 @@
 //! Versioned contracts for folder-based sync transport.
 
+use std::collections::BTreeMap;
+
 use serde::{Deserialize, Serialize};
 
 use super::{SyncEntity, SyncOperation};
@@ -43,6 +45,8 @@ pub struct FolderSyncSnapshotManifestV1 {
     pub tables: Vec<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub latest_event_id: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub shared_settings: Option<BTreeMap<String, String>>,
 }
 
 pub fn event_file_name(event_id: &str) -> String {

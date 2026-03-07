@@ -750,6 +750,29 @@ impl AppSyncRepository {
         Ok(max_applied_seq.max(self.get_cursor()?) + 1)
     }
 
+    pub fn latest_known_event_id(&self) -> Result<Option<String>> {
+        let mut conn = get_connection(&self.pool)?;
+        let latest_outbox = sync_outbox::table
+            .select(sync_outbox::event_id)
+            .order(sync_outbox::event_id.desc())
+            .first::<String>(&mut conn)
+            .optional()
+            .map_err(StorageError::from)?;
+        let latest_applied = sync_applied_events::table
+            .select(sync_applied_events::event_id)
+            .order(sync_applied_events::event_id.desc())
+            .first::<String>(&mut conn)
+            .optional()
+            .map_err(StorageError::from)?;
+
+        Ok(match (latest_outbox, latest_applied) {
+            (Some(left), Some(right)) => Some(left.max(right)),
+            (Some(left), None) => Some(left),
+            (None, Some(right)) => Some(right),
+            (None, None) => None,
+        })
+    }
+
     pub fn needs_bootstrap(&self, device_id: &str) -> Result<bool> {
         let mut conn = get_connection(&self.pool)?;
         let config = sync_device_config::table
