@@ -738,6 +738,18 @@ impl AppSyncRepository {
         })
     }
 
+    pub fn next_local_replay_seq(&self) -> Result<i64> {
+        let mut conn = get_connection(&self.pool)?;
+        let max_applied_seq = sync_applied_events::table
+            .select(sync_applied_events::seq)
+            .order(sync_applied_events::seq.desc())
+            .first::<i64>(&mut conn)
+            .optional()
+            .map_err(StorageError::from)?
+            .unwrap_or(0);
+        Ok(max_applied_seq.max(self.get_cursor()?) + 1)
+    }
+
     pub fn needs_bootstrap(&self, device_id: &str) -> Result<bool> {
         let mut conn = get_connection(&self.pool)?;
         let config = sync_device_config::table
