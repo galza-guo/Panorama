@@ -122,21 +122,6 @@ export const COMMANDS: CommandMap = {
   remove_asset_taxonomy_assignment: { method: "DELETE", path: "/taxonomies/assignments" },
   get_migration_status: { method: "GET", path: "/taxonomies/migration/status" },
   migrate_legacy_classifications: { method: "POST", path: "/taxonomies/migration/run" },
-  // Buckets
-  get_buckets: { method: "GET", path: "/buckets" },
-  create_bucket: { method: "POST", path: "/buckets" },
-  update_bucket: { method: "PUT", path: "/buckets" },
-  delete_bucket: { method: "DELETE", path: "/buckets" },
-  get_bucket_account_defaults: { method: "GET", path: "/buckets/account-defaults" },
-  assign_bucket_account_default: { method: "PUT", path: "/buckets/account-defaults" },
-  remove_bucket_account_default: { method: "DELETE", path: "/buckets/account-defaults" },
-  get_bucket_holding_overrides: { method: "GET", path: "/buckets/holding-overrides" },
-  assign_bucket_holding_override: { method: "PUT", path: "/buckets/holding-overrides" },
-  remove_bucket_holding_override: { method: "DELETE", path: "/buckets/holding-overrides" },
-  get_bucket_asset_assignments: { method: "GET", path: "/buckets/asset-assignments" },
-  assign_bucket_asset: { method: "PUT", path: "/buckets/asset-assignments" },
-  remove_bucket_asset_assignment: { method: "DELETE", path: "/buckets/asset-assignments" },
-  get_bucket_allocation: { method: "GET", path: "/buckets/allocation" },
   // Health Center
   get_health_status: { method: "GET", path: "/health/status" },
   run_health_checks: { method: "POST", path: "/health/check" },
@@ -787,68 +772,6 @@ export const invoke = async <T>(command: string, payload?: Record<string, unknow
       break;
     case "migrate_legacy_classifications":
       break;
-    // Bucket commands
-    case "get_buckets":
-    case "get_bucket_account_defaults":
-    case "get_bucket_holding_overrides":
-    case "get_bucket_asset_assignments":
-      break;
-    case "create_bucket": {
-      const { bucket } = payload as { bucket: Record<string, unknown> };
-      body = JSON.stringify(bucket);
-      break;
-    }
-    case "update_bucket": {
-      const { bucket } = payload as { bucket: { id: string } & Record<string, unknown> };
-      url += `/${encodeURIComponent(bucket.id)}`;
-      body = JSON.stringify(bucket);
-      break;
-    }
-    case "delete_bucket": {
-      const { bucketId } = payload as { bucketId: string };
-      url += `/${encodeURIComponent(bucketId)}`;
-      break;
-    }
-    case "assign_bucket_account_default": {
-      const { assignment } = payload as { assignment: Record<string, unknown> };
-      body = JSON.stringify(assignment);
-      break;
-    }
-    case "remove_bucket_account_default": {
-      const { accountId } = payload as { accountId: string };
-      url += `/${encodeURIComponent(accountId)}`;
-      break;
-    }
-    case "assign_bucket_holding_override": {
-      const { assignment } = payload as { assignment: Record<string, unknown> };
-      body = JSON.stringify(assignment);
-      break;
-    }
-    case "remove_bucket_holding_override": {
-      const { accountId, assetId } = payload as { accountId: string; assetId: string };
-      url += `/${encodeURIComponent(accountId)}/${encodeURIComponent(assetId)}`;
-      break;
-    }
-    case "assign_bucket_asset": {
-      const { assignment } = payload as { assignment: Record<string, unknown> };
-      body = JSON.stringify(assignment);
-      break;
-    }
-    case "remove_bucket_asset_assignment": {
-      const { assetId } = payload as { assetId: string };
-      url += `/${encodeURIComponent(assetId)}`;
-      break;
-    }
-    case "get_bucket_allocation": {
-      const { accountId, baseCurrency } = payload as { accountId: string; baseCurrency?: string };
-      url += `/${encodeURIComponent(accountId)}`;
-      if (baseCurrency) {
-        const params = new URLSearchParams();
-        params.set("baseCurrency", baseCurrency);
-        url += `?${params.toString()}`;
-      }
-      break;
-    }
     // Health Center commands
     case "get_health_status":
     case "run_health_checks":

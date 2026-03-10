@@ -52,9 +52,6 @@ impl SettingsRepositoryTrait for SettingsRepository {
                 "sync_enabled" => {
                     settings.sync_enabled = value.parse().unwrap_or(true);
                 }
-                "buckets_enabled" => {
-                    settings.buckets_enabled = value.parse().unwrap_or(false);
-                }
                 _ => {} // Ignore unknown settings
             }
         }
@@ -136,16 +133,6 @@ impl SettingsRepositoryTrait for SettingsRepository {
                         .map_err(StorageError::from)?;
                 }
 
-                if let Some(buckets_enabled) = settings.buckets_enabled {
-                    diesel::replace_into(app_settings)
-                        .values(&AppSettingDB {
-                            setting_key: "buckets_enabled".to_string(),
-                            setting_value: buckets_enabled.to_string(),
-                        })
-                        .execute(conn)
-                        .map_err(StorageError::from)?;
-                }
-
                 Ok(())
             })
             .await
@@ -169,7 +156,6 @@ impl SettingsRepositoryTrait for SettingsRepository {
                     "auto_update_check_enabled" => "true",
                     "menu_bar_visible" => "true",
                     "sync_enabled" => "true",
-                    "buckets_enabled" => "false",
                     _ => return Err(StorageError::from(diesel::result::Error::NotFound).into()),
                 };
                 Ok(default_value.to_string())
@@ -225,63 +211,5 @@ impl SettingsRepositoryTrait for SettingsRepository {
         all_currencies.dedup();
 
         Ok(all_currencies)
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use crate::db::{create_pool, init, run_migrations, write_actor::spawn_writer};
-    use tempfile::tempdir;
-
-    fn create_test_repository() -> SettingsRepository {
-        let app_data = tempdir()
-            .expect("tempdir")
-            .keep()
-            .to_string_lossy()
-            .to_string();
-        let db_path = init(&app_data).expect("init db");
-        run_migrations(&db_path).expect("migrate db");
-        let pool = create_pool(&db_path).expect("create pool");
-        let writer = spawn_writer(pool.as_ref().clone());
-        SettingsRepository::new(pool, writer)
-    }
-
-    #[tokio::test]
-    async fn get_settings_defaults_buckets_enabled_to_false() {
-        let repository = create_test_repository();
-
-        let settings = repository.get_settings().expect("load settings");
-
-        assert!(!settings.buckets_enabled);
-    }
-
-    #[tokio::test]
-    async fn update_settings_persists_buckets_enabled() {
-        let repository = create_test_repository();
-
-        repository
-            .update_settings(&SettingsUpdate {
-                theme: None,
-                font: None,
-                base_currency: None,
-                onboarding_completed: None,
-                auto_update_check_enabled: None,
-                menu_bar_visible: None,
-                sync_enabled: None,
-                buckets_enabled: Some(true),
-            })
-            .await
-            .expect("persist settings");
-
-        let settings = repository.get_settings().expect("reload settings");
-
-        assert!(settings.buckets_enabled);
-        assert_eq!(
-            repository
-                .get_setting("buckets_enabled")
-                .expect("buckets enabled setting"),
-            "true"
-        );
     }
 }

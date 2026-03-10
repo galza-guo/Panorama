@@ -38,10 +38,6 @@ fn sync_entity_name(entity: &SyncEntity) -> &'static str {
     match entity {
         SyncEntity::Account => "account",
         SyncEntity::Asset => "asset",
-        SyncEntity::Bucket => "bucket",
-        SyncEntity::BucketAccountDefault => "bucket_account_default",
-        SyncEntity::BucketHoldingOverride => "bucket_holding_override",
-        SyncEntity::BucketAssetAssignment => "bucket_asset_assignment",
         SyncEntity::Quote => "quote",
         SyncEntity::AssetTaxonomyAssignment => "asset_taxonomy_assignment",
         SyncEntity::Activity => "activity",

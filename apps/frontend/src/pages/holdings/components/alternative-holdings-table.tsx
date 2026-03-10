@@ -1,4 +1,3 @@
-import { BucketBadge } from "@/features/buckets/bucket-badge";
 import { DataTable } from "@wealthfolio/ui/components/ui/data-table";
 import { DataTableColumnHeader } from "@wealthfolio/ui/components/ui/data-table/data-table-column-header";
 import {
@@ -24,7 +23,6 @@ import { EmptyPlaceholder, GainPercent, AmountDisplay } from "@wealthfolio/ui";
 import type { ColumnDef } from "@tanstack/react-table";
 import { useMemo, useState } from "react";
 import { useBalancePrivacy } from "@/hooks/use-balance-privacy";
-import { useBucketResolution } from "@/hooks/use-buckets";
 import type { AlternativeAssetHolding } from "@/lib/types";
 import { ALTERNATIVE_ASSET_KIND_DISPLAY_NAMES } from "@/lib/types";
 
@@ -39,7 +37,6 @@ interface AlternativeHoldingsTableProps {
   onDelete?: (holding: AlternativeAssetHolding) => void;
   onRowClick?: (holding: AlternativeAssetHolding) => void;
   isDeleting?: boolean;
-  showBucketLabel?: boolean;
 }
 
 export function AlternativeHoldingsTable({
@@ -53,10 +50,8 @@ export function AlternativeHoldingsTable({
   onDelete,
   onRowClick,
   isDeleting = false,
-  showBucketLabel = false,
 }: AlternativeHoldingsTableProps) {
   const { isBalanceHidden } = useBalancePrivacy();
-  const { resolveAssetBucket } = useBucketResolution();
   const [assetToDelete, setAssetToDelete] = useState<AlternativeAssetHolding | null>(null);
 
   const handleConfirmDelete = () => {
@@ -78,7 +73,6 @@ export function AlternativeHoldingsTable({
             ALTERNATIVE_ASSET_KIND_DISPLAY_NAMES[
               holding.kind.toUpperCase() as keyof typeof ALTERNATIVE_ASSET_KIND_DISPLAY_NAMES
             ] ?? holding.kind;
-          const bucket = showBucketLabel ? resolveAssetBucket(holding.id) : null;
 
           const handleClick = () => {
             if (onRowClick) {
@@ -107,10 +101,7 @@ export function AlternativeHoldingsTable({
                 <AssetKindIcon kind={holding.kind} size={20} />
               </div>
               <div className="flex flex-col">
-                <div className="flex flex-wrap items-center gap-2">
-                  <span className="text-sm font-medium">{holding.name}</span>
-                  <BucketBadge bucket={bucket} />
-                </div>
+                <span className="text-sm font-medium">{holding.name}</span>
                 <span className="text-muted-foreground text-xs">{kindDisplay}</span>
               </div>
             </div>
@@ -256,7 +247,7 @@ export function AlternativeHoldingsTable({
         },
       },
     ],
-    [isBalanceHidden, onEdit, onUpdateValue, onViewHistory, onDelete, onRowClick, resolveAssetBucket, showBucketLabel],
+    [isBalanceHidden, onEdit, onUpdateValue, onViewHistory, onDelete, onRowClick],
   );
 
   if (isLoading) {

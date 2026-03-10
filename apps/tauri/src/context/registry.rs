@@ -2,7 +2,7 @@ use std::sync::{Arc, RwLock};
 use wealthfolio_ai::{AiProviderServiceTrait, ChatService};
 use wealthfolio_connect::BrokerSyncServiceTrait;
 use wealthfolio_core::{
-    self, accounts, activities, buckets,
+    self, accounts, activities,
     assets::{self, AlternativeAssetServiceTrait},
     events::DomainEventSink,
     fx, goals, health, limits, portfolio, quotes, settings, taxonomies,
@@ -35,7 +35,6 @@ pub struct ServiceContext {
     pub settings_service: Arc<dyn settings::SettingsServiceTrait>,
     pub activity_service: Arc<dyn activities::ActivityServiceTrait>,
     pub account_service: Arc<dyn accounts::AccountServiceTrait>,
-    pub bucket_service: Arc<dyn buckets::BucketsServiceTrait>,
     pub goal_service: Arc<dyn goals::GoalServiceTrait>,
     pub asset_service: Arc<dyn assets::AssetServiceTrait>,
     pub quote_service: Arc<dyn quotes::QuoteServiceTrait>,
@@ -91,10 +90,6 @@ impl ServiceContext {
 
     pub fn activity_service(&self) -> Arc<dyn activities::ActivityServiceTrait> {
         Arc::clone(&self.activity_service)
-    }
-
-    pub fn bucket_service(&self) -> Arc<dyn buckets::BucketsServiceTrait> {
-        Arc::clone(&self.bucket_service)
     }
 
     pub fn asset_service(&self) -> Arc<dyn assets::AssetServiceTrait> {

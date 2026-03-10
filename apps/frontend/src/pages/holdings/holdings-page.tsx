@@ -500,7 +500,6 @@ export const HoldingsPage = () => {
               onDelete={handleDeleteAsset}
               onRowClick={handleRowClick}
               isDeleting={isDeleting}
-              showBucketLabel
             />
           </div>
           {/* Mobile View */}
@@ -509,7 +508,6 @@ export const HoldingsPage = () => {
               holdings={assetsHoldings}
               isLoading={isDataLoading}
               onRowClick={handleRowClick}
-              showBucketLabel
             />
           </div>
         </>

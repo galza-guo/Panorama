@@ -3,8 +3,6 @@ import { Button } from "@wealthfolio/ui/components/ui/button";
 import { Icons } from "@wealthfolio/ui/components/ui/icons";
 import { useCallback, useMemo, useState } from "react";
 
-import { BucketAllocationCard } from "@/features/buckets/bucket-allocation-card";
-import { useBucketAllocation } from "@/hooks/use-buckets";
 import { useHoldings } from "@/hooks/use-holdings";
 import { usePortfolioAllocations } from "@/hooks/use-portfolio-allocations";
 import { PORTFOLIO_ACCOUNT_ID, isAlternativeAssetKind, type AssetKind } from "@/lib/constants";
@@ -33,10 +31,6 @@ export const HoldingsInsightsPage = ({ accountId: accountIdProp }: HoldingsInsig
   const accountId = accountIdProp ?? PORTFOLIO_ACCOUNT_ID;
   const { holdings, isLoading: holdingsLoading } = useHoldings(accountId);
   const { allocations, isLoading: allocationsLoading } = usePortfolioAllocations(accountId);
-  const { data: bucketAllocation, isLoading: bucketAllocationLoading } = useBucketAllocation(
-    settings?.bucketsEnabled ? accountId : null,
-    settings?.bucketsEnabled ? baseCurrency : null,
-  );
 
   const isLoading = holdingsLoading || allocationsLoading;
 
@@ -254,14 +248,6 @@ export const HoldingsInsightsPage = ({ accountId: accountIdProp }: HoldingsInsig
             />
           </div>
         </div>
-
-        {settings?.bucketsEnabled && (
-          <BucketAllocationCard
-            allocation={bucketAllocation}
-            baseCurrency={baseCurrency}
-            isLoading={bucketAllocationLoading}
-          />
-        )}
 
         {/* Row 4: Custom Groups (under composition, col-span-3) */}
         {hasCustomGroups && (

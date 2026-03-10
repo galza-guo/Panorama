@@ -115,18 +115,6 @@ export const QueryKeys = {
   assetTaxonomyAssignments: (assetId: string) => [QueryKeys.ASSET_TAXONOMY_ASSIGNMENTS, assetId],
   ASSET_CLASSIFICATIONS: "asset-classifications",
 
-  // Buckets
-  BUCKETS: "buckets",
-  BUCKET_ACCOUNT_DEFAULTS: "bucketAccountDefaults",
-  BUCKET_HOLDING_OVERRIDES: "bucketHoldingOverrides",
-  BUCKET_ASSET_ASSIGNMENTS: "bucketAssetAssignments",
-  BUCKET_ALLOCATION: "bucketAllocation",
-  bucketAllocation: (accountId: string, baseCurrency: string) => [
-    QueryKeys.BUCKET_ALLOCATION,
-    accountId,
-    baseCurrency,
-  ],
-
   // Health Center
   HEALTH_STATUS: "healthStatus",
   HEALTH_CONFIG: "healthConfig",

@@ -332,10 +332,6 @@ fn entity_storage_mapping(entity: &SyncEntity) -> Option<(&'static str, &'static
     match entity {
         SyncEntity::Account => Some(("accounts", "id")),
         SyncEntity::Asset => Some(("assets", "id")),
-        SyncEntity::Bucket => Some(("buckets", "id")),
-        SyncEntity::BucketAccountDefault => Some(("bucket_account_defaults", "id")),
-        SyncEntity::BucketHoldingOverride => Some(("bucket_holding_overrides", "id")),
-        SyncEntity::BucketAssetAssignment => Some(("bucket_asset_assignments", "id")),
         SyncEntity::Quote => Some(("quotes", "id")),
         SyncEntity::AssetTaxonomyAssignment => Some(("asset_taxonomy_assignments", "id")),
         SyncEntity::Activity => Some(("activities", "id")),
@@ -2221,10 +2217,6 @@ mod tests {
         let entities = [
             SyncEntity::Account,
             SyncEntity::Asset,
-            SyncEntity::Bucket,
-            SyncEntity::BucketAccountDefault,
-            SyncEntity::BucketHoldingOverride,
-            SyncEntity::BucketAssetAssignment,
             SyncEntity::Quote,
             SyncEntity::AssetTaxonomyAssignment,
             SyncEntity::Activity,

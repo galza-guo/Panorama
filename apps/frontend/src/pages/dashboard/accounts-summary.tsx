@@ -1,11 +1,9 @@
 "use client";
 
-import { BucketBadge } from "@/features/buckets/bucket-badge";
 import { useAccounts } from "@/hooks/use-accounts";
-import { useBucketResolution } from "@/hooks/use-buckets";
 import { useLatestValuations } from "@/hooks/use-latest-valuations";
 import { useSettingsContext } from "@/lib/settings-provider";
-import type { AccountValuation, Bucket } from "@/lib/types";
+import type { AccountValuation } from "@/lib/types";
 import { calculatePerformanceMetrics } from "@/lib/utils";
 import { GainAmount, GainPercent, PrivacyAmount } from "@wealthfolio/ui";
 import { Button } from "@wealthfolio/ui/components/ui/button";
@@ -59,7 +57,6 @@ const AccountSummaryComponent = React.memo(
     isLoadingValuation = false,
     displayInAccountCurrency = false,
     isNested = false,
-    accountBucket = null,
   }: {
     item: AccountSummaryDisplayData;
     isExpanded?: boolean;
@@ -67,7 +64,6 @@ const AccountSummaryComponent = React.memo(
     isLoadingValuation?: boolean;
     displayInAccountCurrency?: boolean;
     isNested?: boolean;
-    accountBucket?: Bucket | null;
   }) => {
     const isGroup = item.isGroup ?? false;
     const useAccountCurrency =
@@ -114,12 +110,9 @@ const AccountSummaryComponent = React.memo(
     const content = (
       <>
         <div className="flex min-w-0 flex-1 flex-col gap-1 md:gap-1.5">
-          <div className="flex flex-wrap items-center gap-2">
-            <h3 className="truncate text-sm font-semibold leading-tight md:text-base md:font-semibold">
-              {name}
-            </h3>
-            {!isGroup && <BucketBadge bucket={accountBucket} />}
-          </div>
+          <h3 className="truncate text-sm font-semibold leading-tight md:text-base md:font-semibold">
+            {name}
+          </h3>
           <p className="text-muted-foreground truncate text-xs md:text-sm">{subText}</p>
         </div>
         <div className="flex shrink-0 items-center gap-2 md:gap-3">
@@ -214,7 +207,6 @@ AccountSummaryComponent.displayName = "AccountSummaryComponent";
 
 export const AccountsSummary = React.memo(() => {
   const { accountsGrouped, setAccountsGrouped, settings } = useSettingsContext();
-  const { resolveAccountBucket } = useBucketResolution();
   const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>({});
 
   const {
@@ -477,9 +469,6 @@ export const AccountsSummary = React.memo(() => {
                             isLoadingValuation={isLoadingPerformance}
                             displayInAccountCurrency
                             isNested
-                            accountBucket={
-                              account.accountId ? resolveAccountBucket(account.accountId) : null
-                            }
                           />
                         </div>
                       ))}
@@ -495,7 +484,6 @@ export const AccountsSummary = React.memo(() => {
               item={account}
               isLoadingValuation={isLoadingPerformance}
               displayInAccountCurrency
-              accountBucket={account.accountId ? resolveAccountBucket(account.accountId) : null}
             />
           ))}
         </>
@@ -511,7 +499,6 @@ export const AccountsSummary = React.memo(() => {
           item={account}
           isLoadingValuation={isLoadingPerformance}
           displayInAccountCurrency
-          accountBucket={account.accountId ? resolveAccountBucket(account.accountId) : null}
         />
       ));
     }
@@ -525,7 +512,6 @@ export const AccountsSummary = React.memo(() => {
     isErrorAccounts,
     errorAccounts,
     settings?.baseCurrency,
-    resolveAccountBucket,
   ]);
 
   return (

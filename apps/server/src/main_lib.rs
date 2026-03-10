@@ -21,7 +21,6 @@ use wealthfolio_core::{
         AlternativeAssetRepositoryTrait, AlternativeAssetService, AlternativeAssetServiceTrait,
         AssetClassificationService, AssetService, AssetServiceTrait,
     },
-    buckets::{BucketsService, BucketsServiceTrait},
     events::DomainEventSink,
     fx::{FxService, FxServiceTrait},
     goals::{GoalService, GoalServiceTrait},
@@ -49,7 +48,6 @@ use wealthfolio_storage_sqlite::{
     activities::ActivityRepository,
     ai_chat::AiChatRepository,
     assets::{AlternativeAssetRepository, AssetRepository},
-    buckets::BucketsRepository,
     db::{self, write_actor},
     fx::FxRepository,
     goals::GoalRepository,
@@ -75,7 +73,6 @@ pub struct AppState {
     #[allow(dead_code)]
     pub domain_event_sink: Arc<dyn DomainEventSink>,
     pub account_service: Arc<AccountService>,
-    pub bucket_service: Arc<dyn BucketsServiceTrait + Send + Sync>,
     pub settings_service: Arc<SettingsService>,
     pub holdings_service: Arc<dyn HoldingsServiceTrait + Send + Sync>,
     pub valuation_service: Arc<dyn ValuationServiceTrait + Send + Sync>,
@@ -261,16 +258,6 @@ pub async fn build_state(config: &Config) -> anyhow::Result<Arc<AppState>> {
         holdings_valuation_service.clone(),
         classification_service.clone(),
     ));
-    let bucket_repository = Arc::new(BucketsRepository::new(pool.clone(), writer.clone()));
-    let bucket_service: Arc<dyn BucketsServiceTrait + Send + Sync> =
-        Arc::new(BucketsService::new(
-            bucket_repository,
-            account_repo.clone(),
-            holdings_service.clone(),
-            asset_repository.clone(),
-            quote_service.clone(),
-            fx_service.clone(),
-        ));
 
     let allocation_service: Arc<dyn AllocationServiceTrait + Send + Sync> = Arc::new(
         AllocationService::new(holdings_service.clone(), taxonomy_service.clone()),
@@ -440,7 +427,6 @@ pub async fn build_state(config: &Config) -> anyhow::Result<Arc<AppState>> {
     Ok(Arc::new(AppState {
         domain_event_sink,
         account_service,
-        bucket_service,
         settings_service,
         holdings_service,
         valuation_service,

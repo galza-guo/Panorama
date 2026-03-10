@@ -35,24 +35,8 @@ import GeneralSettingsPage from "./pages/settings/general/general-page";
 import SettingsGoalsPage from "./pages/settings/goals/goals-page";
 import MarketDataImportPage from "./pages/settings/market-data/market-data-import-page";
 import MarketDataSettingsPage from "./pages/settings/market-data/market-data-settings";
-import BucketsPage from "./pages/settings/buckets/buckets-page";
 import TaxonomiesPage from "./pages/settings/taxonomies/taxonomies-page";
 import ConnectSettingsPage from "./pages/settings/wealthfolio-connect/connect-settings-page";
-import { useSettingsContext } from "./lib/settings-provider";
-
-function BucketsRoute() {
-  const { settings, isLoading } = useSettingsContext();
-
-  if (isLoading) {
-    return null;
-  }
-
-  if (!settings?.bucketsEnabled) {
-    return <Navigate to="/settings/general" replace />;
-  }
-
-  return <BucketsPage />;
-}
 
 export function AppRoutes() {
   const [dynamicRoutes, setDynamicRoutes] = useState<
@@ -135,7 +119,6 @@ export function AppRoutes() {
             <Route path="market-data/import" element={<MarketDataImportPage />} />
             <Route path="securities" element={<AssetsPage />} />
             <Route path="taxonomies" element={<TaxonomiesPage />} />
-            <Route path="buckets" element={<BucketsRoute />} />
             <Route path="connect" element={<ConnectSettingsPage />} />
             <Route path="ai-providers" element={<AiProvidersPage />} />
             <Route path="addons" element={<AddonSettingsPage />} />
