@@ -1,5 +1,7 @@
+import { BucketBadge } from "@/features/buckets/bucket-badge";
 import { TickerAvatar } from "@/components/ticker-avatar";
 import { useBalancePrivacy } from "@/hooks/use-balance-privacy";
+import { useBucketResolution } from "@/hooks/use-buckets";
 import { PORTFOLIO_ACCOUNT_ID } from "@/lib/constants";
 import { Account, Holding } from "@/lib/types";
 import { cn } from "@/lib/utils";
@@ -46,6 +48,7 @@ export const HoldingsTableMobile = ({
   setShowTotalReturn: controlledSetShowTotalReturn,
 }: HoldingsTableMobileProps) => {
   const { isBalanceHidden } = useBalancePrivacy();
+  const { resolveHoldingBucket } = useBucketResolution();
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState("");
   const [isFilterSheetOpen, setIsFilterSheetOpen] = useState(false);
@@ -156,6 +159,7 @@ export const HoldingsTableMobile = ({
             const avatarSymbol = isCash ? "$CASH" : symbol;
             const displaySymbol = isCash ? symbol.split("-")[0] : symbol;
             const isNavigable = !isCash && holding.instrument?.symbol;
+            const bucket = resolveHoldingBucket(holding.accountId, holding.instrument?.id ?? null);
 
             return (
               <Card
@@ -170,7 +174,10 @@ export const HoldingsTableMobile = ({
                   <div className="flex flex-1 items-center gap-3 overflow-hidden">
                     <TickerAvatar symbol={avatarSymbol} className="h-10 w-10" />
                     <div className="flex-1 overflow-hidden">
-                      <p className="truncate font-semibold">{displaySymbol}</p>
+                      <div className="flex flex-wrap items-center gap-2">
+                        <p className="truncate font-semibold">{displaySymbol}</p>
+                        <BucketBadge bucket={bucket} />
+                      </div>
                       {holding.instrument?.name && (
                         <p className="text-muted-foreground truncate text-sm">
                           {holding.instrument.name}

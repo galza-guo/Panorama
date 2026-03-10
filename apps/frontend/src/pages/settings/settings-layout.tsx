@@ -2,122 +2,137 @@ import { ApplicationShell } from "@wealthfolio/ui";
 import { Icons } from "@wealthfolio/ui/components/ui/icons";
 import { Separator } from "@wealthfolio/ui/components/ui/separator";
 import { Outlet, useLocation, useNavigate } from "react-router-dom";
+import { useSettingsContext } from "@/lib/settings-provider";
 import { SidebarNav } from "./sidebar-nav";
 
-const settingsSections = [
-  {
-    title: "Preferences",
-    items: [
-      {
-        title: "General",
-        href: "general",
-        subtitle: "Currency, exchange rates, and updates",
-        icon: <Icons.Settings2 className="size-5" />,
-      },
-      {
-        title: "Appearance",
-        href: "appearance",
-        subtitle: "Theme, font, and menu bar",
-        icon: <Icons.Monitor className="size-5" />,
-      },
-    ],
-  },
-  {
-    title: "Portfolio",
-    items: [
-      {
-        title: "Accounts",
-        href: "accounts",
-        subtitle: "Investment and savings accounts",
-        icon: <Icons.CreditCard className="size-5" />,
-      },
-      {
-        title: "Goals & Allocations",
-        href: "goals",
-        subtitle: "Targets and allocation rules",
-        icon: <Icons.Goal className="size-5" />,
-      },
-      {
-        title: "Contribution Limits",
-        href: "contribution-limits",
-        subtitle: "Limits by year and account",
-        icon: <Icons.TrendingUp className="size-5" />,
-      },
-    ],
-  },
-  {
-    title: "Data",
-    items: [
-      {
-        title: "Securities",
-        href: "securities",
-        subtitle: "Manage security definitions",
-        icon: <Icons.BadgeDollarSign className="size-5" />,
-      },
-      {
-        title: "Classifications",
-        href: "taxonomies",
-        subtitle: "Asset classification hierarchies",
-        icon: <Icons.Blocks className="size-5" />,
-      },
-      {
-        title: "Backup & Export",
-        href: "exports",
-        subtitle: "Backups and data exports",
-        icon: <Icons.Download className="size-5" />,
-      },
-    ],
-  },
-  {
-    title: "Connections",
-    items: [
-      {
-        title: "Wealthfolio Connect",
-        href: "connect",
-        subtitle: "Broker and device linking",
-        icon: <Icons.CloudSync2 className="size-6 text-blue-400" />,
-      },
-      {
-        title: "Market Data",
-        href: "market-data",
-        subtitle: "Providers, sync, and imports",
-        icon: <Icons.BarChart className="size-5" />,
-      },
-      {
-        title: "AI Providers",
-        href: "ai-providers",
-        subtitle: "Configure AI for portfolio insights",
-        icon: <Icons.SparklesOutline className="size-5" />,
-      },
-    ],
-  },
-  {
-    title: "Extensions",
-    items: [
-      {
-        title: "Add-ons",
-        href: "addons",
-        subtitle: "Extend Panorama with features",
-        icon: <Icons.Package className="size-5" />,
-      },
-    ],
-  },
-  {
-    title: "About",
-    items: [
-      {
-        title: "About",
-        href: "about",
-        subtitle: "Application information",
-        icon: <Icons.InfoCircle className="size-5" />,
-      },
-    ],
-  },
-];
+function getSettingsSections(bucketsEnabled: boolean) {
+  return [
+    {
+      title: "Preferences",
+      items: [
+        {
+          title: "General",
+          href: "general",
+          subtitle: "Currency, exchange rates, and updates",
+          icon: <Icons.Settings2 className="size-5" />,
+        },
+        {
+          title: "Appearance",
+          href: "appearance",
+          subtitle: "Theme, font, and menu bar",
+          icon: <Icons.Monitor className="size-5" />,
+        },
+      ],
+    },
+    {
+      title: "Portfolio",
+      items: [
+        {
+          title: "Accounts",
+          href: "accounts",
+          subtitle: "Investment and savings accounts",
+          icon: <Icons.CreditCard className="size-5" />,
+        },
+        {
+          title: "Goals & Allocations",
+          href: "goals",
+          subtitle: "Targets and allocation rules",
+          icon: <Icons.Goal className="size-5" />,
+        },
+        {
+          title: "Contribution Limits",
+          href: "contribution-limits",
+          subtitle: "Limits by year and account",
+          icon: <Icons.TrendingUp className="size-5" />,
+        },
+      ],
+    },
+    {
+      title: "Data",
+      items: [
+        {
+          title: "Securities",
+          href: "securities",
+          subtitle: "Manage security definitions",
+          icon: <Icons.BadgeDollarSign className="size-5" />,
+        },
+        {
+          title: "Classifications",
+          href: "taxonomies",
+          subtitle: "Asset classification hierarchies",
+          icon: <Icons.Blocks className="size-5" />,
+        },
+        ...(bucketsEnabled
+          ? [
+              {
+                title: "Buckets",
+                href: "buckets",
+                subtitle: "Custom bucket definitions and assignments",
+                icon: <Icons.Blocks className="size-5" />,
+              },
+            ]
+          : []),
+        {
+          title: "Backup & Export",
+          href: "exports",
+          subtitle: "Backups and data exports",
+          icon: <Icons.Download className="size-5" />,
+        },
+      ],
+    },
+    {
+      title: "Connections",
+      items: [
+        {
+          title: "Wealthfolio Connect",
+          href: "connect",
+          subtitle: "Broker and device linking",
+          icon: <Icons.CloudSync2 className="size-6 text-blue-400" />,
+        },
+        {
+          title: "Market Data",
+          href: "market-data",
+          subtitle: "Providers, sync, and imports",
+          icon: <Icons.BarChart className="size-5" />,
+        },
+        {
+          title: "AI Providers",
+          href: "ai-providers",
+          subtitle: "Configure AI for portfolio insights",
+          icon: <Icons.SparklesOutline className="size-5" />,
+        },
+      ],
+    },
+    {
+      title: "Extensions",
+      items: [
+        {
+          title: "Add-ons",
+          href: "addons",
+          subtitle: "Extend Panorama with features",
+          icon: <Icons.Package className="size-5" />,
+        },
+      ],
+    },
+    {
+      title: "About",
+      items: [
+        {
+          title: "About",
+          href: "about",
+          subtitle: "Application information",
+          icon: <Icons.InfoCircle className="size-5" />,
+        },
+      ],
+    },
+  ];
+}
 
 export default function SettingsLayout() {
+  const { settings } = useSettingsContext();
   const location = useLocation();
   const navigate = useNavigate();
+  const settingsSections = getSettingsSections(settings?.bucketsEnabled ?? false);
 
   // Check if we're on the main settings page (mobile) or a specific setting page
   const isMainSettingsPage =

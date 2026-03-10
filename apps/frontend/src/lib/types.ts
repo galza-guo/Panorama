@@ -550,6 +550,87 @@ export interface AllocationHoldings {
   currency: string;
 }
 
+export interface Bucket {
+  id: string;
+  name: string;
+  color: string;
+  targetPercent?: number | null;
+  sortOrder: number;
+  isSystem: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface NewBucket {
+  id?: string | null;
+  name: string;
+  color: string;
+  targetPercent?: number | null;
+  sortOrder: number;
+  isSystem: boolean;
+}
+
+export interface BucketAccountDefault {
+  id: string;
+  accountId: string;
+  bucketId: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface NewBucketAccountDefault {
+  id?: string | null;
+  accountId: string;
+  bucketId: string;
+}
+
+export interface BucketHoldingOverride {
+  id: string;
+  accountId: string;
+  assetId: string;
+  bucketId: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface NewBucketHoldingOverride {
+  id?: string | null;
+  accountId: string;
+  assetId: string;
+  bucketId: string;
+}
+
+export interface BucketAssetAssignment {
+  id: string;
+  assetId: string;
+  bucketId: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface NewBucketAssetAssignment {
+  id?: string | null;
+  assetId: string;
+  bucketId: string;
+}
+
+export interface BucketAllocationItem {
+  bucketId: string;
+  bucketName: string;
+  color: string;
+  currentAmount: number;
+  currentPercent: number;
+  targetPercent?: number | null;
+  deviationPercent?: number | null;
+}
+
+export interface BucketAllocation {
+  accountId: string;
+  currency: string;
+  totalValue: number;
+  buckets: BucketAllocationItem[];
+}
+
 /**
  * Asset interface matching the new provider-agnostic backend model
  * Note: Legacy fields (assetClass, assetSubClass, isin, profile) are stored in metadata.legacy
@@ -636,6 +717,7 @@ export interface Settings {
   syncEnabled: boolean;
   insuranceVisible: boolean;
   mpfVisible: boolean;
+  bucketsEnabled: boolean;
 }
 
 export interface SettingsContextType {

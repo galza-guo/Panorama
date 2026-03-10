@@ -1,4 +1,6 @@
+import { BucketBadge } from "@/features/buckets/bucket-badge";
 import { useBalancePrivacy } from "@/hooks/use-balance-privacy";
+import { useBucketResolution } from "@/hooks/use-buckets";
 import type { AlternativeAssetHolding } from "@/lib/types";
 import { ALTERNATIVE_ASSET_KIND_DISPLAY_NAMES } from "@/lib/types";
 import { AmountDisplay, GainPercent, Separator } from "@wealthfolio/ui";
@@ -10,14 +12,17 @@ interface AlternativeHoldingsListMobileProps {
   holdings: AlternativeAssetHolding[];
   isLoading: boolean;
   onRowClick?: (holding: AlternativeAssetHolding) => void;
+  showBucketLabel?: boolean;
 }
 
 export function AlternativeHoldingsListMobile({
   holdings,
   isLoading,
   onRowClick,
+  showBucketLabel = false,
 }: AlternativeHoldingsListMobileProps) {
   const { isBalanceHidden } = useBalancePrivacy();
+  const { resolveAssetBucket } = useBucketResolution();
 
   if (isLoading) {
     return (
@@ -44,6 +49,7 @@ export function AlternativeHoldingsListMobile({
           ALTERNATIVE_ASSET_KIND_DISPLAY_NAMES[
             holding.kind.toUpperCase() as keyof typeof ALTERNATIVE_ASSET_KIND_DISPLAY_NAMES
           ] ?? holding.kind;
+        const bucket = showBucketLabel ? resolveAssetBucket(holding.id) : null;
 
         const gain = holding.unrealizedGain ? parseFloat(holding.unrealizedGain) : null;
         const gainPct = holding.unrealizedGainPct ? parseFloat(holding.unrealizedGainPct) : null;
@@ -60,7 +66,10 @@ export function AlternativeHoldingsListMobile({
                   <AssetKindIcon kind={holding.kind} size={20} />
                 </div>
                 <div className="flex-1 overflow-hidden">
-                  <p className="truncate font-semibold">{holding.name}</p>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <p className="truncate font-semibold">{holding.name}</p>
+                    <BucketBadge bucket={bucket} />
+                  </div>
                   <p className="text-muted-foreground truncate text-sm">{kindDisplay}</p>
                 </div>
               </div>

@@ -13,6 +13,7 @@ use wealthfolio_core::{
     accounts::AccountService,
     activities::ActivityService,
     assets::{AlternativeAssetService, AssetClassificationService, AssetService},
+    buckets::BucketsService,
     events::DomainEvent,
     fx::{FxService, FxServiceTrait},
     goals::GoalService,
@@ -37,6 +38,7 @@ use wealthfolio_storage_sqlite::{
     activities::ActivityRepository,
     ai_chat::AiChatRepository,
     assets::{AlternativeAssetRepository, AssetRepository},
+    buckets::BucketsRepository,
     db::{self, write_actor},
     fx::FxRepository,
     goals::GoalRepository,
@@ -217,6 +219,15 @@ pub async fn initialize_context(
         holdings_valuation_service.clone(),
         classification_service.clone(),
     ));
+    let bucket_repository = Arc::new(BucketsRepository::new(pool.clone(), writer.clone()));
+    let bucket_service = Arc::new(BucketsService::new(
+        bucket_repository,
+        account_repository.clone(),
+        holdings_service.clone(),
+        asset_repository.clone(),
+        quote_service.clone(),
+        fx_service.clone(),
+    ));
 
     let allocation_service = Arc::new(AllocationService::new(
         holdings_service.clone(),
@@ -325,6 +336,7 @@ pub async fn initialize_context(
             settings_service,
             account_service,
             activity_service,
+            bucket_service,
             asset_service,
             goal_service,
             quote_service,

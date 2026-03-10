@@ -4,10 +4,11 @@ use serde::{Deserialize, Serialize};
 
 /// Canonical list of local tables that participate in app-side device sync.
 /// Order matters: parent tables before children (FK dependencies).
-pub const APP_SYNC_TABLES: [&str; 15] = [
+pub const APP_SYNC_TABLES: [&str; 19] = [
     // Base tables (no FK deps)
     "platforms",
     "assets",
+    "buckets",
     // Depends on: assets
     "quotes",
     "goals",
@@ -20,6 +21,9 @@ pub const APP_SYNC_TABLES: [&str; 15] = [
     // Depends on: accounts, assets, import_runs, goals, ai_threads
     "activities",
     "activity_import_profiles",
+    "bucket_account_defaults",
+    "bucket_holding_overrides",
+    "bucket_asset_assignments",
     "asset_taxonomy_assignments",
     "goals_allocation",
     "ai_messages",
@@ -33,6 +37,10 @@ pub const APP_SYNC_TABLES: [&str; 15] = [
 pub enum SyncEntity {
     Account,
     Asset,
+    Bucket,
+    BucketAccountDefault,
+    BucketHoldingOverride,
+    BucketAssetAssignment,
     Quote,
     AssetTaxonomyAssignment,
     Activity,
@@ -250,6 +258,10 @@ mod tests {
         let actual = [
             SyncEntity::Account,
             SyncEntity::Asset,
+            SyncEntity::Bucket,
+            SyncEntity::BucketAccountDefault,
+            SyncEntity::BucketHoldingOverride,
+            SyncEntity::BucketAssetAssignment,
             SyncEntity::Quote,
             SyncEntity::AssetTaxonomyAssignment,
             SyncEntity::Activity,
@@ -270,6 +282,10 @@ mod tests {
         let expected = vec![
             "\"account\"",
             "\"asset\"",
+            "\"bucket\"",
+            "\"bucket_account_default\"",
+            "\"bucket_holding_override\"",
+            "\"bucket_asset_assignment\"",
             "\"quote\"",
             "\"asset_taxonomy_assignment\"",
             "\"activity\"",

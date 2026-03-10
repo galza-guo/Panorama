@@ -8,6 +8,7 @@ pub mod accounts;
 pub mod activities;
 pub mod addons;
 pub mod assets;
+pub mod buckets;
 pub mod constants;
 pub mod errors;
 pub mod events;

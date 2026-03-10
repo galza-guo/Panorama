@@ -1,3 +1,4 @@
+import { BucketBadge } from "@/features/buckets/bucket-badge";
 import { Button } from "@wealthfolio/ui/components/ui/button";
 import { DataTable } from "@wealthfolio/ui/components/ui/data-table";
 import { DataTableColumnHeader } from "@wealthfolio/ui/components/ui/data-table/data-table-column-header";
@@ -16,8 +17,9 @@ import { TickerAvatar } from "@/components/ticker-avatar";
 import { Skeleton } from "@wealthfolio/ui/components/ui/skeleton";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@wealthfolio/ui/components/ui/tooltip";
 import { useBalancePrivacy } from "@/hooks/use-balance-privacy";
+import { useBucketResolution } from "@/hooks/use-buckets";
 import { useSettingsContext } from "@/lib/settings-provider";
-import { Holding } from "@/lib/types";
+import type { Bucket, Holding } from "@/lib/types";
 import { AmountDisplay, QuantityDisplay } from "@wealthfolio/ui";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
@@ -63,6 +65,7 @@ export const HoldingsTable = ({
 }) => {
   const { isBalanceHidden } = useBalancePrivacy();
   const { settings } = useSettingsContext();
+  const { resolveHoldingBucket } = useBucketResolution();
   const [showConvertedValues, setShowConvertedValues] = useState(false);
 
   const baseCurrency = settings?.baseCurrency ?? holdings[0]?.baseCurrency;
@@ -111,7 +114,13 @@ export const HoldingsTable = ({
     <div className="flex h-full flex-col">
       <DataTable
         data={holdings}
-        columns={getColumns(isBalanceHidden, showConvertedValues, showTotalReturn, onClassify)}
+        columns={getColumns(
+          isBalanceHidden,
+          showConvertedValues,
+          showTotalReturn,
+          onClassify,
+          resolveHoldingBucket,
+        )}
         searchBy="symbol"
         filters={filters}
         showColumnToggle={true}
@@ -173,6 +182,10 @@ const getColumns = (
   showConvertedValues: boolean,
   showTotalReturn: boolean,
   onClassify?: (holding: Holding) => void,
+  resolveHoldingBucket?: (
+    accountId: string | null | undefined,
+    assetId: string | null,
+  ) => Bucket | null,
 ): ColumnDef<Holding>[] => [
   {
     id: "symbol",
@@ -185,6 +198,7 @@ const getColumns = (
       const navigate = useNavigate();
       const holding = row.original;
       const symbol = holding.instrument?.symbol ?? holding.id;
+      const bucket = resolveHoldingBucket?.(holding.accountId, holding.instrument?.id ?? null);
 
       const handleNavigate = () => {
         // Use instrument.id (asset ID) for navigation, not symbol (which may be stripped)
@@ -199,6 +213,7 @@ const getColumns = (
           <div className="flex flex-col">
             <div className="flex items-center gap-1.5">
               <span className="font-medium">{symbol}</span>
+              <BucketBadge bucket={bucket} />
               {isManual && (
                 <Badge variant="secondary" className="h-4 px-1 py-0 text-[10px]">
                   Manual

@@ -4,6 +4,9 @@ use crate::accounts::AccountDB;
 use crate::activities::{ActivityDB, ImportMappingDB};
 use crate::ai_chat::{AiMessageDB, AiThreadDB, AiThreadTagDB};
 use crate::assets::AssetDB;
+use crate::buckets::{
+    BucketAccountDefaultDB, BucketAssetAssignmentDB, BucketDB, BucketHoldingOverrideDB,
+};
 use crate::goals::{GoalDB, GoalsAllocationDB};
 use crate::limits::ContributionLimitDB;
 use crate::market_data::QuoteDB;
@@ -16,6 +19,7 @@ use crate::sync::{
 };
 use crate::taxonomies::AssetTaxonomyAssignmentDB;
 use uuid::Uuid;
+use wealthfolio_core::buckets::UNASSIGNED_BUCKET_ID;
 use wealthfolio_core::portfolio::snapshot::SnapshotSource;
 use wealthfolio_core::sync::SyncEntity;
 use wealthfolio_core::sync::SyncOperation;
@@ -39,6 +43,46 @@ impl SyncOutboxModel for AccountDB {
 
 impl SyncOutboxModel for AssetDB {
     const ENTITY: SyncEntity = SyncEntity::Asset;
+
+    fn sync_entity_id(&self) -> &str {
+        &self.id
+    }
+}
+
+impl SyncOutboxModel for BucketDB {
+    const ENTITY: SyncEntity = SyncEntity::Bucket;
+
+    fn sync_entity_id(&self) -> &str {
+        &self.id
+    }
+
+    fn should_sync_outbox(&self, _op: SyncOperation) -> bool {
+        !self.is_system
+    }
+
+    fn should_sync_outbox_delete(entity_id: &str) -> bool {
+        entity_id != UNASSIGNED_BUCKET_ID
+    }
+}
+
+impl SyncOutboxModel for BucketAccountDefaultDB {
+    const ENTITY: SyncEntity = SyncEntity::BucketAccountDefault;
+
+    fn sync_entity_id(&self) -> &str {
+        &self.id
+    }
+}
+
+impl SyncOutboxModel for BucketHoldingOverrideDB {
+    const ENTITY: SyncEntity = SyncEntity::BucketHoldingOverride;
+
+    fn sync_entity_id(&self) -> &str {
+        &self.id
+    }
+}
+
+impl SyncOutboxModel for BucketAssetAssignmentDB {
+    const ENTITY: SyncEntity = SyncEntity::BucketAssetAssignment;
 
     fn sync_entity_id(&self) -> &str {
         &self.id

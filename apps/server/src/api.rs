@@ -23,6 +23,7 @@ mod ai_chat;
 mod ai_providers;
 mod alternative_assets;
 mod assets;
+mod buckets;
 #[cfg(any(feature = "connect-sync", feature = "device-sync"))]
 pub mod connect;
 #[cfg(feature = "device-sync")]
@@ -89,6 +90,7 @@ pub fn app_router(state: Arc<AppState>, config: &Config) -> Router {
         .merge(performance::router())
         .merge(activities::router())
         .merge(goals::router())
+        .merge(buckets::router())
         .merge(exchange_rates::router())
         .merge(market_data::router())
         .merge(assets::router())

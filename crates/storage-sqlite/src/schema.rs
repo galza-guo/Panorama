@@ -101,6 +101,50 @@ diesel::table! {
 }
 
 diesel::table! {
+    bucket_account_defaults (id) {
+        id -> Text,
+        account_id -> Text,
+        bucket_id -> Text,
+        created_at -> Text,
+        updated_at -> Text,
+    }
+}
+
+diesel::table! {
+    bucket_asset_assignments (id) {
+        id -> Text,
+        asset_id -> Text,
+        bucket_id -> Text,
+        created_at -> Text,
+        updated_at -> Text,
+    }
+}
+
+diesel::table! {
+    bucket_holding_overrides (id) {
+        id -> Text,
+        account_id -> Text,
+        asset_id -> Text,
+        bucket_id -> Text,
+        created_at -> Text,
+        updated_at -> Text,
+    }
+}
+
+diesel::table! {
+    buckets (id) {
+        id -> Text,
+        name -> Text,
+        color -> Text,
+        target_percent -> Nullable<Text>,
+        sort_order -> Integer,
+        is_system -> Bool,
+        created_at -> Text,
+        updated_at -> Text,
+    }
+}
+
+diesel::table! {
     asset_taxonomy_assignments (id) {
         id -> Text,
         asset_id -> Text,
@@ -470,6 +514,13 @@ diesel::joinable!(activities -> import_runs (import_run_id));
 diesel::joinable!(ai_messages -> ai_threads (thread_id));
 diesel::joinable!(ai_thread_tags -> ai_threads (thread_id));
 diesel::joinable!(asset_taxonomy_assignments -> assets (asset_id));
+diesel::joinable!(bucket_account_defaults -> accounts (account_id));
+diesel::joinable!(bucket_account_defaults -> buckets (bucket_id));
+diesel::joinable!(bucket_asset_assignments -> assets (asset_id));
+diesel::joinable!(bucket_asset_assignments -> buckets (bucket_id));
+diesel::joinable!(bucket_holding_overrides -> accounts (account_id));
+diesel::joinable!(bucket_holding_overrides -> assets (asset_id));
+diesel::joinable!(bucket_holding_overrides -> buckets (bucket_id));
 diesel::joinable!(brokers_sync_state -> accounts (account_id));
 diesel::joinable!(brokers_sync_state -> import_runs (last_run_id));
 diesel::joinable!(goals_allocation -> accounts (account_id));
@@ -488,6 +539,10 @@ diesel::allow_tables_to_appear_in_same_query!(
     app_settings,
     asset_taxonomy_assignments,
     assets,
+    bucket_account_defaults,
+    bucket_asset_assignments,
+    bucket_holding_overrides,
+    buckets,
     brokers_sync_state,
     contribution_limits,
     daily_account_valuation,

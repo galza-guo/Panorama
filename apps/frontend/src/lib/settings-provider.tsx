@@ -18,6 +18,7 @@ interface ExtendedSettingsContextType extends SettingsContextType {
         | "syncEnabled"
         | "insuranceVisible"
         | "mpfVisible"
+        | "bucketsEnabled"
       >
     >,
   ) => Promise<void>;
@@ -51,6 +52,7 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
         | "syncEnabled"
         | "insuranceVisible"
         | "mpfVisible"
+        | "bucketsEnabled"
       >
     >,
   ) => {

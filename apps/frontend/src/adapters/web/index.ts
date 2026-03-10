@@ -121,6 +121,24 @@ export {
   migrateLegacyClassifications,
 } from "../shared/taxonomies";
 
+// Bucket Commands
+export {
+  getBuckets,
+  createBucket,
+  updateBucket,
+  deleteBucket,
+  getBucketAccountDefaults,
+  assignBucketAccountDefault,
+  removeBucketAccountDefault,
+  getBucketHoldingOverrides,
+  assignBucketHoldingOverride,
+  removeBucketHoldingOverride,
+  getBucketAssetAssignments,
+  assignBucketAsset,
+  removeBucketAssetAssignment,
+  getBucketAllocation,
+} from "../shared/buckets";
+
 // Portfolio Commands
 export {
   updatePortfolio,

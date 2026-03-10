@@ -85,6 +85,9 @@ export * from "../shared/goals";
 // Taxonomy Commands
 export * from "../shared/taxonomies";
 
+// Bucket Commands
+export * from "../shared/buckets";
+
 // Alternative Assets Commands
 export * from "../shared/alternative-assets";
 

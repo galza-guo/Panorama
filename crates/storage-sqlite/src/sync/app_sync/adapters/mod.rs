@@ -22,8 +22,24 @@ pub fn default_adapter_descriptors() -> Vec<EntityAdapterDescriptor> {
             table_name: "assets",
         },
         EntityAdapterDescriptor {
+            entity: SyncEntity::Bucket,
+            table_name: "buckets",
+        },
+        EntityAdapterDescriptor {
             entity: SyncEntity::Quote,
             table_name: "quotes",
+        },
+        EntityAdapterDescriptor {
+            entity: SyncEntity::BucketAccountDefault,
+            table_name: "bucket_account_defaults",
+        },
+        EntityAdapterDescriptor {
+            entity: SyncEntity::BucketHoldingOverride,
+            table_name: "bucket_holding_overrides",
+        },
+        EntityAdapterDescriptor {
+            entity: SyncEntity::BucketAssetAssignment,
+            table_name: "bucket_asset_assignments",
         },
         EntityAdapterDescriptor {
             entity: SyncEntity::AssetTaxonomyAssignment,
