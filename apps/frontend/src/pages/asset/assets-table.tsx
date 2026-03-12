@@ -31,7 +31,9 @@ import { formatAmount, formatDate } from "@/lib/utils";
 import { useSettingsContext } from "@/lib/settings-provider";
 import {
   getAssetKindForDisplay,
+  getPanoramaAssetEditLabel,
   getPanoramaAssetCategory,
+  getTimeDepositDisplayState,
   isStaleQuote,
   ParsedAsset,
 } from "./asset-utils";
@@ -80,6 +82,7 @@ export function AssetsTable({
           const asset = row.original;
           const displaySymbol = asset.displayCode ?? asset.name ?? "Unknown";
           const panoramaCategory = getPanoramaAssetCategory(asset);
+          const timeDepositDisplay = getTimeDepositDisplayState(asset);
           return (
             <button
               type="button"
@@ -95,6 +98,11 @@ export function AssetsTable({
                   {panoramaCategory ? (
                     <Badge variant="secondary" className="text-[10px] uppercase">
                       {panoramaCategory}
+                    </Badge>
+                  ) : null}
+                  {timeDepositDisplay?.daysLeft !== undefined ? (
+                    <Badge variant="outline" className="text-[10px]">
+                      {timeDepositDisplay.daysLeft}d left
                     </Badge>
                   ) : null}
                 </div>
@@ -199,6 +207,7 @@ export function AssetsTable({
           const snapshot = latestQuotes[asset.id];
           const quote = snapshot?.quote;
           const stale = isStaleQuote(snapshot, asset);
+          const timeDepositDisplay = getTimeDepositDisplayState(asset);
 
           if (!quote) {
             return (
@@ -228,6 +237,11 @@ export function AssetsTable({
                 <span className="font-semibold tabular-nums">
                   {formatAmount(quote.close, quote.currency ?? asset.quoteCcy ?? baseCurrency)}
                 </span>
+                {timeDepositDisplay?.isEstimatedValue ? (
+                  <Badge variant="outline" className="px-1.5 py-0 text-[10px]">
+                    Est.
+                  </Badge>
+                ) : null}
               </div>
               <div className="text-muted-foreground text-[11px]">{formatDate(quote.timestamp)}</div>
             </div>
@@ -256,7 +270,7 @@ export function AssetsTable({
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
                   <DropdownMenuItem onClick={() => onEdit(asset)}>
-                    {getPanoramaAssetCategory(asset) === "MPF" ? "Edit MPF" : "Edit"}
+                    {getPanoramaAssetEditLabel(asset)}
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem
@@ -310,7 +324,10 @@ export function AssetsTable({
   const kindOptions = useMemo(() => {
     const kinds = new Set(assets.map((asset) => getAssetKindForDisplay(asset)).filter(Boolean));
     return Array.from(kinds).map((kind) => ({
-      label: kind === "MPF" ? "MPF" : (ASSET_KIND_DISPLAY_NAMES[kind] ?? kind),
+      label:
+        kind === "MPF" || kind === "Time Deposit"
+          ? kind
+          : (ASSET_KIND_DISPLAY_NAMES[kind] ?? kind),
       value: kind,
     }));
   }, [assets]);

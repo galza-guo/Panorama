@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from "motion/react";
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
 } from "@wealthfolio/ui/components/ui/dialog";
@@ -20,6 +21,11 @@ import {
 } from "@wealthfolio/ui";
 import { cn } from "@/lib/utils";
 import { useSettingsContext } from "@/lib/settings-provider";
+import {
+  buildTimeDepositMetadata,
+  buildTimeDepositMetadataPatch,
+} from "@/lib/panorama-asset-attributes";
+import { getEffectiveTimeDepositCurrentValue } from "@/lib/time-deposit-calculations";
 
 import { METAL_TYPES, LIABILITY_TYPES, WEIGHT_UNITS } from "./alternative-asset-quick-add-schema";
 import { useAlternativeAssetMutations } from "../hooks/use-alternative-asset-mutations";
@@ -28,12 +34,19 @@ import {
   type CreateAlternativeAssetRequest,
   type AlternativeAssetKindApi,
 } from "@/lib/types";
+import {
+  TimeDepositEditorSheet,
+  type TimeDepositFormValues,
+} from "@/pages/time-deposits/components/time-deposit-editor-sheet";
 
 /** Simple type for assets that can be linked to liabilities */
 export interface LinkableAsset {
   id: string;
   name: string;
 }
+
+const SPECIALIZED_TIME_DEPOSIT_KIND = "TIME_DEPOSIT" as const;
+type QuickAddKind = AlternativeAssetKind | typeof SPECIALIZED_TIME_DEPOSIT_KIND;
 
 // Asset type configuration using theme colors
 const ASSET_TYPES = [
@@ -83,6 +96,15 @@ const ASSET_TYPES = [
     borderColor: "border-emerald-400/50",
   },
   {
+    kind: SPECIALIZED_TIME_DEPOSIT_KIND,
+    label: "Time Deposit",
+    description: "Guaranteed return & maturity",
+    icon: Icons.BadgeDollarSign,
+    iconColor: "text-cyan-400",
+    selectedBg: "bg-cyan-400/15",
+    borderColor: "border-cyan-400/50",
+  },
+  {
     kind: AlternativeAssetKind.LIABILITY,
     label: "Liability",
     description: "Loans & debt",
@@ -100,7 +122,7 @@ const ASSET_TYPES = [
     selectedBg: "bg-base-500/15",
     borderColor: "border-base-500/50",
   },
-];
+] as const;
 
 // Map internal kind to API kind
 const kindToApiKind: Record<AlternativeAssetKind, AlternativeAssetKindApi> = {
@@ -114,7 +136,7 @@ const kindToApiKind: Record<AlternativeAssetKind, AlternativeAssetKindApi> = {
 };
 
 interface FormData {
-  kind: AlternativeAssetKind;
+  kind: QuickAddKind;
   name: string;
   currency: string;
   currentValue: string;
@@ -127,6 +149,116 @@ interface FormData {
   liabilityType?: string;
   hasMortgage?: boolean;
   linkedAssetId?: string;
+}
+
+function toIsoDate(value: Date): string {
+  return value.toISOString().slice(0, 10);
+}
+
+function parsePositiveNumber(value: string): number | undefined {
+  const trimmed = value.trim();
+  if (!trimmed) {
+    return undefined;
+  }
+
+  const parsed = Number(trimmed);
+  if (!Number.isFinite(parsed) || parsed <= 0) {
+    return undefined;
+  }
+
+  return parsed;
+}
+
+function buildTimeDepositStatus(values: Pick<TimeDepositFormValues, "valuationDate" | "maturityDate">) {
+  return values.valuationDate >= values.maturityDate ? "matured" : "active";
+}
+
+function buildTimeDepositCreateMetadata(values: TimeDepositFormValues) {
+  return {
+    ...buildTimeDepositMetadata({
+      owner: values.owner,
+      provider: values.provider,
+      principal: parsePositiveNumber(values.principal),
+      start_date: toIsoDate(values.startDate),
+      maturity_date: toIsoDate(values.maturityDate),
+      quoted_annual_rate:
+        values.inputMode === "rate" ? parsePositiveNumber(values.quotedAnnualRate) : undefined,
+      guaranteed_maturity_value:
+        values.inputMode === "maturity"
+          ? parsePositiveNumber(values.guaranteedMaturityValue)
+          : undefined,
+      valuation_mode: values.valuationMode,
+      current_value_override:
+        values.valuationMode === "manual"
+          ? parsePositiveNumber(values.currentValueOverride)
+          : undefined,
+      valuation_date: toIsoDate(values.valuationDate),
+      status: buildTimeDepositStatus(values),
+    }),
+    purchase_price: values.principal.trim(),
+    purchase_date: toIsoDate(values.startDate),
+  };
+}
+
+function buildTimeDepositPatch(values: TimeDepositFormValues) {
+  return {
+    ...buildTimeDepositMetadataPatch({
+      owner: values.owner,
+      provider: values.provider,
+      principal: parsePositiveNumber(values.principal),
+      start_date: toIsoDate(values.startDate),
+      maturity_date: toIsoDate(values.maturityDate),
+      quoted_annual_rate:
+        values.inputMode === "rate" ? parsePositiveNumber(values.quotedAnnualRate) : undefined,
+      guaranteed_maturity_value:
+        values.inputMode === "maturity"
+          ? parsePositiveNumber(values.guaranteedMaturityValue)
+          : undefined,
+      valuation_mode: values.valuationMode,
+      current_value_override:
+        values.valuationMode === "manual"
+          ? parsePositiveNumber(values.currentValueOverride)
+          : undefined,
+      valuation_date: toIsoDate(values.valuationDate),
+      status: buildTimeDepositStatus(values),
+    }),
+    purchase_price: values.principal.trim(),
+    purchase_date: toIsoDate(values.startDate),
+  };
+}
+
+function getTimeDepositCurrentValue(values: TimeDepositFormValues): number | undefined {
+  const principal = parsePositiveNumber(values.principal);
+  const quotedAnnualRate = parsePositiveNumber(values.quotedAnnualRate);
+  const guaranteedMaturityValue = parsePositiveNumber(values.guaranteedMaturityValue);
+  const currentValueOverride = parsePositiveNumber(values.currentValueOverride);
+
+  if (!principal || values.maturityDate <= values.startDate) {
+    return undefined;
+  }
+
+  if (values.inputMode === "rate" && quotedAnnualRate === undefined) {
+    return undefined;
+  }
+
+  if (values.inputMode === "maturity" && guaranteedMaturityValue === undefined) {
+    return undefined;
+  }
+
+  return getEffectiveTimeDepositCurrentValue({
+    principal,
+    startDate: values.startDate,
+    maturityDate: values.maturityDate,
+    asOfDate: values.valuationDate,
+    quotedAnnualRatePct: quotedAnnualRate,
+    guaranteedMaturityValue,
+    valuationMode: values.valuationMode,
+    currentValueOverride,
+  });
+}
+
+function formatValueForMutation(value: number | undefined): string | undefined {
+  return value !== undefined && Number.isFinite(value) ? String(Number(value.toFixed(2))) : undefined;
 }
 
 interface AlternativeAssetQuickAddModalProps {
@@ -166,6 +298,7 @@ export function AlternativeAssetQuickAddModal({
   const baseCurrency = settings?.baseCurrency ?? "USD";
 
   const [step, setStep] = useState<1 | 2>(1);
+  const [isTimeDepositFlow, setIsTimeDepositFlow] = useState(false);
   const [hasMortgageChecked, setHasMortgageChecked] = useState(false);
   const [savedPurchaseDate, setSavedPurchaseDate] = useState<Date | undefined>(undefined);
   const [savedPropertyName, setSavedPropertyName] = useState<string | undefined>(undefined);
@@ -178,9 +311,13 @@ export function AlternativeAssetQuickAddModal({
     linkedAssetId: initialLinkedAssetId,
   });
 
-  const { createMutation } = useAlternativeAssetMutations({
+  const { createMutation, updateMetadataMutation } = useAlternativeAssetMutations({
     onCreateSuccess: (response) => {
       onAssetCreated?.(response);
+
+      if (isTimeDepositFlow) {
+        return;
+      }
 
       // If mortgage checkbox was checked, chain to liability creation
       // Don't close the modal - the callback will reopen it for liability
@@ -201,6 +338,7 @@ export function AlternativeAssetQuickAddModal({
     if (open) {
       // Skip step 1 if a defaultKind is provided
       setStep(defaultKind ? 2 : 1);
+      setIsTimeDepositFlow(false);
       setHasMortgageChecked(false);
       setSavedPurchaseDate(undefined);
       setSavedPropertyName(undefined);
@@ -229,7 +367,7 @@ export function AlternativeAssetQuickAddModal({
     [formData.kind],
   );
 
-  const handleAssetTypeSelect = useCallback((kind: AlternativeAssetKind) => {
+  const handleAssetTypeSelect = useCallback((kind: QuickAddKind) => {
     setFormData((prev) => ({
       ...prev,
       kind,
@@ -253,6 +391,7 @@ export function AlternativeAssetQuickAddModal({
 
   const handleSubmit = async () => {
     if (!canProceed) return;
+    if (formData.kind === SPECIALIZED_TIME_DEPOSIT_KIND) return;
 
     const metadata: Record<string, string> = {};
     const isLiability = formData.kind === AlternativeAssetKind.LIABILITY;
@@ -292,6 +431,34 @@ export function AlternativeAssetQuickAddModal({
     await createMutation.mutateAsync(request);
   };
 
+  const handleTimeDepositSubmit = async (values: TimeDepositFormValues) => {
+    const currentValue = formatValueForMutation(getTimeDepositCurrentValue(values));
+    if (!currentValue) {
+      return;
+    }
+
+    const response = await createMutation.mutateAsync({
+      kind: "other",
+      name: values.name,
+      currency: values.currency,
+      currentValue,
+      valueDate: toIsoDate(values.valuationDate),
+      metadata: buildTimeDepositCreateMetadata(values),
+    });
+
+    if (values.notes) {
+      await updateMetadataMutation.mutateAsync({
+        assetId: response.assetId,
+        name: values.name,
+        notes: values.notes,
+        metadata: buildTimeDepositPatch(values),
+      });
+    }
+
+    onOpenChange(false);
+    setIsTimeDepositFlow(false);
+  };
+
   // Build linkable assets options for liability form (only actual assets, no "none" option)
   const linkableAssetOptions = useMemo(() => {
     return linkableAssets.map((asset) => ({
@@ -319,12 +486,31 @@ export function AlternativeAssetQuickAddModal({
         return "Rolex Daytona, Picasso Print...";
       case AlternativeAssetKind.MPF:
         return "Employer MPF Account...";
+      case SPECIALIZED_TIME_DEPOSIT_KIND:
+        return "HSBC 3M Deposit...";
       default:
         return "Asset name...";
     }
   };
 
-  const isSubmitting = createMutation.isPending;
+  const isSubmitting = createMutation.isPending || updateMetadataMutation.isPending;
+
+  if (isTimeDepositFlow) {
+    return (
+      <TimeDepositEditorSheet
+        open={open}
+        onOpenChange={(nextOpen) => {
+          if (!nextOpen) {
+            setIsTimeDepositFlow(false);
+            onOpenChange(false);
+          }
+        }}
+        mode="create"
+        onSubmit={handleTimeDepositSubmit}
+        isSubmitting={isSubmitting}
+      />
+    );
+  }
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -353,13 +539,13 @@ export function AlternativeAssetQuickAddModal({
               />
             </div>
           </div>
-          <p className="text-muted-foreground text-sm">
+          <DialogDescription className="text-muted-foreground text-sm">
             {step === 1
               ? "Select the type of asset you want to add"
               : formData.kind === AlternativeAssetKind.LIABILITY
                 ? "Add a liability to track against your net worth"
                 : "Enter the details for your asset"}
-          </p>
+          </DialogDescription>
         </DialogHeader>
 
         {/* Content area with animations */}
@@ -638,7 +824,18 @@ export function AlternativeAssetQuickAddModal({
               </Button>
             )}
             <Button
-              onClick={() => (step === 1 ? setStep(2) : handleSubmit())}
+              onClick={() => {
+                if (step === 1) {
+                  if (formData.kind === SPECIALIZED_TIME_DEPOSIT_KIND) {
+                    setIsTimeDepositFlow(true);
+                    return;
+                  }
+                  setStep(2);
+                  return;
+                }
+
+                void handleSubmit();
+              }}
               disabled={!canProceed || isSubmitting}
               size="default"
               className="flex-1 font-medium"

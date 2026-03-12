@@ -12,6 +12,7 @@ export interface PanoramaMpfSubfund {
 export interface PanoramaAssetAttributes {
   panorama_category?: string;
   owner?: string;
+  provider?: string;
   policy_type?: string;
   valuation_date?: string;
   expected_withdrawal_date?: string;
@@ -25,6 +26,14 @@ export interface PanoramaAssetAttributes {
   mpf_scheme?: string;
   mpf_subfunds?: PanoramaMpfSubfund[];
   fund_allocation?: Record<string, number>;
+  principal?: number | string;
+  start_date?: string;
+  maturity_date?: string;
+  quoted_annual_rate?: number | string;
+  guaranteed_maturity_value?: number | string;
+  valuation_mode?: string;
+  current_value_override?: number | string;
+  status?: string;
   sub_type?: string;
 }
 
@@ -43,6 +52,20 @@ export interface MpfMetadataInput {
   mpf_scheme?: string;
   valuation_date?: string;
   mpf_subfunds?: PanoramaMpfSubfund[];
+}
+
+export interface TimeDepositMetadataInput {
+  owner?: string;
+  provider?: string;
+  principal?: number;
+  start_date?: string;
+  maturity_date?: string;
+  quoted_annual_rate?: number;
+  guaranteed_maturity_value?: number;
+  valuation_mode?: "derived" | "manual";
+  current_value_override?: number;
+  valuation_date?: string;
+  status?: "active" | "matured" | "closed";
 }
 
 function normalizeText(value: unknown): string {
@@ -91,6 +114,13 @@ function hasMpfMarker(attrs: PanoramaAssetAttributes): boolean {
   return category === "mpf" || subtype === "mpf";
 }
 
+function hasTimeDepositMarker(attrs: PanoramaAssetAttributes): boolean {
+  const category = normalizeText(attrs.panorama_category);
+  const subtype = normalizeText(attrs.sub_type);
+
+  return category === "time_deposit" || subtype === "time_deposit";
+}
+
 function hasInsuranceSpecificAttributes(attrs: PanoramaAssetAttributes): boolean {
   return (
     attrs.policy_type !== undefined ||
@@ -110,6 +140,22 @@ function hasMpfSpecificAttributes(attrs: PanoramaAssetAttributes): boolean {
   );
 }
 
+function hasTimeDepositSpecificAttributes(attrs: PanoramaAssetAttributes): boolean {
+  const hasTermDates =
+    typeof attrs.start_date === "string" &&
+    attrs.start_date.trim().length > 0 &&
+    typeof attrs.maturity_date === "string" &&
+    attrs.maturity_date.trim().length > 0;
+
+  const hasPrincipal = asFiniteNumber(attrs.principal) !== undefined;
+  const hasReturnSignal =
+    asFiniteNumber(attrs.quoted_annual_rate) !== undefined ||
+    asFiniteNumber(attrs.guaranteed_maturity_value) !== undefined ||
+    asFiniteNumber(attrs.current_value_override) !== undefined;
+
+  return hasTermDates && hasPrincipal && hasReturnSignal;
+}
+
 export function parsePanoramaAssetAttributes(
   metadata?: AlternativeAssetHolding["metadata"] | null,
 ): PanoramaAssetAttributes {
@@ -119,9 +165,10 @@ export function parsePanoramaAssetAttributes(
 export function isInsuranceAsset(holding: AlternativeAssetHolding): boolean {
   const attrs = parsePanoramaAssetAttributes(holding.metadata);
   const hasMpfSignals = hasMpfMarker(attrs) || hasMpfSpecificAttributes(attrs);
+  const hasTimeDepositSignals = hasTimeDepositMarker(attrs) || hasTimeDepositSpecificAttributes(attrs);
   const hasInsuranceSignals = hasInsuranceMarker(attrs) || hasInsuranceSpecificAttributes(attrs);
 
-  if (hasMpfSignals) {
+  if (hasMpfSignals || hasTimeDepositSignals) {
     return false;
   }
 
@@ -138,17 +185,31 @@ export function isInsuranceAsset(holding: AlternativeAssetHolding): boolean {
 export function isMpfAsset(holding: AlternativeAssetHolding): boolean {
   const attrs = parsePanoramaAssetAttributes(holding.metadata);
   const hasInsuranceSignals = hasInsuranceMarker(attrs) || hasInsuranceSpecificAttributes(attrs);
+  const hasTimeDepositSignals = hasTimeDepositMarker(attrs) || hasTimeDepositSpecificAttributes(attrs);
   const hasMpfSignals = hasMpfMarker(attrs) || hasMpfSpecificAttributes(attrs);
 
   if (hasMpfSignals) {
     return true;
   }
 
-  if (hasInsuranceSignals) {
+  if (hasInsuranceSignals || hasTimeDepositSignals) {
     return false;
   }
 
   return false;
+}
+
+export function isTimeDepositAsset(holding: AlternativeAssetHolding): boolean {
+  const attrs = parsePanoramaAssetAttributes(holding.metadata);
+  const hasInsuranceSignals = hasInsuranceMarker(attrs) || hasInsuranceSpecificAttributes(attrs);
+  const hasMpfSignals = hasMpfMarker(attrs) || hasMpfSpecificAttributes(attrs);
+  const hasTimeDepositSignals = hasTimeDepositMarker(attrs) || hasTimeDepositSpecificAttributes(attrs);
+
+  if (hasInsuranceSignals || hasMpfSignals) {
+    return false;
+  }
+
+  return hasTimeDepositSignals;
 }
 
 export function getAssetOwner(holding: AlternativeAssetHolding): string | undefined {
@@ -201,6 +262,77 @@ export function buildInsuranceMetadataPatch(input: InsuranceMetadataInput): Json
     valuation_date: input.valuation_date?.trim() ? input.valuation_date.trim() : null,
     total_paid_to_date: input.total_paid_to_date ?? null,
     withdrawable_value: input.withdrawable_value ?? null,
+  };
+}
+
+export function buildTimeDepositMetadata(input: TimeDepositMetadataInput): JsonObject {
+  const metadata: JsonObject = {
+    panorama_category: "time_deposit",
+    sub_type: "time_deposit",
+  };
+
+  if (input.owner?.trim()) {
+    metadata.owner = input.owner.trim();
+  }
+
+  if (input.provider?.trim()) {
+    metadata.provider = input.provider.trim();
+  }
+
+  if (input.principal !== undefined) {
+    metadata.principal = input.principal;
+  }
+
+  if (input.start_date?.trim()) {
+    metadata.start_date = input.start_date.trim();
+  }
+
+  if (input.maturity_date?.trim()) {
+    metadata.maturity_date = input.maturity_date.trim();
+  }
+
+  if (input.quoted_annual_rate !== undefined) {
+    metadata.quoted_annual_rate = input.quoted_annual_rate;
+  }
+
+  if (input.guaranteed_maturity_value !== undefined) {
+    metadata.guaranteed_maturity_value = input.guaranteed_maturity_value;
+  }
+
+  if (input.valuation_mode) {
+    metadata.valuation_mode = input.valuation_mode;
+  }
+
+  if (input.current_value_override !== undefined) {
+    metadata.current_value_override = input.current_value_override;
+  }
+
+  if (input.valuation_date?.trim()) {
+    metadata.valuation_date = input.valuation_date.trim();
+  }
+
+  if (input.status) {
+    metadata.status = input.status;
+  }
+
+  return metadata;
+}
+
+export function buildTimeDepositMetadataPatch(input: TimeDepositMetadataInput): JsonObject {
+  return {
+    panorama_category: "time_deposit",
+    sub_type: "time_deposit",
+    owner: input.owner?.trim() ? input.owner.trim() : null,
+    provider: input.provider?.trim() ? input.provider.trim() : null,
+    principal: input.principal ?? null,
+    start_date: input.start_date?.trim() ? input.start_date.trim() : null,
+    maturity_date: input.maturity_date?.trim() ? input.maturity_date.trim() : null,
+    quoted_annual_rate: input.quoted_annual_rate ?? null,
+    guaranteed_maturity_value: input.guaranteed_maturity_value ?? null,
+    valuation_mode: input.valuation_mode ?? null,
+    current_value_override: input.current_value_override ?? null,
+    valuation_date: input.valuation_date?.trim() ? input.valuation_date.trim() : null,
+    status: input.status ?? null,
   };
 }
 

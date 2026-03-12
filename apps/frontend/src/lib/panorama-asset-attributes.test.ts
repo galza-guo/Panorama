@@ -5,10 +5,13 @@ import {
   asFiniteNumber,
   buildMpfMetadata,
   buildMpfMetadataPatch,
+  buildTimeDepositMetadata,
+  buildTimeDepositMetadataPatch,
   buildFundAllocationFromSubfunds,
   getAssetOwner,
   isInsuranceAsset,
   isMpfAsset,
+  isTimeDepositAsset,
   normalizeMpfSubfunds,
   parsePanoramaAssetAttributes,
 } from "./panorama-asset-attributes";
@@ -60,6 +63,29 @@ describe("panorama asset attributes", () => {
 
     expect(isInsuranceAsset(holding)).toBe(false);
     expect(isMpfAsset(holding)).toBe(true);
+  });
+
+  it("detects time deposits from Panorama metadata markers", () => {
+    const holding = createHolding({
+      panorama_category: "time_deposit",
+      sub_type: "time_deposit",
+      owner: " Alice ",
+      provider: " HSBC ",
+      principal: "10000",
+      start_date: "2026-01-01",
+      maturity_date: "2026-04-11",
+      quoted_annual_rate: "7.3",
+      guaranteed_maturity_value: "10200",
+    });
+
+    const attributes = parsePanoramaAssetAttributes(holding.metadata);
+
+    expect(isTimeDepositAsset(holding)).toBe(true);
+    expect(isInsuranceAsset(holding)).toBe(false);
+    expect(isMpfAsset(holding)).toBe(false);
+    expect(getAssetOwner(holding)).toBe("Alice");
+    expect(asFiniteNumber(attributes.principal)).toBe(10000);
+    expect(asFiniteNumber(attributes.guaranteed_maturity_value)).toBe(10200);
   });
 
   it("normalizes mpf subfunds and derives fallback fund allocations", () => {
@@ -152,6 +178,64 @@ describe("panorama asset attributes", () => {
       valuation_date: "2026-03-02",
       mpf_subfunds: null,
       fund_allocation: null,
+    });
+  });
+
+  it("builds time deposit metadata and patch payloads", () => {
+    expect(
+      buildTimeDepositMetadata({
+        owner: " Alice ",
+        provider: " HSBC ",
+        principal: 10000,
+        start_date: "2026-01-01",
+        maturity_date: "2026-04-11",
+        quoted_annual_rate: 7.3,
+        guaranteed_maturity_value: 10200,
+        valuation_mode: "derived",
+        status: "active",
+      }),
+    ).toEqual({
+      panorama_category: "time_deposit",
+      sub_type: "time_deposit",
+      owner: "Alice",
+      provider: "HSBC",
+      principal: 10000,
+      start_date: "2026-01-01",
+      maturity_date: "2026-04-11",
+      quoted_annual_rate: 7.3,
+      guaranteed_maturity_value: 10200,
+      valuation_mode: "derived",
+      status: "active",
+    });
+
+    expect(
+      buildTimeDepositMetadataPatch({
+        owner: "",
+        provider: " HSBC ",
+        principal: undefined,
+        start_date: "2026-01-01",
+        maturity_date: "",
+        quoted_annual_rate: undefined,
+        guaranteed_maturity_value: 10200,
+        valuation_mode: "manual",
+        current_value_override: 10080,
+        valuation_date: "2026-02-20",
+        status: "active",
+      }),
+    ).toEqual({
+      panorama_category: "time_deposit",
+      sub_type: "time_deposit",
+      owner: null,
+      provider: "HSBC",
+      principal: null,
+      start_date: "2026-01-01",
+      maturity_date: null,
+      quoted_annual_rate: null,
+      guaranteed_maturity_value: 10200,
+      valuation_mode: "manual",
+      current_value_override: 10080,
+      valuation_date: "2026-02-20",
+      status: "active",
     });
   });
 });

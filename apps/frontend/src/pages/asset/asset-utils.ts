@@ -1,3 +1,5 @@
+import { asFiniteNumber } from "@/lib/panorama-asset-attributes";
+import { getTimeDepositDerivedMetrics } from "@/lib/time-deposit-calculations";
 import { Asset, LatestQuoteSnapshot } from "@/lib/types";
 
 export interface WeightedBreakdown {
@@ -10,7 +12,12 @@ export interface ParsedAsset extends Asset {
   countriesList: WeightedBreakdown[];
 }
 
-export type PanoramaAssetCategory = "MPF";
+export interface TimeDepositDisplayState {
+  daysLeft?: number;
+  isEstimatedValue: boolean;
+}
+
+export type PanoramaAssetCategory = "MPF" | "Time Deposit";
 export type DisplayAssetKind = Asset["kind"] | PanoramaAssetCategory;
 
 function getMetadataObject(metadata: Asset["metadata"]): Record<string, unknown> | null {
@@ -48,9 +55,18 @@ export function getPanoramaAssetCategory(
   const panoramaCategory = normalizedMetadataText(metadata, "panorama_category");
   const subType = normalizedMetadataText(metadata, "sub_type");
   const hasMpfSubfunds = Array.isArray(metadata.mpf_subfunds) && metadata.mpf_subfunds.length > 0;
+  const hasTimeDepositFields =
+    typeof metadata.start_date === "string" &&
+    typeof metadata.maturity_date === "string" &&
+    metadata.principal !== undefined &&
+    (metadata.quoted_annual_rate !== undefined || metadata.guaranteed_maturity_value !== undefined);
 
   if (panoramaCategory === "mpf" || subType === "mpf" || hasMpfSubfunds) {
     return "MPF";
+  }
+
+  if (panoramaCategory === "time_deposit" || subType === "time_deposit" || hasTimeDepositFields) {
+    return "Time Deposit";
   }
 
   return undefined;
@@ -58,11 +74,70 @@ export function getPanoramaAssetCategory(
 
 export function getAssetKindForDisplay(asset: Pick<Asset, "kind" | "metadata">): DisplayAssetKind {
   const category = getPanoramaAssetCategory(asset);
-  if (category === "MPF") {
-    return "MPF";
+  if (category === "MPF" || category === "Time Deposit") {
+    return category;
   }
 
   return asset.kind;
+}
+
+export function getPanoramaAssetEditLabel(asset: Pick<Asset, "kind" | "metadata">): string {
+  const category = getPanoramaAssetCategory(asset);
+
+  if (category === "MPF") {
+    return "Edit MPF";
+  }
+
+  if (category === "Time Deposit") {
+    return "Edit Time Deposit";
+  }
+
+  return "Edit";
+}
+
+function toIsoDate(date: Date): string {
+  return date.toISOString().slice(0, 10);
+}
+
+function getTodayIsoDate(): string {
+  const now = new Date();
+  return toIsoDate(new Date(Date.UTC(now.getFullYear(), now.getMonth(), now.getDate())));
+}
+
+export function getTimeDepositDisplayState(
+  asset: Pick<Asset, "kind" | "metadata">,
+  asOfDate = getTodayIsoDate(),
+): TimeDepositDisplayState | undefined {
+  if (getPanoramaAssetCategory(asset) !== "Time Deposit") {
+    return undefined;
+  }
+
+  const metadata = getMetadataObject(asset.metadata);
+  const principal = asFiniteNumber(metadata?.principal);
+  const quotedAnnualRate = asFiniteNumber(metadata?.quoted_annual_rate);
+  const guaranteedMaturityValue = asFiniteNumber(metadata?.guaranteed_maturity_value);
+  const startDate = typeof metadata?.start_date === "string" ? metadata.start_date : undefined;
+  const maturityDate =
+    typeof metadata?.maturity_date === "string" ? metadata.maturity_date : undefined;
+  const canDeriveDaysLeft =
+    principal !== undefined &&
+    startDate !== undefined &&
+    maturityDate !== undefined &&
+    (quotedAnnualRate !== undefined || guaranteedMaturityValue !== undefined);
+
+  return {
+    daysLeft: canDeriveDaysLeft
+      ? getTimeDepositDerivedMetrics({
+          principal,
+          startDate,
+          maturityDate,
+          asOfDate,
+          quotedAnnualRatePct: quotedAnnualRate,
+          guaranteedMaturityValue,
+        }).daysLeft
+      : undefined,
+    isEstimatedValue: canDeriveDaysLeft && metadata?.valuation_mode !== "manual",
+  };
 }
 
 export const isStaleQuote = (snapshot?: LatestQuoteSnapshot, asset?: ParsedAsset): boolean => {

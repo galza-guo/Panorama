@@ -259,6 +259,118 @@ impl AlternativeAssetService {
                 .unwrap_or(false)
     }
 
+    fn is_panorama_time_deposit_asset(asset: &Asset) -> bool {
+        let Some(metadata) = asset.metadata.as_ref() else {
+            return false;
+        };
+
+        let category = metadata
+            .get("panorama_category")
+            .and_then(Value::as_str)
+            .map(|value| value.eq_ignore_ascii_case("time_deposit"))
+            .unwrap_or(false);
+
+        let subtype = metadata
+            .get("sub_type")
+            .and_then(Value::as_str)
+            .map(|value| value.eq_ignore_ascii_case("time_deposit"))
+            .unwrap_or(false);
+
+        let has_term_dates = metadata
+            .get("start_date")
+            .and_then(Value::as_str)
+            .is_some()
+            && metadata
+                .get("maturity_date")
+                .and_then(Value::as_str)
+                .is_some();
+
+        let has_principal = Self::decimal_from_json_value(metadata.get("principal")).is_some();
+        let has_return_signal =
+            Self::decimal_from_json_value(metadata.get("quoted_annual_rate")).is_some()
+                || Self::decimal_from_json_value(metadata.get("guaranteed_maturity_value"))
+                    .is_some()
+                || Self::decimal_from_json_value(metadata.get("current_value_override")).is_some();
+
+        category || subtype || (has_term_dates && has_principal && has_return_signal)
+    }
+
+    fn decimal_from_json_value(value: Option<&Value>) -> Option<Decimal> {
+        match value? {
+            Value::Number(number) => Decimal::from_str(&number.to_string()).ok(),
+            Value::String(text) if !text.trim().is_empty() => Decimal::from_str(text.trim()).ok(),
+            _ => None,
+        }
+    }
+
+    fn date_from_json_value(value: Option<&Value>) -> Option<NaiveDate> {
+        value
+            .and_then(Value::as_str)
+            .and_then(|text| NaiveDate::parse_from_str(text.trim(), "%Y-%m-%d").ok())
+    }
+
+    fn derive_time_deposit_market_value(asset: &Asset) -> Option<(Decimal, chrono::DateTime<Utc>)> {
+        let metadata = asset.metadata.as_ref()?;
+        if !Self::is_panorama_time_deposit_asset(asset) {
+            return None;
+        }
+
+        let principal = Self::decimal_from_json_value(metadata.get("principal"))
+            .or_else(|| Self::decimal_from_json_value(metadata.get("purchase_price")))?;
+        let start_date = Self::date_from_json_value(metadata.get("start_date"))
+            .or_else(|| Self::date_from_json_value(metadata.get("purchase_date")))?;
+        let maturity_date = Self::date_from_json_value(metadata.get("maturity_date"))?;
+        let valuation_mode = metadata
+            .get("valuation_mode")
+            .and_then(Value::as_str)
+            .unwrap_or("derived");
+
+        if valuation_mode.eq_ignore_ascii_case("manual") {
+            let override_value = Self::decimal_from_json_value(metadata.get("current_value_override"))?;
+            let valuation_date =
+                Self::date_from_json_value(metadata.get("valuation_date")).unwrap_or_else(valuation_date_today);
+            let timestamp = Utc.from_utc_datetime(&valuation_date.and_hms_opt(12, 0, 0).unwrap());
+            return Some((override_value, timestamp));
+        }
+
+        let expected_maturity_value =
+            if let Some(maturity_value) = Self::decimal_from_json_value(metadata.get("guaranteed_maturity_value")) {
+                maturity_value
+            } else {
+                let quoted_rate_pct =
+                    Self::decimal_from_json_value(metadata.get("quoted_annual_rate"))?;
+                let total_days = (maturity_date - start_date).num_days().max(0);
+                if total_days == 0 {
+                    principal
+                } else {
+                    let total_days_decimal = Decimal::from(total_days);
+                    principal
+                        * (Decimal::ONE
+                            + (quoted_rate_pct / Decimal::new(100, 0))
+                                * (total_days_decimal / Decimal::from(365)))
+                }
+            };
+
+        let total_days = (maturity_date - start_date).num_days().max(0);
+        let as_of_date = valuation_date_today();
+        let market_value = if total_days == 0 {
+            expected_maturity_value
+        } else {
+            let elapsed_days = (as_of_date - start_date).num_days().clamp(0, total_days);
+            if elapsed_days >= total_days {
+                expected_maturity_value
+            } else {
+                principal
+                    + (expected_maturity_value - principal)
+                        * Decimal::from(elapsed_days)
+                        / Decimal::from(total_days)
+            }
+        };
+
+        let timestamp = Utc.from_utc_datetime(&as_of_date.and_hms_opt(12, 0, 0).unwrap());
+        Some((market_value, timestamp))
+    }
+
     fn apply_mpf_unit_prices_to_metadata(
         metadata: &Option<Value>,
         snapshot: &MpfUnitPriceSnapshot,
@@ -1039,17 +1151,13 @@ impl AlternativeAssetServiceTrait for AlternativeAssetService {
                 let purchase_price = asset
                     .metadata
                     .as_ref()
-                    .and_then(|m| m.get("purchase_price"))
-                    .and_then(|v| v.as_str())
-                    .and_then(|s| s.parse::<Decimal>().ok());
+                    .and_then(|m| Self::decimal_from_json_value(m.get("purchase_price")));
 
                 // Extract purchase_date from metadata
                 let purchase_date = asset
                     .metadata
                     .as_ref()
-                    .and_then(|m| m.get("purchase_date"))
-                    .and_then(|v| v.as_str())
-                    .and_then(|s| chrono::NaiveDate::parse_from_str(s, "%Y-%m-%d").ok());
+                    .and_then(|m| Self::date_from_json_value(m.get("purchase_date")));
 
                 // Extract linked_asset_id from metadata (for liabilities)
                 let linked_asset_id = asset
@@ -1059,9 +1167,13 @@ impl AlternativeAssetServiceTrait for AlternativeAssetService {
                     .and_then(|v| v.as_str())
                     .map(|s| s.to_string());
 
+                let (market_value, valuation_date) =
+                    Self::derive_time_deposit_market_value(&asset)
+                        .unwrap_or((quote.close, quote.timestamp));
+
                 // Calculate unrealized gain if we have purchase price
                 let (unrealized_gain, unrealized_gain_pct) = if let Some(pp) = purchase_price {
-                    let gain = quote.close - pp;
+                    let gain = market_value - pp;
                     let pct = if pp != Decimal::ZERO {
                         Some(gain / pp)
                     } else {
@@ -1081,12 +1193,12 @@ impl AlternativeAssetServiceTrait for AlternativeAssetService {
                         .unwrap_or_else(|| asset.display_code.clone().unwrap_or_default()),
                     symbol: asset.display_code.unwrap_or_default(),
                     currency: asset.quote_ccy,
-                    market_value: quote.close,
+                    market_value,
                     purchase_price,
                     purchase_date,
                     unrealized_gain,
                     unrealized_gain_pct,
-                    valuation_date: quote.timestamp,
+                    valuation_date,
                     metadata: asset.metadata,
                     linked_asset_id,
                     notes: asset.notes,
@@ -1135,6 +1247,417 @@ impl AlternativeAssetServiceTrait for AlternativeAssetService {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use async_trait::async_trait;
+    use rust_decimal_macros::dec;
+    use std::collections::{HashMap, HashSet};
+    use std::sync::Arc;
+
+    use crate::assets::{InstrumentType, ProviderProfile, UpdateAssetProfile};
+    use crate::quotes::{
+        LatestQuotePair, LatestQuoteSnapshot, ProviderInfo, QuoteImport, QuoteSyncState,
+        ResolvedQuote, SymbolSearchResult, SymbolSyncPlan, SyncMode, SyncResult,
+    };
+    use crate::utils::time_utils::valuation_date_today;
+
+    struct MockAlternativeAssetRepository;
+
+    #[async_trait]
+    impl AlternativeAssetRepositoryTrait for MockAlternativeAssetRepository {
+        async fn delete_alternative_asset(&self, _asset_id: &str) -> Result<()> {
+            unimplemented!()
+        }
+
+        async fn update_asset_metadata(
+            &self,
+            _asset_id: &str,
+            _metadata: Option<serde_json::Value>,
+        ) -> Result<()> {
+            unimplemented!()
+        }
+
+        fn find_liabilities_linked_to(&self, _linked_asset_id: &str) -> Result<Vec<String>> {
+            Ok(vec![])
+        }
+
+        async fn update_asset_details(
+            &self,
+            _asset_id: &str,
+            _name: Option<&str>,
+            _display_code: Option<&str>,
+            _metadata: Option<serde_json::Value>,
+            _notes: Option<&str>,
+        ) -> Result<()> {
+            unimplemented!()
+        }
+    }
+
+    struct MockAssetRepository {
+        assets: Vec<Asset>,
+    }
+
+    impl MockAssetRepository {
+        fn new(assets: Vec<Asset>) -> Self {
+            Self { assets }
+        }
+    }
+
+    #[async_trait]
+    impl AssetRepositoryTrait for MockAssetRepository {
+        async fn create(&self, _new_asset: NewAsset) -> Result<Asset> {
+            unimplemented!()
+        }
+
+        async fn create_batch(&self, _new_assets: Vec<NewAsset>) -> Result<Vec<Asset>> {
+            unimplemented!()
+        }
+
+        async fn update_profile(
+            &self,
+            _asset_id: &str,
+            _payload: UpdateAssetProfile,
+        ) -> Result<Asset> {
+            unimplemented!()
+        }
+
+        async fn update_quote_mode(&self, _asset_id: &str, _quote_mode: &str) -> Result<Asset> {
+            unimplemented!()
+        }
+
+        fn get_by_id(&self, asset_id: &str) -> Result<Asset> {
+            self.assets
+                .iter()
+                .find(|asset| asset.id == asset_id)
+                .cloned()
+                .ok_or_else(|| Error::Repository(format!("Asset {asset_id} not found")))
+        }
+
+        fn list(&self) -> Result<Vec<Asset>> {
+            Ok(self.assets.clone())
+        }
+
+        fn list_by_asset_ids(&self, asset_ids: &[String]) -> Result<Vec<Asset>> {
+            Ok(self
+                .assets
+                .iter()
+                .filter(|asset| asset_ids.contains(&asset.id))
+                .cloned()
+                .collect())
+        }
+
+        async fn delete(&self, _asset_id: &str) -> Result<()> {
+            unimplemented!()
+        }
+
+        fn search_by_symbol(&self, _query: &str) -> Result<Vec<Asset>> {
+            Ok(vec![])
+        }
+
+        fn find_by_instrument_key(&self, _instrument_key: &str) -> Result<Option<Asset>> {
+            Ok(None)
+        }
+
+        async fn cleanup_legacy_metadata(&self, _asset_id: &str) -> Result<()> {
+            Ok(())
+        }
+
+        async fn deactivate(&self, _asset_id: &str) -> Result<()> {
+            Ok(())
+        }
+
+        async fn reactivate(&self, _asset_id: &str) -> Result<()> {
+            Ok(())
+        }
+
+        async fn copy_user_metadata(&self, _source_id: &str, _target_id: &str) -> Result<()> {
+            Ok(())
+        }
+
+        async fn deactivate_orphaned_investments(&self) -> Result<Vec<String>> {
+            Ok(vec![])
+        }
+    }
+
+    #[derive(Clone)]
+    struct MockQuoteService {
+        quotes: HashMap<String, Quote>,
+    }
+
+    impl MockQuoteService {
+        fn new(quotes: Vec<Quote>) -> Self {
+            Self {
+                quotes: quotes
+                    .into_iter()
+                    .map(|quote| (quote.asset_id.clone(), quote))
+                    .collect(),
+            }
+        }
+    }
+
+    #[async_trait]
+    impl QuoteServiceTrait for MockQuoteService {
+        fn get_latest_quote(&self, symbol: &str) -> Result<Quote> {
+            self.quotes
+                .get(symbol)
+                .cloned()
+                .ok_or_else(|| Error::Repository(format!("Quote {symbol} not found")))
+        }
+
+        fn get_latest_quotes(&self, symbols: &[String]) -> Result<HashMap<String, Quote>> {
+            Ok(symbols
+                .iter()
+                .filter_map(|symbol| self.quotes.get(symbol).cloned().map(|quote| (symbol.clone(), quote)))
+                .collect())
+        }
+
+        fn get_latest_quotes_snapshot(
+            &self,
+            asset_ids: &[String],
+        ) -> Result<HashMap<String, LatestQuoteSnapshot>> {
+            let today = Utc::now().date_naive();
+            let quotes = self.get_latest_quotes(asset_ids)?;
+            Ok(quotes
+                .into_iter()
+                .map(|(asset_id, quote)| {
+                    let quote_day = quote.timestamp.date_naive();
+                    (
+                        asset_id,
+                        LatestQuoteSnapshot {
+                            quote,
+                            is_stale: quote_day < today,
+                            effective_market_date: today.to_string(),
+                            quote_date: quote_day.to_string(),
+                        },
+                    )
+                })
+                .collect())
+        }
+
+        fn get_latest_quotes_pair(
+            &self,
+            _symbols: &[String],
+        ) -> Result<HashMap<String, LatestQuotePair>> {
+            unimplemented!()
+        }
+
+        fn get_historical_quotes(&self, _symbol: &str) -> Result<Vec<Quote>> {
+            unimplemented!()
+        }
+
+        fn get_all_historical_quotes(&self) -> Result<HashMap<String, Vec<(NaiveDate, Quote)>>> {
+            unimplemented!()
+        }
+
+        fn get_quotes_in_range(
+            &self,
+            _symbols: &HashSet<String>,
+            _start: NaiveDate,
+            _end: NaiveDate,
+        ) -> Result<Vec<Quote>> {
+            unimplemented!()
+        }
+
+        fn get_quotes_in_range_filled(
+            &self,
+            _symbols: &HashSet<String>,
+            _start: NaiveDate,
+            _end: NaiveDate,
+        ) -> Result<Vec<Quote>> {
+            unimplemented!()
+        }
+
+        async fn get_daily_quotes(
+            &self,
+            _asset_ids: &HashSet<String>,
+            _start: NaiveDate,
+            _end: NaiveDate,
+        ) -> Result<HashMap<NaiveDate, HashMap<String, Quote>>> {
+            unimplemented!()
+        }
+
+        async fn add_quote(&self, _quote: &Quote) -> Result<Quote> {
+            unimplemented!()
+        }
+
+        async fn update_quote(&self, quote: Quote) -> Result<Quote> {
+            Ok(quote)
+        }
+
+        async fn delete_quote(&self, _quote_id: &str) -> Result<()> {
+            unimplemented!()
+        }
+
+        async fn bulk_upsert_quotes(&self, _quotes: Vec<Quote>) -> Result<usize> {
+            unimplemented!()
+        }
+
+        async fn search_symbol(&self, _query: &str) -> Result<Vec<SymbolSearchResult>> {
+            unimplemented!()
+        }
+
+        async fn search_symbol_with_currency(
+            &self,
+            _query: &str,
+            _account_currency: Option<&str>,
+        ) -> Result<Vec<SymbolSearchResult>> {
+            unimplemented!()
+        }
+
+        async fn resolve_symbol_quote(
+            &self,
+            _symbol: &str,
+            _exchange_mic: Option<&str>,
+            _instrument_type: Option<&InstrumentType>,
+        ) -> Result<ResolvedQuote> {
+            Ok(ResolvedQuote::default())
+        }
+
+        async fn get_asset_profile(&self, _asset: &Asset) -> Result<ProviderProfile> {
+            unimplemented!()
+        }
+
+        async fn fetch_quotes_from_provider(
+            &self,
+            _asset_id: &str,
+            _start: NaiveDate,
+            _end: NaiveDate,
+        ) -> Result<Vec<Quote>> {
+            unimplemented!()
+        }
+
+        async fn fetch_quotes_for_symbol(
+            &self,
+            _asset_id: &str,
+            _currency: &str,
+            _start: NaiveDate,
+            _end: NaiveDate,
+        ) -> Result<Vec<Quote>> {
+            unimplemented!()
+        }
+
+        async fn sync(&self, _mode: SyncMode, _asset_ids: Option<Vec<String>>) -> Result<SyncResult> {
+            unimplemented!()
+        }
+
+        async fn resync(&self, _asset_ids: Option<Vec<String>>) -> Result<SyncResult> {
+            unimplemented!()
+        }
+
+        async fn refresh_sync_state(&self) -> Result<()> {
+            unimplemented!()
+        }
+
+        fn get_sync_plan(&self) -> Result<Vec<SymbolSyncPlan>> {
+            unimplemented!()
+        }
+
+        async fn handle_activity_created(&self, _symbol: &str, _activity_date: NaiveDate) -> Result<()> {
+            unimplemented!()
+        }
+
+        async fn handle_activity_deleted(&self, _symbol: &str) -> Result<()> {
+            unimplemented!()
+        }
+
+        async fn delete_sync_state(&self, _symbol: &str) -> Result<()> {
+            unimplemented!()
+        }
+
+        fn get_symbols_needing_sync(&self) -> Result<Vec<QuoteSyncState>> {
+            unimplemented!()
+        }
+
+        fn get_sync_state(&self, _symbol: &str) -> Result<Option<QuoteSyncState>> {
+            unimplemented!()
+        }
+
+        async fn mark_profile_enriched(&self, _symbol: &str) -> Result<()> {
+            unimplemented!()
+        }
+
+        fn get_assets_needing_profile_enrichment(&self) -> Result<Vec<QuoteSyncState>> {
+            unimplemented!()
+        }
+
+        fn get_sync_states_with_errors(&self) -> Result<Vec<QuoteSyncState>> {
+            unimplemented!()
+        }
+
+        async fn update_position_status_from_holdings(
+            &self,
+            _current_holdings: &HashMap<String, Decimal>,
+        ) -> Result<()> {
+            unimplemented!()
+        }
+
+        async fn get_providers_info(&self) -> Result<Vec<ProviderInfo>> {
+            unimplemented!()
+        }
+
+        async fn update_provider_settings(
+            &self,
+            _provider_id: &str,
+            _priority: i32,
+            _enabled: bool,
+        ) -> Result<()> {
+            unimplemented!()
+        }
+
+        async fn check_quotes_import(
+            &self,
+            _content: &[u8],
+            _has_header_row: bool,
+        ) -> Result<Vec<QuoteImport>> {
+            unimplemented!()
+        }
+
+        async fn import_quotes(
+            &self,
+            _quotes: Vec<QuoteImport>,
+            _overwrite: bool,
+        ) -> Result<Vec<QuoteImport>> {
+            unimplemented!()
+        }
+    }
+
+    fn sample_asset(id: &str, metadata: Option<Value>) -> Asset {
+        Asset {
+            id: id.to_string(),
+            kind: AssetKind::Other,
+            name: Some("Sample Time Deposit".to_string()),
+            display_code: Some("Time Deposit".to_string()),
+            notes: None,
+            metadata,
+            is_active: true,
+            quote_mode: QuoteMode::Manual,
+            quote_ccy: "HKD".to_string(),
+            instrument_type: None,
+            instrument_symbol: None,
+            instrument_exchange_mic: None,
+            instrument_key: None,
+            provider_config: None,
+            exchange_name: None,
+            created_at: Utc::now().naive_utc(),
+            updated_at: Utc::now().naive_utc(),
+        }
+    }
+
+    fn sample_quote(asset_id: &str, close: Decimal, quote_date: NaiveDate) -> Quote {
+        Quote {
+            id: format!("QUOTE-{asset_id}"),
+            asset_id: asset_id.to_string(),
+            timestamp: Utc.from_utc_datetime(&quote_date.and_hms_opt(12, 0, 0).unwrap()),
+            open: close,
+            high: close,
+            low: close,
+            close,
+            adjclose: close,
+            volume: Decimal::ZERO,
+            currency: "HKD".to_string(),
+            data_source: DataSource::Manual,
+            created_at: Utc::now(),
+            notes: None,
+        }
+    }
 
     #[test]
     fn test_validate_alternative_asset_kind() {
@@ -1257,6 +1780,122 @@ mod tests {
             merged.pointer("/fund_allocation/Core Accumulation"),
             Some(&json!(60.5))
         );
+    }
+
+    #[test]
+    fn test_get_alternative_holdings_derives_time_deposit_current_value() {
+        let today = valuation_date_today();
+        let start_date = today - chrono::Duration::days(50);
+        let maturity_date = today + chrono::Duration::days(50);
+        let asset_id = "ALT-TD-DERIVED";
+
+        let metadata = Some(json!({
+            "panorama_category": "time_deposit",
+            "sub_type": "time_deposit",
+            "principal": "10000",
+            "start_date": start_date.to_string(),
+            "maturity_date": maturity_date.to_string(),
+            "quoted_annual_rate": 7.3,
+            "valuation_mode": "derived",
+            "purchase_price": "10000",
+            "purchase_date": start_date.to_string()
+        }));
+
+        let service = AlternativeAssetService::new(
+            Arc::new(MockAlternativeAssetRepository),
+            Arc::new(MockAssetRepository::new(vec![sample_asset(asset_id, metadata)])),
+            Arc::new(MockQuoteService::new(vec![sample_quote(
+                asset_id,
+                dec!(10000),
+                start_date,
+            )])),
+        );
+
+        let holdings = service.get_alternative_holdings().expect("expected holdings");
+        let holding = holdings.first().expect("expected derived holding");
+
+        assert_eq!(holding.market_value, dec!(10100));
+        assert_eq!(holding.purchase_price, Some(dec!(10000)));
+        assert_eq!(holding.purchase_date, Some(start_date));
+        assert_eq!(holding.unrealized_gain, Some(dec!(100)));
+        assert_eq!(holding.unrealized_gain_pct, Some(dec!(0.01)));
+        assert_eq!(holding.valuation_date.date_naive(), today);
+    }
+
+    #[test]
+    fn test_get_alternative_holdings_uses_time_deposit_manual_override() {
+        let today = valuation_date_today();
+        let start_date = today - chrono::Duration::days(50);
+        let maturity_date = today + chrono::Duration::days(50);
+        let override_date = today - chrono::Duration::days(1);
+        let asset_id = "ALT-TD-MANUAL";
+
+        let metadata = Some(json!({
+            "panorama_category": "time_deposit",
+            "sub_type": "time_deposit",
+            "principal": "10000",
+            "start_date": start_date.to_string(),
+            "maturity_date": maturity_date.to_string(),
+            "quoted_annual_rate": 7.3,
+            "valuation_mode": "manual",
+            "current_value_override": "10123.45",
+            "valuation_date": override_date.to_string(),
+            "purchase_price": "10000",
+            "purchase_date": start_date.to_string()
+        }));
+
+        let service = AlternativeAssetService::new(
+            Arc::new(MockAlternativeAssetRepository),
+            Arc::new(MockAssetRepository::new(vec![sample_asset(asset_id, metadata)])),
+            Arc::new(MockQuoteService::new(vec![sample_quote(
+                asset_id,
+                dec!(10000),
+                start_date,
+            )])),
+        );
+
+        let holdings = service.get_alternative_holdings().expect("expected holdings");
+        let holding = holdings.first().expect("expected manual holding");
+
+        assert_eq!(holding.market_value, dec!(10123.45));
+        assert_eq!(holding.unrealized_gain, Some(dec!(123.45)));
+        assert_eq!(holding.valuation_date.date_naive(), override_date);
+    }
+
+    #[test]
+    fn test_get_alternative_holdings_caps_time_deposit_at_maturity_value() {
+        let today = valuation_date_today();
+        let start_date = today - chrono::Duration::days(100);
+        let maturity_date = today - chrono::Duration::days(1);
+        let asset_id = "ALT-TD-MATURED";
+
+        let metadata = Some(json!({
+            "panorama_category": "time_deposit",
+            "sub_type": "time_deposit",
+            "principal": "10000",
+            "start_date": start_date.to_string(),
+            "maturity_date": maturity_date.to_string(),
+            "guaranteed_maturity_value": "10200",
+            "valuation_mode": "derived",
+            "purchase_price": "10000",
+            "purchase_date": start_date.to_string()
+        }));
+
+        let service = AlternativeAssetService::new(
+            Arc::new(MockAlternativeAssetRepository),
+            Arc::new(MockAssetRepository::new(vec![sample_asset(asset_id, metadata)])),
+            Arc::new(MockQuoteService::new(vec![sample_quote(
+                asset_id,
+                dec!(10000),
+                start_date,
+            )])),
+        );
+
+        let holdings = service.get_alternative_holdings().expect("expected holdings");
+        let holding = holdings.first().expect("expected matured holding");
+
+        assert_eq!(holding.market_value, dec!(10200));
+        assert_eq!(holding.unrealized_gain, Some(dec!(200)));
     }
 
     #[test]

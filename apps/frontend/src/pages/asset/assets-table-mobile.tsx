@@ -29,7 +29,9 @@ import { useSettingsContext } from "@/lib/settings-provider";
 import { ScrollArea, Separator } from "@wealthfolio/ui";
 import {
   getAssetKindForDisplay,
+  getPanoramaAssetEditLabel,
   getPanoramaAssetCategory,
+  getTimeDepositDisplayState,
   isStaleQuote,
   ParsedAsset,
   type PanoramaAssetCategory,
@@ -221,6 +223,7 @@ export function AssetsTableMobile({
         {filteredAssets.map((asset) => {
           const category = getPanoramaAssetCategory(asset);
           const isMpfAsset = category === "MPF";
+          const timeDepositDisplay = getTimeDepositDisplayState(asset);
 
           return (
             <Card key={asset.id} className="p-4">
@@ -247,6 +250,11 @@ export function AssetsTableMobile({
                           {category}
                         </Badge>
                       ) : null}
+                      {timeDepositDisplay?.daysLeft !== undefined ? (
+                        <Badge variant="outline" className="text-[10px]">
+                          {timeDepositDisplay.daysLeft}d left
+                        </Badge>
+                      ) : null}
                     </div>
                     <p className="text-muted-foreground truncate text-sm">{asset.name ?? "-"}</p>
                   </div>
@@ -261,6 +269,11 @@ export function AssetsTableMobile({
                             latestQuotes[asset.id].quote.close,
                             latestQuotes[asset.id].quote.currency ?? asset.quoteCcy ?? baseCurrency,
                           )}
+                          {timeDepositDisplay?.isEstimatedValue ? (
+                            <Badge variant="outline" className="px-1.5 py-0 text-[10px]">
+                              Est.
+                            </Badge>
+                          ) : null}
                           {isStaleQuote(latestQuotes[asset.id], asset) ? (
                             <Tooltip>
                               <TooltipTrigger asChild>
@@ -313,7 +326,7 @@ export function AssetsTableMobile({
                         Classify
                       </DropdownMenuItem>
                       <DropdownMenuItem onClick={() => onEdit(asset)}>
-                        {isMpfAsset ? "Edit MPF" : "Edit"}
+                        {getPanoramaAssetEditLabel(asset)}
                       </DropdownMenuItem>
                       <DropdownMenuItem
                         className="text-destructive focus:text-destructive"
@@ -448,7 +461,9 @@ export function AssetsTableMobile({
                             {isSelected && <Icons.Check className="text-secondary h-3 w-3" />}
                           </div>
                           <span className="font-medium">
-                            {kind === "MPF" ? "MPF" : (ASSET_KIND_DISPLAY_NAMES[kind] ?? kind)}
+                            {kind === "MPF" || kind === "Time Deposit"
+                              ? kind
+                              : (ASSET_KIND_DISPLAY_NAMES[kind] ?? kind)}
                           </span>
                         </div>
                         <Badge variant="secondary" className="ml-auto">

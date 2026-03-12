@@ -22,6 +22,8 @@ import { useSyncMarketDataMutation } from "@/hooks/use-sync-market-data";
 import {
   buildMpfMetadata,
   buildMpfMetadataPatch,
+  buildTimeDepositMetadata,
+  buildTimeDepositMetadataPatch,
   normalizeMpfSubfunds,
   parsePanoramaAssetAttributes,
   type PanoramaMpfSubfund,
@@ -32,6 +34,11 @@ import {
   MpfAssetEditorSheet,
   type MpfAssetFormValues,
 } from "@/pages/mpf/components/mpf-asset-editor-sheet";
+import {
+  TimeDepositEditorSheet,
+  type TimeDepositFormValues,
+} from "@/pages/time-deposits/components/time-deposit-editor-sheet";
+import { getEffectiveTimeDepositCurrentValue } from "@/lib/time-deposit-calculations";
 import { toast } from "@wealthfolio/ui/components/ui/use-toast";
 import { syncPanoramaMpfUnitPrices } from "@/adapters";
 import { useAlternativeAssetMutations } from "./alternative-assets/hooks";
@@ -60,6 +67,161 @@ function parseOptionalNumber(value: string): number | undefined {
   }
 
   return parsed;
+}
+
+function parsePositiveNumber(value: string): number | undefined {
+  const trimmed = value.trim();
+  if (!trimmed) {
+    return undefined;
+  }
+
+  const parsed = Number(trimmed);
+  if (!Number.isFinite(parsed) || parsed <= 0) {
+    return undefined;
+  }
+
+  return parsed;
+}
+
+function buildTimeDepositStatus(values: Pick<TimeDepositFormValues, "valuationDate" | "maturityDate">) {
+  return values.valuationDate >= values.maturityDate ? "matured" : "active";
+}
+
+function buildTimeDepositCreateMetadata(values: TimeDepositFormValues) {
+  return {
+    ...buildTimeDepositMetadata({
+      owner: values.owner,
+      provider: values.provider,
+      principal: parsePositiveNumber(values.principal),
+      start_date: toIsoDate(values.startDate),
+      maturity_date: toIsoDate(values.maturityDate),
+      quoted_annual_rate:
+        values.inputMode === "rate" ? parsePositiveNumber(values.quotedAnnualRate) : undefined,
+      guaranteed_maturity_value:
+        values.inputMode === "maturity"
+          ? parsePositiveNumber(values.guaranteedMaturityValue)
+          : undefined,
+      valuation_mode: values.valuationMode,
+      current_value_override:
+        values.valuationMode === "manual"
+          ? parsePositiveNumber(values.currentValueOverride)
+          : undefined,
+      valuation_date: toIsoDate(values.valuationDate),
+      status: buildTimeDepositStatus(values),
+    }),
+    purchase_price: values.principal.trim(),
+    purchase_date: toIsoDate(values.startDate),
+  };
+}
+
+function buildTimeDepositPatch(values: TimeDepositFormValues) {
+  return {
+    ...buildTimeDepositMetadataPatch({
+      owner: values.owner,
+      provider: values.provider,
+      principal: parsePositiveNumber(values.principal),
+      start_date: toIsoDate(values.startDate),
+      maturity_date: toIsoDate(values.maturityDate),
+      quoted_annual_rate:
+        values.inputMode === "rate" ? parsePositiveNumber(values.quotedAnnualRate) : undefined,
+      guaranteed_maturity_value:
+        values.inputMode === "maturity"
+          ? parsePositiveNumber(values.guaranteedMaturityValue)
+          : undefined,
+      valuation_mode: values.valuationMode,
+      current_value_override:
+        values.valuationMode === "manual"
+          ? parsePositiveNumber(values.currentValueOverride)
+          : undefined,
+      valuation_date: toIsoDate(values.valuationDate),
+      status: buildTimeDepositStatus(values),
+    }),
+    purchase_price: values.principal.trim(),
+    purchase_date: toIsoDate(values.startDate),
+  };
+}
+
+function getTimeDepositCurrentValue(values: TimeDepositFormValues): number | undefined {
+  const principal = parsePositiveNumber(values.principal);
+  const quotedAnnualRate = parsePositiveNumber(values.quotedAnnualRate);
+  const guaranteedMaturityValue = parsePositiveNumber(values.guaranteedMaturityValue);
+  const currentValueOverride = parsePositiveNumber(values.currentValueOverride);
+
+  if (!principal || values.maturityDate <= values.startDate) {
+    return undefined;
+  }
+
+  if (values.inputMode === "rate" && quotedAnnualRate === undefined) {
+    return undefined;
+  }
+
+  if (values.inputMode === "maturity" && guaranteedMaturityValue === undefined) {
+    return undefined;
+  }
+
+  return getEffectiveTimeDepositCurrentValue({
+    principal,
+    startDate: values.startDate,
+    maturityDate: values.maturityDate,
+    asOfDate: values.valuationDate,
+    quotedAnnualRatePct: quotedAnnualRate,
+    guaranteedMaturityValue,
+    valuationMode: values.valuationMode,
+    currentValueOverride,
+  });
+}
+
+function getStoredTimeDepositValuation(holding: AlternativeAssetHolding): { date: string; value?: number } {
+  const attributes = parsePanoramaAssetAttributes(holding.metadata);
+  const principal = asNumber(attributes.principal ?? holding.purchasePrice);
+  const quotedAnnualRate = asNumber(attributes.quoted_annual_rate);
+  const guaranteedMaturityValue = asNumber(attributes.guaranteed_maturity_value);
+  const currentValueOverride = asNumber(attributes.current_value_override);
+  const startDate =
+    typeof attributes.start_date === "string" ? attributes.start_date : holding.purchaseDate;
+  const maturityDate =
+    typeof attributes.maturity_date === "string" ? attributes.maturity_date : undefined;
+  const valuationDate =
+    typeof attributes.valuation_date === "string" && attributes.valuation_date.trim()
+      ? attributes.valuation_date.trim()
+      : holding.valuationDate.slice(0, 10);
+
+  if (!principal || !startDate || !maturityDate) {
+    return { date: valuationDate, value: asNumber(holding.marketValue) };
+  }
+
+  return {
+    date: valuationDate,
+    value: getEffectiveTimeDepositCurrentValue({
+      principal,
+      startDate,
+      maturityDate,
+      asOfDate: valuationDate,
+      quotedAnnualRatePct: quotedAnnualRate,
+      guaranteedMaturityValue,
+      valuationMode: attributes.valuation_mode === "manual" ? "manual" : "derived",
+      currentValueOverride,
+    }),
+  };
+}
+
+function asNumber(value: unknown): number | undefined {
+  if (typeof value === "number" && Number.isFinite(value)) {
+    return value;
+  }
+
+  if (typeof value === "string" && value.trim()) {
+    const parsed = Number(value);
+    if (Number.isFinite(parsed)) {
+      return parsed;
+    }
+  }
+
+  return undefined;
+}
+
+function formatValueForMutation(value: number | undefined): string | undefined {
+  return value !== undefined && Number.isFinite(value) ? String(Number(value.toFixed(2))) : undefined;
 }
 
 function mergeSubfunds(
@@ -138,6 +300,8 @@ export default function AssetsPage() {
   const [editingAsset, setEditingAsset] = useState<ParsedAsset | null>(null);
   const [isCreatingMpfAsset, setIsCreatingMpfAsset] = useState(false);
   const [editingMpfAssetId, setEditingMpfAssetId] = useState<string | null>(null);
+  const [isCreatingTimeDeposit, setIsCreatingTimeDeposit] = useState(false);
+  const [editingTimeDepositAssetId, setEditingTimeDepositAssetId] = useState<string | null>(null);
   const [assetPendingDelete, setAssetPendingDelete] = useState<ParsedAsset | null>(null);
   const [assetPendingRefetch, setAssetPendingRefetch] = useState<ParsedAsset | null>(null);
 
@@ -149,15 +313,36 @@ export default function AssetsPage() {
     return alternativeHoldings.find((holding) => holding.id === editingMpfAssetId) ?? null;
   }, [alternativeHoldings, editingMpfAssetId]);
 
+  const editingTimeDepositHolding = useMemo<AlternativeAssetHolding | null>(() => {
+    if (!editingTimeDepositAssetId) {
+      return null;
+    }
+
+    return alternativeHoldings.find((holding) => holding.id === editingTimeDepositAssetId) ?? null;
+  }, [alternativeHoldings, editingTimeDepositAssetId]);
+
   const isSavingMpfAsset =
     createMutation.isPending ||
     updateMetadataMutation.isPending ||
     updateValuationMutation.isPending;
+  const isSavingTimeDeposit = isSavingMpfAsset;
 
   const handleEditAsset = (asset: ParsedAsset) => {
     if (getPanoramaAssetCategory(asset) === "MPF") {
+      setEditingAsset(null);
       setIsCreatingMpfAsset(false);
       setEditingMpfAssetId(asset.id);
+      setIsCreatingTimeDeposit(false);
+      setEditingTimeDepositAssetId(null);
+      return;
+    }
+
+    if (getPanoramaAssetCategory(asset) === "Time Deposit") {
+      setEditingAsset(null);
+      setIsCreatingMpfAsset(false);
+      setEditingMpfAssetId(null);
+      setIsCreatingTimeDeposit(false);
+      setEditingTimeDepositAssetId(asset.id);
       return;
     }
 
@@ -255,22 +440,96 @@ export default function AssetsPage() {
     setEditingMpfAssetId(null);
   };
 
+  const handleTimeDepositSubmit = async (values: TimeDepositFormValues) => {
+    const currentValue = formatValueForMutation(getTimeDepositCurrentValue(values));
+    const valuationDate = toIsoDate(values.valuationDate);
+
+    if (!currentValue) {
+      return;
+    }
+
+    if (!editingTimeDepositHolding) {
+      const response = await createMutation.mutateAsync({
+        kind: "other",
+        name: values.name,
+        currency: values.currency,
+        currentValue,
+        valueDate: valuationDate,
+        metadata: buildTimeDepositCreateMetadata(values),
+      });
+
+      if (values.notes) {
+        await updateMetadataMutation.mutateAsync({
+          assetId: response.assetId,
+          name: values.name,
+          notes: values.notes,
+          metadata: buildTimeDepositPatch(values),
+        });
+      }
+
+      setIsCreatingTimeDeposit(false);
+      return;
+    }
+
+    await updateMetadataMutation.mutateAsync({
+      assetId: editingTimeDepositHolding.id,
+      name: values.name,
+      notes: values.notes || null,
+      metadata: buildTimeDepositPatch(values),
+    });
+
+    const existingValuation = getStoredTimeDepositValuation(editingTimeDepositHolding);
+    if (
+      existingValuation.date !== valuationDate ||
+      formatValueForMutation(existingValuation.value) !== currentValue
+    ) {
+      await updateValuationMutation.mutateAsync({
+        assetId: editingTimeDepositHolding.id,
+        request: {
+          value: currentValue,
+          date: valuationDate,
+        },
+      });
+    }
+
+    setEditingTimeDepositAssetId(null);
+  };
+
   return (
     <div className="space-y-6">
       <SettingsHeader heading="Assets" text="Browse and manage assets tracked in your portfolio.">
-        <Button
-          type="button"
-          size="sm"
-          variant="outline"
-          onClick={() => {
-            setEditingAsset(null);
-            setEditingMpfAssetId(null);
-            setIsCreatingMpfAsset(true);
-          }}
-        >
-          <Icons.Plus className="mr-2 h-3 w-3" />
-          Add MPF Asset
-        </Button>
+        <div className="flex flex-wrap gap-2">
+          <Button
+            type="button"
+            size="sm"
+            variant="outline"
+            onClick={() => {
+              setEditingAsset(null);
+              setEditingMpfAssetId(null);
+              setEditingTimeDepositAssetId(null);
+              setIsCreatingTimeDeposit(false);
+              setIsCreatingMpfAsset(true);
+            }}
+          >
+            <Icons.Plus className="mr-2 h-3 w-3" />
+            Add MPF Asset
+          </Button>
+          <Button
+            type="button"
+            size="sm"
+            variant="outline"
+            onClick={() => {
+              setEditingAsset(null);
+              setEditingMpfAssetId(null);
+              setIsCreatingMpfAsset(false);
+              setEditingTimeDepositAssetId(null);
+              setIsCreatingTimeDeposit(true);
+            }}
+          >
+            <Icons.Plus className="mr-2 h-3 w-3" />
+            Add Time Deposit
+          </Button>
+        </div>
       </SettingsHeader>
       <Separator />
       <div className="w-full">
@@ -324,6 +583,20 @@ export default function AssetsPage() {
         holding={editingMpfHolding}
         onSubmit={handleMpfSubmit}
         isSubmitting={isSavingMpfAsset}
+      />
+
+      <TimeDepositEditorSheet
+        open={isCreatingTimeDeposit || Boolean(editingTimeDepositAssetId)}
+        onOpenChange={(open) => {
+          if (!open) {
+            setIsCreatingTimeDeposit(false);
+            setEditingTimeDepositAssetId(null);
+          }
+        }}
+        mode={editingTimeDepositAssetId ? "edit" : "create"}
+        holding={editingTimeDepositHolding}
+        onSubmit={handleTimeDepositSubmit}
+        isSubmitting={isSavingTimeDeposit}
       />
 
       <AlertDialog

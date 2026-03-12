@@ -35,8 +35,10 @@ import { useBalancePrivacy } from "@/hooks/use-balance-privacy";
 import { useLinkedLiabilities, useAlternativeHoldings } from "@/hooks/use-alternative-assets";
 import {
   asFiniteNumber,
+  buildTimeDepositMetadataPatch,
   buildMpfMetadataPatch,
   isMpfAsset,
+  isTimeDepositAsset,
   normalizeMpfSubfunds,
   parsePanoramaAssetAttributes,
   type PanoramaMpfSubfund,
@@ -45,6 +47,15 @@ import {
   MpfAssetEditorSheet,
   type MpfAssetFormValues,
 } from "@/pages/mpf/components/mpf-asset-editor-sheet";
+import {
+  TimeDepositEditorSheet,
+  type TimeDepositFormValues,
+} from "@/pages/time-deposits/components/time-deposit-editor-sheet";
+import {
+  deriveTimeDepositMaturityValue,
+  getEffectiveTimeDepositCurrentValue,
+  getTimeDepositDerivedMetrics,
+} from "@/lib/time-deposit-calculations";
 import type {
   AlternativeAssetHolding,
   Quote,
@@ -80,6 +91,119 @@ function parseOptionalNumber(value: string): number | undefined {
   }
 
   return parsed;
+}
+
+function parsePositiveNumber(value: string): number | undefined {
+  const trimmed = value.trim();
+  if (!trimmed) {
+    return undefined;
+  }
+
+  const parsed = Number(trimmed);
+  if (!Number.isFinite(parsed) || parsed <= 0) {
+    return undefined;
+  }
+
+  return parsed;
+}
+
+function buildTimeDepositStatus(values: Pick<TimeDepositFormValues, "valuationDate" | "maturityDate">) {
+  return values.valuationDate >= values.maturityDate ? "matured" : "active";
+}
+
+function buildTimeDepositPatch(values: TimeDepositFormValues) {
+  return {
+    ...buildTimeDepositMetadataPatch({
+      owner: values.owner,
+      provider: values.provider,
+      principal: parsePositiveNumber(values.principal),
+      start_date: toIsoDate(values.startDate),
+      maturity_date: toIsoDate(values.maturityDate),
+      quoted_annual_rate:
+        values.inputMode === "rate" ? parsePositiveNumber(values.quotedAnnualRate) : undefined,
+      guaranteed_maturity_value:
+        values.inputMode === "maturity"
+          ? parsePositiveNumber(values.guaranteedMaturityValue)
+          : undefined,
+      valuation_mode: values.valuationMode,
+      current_value_override:
+        values.valuationMode === "manual"
+          ? parsePositiveNumber(values.currentValueOverride)
+          : undefined,
+      valuation_date: toIsoDate(values.valuationDate),
+      status: buildTimeDepositStatus(values),
+    }),
+    purchase_price: values.principal.trim(),
+    purchase_date: toIsoDate(values.startDate),
+  };
+}
+
+function getTimeDepositCurrentValueForForm(values: TimeDepositFormValues): number | undefined {
+  const principal = parsePositiveNumber(values.principal);
+  const quotedAnnualRate = parsePositiveNumber(values.quotedAnnualRate);
+  const guaranteedMaturityValue = parsePositiveNumber(values.guaranteedMaturityValue);
+  const currentValueOverride = parsePositiveNumber(values.currentValueOverride);
+
+  if (!principal || values.maturityDate <= values.startDate) {
+    return undefined;
+  }
+
+  if (values.inputMode === "rate" && quotedAnnualRate === undefined) {
+    return undefined;
+  }
+
+  if (values.inputMode === "maturity" && guaranteedMaturityValue === undefined) {
+    return undefined;
+  }
+
+  return getEffectiveTimeDepositCurrentValue({
+    principal,
+    startDate: values.startDate,
+    maturityDate: values.maturityDate,
+    asOfDate: values.valuationDate,
+    quotedAnnualRatePct: quotedAnnualRate,
+    guaranteedMaturityValue,
+    valuationMode: values.valuationMode,
+    currentValueOverride,
+  });
+}
+
+function getStoredTimeDepositValuation(holding: AlternativeAssetHolding): { date: string; value?: number } {
+  const attributes = parsePanoramaAssetAttributes(holding.metadata);
+  const principal = asFiniteNumber(attributes.principal ?? holding.purchasePrice);
+  const quotedAnnualRate = asFiniteNumber(attributes.quoted_annual_rate);
+  const guaranteedMaturityValue = asFiniteNumber(attributes.guaranteed_maturity_value);
+  const currentValueOverride = asFiniteNumber(attributes.current_value_override);
+  const startDate =
+    typeof attributes.start_date === "string" ? attributes.start_date : holding.purchaseDate;
+  const maturityDate =
+    typeof attributes.maturity_date === "string" ? attributes.maturity_date : undefined;
+  const valuationDate =
+    typeof attributes.valuation_date === "string" && attributes.valuation_date.trim()
+      ? attributes.valuation_date.trim()
+      : holding.valuationDate.slice(0, 10);
+
+  if (!principal || !startDate || !maturityDate) {
+    return { date: valuationDate, value: asFiniteNumber(holding.marketValue) };
+  }
+
+  return {
+    date: valuationDate,
+    value: getEffectiveTimeDepositCurrentValue({
+      principal,
+      startDate,
+      maturityDate,
+      asOfDate: valuationDate,
+      quotedAnnualRatePct: quotedAnnualRate,
+      guaranteedMaturityValue,
+      valuationMode: attributes.valuation_mode === "manual" ? "manual" : "derived",
+      currentValueOverride,
+    }),
+  };
+}
+
+function formatValueForMutation(value: number | undefined): string | undefined {
+  return value !== undefined && Number.isFinite(value) ? String(Number(value.toFixed(2))) : undefined;
 }
 
 function mergeMpfSubfunds(
@@ -226,6 +350,12 @@ export const AlternativeAssetContent: React.FC<AlternativeAssetContentProps> = (
 
   const isLiability = holding.kind.toLowerCase() === "liability";
   const isMpfHolding = holding.kind.toLowerCase() === "mpf" || isMpfAsset(holding);
+  const isTimeDepositHolding = isTimeDepositAsset(holding);
+  const alternativeKind = isMpfHolding
+    ? "mpf"
+    : isTimeDepositHolding
+      ? "time_deposit"
+      : holding.kind.toLowerCase();
   const marketValue = parseFloat(holding.marketValue);
 
   // Calculate net equity for linkable assets
@@ -324,6 +454,7 @@ export const AlternativeAssetContent: React.FC<AlternativeAssetContentProps> = (
             linkedLiabilities={isLinkableAsset ? linkedLiabilities : []}
             isLiability={isLiability}
             isMpf={isMpfHolding}
+            isTimeDeposit={isTimeDepositHolding}
             className="col-span-1"
           />
         </div>
@@ -335,9 +466,8 @@ export const AlternativeAssetContent: React.FC<AlternativeAssetContentProps> = (
           {/* Kind and subtype badges */}
           <div className="flex flex-wrap items-center gap-2">
             {(() => {
-              const kind = isMpfHolding ? "mpf" : holding.kind.toLowerCase();
-              const kindConfig = KIND_CONFIG[kind] || KIND_CONFIG.other;
-              const subtypeLabel = getSubtypeLabel(kind, holding.metadata || {});
+              const kindConfig = KIND_CONFIG[alternativeKind] || KIND_CONFIG.other;
+              const subtypeLabel = getSubtypeLabel(alternativeKind, holding.metadata || {});
 
               return (
                 <>
@@ -400,6 +530,7 @@ const KIND_CONFIG: Record<string, { label: string; color: string }> = {
   collectible: { label: "Collectible", color: "#6b7280" },
   precious: { label: "Precious Metal", color: "#6b7280" },
   mpf: { label: "MPF", color: "#6b7280" },
+  time_deposit: { label: "Time Deposit", color: "#6b7280" },
   liability: { label: "Liability", color: "#6b7280" },
   other: { label: "Other", color: "#6b7280" },
 };
@@ -459,6 +590,7 @@ interface AlternativeAssetDetailCardProps {
   className?: string;
   isLiability?: boolean;
   isMpf?: boolean;
+  isTimeDeposit?: boolean;
 }
 
 /**
@@ -494,6 +626,10 @@ function getSubtypeLabel(kind: string, metadata: Record<string, unknown>): strin
       const scheme = metadata.mpf_scheme as string | undefined;
       return scheme?.trim() ? scheme : null;
     }
+    case "time_deposit": {
+      const provider = metadata.provider as string | undefined;
+      return provider?.trim() ? provider.trim() : null;
+    }
     default:
       return null;
   }
@@ -514,12 +650,13 @@ const AlternativeAssetDetailCard: React.FC<AlternativeAssetDetailCardProps> = ({
   linkedLiabilities,
   isLiability,
   isMpf = false,
+  isTimeDeposit = false,
   className,
 }) => {
   const { isBalanceHidden } = useBalancePrivacy();
 
   const metadata = holding.metadata || {};
-  const kind = isMpf ? "mpf" : holding.kind.toLowerCase();
+  const kind = isMpf ? "mpf" : isTimeDeposit ? "time_deposit" : holding.kind.toLowerCase();
   const mpfSubfundRows = useMemo(() => {
     if (!isMpf) {
       return [];
@@ -768,7 +905,7 @@ interface DetailRow {
   value: React.ReactNode;
 }
 
-function getDetailRows(
+export function getDetailRows(
   kind: string,
   metadata: Record<string, unknown>,
   holding: AlternativeAssetHolding,
@@ -921,6 +1058,106 @@ function getDetailRows(
       break;
     }
 
+    case "time_deposit": {
+      const owner = metadata.owner as string | undefined;
+      if (owner?.trim()) {
+        rows.push({ label: "Owner", value: owner.trim() });
+      }
+
+      const provider = metadata.provider as string | undefined;
+      if (provider?.trim()) {
+        rows.push({ label: "Provider", value: provider.trim() });
+      }
+
+      const principal = asFiniteNumber(metadata.principal ?? holding.purchasePrice);
+      if (principal !== undefined) {
+        rows.push({
+          label: "Principal",
+          value: (
+            <AmountDisplay value={principal} currency={holding.currency} isHidden={isBalanceHidden} />
+          ),
+        });
+      }
+
+      const startDate =
+        typeof metadata.start_date === "string" ? metadata.start_date : holding.purchaseDate;
+      if (startDate) {
+        const parsed = new Date(startDate);
+        rows.push({
+          label: "Start Date",
+          value: Number.isNaN(parsed.getTime()) ? startDate : format(parsed, "MMM d, yyyy"),
+        });
+      }
+
+      const maturityDate = metadata.maturity_date as string | undefined;
+      if (maturityDate?.trim()) {
+        const parsed = new Date(maturityDate);
+        rows.push({
+          label: "Maturity Date",
+          value: Number.isNaN(parsed.getTime()) ? maturityDate : format(parsed, "MMM d, yyyy"),
+        });
+      }
+
+      const quotedAnnualRate = asFiniteNumber(metadata.quoted_annual_rate);
+      const guaranteedMaturityValue =
+        asFiniteNumber(metadata.guaranteed_maturity_value) ??
+        (principal !== undefined && startDate && maturityDate && quotedAnnualRate !== undefined
+          ? deriveTimeDepositMaturityValue({
+              principal,
+              startDate,
+              maturityDate,
+              quotedAnnualRatePct: quotedAnnualRate,
+            })
+          : undefined);
+      const asOfDate =
+        typeof metadata.valuation_date === "string" && metadata.valuation_date.trim()
+          ? metadata.valuation_date.trim()
+          : holding.valuationDate.slice(0, 10);
+      const metrics =
+        principal !== undefined &&
+        startDate &&
+        maturityDate &&
+        (quotedAnnualRate !== undefined || guaranteedMaturityValue !== undefined)
+          ? getTimeDepositDerivedMetrics({
+              principal,
+              startDate,
+              maturityDate,
+              asOfDate,
+              quotedAnnualRatePct: quotedAnnualRate,
+              guaranteedMaturityValue,
+            })
+          : undefined;
+
+      if (quotedAnnualRate !== undefined || metrics?.annualizedReturnPct !== undefined) {
+        rows.push({
+          label: "Annualized Return",
+          value: `${(metrics?.annualizedReturnPct ?? quotedAnnualRate ?? 0).toFixed(2)}%`,
+        });
+      }
+
+      if (guaranteedMaturityValue !== undefined) {
+        rows.push({
+          label: "Maturity Value",
+          value: (
+            <AmountDisplay
+              value={guaranteedMaturityValue}
+              currency={holding.currency}
+              isHidden={isBalanceHidden}
+            />
+          ),
+        });
+      }
+
+      if (metrics) {
+        rows.push({
+          label: "Days Left",
+          value: `${metrics.daysLeft} days`,
+        });
+      }
+
+      break;
+    }
+
     case "other":
     default: {
       const description = metadata.description as string | undefined;
@@ -953,6 +1190,7 @@ export function useAlternativeAssetActions({
   const [updateValuationOpen, setUpdateValuationOpen] = useState(false);
   const [editDetailsOpen, setEditDetailsOpen] = useState(false);
   const [editMpfOpen, setEditMpfOpen] = useState(false);
+  const [editTimeDepositOpen, setEditTimeDepositOpen] = useState(false);
   const [addLiabilityOpen, setAddLiabilityOpen] = useState(false);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
 
@@ -971,6 +1209,7 @@ export function useAlternativeAssetActions({
   const holdingKind = holding?.kind?.toLowerCase() ?? "";
   const isMpfHolding =
     holdingKind === "mpf" || (holding ? isMpfAsset(holding) : false);
+  const isTimeDepositHolding = Boolean(holding && isTimeDepositAsset(holding));
   const isLinkableAsset = holdingKind === "property" || holdingKind === "vehicle";
   const { data: linkedLiabilities = [] } = useLinkedLiabilities({
     assetId: holding?.id ?? "",
@@ -1052,6 +1291,41 @@ export function useAlternativeAssetActions({
     setEditMpfOpen(false);
   };
 
+  const handleTimeDepositSave = async (values: TimeDepositFormValues) => {
+    if (!holding) return;
+
+    const currentValue = formatValueForMutation(getTimeDepositCurrentValueForForm(values));
+    if (!currentValue) {
+      return;
+    }
+
+    const valuationDate = toIsoDate(values.valuationDate);
+    const metadata = buildTimeDepositPatch(values);
+
+    await updateMetadataMutation.mutateAsync({
+      assetId: holding.id,
+      name: values.name,
+      notes: values.notes || null,
+      metadata,
+    });
+
+    const existingValuation = getStoredTimeDepositValuation(holding);
+    if (
+      existingValuation.date !== valuationDate ||
+      formatValueForMutation(existingValuation.value) !== currentValue
+    ) {
+      await updateValuationMutation.mutateAsync({
+        assetId: holding.id,
+        request: {
+          value: currentValue,
+          date: valuationDate,
+        },
+      });
+    }
+
+    setEditTimeDepositOpen(false);
+  };
+
   // Handle mortgage linking
   const handleLinkMortgage = async (mortgageId: string) => {
     if (!holding) return;
@@ -1106,6 +1380,15 @@ export function useAlternativeAssetActions({
           mode="edit"
           holding={holding}
           onSubmit={handleMpfSave}
+          isSubmitting={updateMetadataMutation.isPending || updateValuationMutation.isPending}
+        />
+      ) : isTimeDepositHolding ? (
+        <TimeDepositEditorSheet
+          open={editTimeDepositOpen}
+          onOpenChange={setEditTimeDepositOpen}
+          mode="edit"
+          holding={holding}
+          onSubmit={handleTimeDepositSave}
           isSubmitting={updateMetadataMutation.isPending || updateValuationMutation.isPending}
         />
       ) : (
@@ -1179,6 +1462,10 @@ export function useAlternativeAssetActions({
     openEditDetails: () => {
       if (isMpfHolding) {
         setEditMpfOpen(true);
+        return;
+      }
+      if (isTimeDepositHolding) {
+        setEditTimeDepositOpen(true);
         return;
       }
       setEditDetailsOpen(true);
