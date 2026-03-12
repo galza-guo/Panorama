@@ -8,9 +8,10 @@ use crate::taxonomies::TaxonomyServiceTrait;
 use futures::stream::{self, StreamExt};
 
 use super::assets_model::{
-    canonicalize_market_identity, default_market_data_provider_id, resolve_quote_ccy_precedence,
-    Asset, AssetKind, AssetProfileEnrichmentStats, AssetSpec, EnsureAssetsResult, InstrumentType,
-    NewAsset, QuoteCcyResolutionSource, QuoteMode, UpdateAssetProfile,
+    canonicalize_market_identity, default_market_data_provider_id,
+    normalize_market_symbol_for_provider, resolve_quote_ccy_precedence, Asset, AssetKind,
+    AssetProfileEnrichmentStats, AssetSpec, EnsureAssetsResult, InstrumentType, NewAsset,
+    QuoteCcyResolutionSource, QuoteMode, UpdateAssetProfile,
 };
 use super::assets_traits::{AssetRepositoryTrait, AssetServiceTrait};
 use super::auto_classification::{AutoClassificationService, ClassificationInput};
@@ -44,6 +45,15 @@ pub struct AssetService {
 }
 
 impl AssetService {
+    fn preferred_provider_from_config(config: Option<&serde_json::Value>) -> Option<String> {
+        config
+            .and_then(|value| value.get("preferred_provider"))
+            .and_then(|value| value.as_str())
+            .map(str::trim)
+            .filter(|provider| !provider.is_empty())
+            .map(str::to_string)
+    }
+
     fn normalize_exchange_mic(value: Option<&str>) -> Option<String> {
         value
             .map(str::trim)
@@ -348,21 +358,29 @@ impl AssetServiceTrait for AssetService {
             .or(existing_asset.instrument_type.clone());
 
         if effective_instrument_type.is_some() {
+            let preferred_provider = Self::preferred_provider_from_config(
+                payload.provider_config.as_ref(),
+            )
+            .or_else(|| existing_asset.preferred_provider());
             let should_refresh_quote_ccy = Self::should_refresh_market_quote_ccy_on_mic_change(
                 effective_quote_mode,
                 payload.quote_ccy.as_deref(),
                 payload.instrument_exchange_mic.as_deref(),
                 existing_asset.instrument_exchange_mic.as_deref(),
             );
-
-            let canonical = canonicalize_market_identity(
-                effective_instrument_type.clone(),
+            let normalized_symbol = normalize_market_symbol_for_provider(
                 payload
                     .instrument_symbol
                     .as_deref()
                     .or(payload.display_code.as_deref())
                     .or(existing_asset.instrument_symbol.as_deref())
                     .or(existing_asset.display_code.as_deref()),
+                preferred_provider.as_deref(),
+            );
+
+            let canonical = canonicalize_market_identity(
+                effective_instrument_type.clone(),
+                normalized_symbol.as_deref(),
                 payload
                     .instrument_exchange_mic
                     .as_deref()
@@ -402,12 +420,18 @@ impl AssetServiceTrait for AssetService {
 
     /// Creates a new asset directly without network lookups.
     async fn create_asset(&self, mut new_asset: NewAsset) -> Result<Asset> {
-        let canonical = canonicalize_market_identity(
-            new_asset.instrument_type.clone(),
+        let preferred_provider =
+            Self::preferred_provider_from_config(new_asset.provider_config.as_ref());
+        let normalized_symbol = normalize_market_symbol_for_provider(
             new_asset
                 .instrument_symbol
                 .as_deref()
                 .or(new_asset.display_code.as_deref()),
+            preferred_provider.as_deref(),
+        );
+        let canonical = canonicalize_market_identity(
+            new_asset.instrument_type.clone(),
+            normalized_symbol.as_deref(),
             new_asset.instrument_exchange_mic.as_deref(),
             Some(new_asset.quote_ccy.as_str()),
         );
@@ -928,12 +952,17 @@ impl AssetServiceTrait for AssetService {
         let effective_instrument_type = updated_instrument_type
             .clone()
             .or(existing_asset.instrument_type.clone());
-        let canonical = canonicalize_market_identity(
-            effective_instrument_type,
+        let preferred_provider = existing_asset.preferred_provider();
+        let normalized_symbol = normalize_market_symbol_for_provider(
             existing_asset
                 .instrument_symbol
                 .as_deref()
                 .or(existing_asset.display_code.as_deref()),
+            preferred_provider.as_deref(),
+        );
+        let canonical = canonicalize_market_identity(
+            effective_instrument_type,
+            normalized_symbol.as_deref(),
             existing_asset.instrument_exchange_mic.as_deref(),
             Some(provider_profile.currency.as_str()),
         );

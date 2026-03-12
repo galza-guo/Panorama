@@ -86,6 +86,20 @@ impl ActivityService {
         }
     }
 
+    fn normalize_activity_symbol(raw_symbol: &str, base_symbol: &str, is_crypto: bool) -> String {
+        if is_crypto {
+            return parse_crypto_pair_symbol(base_symbol)
+                .map(|(base, _)| base)
+                .unwrap_or_else(|| base_symbol.to_string());
+        }
+
+        if raw_symbol.trim().to_uppercase().ends_with(".FUND") {
+            return format!("{}.FUND", base_symbol.trim().to_uppercase());
+        }
+
+        base_symbol.to_string()
+    }
+
     fn existing_asset_quote_ccy_by_id(&self, asset_id: Option<&str>) -> Option<String> {
         let id = asset_id?.trim();
         if id.is_empty() {
@@ -654,13 +668,8 @@ impl ActivityService {
                 }
 
                 // For crypto pairs (e.g. BTC-USD), normalize to base symbol (BTC)
-                let normalized_symbol = if is_crypto {
-                    parse_crypto_pair_symbol(base_symbol)
-                        .map(|(base, _)| base)
-                        .unwrap_or_else(|| base_symbol.to_string())
-                } else {
-                    base_symbol.to_string()
-                };
+                let normalized_symbol =
+                    Self::normalize_activity_symbol(sym, base_symbol, is_crypto);
 
                 // Look up existing asset by instrument fields
                 let existing_id = self.find_existing_asset_id(
@@ -726,13 +735,7 @@ impl ActivityService {
         if let Some(ref asset_id) = resolved_asset_id {
             let canonical_symbol = symbol.as_deref().map(|s| {
                 let base = parse_symbol_with_exchange_suffix(s).0;
-                if is_crypto {
-                    parse_crypto_pair_symbol(base)
-                        .map(|(normalized, _)| normalized)
-                        .unwrap_or_else(|| base.to_string())
-                } else {
-                    base.to_string()
-                }
+                Self::normalize_activity_symbol(s, base, is_crypto)
             });
             let metadata = crate::assets::AssetMetadata {
                 name: asset_name.clone(),
@@ -969,13 +972,8 @@ impl ActivityService {
                         .await;
                 }
 
-                let normalized_symbol = if is_crypto {
-                    parse_crypto_pair_symbol(base_symbol)
-                        .map(|(base, _)| base)
-                        .unwrap_or_else(|| base_symbol.to_string())
-                } else {
-                    base_symbol.to_string()
-                };
+                let normalized_symbol =
+                    Self::normalize_activity_symbol(sym, base_symbol, is_crypto);
 
                 let existing_id = self.find_existing_asset_id(
                     &normalized_symbol,
@@ -1038,13 +1036,7 @@ impl ActivityService {
         if let Some(ref asset_id) = resolved_asset_id {
             let canonical_symbol = symbol.as_deref().map(|s| {
                 let base = parse_symbol_with_exchange_suffix(s).0;
-                if is_crypto {
-                    parse_crypto_pair_symbol(base)
-                        .map(|(normalized, _)| normalized)
-                        .unwrap_or_else(|| base.to_string())
-                } else {
-                    base.to_string()
-                }
+                Self::normalize_activity_symbol(s, base, is_crypto)
             });
             let metadata = crate::assets::AssetMetadata {
                 name: asset_name.clone(),
@@ -1291,13 +1283,7 @@ impl ActivityService {
         };
 
         // For crypto pairs (e.g. BTC-USD), normalize to base symbol (BTC)
-        let normalized_symbol = if is_crypto {
-            parse_crypto_pair_symbol(base_symbol)
-                .map(|(base, _)| base)
-                .unwrap_or_else(|| base_symbol.to_string())
-        } else {
-            base_symbol.to_string()
-        };
+        let normalized_symbol = Self::normalize_activity_symbol(&symbol, base_symbol, is_crypto);
 
         // Look up existing asset by instrument fields to get its UUID
         let existing_id = self.find_existing_asset_id(
@@ -1838,13 +1824,8 @@ impl ActivityServiceTrait for ActivityService {
                 Some(InstrumentType::Crypto | InstrumentType::Fx)
             );
             let resolved_mic = if is_non_security { None } else { resolved_mic };
-            let normalized_symbol = if is_crypto {
-                parse_crypto_pair_symbol(base_symbol)
-                    .map(|(base, _)| base)
-                    .unwrap_or_else(|| base_symbol.to_string())
-            } else {
-                base_symbol.to_string()
-            };
+            let normalized_symbol =
+                Self::normalize_activity_symbol(&symbol, base_symbol, is_crypto);
 
             // Parse quote_mode from the activity (same pattern as prepare_new_activity)
             let is_manual_quote = activity
@@ -1856,7 +1837,11 @@ impl ActivityServiceTrait for ActivityService {
             // Equities (Investment + Equity instrument) must have a resolved exchange MIC
             let is_equity = effective_kind == AssetKind::Investment
                 && effective_instrument_type.as_ref() == Some(&InstrumentType::Equity);
-            if is_equity && resolved_mic.is_none() && !is_manual_quote {
+            if is_equity
+                && resolved_mic.is_none()
+                && !is_manual_quote
+                && !normalized_symbol.ends_with(".FUND")
+            {
                 activity.is_valid = false;
                 let mut errors = std::collections::HashMap::new();
                 errors.insert(

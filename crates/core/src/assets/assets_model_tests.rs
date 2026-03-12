@@ -4,8 +4,8 @@
 mod tests {
     use crate::assets::{
         canonicalize_market_identity, default_market_data_provider_id,
-        resolve_quote_ccy_precedence, Asset, AssetKind, InstrumentId, InstrumentType, OptionSpec,
-        QuoteCcyResolutionSource, QuoteMode,
+        resolve_quote_ccy_precedence, Asset, AssetKind, InstrumentId, InstrumentType, NewAsset,
+        OptionSpec, ProviderProfile, QuoteCcyResolutionSource, QuoteMode,
     };
     use chrono::NaiveDateTime;
     use rust_decimal_macros::dec;
@@ -295,6 +295,27 @@ mod tests {
         }
     }
 
+    #[test]
+    fn test_to_instrument_id_keeps_tiantian_bare_fund_code_off_exchange() {
+        let mut asset = create_test_asset(AssetKind::Investment);
+        asset.instrument_type = Some(InstrumentType::Equity);
+        asset.instrument_symbol = Some("003095".to_string());
+        asset.instrument_exchange_mic = None;
+        asset.provider_config = Some(json!({
+            "preferred_provider": "TIANTIAN_FUND"
+        }));
+
+        let instrument = asset.to_instrument_id();
+
+        match instrument {
+            Some(InstrumentId::Equity { ticker, mic }) => {
+                assert_eq!(ticker.as_ref(), "003095");
+                assert_eq!(mic, None);
+            }
+            other => panic!("Expected equity instrument, got {other:?}"),
+        }
+    }
+
     // Test InstrumentType
     #[test]
     fn test_instrument_type_db_roundtrip() {
@@ -442,7 +463,7 @@ mod tests {
             None,
         );
 
-        assert_eq!(canonical.instrument_symbol.as_deref(), Some("161039"));
+        assert_eq!(canonical.instrument_symbol.as_deref(), Some("161039.FUND"));
         assert_eq!(canonical.display_code.as_deref(), Some("161039"));
         assert_eq!(canonical.instrument_exchange_mic, None);
         assert_eq!(canonical.quote_ccy.as_deref(), Some("CNY"));
@@ -470,6 +491,23 @@ mod tests {
             ),
             "TIANTIAN_FUND"
         );
+    }
+
+    #[test]
+    fn test_new_asset_from_tiantian_profile_appends_panorama_fund_suffix() {
+        let profile = ProviderProfile {
+            symbol: "003095".to_string(),
+            currency: "cny".to_string(),
+            data_source: "TIANTIAN_FUND".to_string(),
+            ..Default::default()
+        };
+
+        let asset = NewAsset::from(profile);
+
+        assert_eq!(asset.instrument_symbol.as_deref(), Some("003095.FUND"));
+        assert_eq!(asset.display_code.as_deref(), Some("003095"));
+        assert_eq!(asset.instrument_exchange_mic, None);
+        assert_eq!(asset.quote_ccy, "CNY");
     }
 
     #[test]

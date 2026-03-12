@@ -469,7 +469,32 @@ impl AssetRepositoryTrait for AssetRepository {
                     .filter(assets::kind.eq("INVESTMENT"))
                     .filter(assets::is_active.eq(1))
                     .filter(diesel::dsl::sql::<diesel::sql_types::Bool>(
-                        "id NOT IN (SELECT DISTINCT asset_id FROM activities WHERE asset_id IS NOT NULL)",
+                        r#"
+                        assets.id NOT IN (
+                            SELECT DISTINCT asset_id
+                            FROM activities
+                            WHERE asset_id IS NOT NULL
+                        )
+                        AND NOT EXISTS (
+                            SELECT 1
+                            FROM (
+                                SELECT
+                                    hs.positions,
+                                    ROW_NUMBER() OVER (
+                                        PARTITION BY hs.account_id
+                                        ORDER BY hs.snapshot_date DESC, hs.calculated_at DESC, hs.id DESC
+                                    ) AS rn
+                                FROM holdings_snapshots hs
+                                INNER JOIN accounts acc ON acc.id = hs.account_id
+                                WHERE acc.is_active = 1
+                                  AND acc.is_archived = 0
+                                  AND acc.tracking_mode = 'HOLDINGS'
+                            ) latest,
+                            json_each(latest.positions) position
+                            WHERE latest.rn = 1
+                              AND position.key = assets.id
+                        )
+                        "#,
                     ))
                     .load::<String>(tx.conn())
                     .map_err(StorageError::from)?;
@@ -495,5 +520,242 @@ impl AssetRepositoryTrait for AssetRepository {
                 Ok(orphan_ids)
             })
             .await
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::db::{create_pool, get_connection, run_migrations, write_actor::spawn_writer};
+    use diesel::RunQueryDsl;
+    use tempfile::tempdir;
+
+    async fn create_test_repository() -> (
+        AssetRepository,
+        Arc<Pool<r2d2::ConnectionManager<SqliteConnection>>>,
+        tempfile::TempDir,
+    ) {
+        let temp_dir = tempdir().expect("Failed to create temp directory");
+        let db_path = temp_dir.path().join("test.db");
+        let db_path_str = db_path.to_string_lossy().to_string();
+
+        run_migrations(&db_path_str).expect("Failed to run migrations");
+
+        let pool = create_pool(&db_path_str).expect("Failed to create pool");
+        let writer = spawn_writer((*pool).clone());
+        let repo = AssetRepository::new(Arc::clone(&pool), writer);
+
+        (repo, pool, temp_dir)
+    }
+
+    fn create_test_asset(
+        pool: &Arc<Pool<r2d2::ConnectionManager<SqliteConnection>>>,
+        asset_id: &str,
+    ) {
+        let mut conn = get_connection(pool).expect("Failed to get connection");
+        diesel::sql_query(format!(
+            "INSERT INTO assets (id, kind, name, display_code, notes, metadata, is_active, quote_mode, quote_ccy, instrument_type, instrument_symbol, instrument_exchange_mic, provider_config, created_at, updated_at) \
+             VALUES ('{}', 'INVESTMENT', 'Test Asset', 'TEST', NULL, NULL, 1, 'MARKET', 'CNY', NULL, NULL, NULL, NULL, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)",
+            asset_id
+        ))
+        .execute(&mut conn)
+        .expect("Failed to create test asset");
+    }
+
+    fn create_test_account(
+        pool: &Arc<Pool<r2d2::ConnectionManager<SqliteConnection>>>,
+        account_id: &str,
+        tracking_mode: &str,
+        is_archived: bool,
+    ) {
+        let mut conn = get_connection(pool).expect("Failed to get connection");
+        diesel::sql_query(format!(
+            "INSERT INTO accounts (id, name, account_type, currency, is_default, is_active, created_at, updated_at, is_archived, tracking_mode) \
+             VALUES ('{}', 'Test Account', 'REGULAR', 'CNY', false, true, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, {}, '{}')",
+            account_id,
+            if is_archived { 1 } else { 0 },
+            tracking_mode
+        ))
+        .execute(&mut conn)
+        .expect("Failed to create test account");
+    }
+
+    fn create_test_holdings_snapshot(
+        pool: &Arc<Pool<r2d2::ConnectionManager<SqliteConnection>>>,
+        account_id: &str,
+        snapshot_id: &str,
+        snapshot_date: &str,
+        positions_json: &str,
+    ) {
+        let mut conn = get_connection(pool).expect("Failed to get connection");
+        diesel::sql_query(format!(
+            "INSERT INTO holdings_snapshots (id, account_id, snapshot_date, currency, positions, cash_balances, cost_basis, net_contribution, calculated_at, net_contribution_base, cash_total_account_currency, cash_total_base_currency, source) \
+             VALUES ('{}', '{}', '{}', 'CNY', '{}', '{{}}', '0', '0', '2026-03-12T00:00:00Z', '0', '0', '0', 'BROKER_IMPORTED')",
+            snapshot_id,
+            account_id,
+            snapshot_date,
+            positions_json.replace('\'', "''")
+        ))
+        .execute(&mut conn)
+        .expect("Failed to create holdings snapshot");
+    }
+
+    fn is_asset_active(
+        pool: &Arc<Pool<r2d2::ConnectionManager<SqliteConnection>>>,
+        asset_id: &str,
+    ) -> bool {
+        use crate::schema::assets::dsl::*;
+
+        let mut conn = get_connection(pool).expect("Failed to get connection");
+        assets
+            .select(is_active)
+            .filter(id.eq(asset_id))
+            .first::<i32>(&mut conn)
+            .expect("Failed to load asset active flag")
+            != 0
+    }
+
+    #[tokio::test]
+    async fn deactivate_orphaned_investments_keeps_assets_in_latest_holdings_snapshots_active() {
+        let (repo, pool, _temp_dir) = create_test_repository().await;
+        let asset_id = "held-fund";
+        create_test_asset(&pool, asset_id);
+        create_test_account(&pool, "holdings-account", "HOLDINGS", false);
+        create_test_holdings_snapshot(
+            &pool,
+            "holdings-account",
+            "snapshot-1",
+            "2026-03-10",
+            &format!(r#"{{"{}":{{}}}}"#, asset_id),
+        );
+
+        let deactivated = repo
+            .deactivate_orphaned_investments()
+            .await
+            .expect("Failed to deactivate orphaned investments");
+
+        assert!(
+            !deactivated.iter().any(|id| id == asset_id),
+            "Asset still present in latest holdings snapshot should not be deactivated"
+        );
+        assert!(
+            is_asset_active(&pool, asset_id),
+            "Asset still present in latest holdings snapshot should remain active"
+        );
+    }
+
+    #[tokio::test]
+    async fn deactivate_orphaned_investments_still_deactivates_true_orphans() {
+        let (repo, pool, _temp_dir) = create_test_repository().await;
+        let asset_id = "orphan-fund";
+        create_test_asset(&pool, asset_id);
+
+        let deactivated = repo
+            .deactivate_orphaned_investments()
+            .await
+            .expect("Failed to deactivate orphaned investments");
+
+        assert!(
+            deactivated.iter().any(|id| id == asset_id),
+            "Investment asset with no activities and no holdings snapshot reference should be deactivated"
+        );
+        assert!(
+            !is_asset_active(&pool, asset_id),
+            "True orphan investment asset should be inactive after cleanup"
+        );
+    }
+
+    #[tokio::test]
+    async fn deactivate_orphaned_investments_ignores_stale_holdings_snapshots() {
+        let (repo, pool, _temp_dir) = create_test_repository().await;
+        let asset_id = "stale-held-fund";
+        create_test_asset(&pool, asset_id);
+        create_test_account(&pool, "holdings-account", "HOLDINGS", false);
+        create_test_holdings_snapshot(
+            &pool,
+            "holdings-account",
+            "snapshot-old",
+            "2026-03-09",
+            &format!(r#"{{"{}":{{}}}}"#, asset_id),
+        );
+        create_test_holdings_snapshot(
+            &pool,
+            "holdings-account",
+            "snapshot-new",
+            "2026-03-10",
+            "{}",
+        );
+
+        let deactivated = repo
+            .deactivate_orphaned_investments()
+            .await
+            .expect("Failed to deactivate orphaned investments");
+
+        assert!(
+            deactivated.iter().any(|id| id == asset_id),
+            "Only the latest holdings snapshot should protect an asset from orphan cleanup"
+        );
+        assert!(
+            !is_asset_active(&pool, asset_id),
+            "Asset absent from latest holdings snapshot should still be deactivated"
+        );
+    }
+
+    #[tokio::test]
+    async fn deactivate_orphaned_investments_ignores_archived_holdings_accounts() {
+        let (repo, pool, _temp_dir) = create_test_repository().await;
+        let asset_id = "archived-held-fund";
+        create_test_asset(&pool, asset_id);
+        create_test_account(&pool, "archived-holdings-account", "HOLDINGS", true);
+        create_test_holdings_snapshot(
+            &pool,
+            "archived-holdings-account",
+            "snapshot-1",
+            "2026-03-10",
+            &format!(r#"{{"{}":{{}}}}"#, asset_id),
+        );
+
+        let deactivated = repo
+            .deactivate_orphaned_investments()
+            .await
+            .expect("Failed to deactivate orphaned investments");
+
+        assert!(
+            deactivated.iter().any(|id| id == asset_id),
+            "Archived holdings accounts should not keep assets active"
+        );
+        assert!(
+            !is_asset_active(&pool, asset_id),
+            "Assets referenced only by archived holdings accounts should still be deactivated"
+        );
+    }
+
+    #[tokio::test]
+    async fn deactivate_orphaned_investments_ignores_transaction_accounts_snapshots() {
+        let (repo, pool, _temp_dir) = create_test_repository().await;
+        let asset_id = "transactions-held-fund";
+        create_test_asset(&pool, asset_id);
+        create_test_account(&pool, "transactions-account", "TRANSACTIONS", false);
+        create_test_holdings_snapshot(
+            &pool,
+            "transactions-account",
+            "snapshot-1",
+            "2026-03-10",
+            &format!(r#"{{"{}":{{}}}}"#, asset_id),
+        );
+
+        let deactivated = repo
+            .deactivate_orphaned_investments()
+            .await
+            .expect("Failed to deactivate orphaned investments");
+
+        assert!(
+            deactivated.iter().any(|id| id == asset_id),
+            "Only HOLDINGS-mode accounts should keep snapshot-only assets active"
+        );
+        assert!(
+            !is_asset_active(&pool, asset_id),
+            "Snapshots from transaction accounts should not keep orphan assets active"
+        );
     }
 }

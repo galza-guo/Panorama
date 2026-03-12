@@ -290,19 +290,21 @@ impl Asset {
     /// Convert to canonical instrument for market data resolution.
     /// Returns None for asset kinds that are not resolvable to market data.
     pub fn to_instrument_id(&self) -> Option<InstrumentId> {
-        let symbol = self
-            .instrument_symbol
-            .as_ref()
-            .or(self.display_code.as_ref())?;
+        let preferred_provider = self.preferred_provider();
+        let symbol = normalize_market_symbol_for_provider(
+            self.instrument_symbol
+                .as_deref()
+                .or(self.display_code.as_deref()),
+            preferred_provider.as_deref(),
+        )?;
         let inferred_inst_type = if self.instrument_type.is_none()
             && self.kind == AssetKind::Investment
             && self.quote_mode == QuoteMode::Market
         {
             let normalized = symbol.trim().to_uppercase();
-            let (_, suffix_mic) = parse_symbol_with_exchange_suffix(symbol);
-            let preferred_provider = self.preferred_provider();
+            let (_, suffix_mic) = parse_symbol_with_exchange_suffix(&symbol);
 
-            if parse_crypto_pair_symbol(symbol).is_some() {
+            if parse_crypto_pair_symbol(&symbol).is_some() {
                 Some(InstrumentType::Crypto)
             } else if suffix_mic.is_some()
                 || normalized.ends_with(".FUND")
@@ -325,8 +327,13 @@ impl Asset {
 
         match inst_type {
             InstrumentType::Equity => {
-                let (ticker, suffix_mic) = parse_symbol_with_exchange_suffix(symbol);
-                let inferred_mic = if symbol.trim().to_uppercase().ends_with(".FUND") {
+                let (ticker, suffix_mic) = parse_symbol_with_exchange_suffix(&symbol);
+                let is_tiantian_fund = symbol.trim().to_uppercase().ends_with(".FUND")
+                    || matches!(
+                        preferred_provider.as_deref(),
+                        Some(DATA_SOURCE_TIANTIAN_FUND)
+                    );
+                let inferred_mic = if is_tiantian_fund {
                     None
                 } else {
                     infer_mainland_exchange_mic(ticker)
@@ -334,12 +341,15 @@ impl Asset {
 
                 Some(InstrumentId::Equity {
                     ticker: Arc::from(ticker),
-                    mic: self
-                        .instrument_exchange_mic
-                        .clone()
-                        .or_else(|| suffix_mic.map(str::to_string))
-                        .or_else(|| inferred_mic.map(str::to_string))
-                        .map(Cow::Owned),
+                    mic: if is_tiantian_fund {
+                        None
+                    } else {
+                        self.instrument_exchange_mic
+                            .clone()
+                            .or_else(|| suffix_mic.map(str::to_string))
+                            .or_else(|| inferred_mic.map(str::to_string))
+                            .map(Cow::Owned)
+                    },
                 })
             }
             InstrumentType::Crypto => Some(InstrumentId::Crypto {
@@ -582,9 +592,11 @@ impl From<ProviderProfile> for NewAsset {
             .filter(|isin| !isin.is_empty())
             .map(|isin| serde_json::json!({ "identifiers": { "isin": isin } }));
 
+        let normalized_symbol =
+            normalize_market_symbol_for_provider(Some(profile.symbol.as_str()), Some(&data_source));
         let canonical = canonicalize_market_identity(
             Some(InstrumentType::Equity),
-            Some(profile.symbol.as_str()),
+            normalized_symbol.as_deref().or(Some(profile.symbol.as_str())),
             None,
             Some(profile.currency.as_str()),
         );
@@ -670,6 +682,29 @@ fn normalize_opt(value: Option<&str>) -> Option<String> {
         .map(str::trim)
         .filter(|s| !s.is_empty())
         .map(|s| s.to_uppercase())
+}
+
+fn is_bare_six_digit_symbol(symbol: &str) -> bool {
+    symbol.len() == 6 && symbol.chars().all(|ch| ch.is_ascii_digit())
+}
+
+pub fn normalize_market_symbol_for_provider(
+    symbol: Option<&str>,
+    preferred_provider: Option<&str>,
+) -> Option<String> {
+    let normalized = normalize_opt(symbol)?;
+
+    if normalized.ends_with(".FUND") {
+        return Some(normalized);
+    }
+
+    if matches!(preferred_provider, Some(DATA_SOURCE_TIANTIAN_FUND))
+        && is_bare_six_digit_symbol(&normalized)
+    {
+        return Some(format!("{normalized}.FUND"));
+    }
+
+    Some(normalized)
 }
 
 fn normalize_quote_ccy(value: Option<&str>) -> Option<String> {
@@ -778,17 +813,24 @@ pub fn canonicalize_market_identity(
             if let Some(raw) = instrument_symbol.as_deref() {
                 let (base, suffix_mic) = parse_symbol_with_exchange_suffix(raw);
                 let base = base.to_uppercase();
-                let inferred_mic = if raw.trim().to_uppercase().ends_with(".FUND") {
+                let is_panorama_fund = raw.trim().to_uppercase().ends_with(".FUND");
+                let inferred_mic = if is_panorama_fund {
                     None
                 } else {
                     infer_mainland_exchange_mic(&base)
                 };
-                if instrument_exchange_mic.is_none() {
+                if is_panorama_fund {
+                    instrument_exchange_mic = None;
+                } else if instrument_exchange_mic.is_none() {
                     instrument_exchange_mic = suffix_mic
                         .map(str::to_string)
                         .or_else(|| inferred_mic.map(str::to_string));
                 }
-                instrument_symbol = Some(base);
+                instrument_symbol = Some(if is_panorama_fund {
+                    format!("{base}.FUND")
+                } else {
+                    base.clone()
+                });
             }
 
             // Exchange MIC provides a fallback quote currency when no explicit quote is supplied.
@@ -797,22 +839,24 @@ pub fn canonicalize_market_identity(
                     if let Some(ccy) = mic_to_currency(mic) {
                         normalized_quote = normalize_quote_ccy(Some(ccy));
                     }
-                } else if instrument_symbol
-                    .as_deref()
-                    .zip(symbol)
-                    .is_some_and(|(_, raw)| {
-                        matches!(
-                            infer_panorama_data_source(raw, None),
-                            Some(DATA_SOURCE_TIANTIAN_FUND)
-                        )
-                    })
+                } else if instrument_symbol.as_deref().is_some_and(|normalized_symbol| {
+                    matches!(
+                        infer_panorama_data_source(normalized_symbol, None),
+                        Some(DATA_SOURCE_TIANTIAN_FUND)
+                    )
+                })
                 {
                     normalized_quote = Some("CNY".to_string());
                 }
             }
 
+            let display_code = instrument_symbol
+                .as_deref()
+                .map(parse_symbol_with_exchange_suffix)
+                .map(|(base, _)| base.to_string());
+
             CanonicalMarketIdentity {
-                display_code: instrument_symbol.clone(),
+                display_code,
                 instrument_symbol,
                 instrument_exchange_mic,
                 quote_ccy: normalized_quote,

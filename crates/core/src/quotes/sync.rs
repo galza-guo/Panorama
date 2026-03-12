@@ -119,6 +119,19 @@ fn should_treat_backfill_error_as_non_fatal(category: &SyncCategory, error: &Err
     )
 }
 
+fn normalize_sync_state_data_source(data_source: Option<&str>) -> Option<String> {
+    data_source
+        .map(str::trim)
+        .filter(|value| !value.is_empty())
+        .map(str::to_string)
+}
+
+fn resolve_plan_data_source(state_data_source: Option<&str>, asset: &Asset) -> String {
+    normalize_sync_state_data_source(state_data_source)
+        .or_else(|| asset.preferred_provider())
+        .unwrap_or_else(|| DATA_SOURCE_YAHOO.to_string())
+}
+
 // Test helpers - expose lock functions for testing
 #[cfg(test)]
 fn try_acquire_sync_lock(asset_id: &str) -> bool {
@@ -430,11 +443,10 @@ where
         let mut quote_bounds: HashMap<String, (NaiveDate, NaiveDate)> = HashMap::new();
         let mut assets_by_provider: HashMap<String, Vec<String>> = HashMap::new();
         for asset in assets.iter().filter(|a| self.should_sync_asset(a)) {
-            let provider = existing_states
-                .get(&asset.id)
-                .map(|s| s.data_source.clone())
-                .or_else(|| asset.preferred_provider())
-                .unwrap_or_else(|| DATA_SOURCE_YAHOO.to_string());
+            let provider = resolve_plan_data_source(
+                existing_states.get(&asset.id).map(|s| s.data_source.as_str()),
+                asset,
+            );
             assets_by_provider
                 .entry(provider)
                 .or_default()
@@ -544,9 +556,10 @@ where
                 .as_ref()
                 .map(|s| s.sync_priority)
                 .unwrap_or_else(|| SyncCategory::New.default_priority()),
-            data_source: asset
-                .preferred_provider()
-                .unwrap_or_else(|| DATA_SOURCE_YAHOO.to_string()),
+            data_source: resolve_plan_data_source(
+                state.as_ref().map(|s| s.data_source.as_str()),
+                asset,
+            ),
             quote_symbol: None, // Derived from asset during fetch
             currency: asset.quote_ccy.clone(),
             purge_provider_quotes: false,
@@ -1063,16 +1076,29 @@ where
         let mut quote_bounds_by_source: HashMap<String, HashMap<String, (NaiveDate, NaiveDate)>> =
             HashMap::new();
         for state in &states {
-            if !quote_bounds_by_source.contains_key(&state.data_source) {
+            let Some(asset) = assets_by_id.get(&state.asset_id).copied() else {
+                continue;
+            };
+            let provider = resolve_plan_data_source(Some(state.data_source.as_str()), asset);
+            if !quote_bounds_by_source.contains_key(&provider) {
                 let source_assets: Vec<String> = states
                     .iter()
-                    .filter(|s| s.data_source == state.data_source)
+                    .filter(|s| {
+                        assets_by_id
+                            .get(&s.asset_id)
+                            .copied()
+                            .map(|asset| {
+                                resolve_plan_data_source(Some(s.data_source.as_str()), asset)
+                                    == provider
+                            })
+                            .unwrap_or(false)
+                    })
                     .map(|s| s.asset_id.clone())
                     .collect();
                 let bounds = self
                     .quote_store
-                    .get_quote_bounds_for_assets(&source_assets, &state.data_source)?;
-                quote_bounds_by_source.insert(state.data_source.clone(), bounds);
+                    .get_quote_bounds_for_assets(&source_assets, &provider)?;
+                quote_bounds_by_source.insert(provider, bounds);
             }
         }
 
@@ -1089,8 +1115,10 @@ where
                 .copied()
                 .unwrap_or((None, None));
 
+            let data_source = resolve_plan_data_source(Some(state.data_source.as_str()), asset);
+
             let (quote_min, quote_max) = quote_bounds_by_source
-                .get(&state.data_source)
+                .get(&data_source)
                 .and_then(|bounds| bounds.get(&state.asset_id))
                 .map(|(min, max)| (Some(*min), Some(*max)))
                 .unwrap_or((None, None));
@@ -1129,7 +1157,7 @@ where
                             start_date,
                             end_date,
                             priority: state.sync_priority,
-                            data_source: state.data_source.clone(),
+                            data_source: data_source.clone(),
                             quote_symbol: None,
                             currency: asset.quote_ccy.clone(),
                             purge_provider_quotes: false,
@@ -1156,7 +1184,7 @@ where
                             start_date,
                             end_date,
                             priority: SyncCategory::Active.default_priority(),
-                            data_source: state.data_source.clone(),
+                            data_source: data_source.clone(),
                             quote_symbol: None,
                             currency: asset.quote_ccy.clone(),
                             purge_provider_quotes: false,
@@ -1192,7 +1220,7 @@ where
                 start_date,
                 end_date,
                 priority: state.sync_priority,
-                data_source: state.data_source.clone(),
+                data_source: data_source,
                 quote_symbol: None,
                 currency: asset.quote_ccy.clone(),
                 purge_provider_quotes: false,
@@ -1304,11 +1332,10 @@ where
         let mut quote_bounds: HashMap<String, (NaiveDate, NaiveDate)> = HashMap::new();
         let mut assets_by_provider: HashMap<String, Vec<String>> = HashMap::new();
         for asset in &syncable {
-            let provider = existing_states
-                .get(&asset.id)
-                .map(|s| s.data_source.clone())
-                .or_else(|| asset.preferred_provider())
-                .unwrap_or_else(|| DATA_SOURCE_YAHOO.to_string());
+            let provider = resolve_plan_data_source(
+                existing_states.get(&asset.id).map(|s| s.data_source.as_str()),
+                asset,
+            );
             assets_by_provider
                 .entry(provider)
                 .or_default()
@@ -1324,11 +1351,8 @@ where
         let mut plans: Vec<SymbolSyncPlan> = Vec::new();
         for asset in &syncable {
             let state = existing_states.get(&asset.id).cloned();
-            let data_source = state
-                .as_ref()
-                .map(|s| s.data_source.clone())
-                .or_else(|| asset.preferred_provider())
-                .unwrap_or_else(|| DATA_SOURCE_YAHOO.to_string());
+            let data_source =
+                resolve_plan_data_source(state.as_ref().map(|s| s.data_source.as_str()), asset);
             let effective_today =
                 effective_market_today(now, asset.instrument_exchange_mic.as_deref());
             let fetch_end_date =
@@ -1497,11 +1521,13 @@ where
             // Use QUOTE_HISTORY_BUFFER_DAYS + BACKFILL_SAFETY_MARGIN_DAYS for conservative detection
             let required_start = activity_date.0
                 - Duration::days(QUOTE_HISTORY_BUFFER_DAYS + BACKFILL_SAFETY_MARGIN_DAYS);
+            let asset = self.asset_repo.get_by_id(symbol)?;
+            let data_source = resolve_plan_data_source(Some(state.data_source.as_str()), &asset);
 
             // Compute quote bounds for this asset filtered by provider
             let quote_bounds = self
                 .quote_store
-                .get_quote_bounds_for_assets(&[symbol.to_string()], &state.data_source)
+                .get_quote_bounds_for_assets(&[symbol.to_string()], &data_source)
                 .unwrap_or_default();
             let earliest_quote = quote_bounds.get(symbol).map(|(min, _)| *min);
 
@@ -1854,6 +1880,23 @@ mod tests {
     #[test]
     fn test_asset_skip_reason_display_not_found() {
         assert_eq!(AssetSkipReason::NotFound.to_string(), "Asset not found");
+    }
+
+    #[test]
+    fn test_resolve_plan_data_source_falls_back_when_sync_state_provider_blank() {
+        let mut asset = create_sync_test_asset(true);
+        asset.provider_config = Some(serde_json::json!({
+            "preferred_provider": "TIANTIAN_FUND"
+        }));
+
+        assert_eq!(
+            resolve_plan_data_source(Some(""), &asset),
+            "TIANTIAN_FUND".to_string()
+        );
+        assert_eq!(
+            resolve_plan_data_source(Some("   "), &asset),
+            "TIANTIAN_FUND".to_string()
+        );
     }
 
     // =========================================================================
