@@ -9,6 +9,7 @@ import {
   buildTimeDepositMetadataPatch,
   buildFundAllocationFromSubfunds,
   getAssetOwner,
+  getTimeDepositDisplaySnapshot,
   isInsuranceAsset,
   isMpfAsset,
   isTimeDepositAsset,
@@ -86,6 +87,29 @@ describe("panorama asset attributes", () => {
     expect(getAssetOwner(holding)).toBe("Alice");
     expect(asFiniteNumber(attributes.principal)).toBe(10000);
     expect(asFiniteNumber(attributes.guaranteed_maturity_value)).toBe(10200);
+  });
+
+  it("derives a display snapshot for time deposit holdings", () => {
+    const holding = createHolding({
+      panorama_category: "time_deposit",
+      sub_type: "time_deposit",
+      owner: " Alice ",
+      provider: " HSBC ",
+      principal: "10000",
+      start_date: "2026-01-01",
+      maturity_date: "2026-04-11",
+      quoted_annual_rate: "7.3",
+      valuation_mode: "derived",
+    });
+
+    expect(getTimeDepositDisplaySnapshot(holding, "2026-02-20")).toEqual({
+      currentValue: 10100,
+      valuationDate: "2026-02-20",
+      daysLeft: 50,
+      gain: 100,
+      gainPct: 0.01,
+      isEstimatedValue: true,
+    });
   });
 
   it("normalizes mpf subfunds and derives fallback fund allocations", () => {

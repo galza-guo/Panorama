@@ -1,3 +1,4 @@
+import { getEffectiveTimeDepositCurrentValue, getTimeDepositDerivedMetrics } from "./time-deposit-calculations";
 import type { AlternativeAssetHolding, JsonObject, JsonValue } from "./types";
 
 export interface PanoramaMpfSubfund {
@@ -66,6 +67,15 @@ export interface TimeDepositMetadataInput {
   current_value_override?: number;
   valuation_date?: string;
   status?: "active" | "matured" | "closed";
+}
+
+export interface TimeDepositDisplaySnapshot {
+  currentValue?: number;
+  valuationDate: string;
+  daysLeft?: number;
+  gain?: number;
+  gainPct?: number;
+  isEstimatedValue: boolean;
 }
 
 function normalizeText(value: unknown): string {
@@ -217,6 +227,79 @@ export function getAssetOwner(holding: AlternativeAssetHolding): string | undefi
   const owner = attrs.owner?.trim();
 
   return owner ? owner : undefined;
+}
+
+function getTodayIsoDate(): string {
+  const now = new Date();
+  return new Date(Date.UTC(now.getFullYear(), now.getMonth(), now.getDate()))
+    .toISOString()
+    .slice(0, 10);
+}
+
+export function getTimeDepositDisplaySnapshot(
+  holding: AlternativeAssetHolding,
+  asOfDate = getTodayIsoDate(),
+): TimeDepositDisplaySnapshot | undefined {
+  if (!isTimeDepositAsset(holding)) {
+    return undefined;
+  }
+
+  const attrs = parsePanoramaAssetAttributes(holding.metadata);
+  const principal = asFiniteNumber(attrs.principal ?? holding.purchasePrice);
+  const quotedAnnualRate = asFiniteNumber(attrs.quoted_annual_rate);
+  const guaranteedMaturityValue = asFiniteNumber(attrs.guaranteed_maturity_value);
+  const currentValueOverride = asFiniteNumber(attrs.current_value_override);
+  const startDate = typeof attrs.start_date === "string" ? attrs.start_date : holding.purchaseDate;
+  const maturityDate = typeof attrs.maturity_date === "string" ? attrs.maturity_date : undefined;
+  const valuationMode = attrs.valuation_mode === "manual" ? "manual" : "derived";
+  const fallbackValuationDate =
+    typeof attrs.valuation_date === "string" && attrs.valuation_date.trim()
+      ? attrs.valuation_date.trim()
+      : holding.valuationDate.slice(0, 10);
+  const canDerive =
+    principal !== undefined &&
+    startDate !== undefined &&
+    maturityDate !== undefined &&
+    (quotedAnnualRate !== undefined || guaranteedMaturityValue !== undefined);
+  const currentValue = canDerive
+    ? getEffectiveTimeDepositCurrentValue({
+        principal,
+        startDate,
+        maturityDate,
+        asOfDate,
+        quotedAnnualRatePct: quotedAnnualRate,
+        guaranteedMaturityValue,
+        valuationMode,
+        currentValueOverride,
+      })
+    : asFiniteNumber(holding.marketValue);
+  const daysLeft = canDerive
+    ? getTimeDepositDerivedMetrics({
+        principal,
+        startDate,
+        maturityDate,
+        asOfDate,
+        quotedAnnualRatePct: quotedAnnualRate,
+        guaranteedMaturityValue,
+      }).daysLeft
+    : undefined;
+  const gain =
+    principal !== undefined && currentValue !== undefined
+      ? currentValue - principal
+      : asFiniteNumber(holding.unrealizedGain);
+  const gainPct =
+    principal !== undefined && principal > 0 && currentValue !== undefined
+      ? Number((currentValue / principal - 1).toFixed(10))
+      : asFiniteNumber(holding.unrealizedGainPct);
+
+  return {
+    currentValue,
+    valuationDate: canDerive && valuationMode === "derived" ? asOfDate : fallbackValuationDate,
+    daysLeft,
+    gain,
+    gainPct,
+    isEstimatedValue: canDerive && valuationMode === "derived",
+  };
 }
 
 export function buildInsuranceMetadata(input: InsuranceMetadataInput): JsonObject {

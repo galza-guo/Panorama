@@ -1,10 +1,12 @@
 import { useBalancePrivacy } from "@/hooks/use-balance-privacy";
+import { getTimeDepositDisplaySnapshot } from "@/lib/panorama-asset-attributes";
 import type { AlternativeAssetHolding } from "@/lib/types";
 import { ALTERNATIVE_ASSET_KIND_DISPLAY_NAMES } from "@/lib/types";
-import { AmountDisplay, GainPercent, Separator } from "@wealthfolio/ui";
+import { AmountDisplay, GainPercent, Separator, Badge } from "@wealthfolio/ui";
 import { Card } from "@wealthfolio/ui/components/ui/card";
 import { Icons } from "@wealthfolio/ui/components/ui/icons";
 import { Skeleton } from "@wealthfolio/ui/components/ui/skeleton";
+import { useMemo } from "react";
 
 interface AlternativeHoldingsListMobileProps {
   holdings: AlternativeAssetHolding[];
@@ -18,6 +20,7 @@ export function AlternativeHoldingsListMobile({
   onRowClick,
 }: AlternativeHoldingsListMobileProps) {
   const { isBalanceHidden } = useBalancePrivacy();
+  const asOfDate = useMemo(() => new Date().toISOString().slice(0, 10), []);
 
   if (isLoading) {
     return (
@@ -34,19 +37,27 @@ export function AlternativeHoldingsListMobile({
   }
 
   const sorted = [...holdings].sort(
-    (a, b) => parseFloat(b.marketValue) - parseFloat(a.marketValue),
+    (a, b) =>
+      (getTimeDepositDisplaySnapshot(b, asOfDate)?.currentValue ?? parseFloat(b.marketValue)) -
+      (getTimeDepositDisplaySnapshot(a, asOfDate)?.currentValue ?? parseFloat(a.marketValue)),
   );
 
   return (
     <div className="space-y-2">
       {sorted.map((holding) => {
+        const timeDepositDisplay = getTimeDepositDisplaySnapshot(holding, asOfDate);
         const kindDisplay =
           ALTERNATIVE_ASSET_KIND_DISPLAY_NAMES[
             holding.kind.toUpperCase() as keyof typeof ALTERNATIVE_ASSET_KIND_DISPLAY_NAMES
           ] ?? holding.kind;
 
-        const gain = holding.unrealizedGain ? parseFloat(holding.unrealizedGain) : null;
-        const gainPct = holding.unrealizedGainPct ? parseFloat(holding.unrealizedGainPct) : null;
+        const gain =
+          timeDepositDisplay?.gain ?? (holding.unrealizedGain ? parseFloat(holding.unrealizedGain) : null);
+        const gainPct =
+          timeDepositDisplay?.gainPct ??
+          (holding.unrealizedGainPct ? parseFloat(holding.unrealizedGainPct) : null);
+        const currentValue =
+          timeDepositDisplay?.currentValue ?? parseFloat(holding.marketValue);
 
         return (
           <Card
@@ -60,17 +71,34 @@ export function AlternativeHoldingsListMobile({
                   <AssetKindIcon kind={holding.kind} size={20} />
                 </div>
                 <div className="flex-1 overflow-hidden">
-                  <p className="truncate font-semibold">{holding.name}</p>
+                  <div className="flex items-center gap-2">
+                    <p className="truncate font-semibold">{holding.name}</p>
+                    {timeDepositDisplay?.daysLeft !== undefined ? (
+                      <Badge variant="outline" className="text-[10px]">
+                        {timeDepositDisplay.daysLeft}d left
+                      </Badge>
+                    ) : null}
+                  </div>
                   <p className="text-muted-foreground truncate text-sm">{kindDisplay}</p>
                 </div>
               </div>
               <div className="ml-2 text-right">
-                <AmountDisplay
-                  value={parseFloat(holding.marketValue)}
-                  currency={holding.currency}
-                  isHidden={isBalanceHidden}
-                  className="font-medium"
-                />
+                <div
+                  data-testid={`mobile-time-deposit-value-${holding.id}`}
+                  className="flex items-center justify-end gap-1.5"
+                >
+                  {timeDepositDisplay?.isEstimatedValue ? (
+                    <Badge variant="outline" className="px-1.5 py-0 text-[10px]">
+                      Est.
+                    </Badge>
+                  ) : null}
+                  <AmountDisplay
+                    value={currentValue}
+                    currency={holding.currency}
+                    isHidden={isBalanceHidden}
+                    className="font-medium"
+                  />
+                </div>
                 {gain !== null && gainPct !== null && (
                   <div className="flex items-center justify-end gap-1">
                     <AmountDisplay

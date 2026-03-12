@@ -19,12 +19,13 @@ import {
 } from "@wealthfolio/ui/components/ui/alert-dialog";
 import { Icons } from "@wealthfolio/ui/components/ui/icons";
 import { Skeleton } from "@wealthfolio/ui/components/ui/skeleton";
-import { EmptyPlaceholder, GainPercent, AmountDisplay } from "@wealthfolio/ui";
+import { EmptyPlaceholder, GainPercent, AmountDisplay, Badge } from "@wealthfolio/ui";
 import type { ColumnDef } from "@tanstack/react-table";
 import { useMemo, useState } from "react";
 import { useBalancePrivacy } from "@/hooks/use-balance-privacy";
 import type { AlternativeAssetHolding } from "@/lib/types";
 import { ALTERNATIVE_ASSET_KIND_DISPLAY_NAMES } from "@/lib/types";
+import { getTimeDepositDisplaySnapshot } from "@/lib/panorama-asset-attributes";
 
 interface AlternativeHoldingsTableProps {
   holdings: AlternativeAssetHolding[];
@@ -53,6 +54,7 @@ export function AlternativeHoldingsTable({
 }: AlternativeHoldingsTableProps) {
   const { isBalanceHidden } = useBalancePrivacy();
   const [assetToDelete, setAssetToDelete] = useState<AlternativeAssetHolding | null>(null);
+  const asOfDate = useMemo(() => new Date().toISOString().slice(0, 10), []);
 
   const handleConfirmDelete = () => {
     if (assetToDelete && onDelete) {
@@ -69,6 +71,7 @@ export function AlternativeHoldingsTable({
         header: ({ column }) => <DataTableColumnHeader column={column} title="Asset" />,
         cell: ({ row }) => {
           const holding = row.original;
+          const timeDepositDisplay = getTimeDepositDisplaySnapshot(holding, asOfDate);
           const kindDisplay =
             ALTERNATIVE_ASSET_KIND_DISPLAY_NAMES[
               holding.kind.toUpperCase() as keyof typeof ALTERNATIVE_ASSET_KIND_DISPLAY_NAMES
@@ -101,7 +104,14 @@ export function AlternativeHoldingsTable({
                 <AssetKindIcon kind={holding.kind} size={20} />
               </div>
               <div className="flex flex-col">
-                <span className="text-sm font-medium">{holding.name}</span>
+                <div className="flex items-center gap-2">
+                  <span className="text-sm font-medium">{holding.name}</span>
+                  {timeDepositDisplay?.daysLeft !== undefined ? (
+                    <Badge variant="outline" className="text-[10px]">
+                      {timeDepositDisplay.daysLeft}d left
+                    </Badge>
+                  ) : null}
+                </div>
                 <span className="text-muted-foreground text-xs">{kindDisplay}</span>
               </div>
             </div>
@@ -117,10 +127,19 @@ export function AlternativeHoldingsTable({
         ),
         cell: ({ row }) => {
           const holding = row.original;
-          const value = parseFloat(holding.marketValue);
+          const timeDepositDisplay = getTimeDepositDisplaySnapshot(holding, asOfDate);
+          const value = timeDepositDisplay?.currentValue ?? parseFloat(holding.marketValue);
 
           return (
-            <div className="text-right">
+            <div
+              data-testid={`desktop-time-deposit-value-${holding.id}`}
+              className="flex items-center justify-end gap-1.5 text-right"
+            >
+              {timeDepositDisplay?.isEstimatedValue ? (
+                <Badge variant="outline" className="px-1.5 py-0 text-[10px]">
+                  Est.
+                </Badge>
+              ) : null}
               <AmountDisplay
                 value={value}
                 currency={holding.currency}
@@ -132,8 +151,12 @@ export function AlternativeHoldingsTable({
         },
         enableSorting: true,
         sortingFn: (rowA, rowB) => {
-          const valueA = parseFloat(rowA.original.marketValue);
-          const valueB = parseFloat(rowB.original.marketValue);
+          const valueA =
+            getTimeDepositDisplaySnapshot(rowA.original, asOfDate)?.currentValue ??
+            parseFloat(rowA.original.marketValue);
+          const valueB =
+            getTimeDepositDisplaySnapshot(rowB.original, asOfDate)?.currentValue ??
+            parseFloat(rowB.original.marketValue);
           return valueA - valueB;
         },
       },
@@ -145,8 +168,11 @@ export function AlternativeHoldingsTable({
         ),
         cell: ({ row }) => {
           const holding = row.original;
-          const gain = holding.unrealizedGain ? parseFloat(holding.unrealizedGain) : null;
-          const gainPct = holding.unrealizedGainPct ? parseFloat(holding.unrealizedGainPct) : null;
+          const timeDepositDisplay = getTimeDepositDisplaySnapshot(holding, asOfDate);
+          const gain = timeDepositDisplay?.gain ?? (holding.unrealizedGain ? parseFloat(holding.unrealizedGain) : null);
+          const gainPct =
+            timeDepositDisplay?.gainPct ??
+            (holding.unrealizedGainPct ? parseFloat(holding.unrealizedGainPct) : null);
 
           if (gain === null || gainPct === null) {
             return <div className="text-muted-foreground text-right text-sm">—</div>;
@@ -167,20 +193,25 @@ export function AlternativeHoldingsTable({
         },
         enableSorting: true,
         sortingFn: (rowA, rowB) => {
-          const valueA = parseFloat(rowA.original.unrealizedGain ?? "0");
-          const valueB = parseFloat(rowB.original.unrealizedGain ?? "0");
+          const valueA =
+            getTimeDepositDisplaySnapshot(rowA.original, asOfDate)?.gain ??
+            parseFloat(rowA.original.unrealizedGain ?? "0");
+          const valueB =
+            getTimeDepositDisplaySnapshot(rowB.original, asOfDate)?.gain ??
+            parseFloat(rowB.original.unrealizedGain ?? "0");
           return valueA - valueB;
         },
       },
       {
         id: "valuationDate",
-        accessorKey: "valuationDate",
+        accessorFn: (row) => getTimeDepositDisplaySnapshot(row, asOfDate)?.valuationDate ?? row.valuationDate,
         header: ({ column }) => (
           <DataTableColumnHeader column={column} title="Last Valued" className="justify-end" />
         ),
         cell: ({ row }) => {
           const holding = row.original;
-          const date = new Date(holding.valuationDate);
+          const timeDepositDisplay = getTimeDepositDisplaySnapshot(holding, asOfDate);
+          const date = new Date(timeDepositDisplay?.valuationDate ?? holding.valuationDate);
           const formatted = date.toLocaleDateString(undefined, {
             year: "numeric",
             month: "short",
@@ -247,7 +278,7 @@ export function AlternativeHoldingsTable({
         },
       },
     ],
-    [isBalanceHidden, onEdit, onUpdateValue, onViewHistory, onDelete, onRowClick],
+    [asOfDate, isBalanceHidden, onEdit, onUpdateValue, onViewHistory, onDelete, onRowClick],
   );
 
   if (isLoading) {
