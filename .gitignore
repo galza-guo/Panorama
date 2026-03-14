@@ -88,3 +88,6 @@ Thumbs.db
 db/
 tasks
 temp/imports/
+.worktrees/
+temp-secrets/
+website/.vercel/
