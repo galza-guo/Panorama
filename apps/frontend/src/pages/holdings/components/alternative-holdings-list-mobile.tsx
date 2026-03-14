@@ -1,5 +1,13 @@
 import { useBalancePrivacy } from "@/hooks/use-balance-privacy";
-import { getTimeDepositDisplaySnapshot } from "@/lib/panorama-asset-attributes";
+import {
+  getInsuranceDisplaySnapshot,
+  getInsurancePaymentReminderLabel,
+  getPanoramaAssetKindDisplayLabel,
+  getTimeDepositDisplaySnapshot,
+  isInsuranceAsset,
+  isMpfAsset,
+  isTimeDepositAsset,
+} from "@/lib/panorama-asset-attributes";
 import type { AlternativeAssetHolding } from "@/lib/types";
 import { ALTERNATIVE_ASSET_KIND_DISPLAY_NAMES } from "@/lib/types";
 import { AmountDisplay, GainPercent, Separator, Badge } from "@wealthfolio/ui";
@@ -38,18 +46,29 @@ export function AlternativeHoldingsListMobile({
 
   const sorted = [...holdings].sort(
     (a, b) =>
-      (getTimeDepositDisplaySnapshot(b, asOfDate)?.currentValue ?? parseFloat(b.marketValue)) -
-      (getTimeDepositDisplaySnapshot(a, asOfDate)?.currentValue ?? parseFloat(a.marketValue)),
+      (getTimeDepositDisplaySnapshot(b, asOfDate)?.currentValue ??
+        getInsuranceDisplaySnapshot(b, asOfDate)?.cashValue ??
+        parseFloat(b.marketValue)) -
+      (getTimeDepositDisplaySnapshot(a, asOfDate)?.currentValue ??
+        getInsuranceDisplaySnapshot(a, asOfDate)?.cashValue ??
+        parseFloat(a.marketValue)),
   );
 
   return (
     <div className="space-y-2">
       {sorted.map((holding) => {
         const timeDepositDisplay = getTimeDepositDisplaySnapshot(holding, asOfDate);
+        const insuranceDisplay = getInsuranceDisplaySnapshot(holding, asOfDate);
+        const reminderLabel =
+          timeDepositDisplay?.daysLeft !== undefined
+            ? `${timeDepositDisplay.daysLeft}d left`
+            : getInsurancePaymentReminderLabel(insuranceDisplay?.daysUntilNextPayment);
         const kindDisplay =
+          getPanoramaAssetKindDisplayLabel(holding) ??
           ALTERNATIVE_ASSET_KIND_DISPLAY_NAMES[
             holding.kind.toUpperCase() as keyof typeof ALTERNATIVE_ASSET_KIND_DISPLAY_NAMES
-          ] ?? holding.kind;
+          ] ??
+          holding.kind;
 
         const gain =
           timeDepositDisplay?.gain ?? (holding.unrealizedGain ? parseFloat(holding.unrealizedGain) : null);
@@ -57,7 +76,9 @@ export function AlternativeHoldingsListMobile({
           timeDepositDisplay?.gainPct ??
           (holding.unrealizedGainPct ? parseFloat(holding.unrealizedGainPct) : null);
         const currentValue =
-          timeDepositDisplay?.currentValue ?? parseFloat(holding.marketValue);
+          timeDepositDisplay?.currentValue ??
+          insuranceDisplay?.cashValue ??
+          parseFloat(holding.marketValue);
 
         return (
           <Card
@@ -68,14 +89,18 @@ export function AlternativeHoldingsListMobile({
             <div className="flex items-center justify-between">
               <div className="flex flex-1 items-center gap-3 overflow-hidden">
                 <div className="bg-muted flex h-10 w-10 shrink-0 items-center justify-center rounded-full">
-                  <AssetKindIcon kind={holding.kind} size={20} />
+                  <AssetKindIcon holding={holding} size={20} />
                 </div>
                 <div className="flex-1 overflow-hidden">
                   <div className="flex items-center gap-2">
                     <p className="truncate font-semibold">{holding.name}</p>
-                    {timeDepositDisplay?.daysLeft !== undefined ? (
+                    {reminderLabel ? (
                       <Badge variant="outline" className="text-[10px]">
-                        {timeDepositDisplay.daysLeft}d left
+                        {reminderLabel}
+                      </Badge>
+                    ) : insuranceDisplay?.paymentStatus === "paid_up" ? (
+                      <Badge variant="outline" className="text-[10px]">
+                        Paid-up
                       </Badge>
                     ) : null}
                   </div>
@@ -90,6 +115,10 @@ export function AlternativeHoldingsListMobile({
                   {timeDepositDisplay?.isEstimatedValue ? (
                     <Badge variant="outline" className="px-1.5 py-0 text-[10px]">
                       Est.
+                    </Badge>
+                  ) : insuranceDisplay ? (
+                    <Badge variant="outline" className="px-1.5 py-0 text-[10px]">
+                      Cash Value
                     </Badge>
                   ) : null}
                   <AmountDisplay
@@ -121,8 +150,20 @@ export function AlternativeHoldingsListMobile({
   );
 }
 
-function AssetKindIcon({ kind, size = 20 }: { kind: string; size?: number }) {
-  switch (kind.toLowerCase()) {
+function AssetKindIcon({ holding, size = 20 }: { holding: AlternativeAssetHolding; size?: number }) {
+  if (isTimeDepositAsset(holding)) {
+    return <Icons.BadgeDollarSign size={size} />;
+  }
+
+  if (isInsuranceAsset(holding)) {
+    return <Icons.Shield size={size} />;
+  }
+
+  if (isMpfAsset(holding)) {
+    return <Icons.Briefcase size={size} />;
+  }
+
+  switch (holding.kind.toLowerCase()) {
     case "property":
       return <Icons.RealEstateDuotone size={size} />;
     case "vehicle":
@@ -131,8 +172,6 @@ function AssetKindIcon({ kind, size = 20 }: { kind: string; size?: number }) {
       return <Icons.CollectibleDuotone size={size} />;
     case "precious":
       return <Icons.PreciousDuotone size={size} />;
-    case "mpf":
-      return <Icons.Briefcase size={size} />;
     case "liability":
       return <Icons.LiabilityDuotone size={size} />;
     default:

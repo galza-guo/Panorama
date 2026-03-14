@@ -3,6 +3,8 @@ import { describe, expect, it } from "vitest";
 import { AlternativeAssetKind, type AlternativeAssetHolding } from "./types";
 import {
   asFiniteNumber,
+  buildInsuranceMetadata,
+  buildInsuranceMetadataPatch,
   buildMpfMetadata,
   buildMpfMetadataPatch,
   buildTimeDepositMetadata,
@@ -42,7 +44,8 @@ describe("panorama asset attributes", () => {
       owner: " Alice ",
       insurance_provider: "AIA",
       total_paid_to_date: "1200.5",
-      withdrawable_value: 980.25,
+      payment_status: "paying",
+      next_due_date: "2026-03-22",
     });
 
     const attributes = parsePanoramaAssetAttributes(holding.metadata);
@@ -51,7 +54,8 @@ describe("panorama asset attributes", () => {
     expect(isMpfAsset(holding)).toBe(false);
     expect(getAssetOwner(holding)).toBe("Alice");
     expect(asFiniteNumber(attributes.total_paid_to_date)).toBe(1200.5);
-    expect(asFiniteNumber(attributes.withdrawable_value)).toBe(980.25);
+    expect(attributes.payment_status).toBe("paying");
+    expect(attributes.next_due_date).toBe("2026-03-22");
   });
 
   it("keeps insurance and mpf classifications mutually exclusive", () => {
@@ -260,6 +264,56 @@ describe("panorama asset attributes", () => {
       current_value_override: 10080,
       valuation_date: "2026-02-20",
       status: "active",
+    });
+  });
+
+  it("builds insurance metadata and patch payloads", () => {
+    expect(
+      buildInsuranceMetadata({
+        owner: " Alice ",
+        policy_type: " Whole Life ",
+        insurance_provider: " AIA ",
+        start_date: "2024-01-01",
+        valuation_date: "2026-03-13",
+        total_paid_to_date: 100000,
+        payment_status: "paying",
+        next_due_date: "2026-03-22",
+      }),
+    ).toEqual({
+      panorama_category: "insurance",
+      sub_type: "insurance",
+      owner: "Alice",
+      policy_type: "Whole Life",
+      insurance_provider: "AIA",
+      start_date: "2024-01-01",
+      valuation_date: "2026-03-13",
+      total_paid_to_date: 100000,
+      payment_status: "paying",
+      next_due_date: "2026-03-22",
+    });
+
+    expect(
+      buildInsuranceMetadataPatch({
+        owner: "",
+        policy_type: "",
+        insurance_provider: " AIA ",
+        start_date: "",
+        valuation_date: "2026-03-13",
+        total_paid_to_date: undefined,
+        payment_status: "paid_up",
+        next_due_date: "",
+      }),
+    ).toEqual({
+      panorama_category: "insurance",
+      sub_type: "insurance",
+      owner: null,
+      policy_type: null,
+      insurance_provider: "AIA",
+      start_date: null,
+      valuation_date: "2026-03-13",
+      total_paid_to_date: null,
+      payment_status: "paid_up",
+      next_due_date: null,
     });
   });
 });

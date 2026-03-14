@@ -19,6 +19,8 @@ export interface PanoramaAssetAttributes {
   expected_withdrawal_date?: string;
   total_paid_to_date?: number | string;
   withdrawable_value?: number | string;
+  payment_status?: string;
+  next_due_date?: string;
   estimated_value?: number | string;
   market_value?: number | string;
   guaranteed_value?: number | string;
@@ -42,9 +44,11 @@ export interface InsuranceMetadataInput {
   owner?: string;
   policy_type?: string;
   insurance_provider?: string;
+  start_date?: string;
   valuation_date?: string;
   total_paid_to_date?: number;
-  withdrawable_value?: number;
+  payment_status?: "paying" | "paid_up";
+  next_due_date?: string;
 }
 
 export interface MpfMetadataInput {
@@ -76,6 +80,16 @@ export interface TimeDepositDisplaySnapshot {
   gain?: number;
   gainPct?: number;
   isEstimatedValue: boolean;
+}
+
+export interface InsuranceDisplaySnapshot {
+  cashValue?: number;
+  valuationDate: string;
+  totalPaid?: number;
+  netPosition?: number;
+  paymentStatus?: "paying" | "paid_up";
+  nextDueDate?: string;
+  daysUntilNextPayment?: number;
 }
 
 function normalizeText(value: unknown): string {
@@ -135,6 +149,8 @@ function hasInsuranceSpecificAttributes(attrs: PanoramaAssetAttributes): boolean
   return (
     attrs.policy_type !== undefined ||
     attrs.insurance_provider !== undefined ||
+    attrs.payment_status !== undefined ||
+    attrs.next_due_date !== undefined ||
     attrs.guaranteed_value !== undefined ||
     attrs.estimated_value !== undefined ||
     attrs.expected_withdrawal_date !== undefined
@@ -236,6 +252,37 @@ function getTodayIsoDate(): string {
     .slice(0, 10);
 }
 
+function toIsoDateOnly(value: unknown): string | undefined {
+  if (typeof value !== "string") {
+    return undefined;
+  }
+
+  const trimmed = value.trim();
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(trimmed)) {
+    return undefined;
+  }
+
+  const [year, month, day] = trimmed.split("-").map((part) => Number(part));
+  const timestamp = Date.UTC(year, month - 1, day);
+  const normalized = new Date(timestamp).toISOString().slice(0, 10);
+
+  return normalized === trimmed ? trimmed : undefined;
+}
+
+function getDateOnlyDiffInDays(fromDate: string, toDate: string): number | undefined {
+  const fromTimestamp = toIsoDateOnly(fromDate);
+  const toTimestamp = toIsoDateOnly(toDate);
+
+  if (!fromTimestamp || !toTimestamp) {
+    return undefined;
+  }
+
+  return Math.round(
+    (Date.parse(`${toTimestamp}T00:00:00Z`) - Date.parse(`${fromTimestamp}T00:00:00Z`)) /
+      86_400_000,
+  );
+}
+
 export function getTimeDepositDisplaySnapshot(
   holding: AlternativeAssetHolding,
   asOfDate = getTodayIsoDate(),
@@ -302,6 +349,95 @@ export function getTimeDepositDisplaySnapshot(
   };
 }
 
+export function getInsuranceDisplaySnapshot(
+  holding: AlternativeAssetHolding,
+  asOfDate = getTodayIsoDate(),
+): InsuranceDisplaySnapshot | undefined {
+  if (!isInsuranceAsset(holding)) {
+    return undefined;
+  }
+
+  const attrs = parsePanoramaAssetAttributes(holding.metadata);
+  const cashValue = asFiniteNumber(holding.marketValue);
+  const totalPaid = asFiniteNumber(attrs.total_paid_to_date);
+  const valuationDate =
+    typeof attrs.valuation_date === "string" && attrs.valuation_date.trim()
+      ? attrs.valuation_date.trim()
+      : holding.valuationDate.slice(0, 10);
+  const paymentStatus =
+    attrs.payment_status === "paid_up"
+      ? "paid_up"
+      : attrs.payment_status === "paying"
+        ? "paying"
+        : undefined;
+  const nextDueDate = toIsoDateOnly(attrs.next_due_date);
+  const daysUntilNextPayment =
+    paymentStatus === "paying" && nextDueDate
+      ? getDateOnlyDiffInDays(asOfDate, nextDueDate)
+      : undefined;
+
+  return {
+    cashValue,
+    valuationDate,
+    totalPaid,
+    netPosition:
+      cashValue !== undefined && totalPaid !== undefined ? cashValue - totalPaid : undefined,
+    paymentStatus,
+    nextDueDate,
+    daysUntilNextPayment,
+  };
+}
+
+export function getInsurancePaymentReminderLabel(
+  daysUntilNextPayment?: number,
+): string | undefined {
+  if (daysUntilNextPayment === undefined) {
+    return undefined;
+  }
+
+  if (daysUntilNextPayment === 0) {
+    return "Due today";
+  }
+
+  if (daysUntilNextPayment > 0) {
+    return `Next payment in ${daysUntilNextPayment}d`;
+  }
+
+  return `Overdue by ${Math.abs(daysUntilNextPayment)}d`;
+}
+
+export function getInsurancePaymentStatusLabel(
+  paymentStatus?: string,
+): "Paying" | "Paid-up" | undefined {
+  if (paymentStatus === "paying") {
+    return "Paying";
+  }
+
+  if (paymentStatus === "paid_up") {
+    return "Paid-up";
+  }
+
+  return undefined;
+}
+
+export function getPanoramaAssetKindDisplayLabel(
+  holding: AlternativeAssetHolding,
+): string | undefined {
+  if (isTimeDepositAsset(holding)) {
+    return "Time Deposit";
+  }
+
+  if (isInsuranceAsset(holding)) {
+    return "Insurance";
+  }
+
+  if (isMpfAsset(holding)) {
+    return "MPF";
+  }
+
+  return undefined;
+}
+
 export function buildInsuranceMetadata(input: InsuranceMetadataInput): JsonObject {
   const metadata: JsonObject = {
     panorama_category: "insurance",
@@ -320,6 +456,10 @@ export function buildInsuranceMetadata(input: InsuranceMetadataInput): JsonObjec
     metadata.insurance_provider = input.insurance_provider.trim();
   }
 
+  if (input.start_date?.trim()) {
+    metadata.start_date = input.start_date.trim();
+  }
+
   if (input.valuation_date?.trim()) {
     metadata.valuation_date = input.valuation_date.trim();
   }
@@ -328,8 +468,12 @@ export function buildInsuranceMetadata(input: InsuranceMetadataInput): JsonObjec
     metadata.total_paid_to_date = input.total_paid_to_date;
   }
 
-  if (input.withdrawable_value !== undefined) {
-    metadata.withdrawable_value = input.withdrawable_value;
+  if (input.payment_status) {
+    metadata.payment_status = input.payment_status;
+  }
+
+  if (input.next_due_date?.trim()) {
+    metadata.next_due_date = input.next_due_date.trim();
   }
 
   return metadata;
@@ -342,9 +486,11 @@ export function buildInsuranceMetadataPatch(input: InsuranceMetadataInput): Json
     owner: input.owner?.trim() ? input.owner.trim() : null,
     policy_type: input.policy_type?.trim() ? input.policy_type.trim() : null,
     insurance_provider: input.insurance_provider?.trim() ? input.insurance_provider.trim() : null,
+    start_date: input.start_date?.trim() ? input.start_date.trim() : null,
     valuation_date: input.valuation_date?.trim() ? input.valuation_date.trim() : null,
     total_paid_to_date: input.total_paid_to_date ?? null,
-    withdrawable_value: input.withdrawable_value ?? null,
+    payment_status: input.payment_status ?? null,
+    next_due_date: input.next_due_date?.trim() ? input.next_due_date.trim() : null,
   };
 }
 

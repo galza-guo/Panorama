@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 
-import { DatePickerInput } from "@wealthfolio/ui";
+import { CurrencyInput, DatePickerInput } from "@wealthfolio/ui";
 import { Button } from "@wealthfolio/ui/components/ui/button";
 import { Input } from "@wealthfolio/ui/components/ui/input";
 import { Label } from "@wealthfolio/ui/components/ui/label";
@@ -22,12 +22,13 @@ export interface InsurancePolicyFormValues {
   name: string;
   currency: string;
   currentValue: string;
-  valuationDate: Date;
   owner: string;
   provider: string;
   policyType: string;
+  startDate?: Date;
   totalPaidToDate: string;
-  withdrawableValue: string;
+  paymentStatus: "paying" | "paid_up";
+  nextDueDate?: Date;
   notes: string;
 }
 
@@ -68,13 +69,14 @@ function buildDefaultValues(
     name: holding?.name ?? "",
     currency: holding?.currency ?? baseCurrency,
     currentValue: holding?.marketValue ?? "",
-    valuationDate: toDate(holding?.valuationDate) ?? new Date(),
     owner: typeof attributes.owner === "string" ? attributes.owner : "",
     provider:
       typeof attributes.insurance_provider === "string" ? attributes.insurance_provider : "",
     policyType: typeof attributes.policy_type === "string" ? attributes.policy_type : "",
+    startDate: toDate(attributes.start_date),
     totalPaidToDate: toEditableNumber(attributes.total_paid_to_date),
-    withdrawableValue: toEditableNumber(attributes.withdrawable_value),
+    paymentStatus: attributes.payment_status === "paid_up" ? "paid_up" : "paying",
+    nextDueDate: toDate(attributes.next_due_date),
     notes: holding?.notes ?? "",
   };
 }
@@ -126,7 +128,7 @@ export function InsurancePolicyEditorSheet({
     }
 
     if (!trimmedCurrentValue) {
-      setError("Current value is required.");
+      setError("Cash value is required.");
       return;
     }
 
@@ -139,8 +141,10 @@ export function InsurancePolicyEditorSheet({
       owner: values.owner.trim(),
       provider: values.provider.trim(),
       policyType: values.policyType.trim(),
+      startDate: values.startDate,
       totalPaidToDate: values.totalPaidToDate.trim(),
-      withdrawableValue: values.withdrawableValue.trim(),
+      paymentStatus: values.paymentStatus,
+      nextDueDate: values.paymentStatus === "paying" ? values.nextDueDate : undefined,
       notes: values.notes.trim(),
     });
   };
@@ -151,8 +155,8 @@ export function InsurancePolicyEditorSheet({
         <SheetHeader>
           <SheetTitle>{mode === "create" ? "Add Insurance Policy" : "Edit Insurance Policy"}</SheetTitle>
           <SheetDescription>
-            Track policy value, contributions, and provider details on top of Panorama&apos;s
-            alternative asset model.
+            Track current cash value, total premiums paid, and simple payment reminders on top of
+            Panorama&apos;s alternative asset model.
           </SheetDescription>
         </SheetHeader>
 
@@ -170,16 +174,18 @@ export function InsurancePolicyEditorSheet({
 
             <div className="space-y-2">
               <Label htmlFor="insurance-currency">Currency</Label>
-              <Input
+              <CurrencyInput
                 id="insurance-currency"
+                aria-label="Currency"
                 value={values.currency}
-                onChange={(event) => updateValue("currency", event.target.value)}
-                placeholder="HKD"
+                onChange={(value) => updateValue("currency", value)}
+                placeholder="Select currency"
+                valueDisplay="code"
               />
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="insurance-current-value">Current Value</Label>
+              <Label htmlFor="insurance-current-value">Cash Value</Label>
               <Input
                 id="insurance-current-value"
                 value={values.currentValue}
@@ -190,10 +196,10 @@ export function InsurancePolicyEditorSheet({
             </div>
 
             <div className="space-y-2">
-              <Label>Valuation Date</Label>
+              <Label>Start Date</Label>
               <DatePickerInput
-                value={values.valuationDate}
-                onChange={(date) => updateValue("valuationDate", date ?? new Date())}
+                value={values.startDate}
+                onChange={(date) => updateValue("startDate", date ?? undefined)}
               />
             </div>
 
@@ -228,23 +234,42 @@ export function InsurancePolicyEditorSheet({
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="insurance-total-paid">Total Paid To Date</Label>
+              <Label>Payment Status</Label>
+              <div className="flex gap-2">
+                <Button
+                  type="button"
+                  variant={values.paymentStatus === "paying" ? "default" : "outline"}
+                  onClick={() => updateValue("paymentStatus", "paying")}
+                >
+                  Paying
+                </Button>
+                <Button
+                  type="button"
+                  variant={values.paymentStatus === "paid_up" ? "default" : "outline"}
+                  onClick={() => updateValue("paymentStatus", "paid_up")}
+                >
+                  Paid-up
+                </Button>
+              </div>
+            </div>
+
+            {values.paymentStatus === "paying" ? (
+              <div className="space-y-2">
+                <Label>Next Due Date</Label>
+                <DatePickerInput
+                  value={values.nextDueDate}
+                  onChange={(date) => updateValue("nextDueDate", date ?? undefined)}
+                />
+              </div>
+            ) : null}
+
+            <div className="space-y-2">
+              <Label htmlFor="insurance-total-paid">Total Premiums Paid</Label>
               <Input
                 id="insurance-total-paid"
                 value={values.totalPaidToDate}
                 onChange={(event) => updateValue("totalPaidToDate", event.target.value)}
-                placeholder="50000"
-                inputMode="decimal"
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="insurance-withdrawable">Withdrawable Value</Label>
-              <Input
-                id="insurance-withdrawable"
-                value={values.withdrawableValue}
-                onChange={(event) => updateValue("withdrawableValue", event.target.value)}
-                placeholder="47000"
+                placeholder="100000"
                 inputMode="decimal"
               />
             </div>

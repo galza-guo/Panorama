@@ -25,7 +25,15 @@ import { useMemo, useState } from "react";
 import { useBalancePrivacy } from "@/hooks/use-balance-privacy";
 import type { AlternativeAssetHolding } from "@/lib/types";
 import { ALTERNATIVE_ASSET_KIND_DISPLAY_NAMES } from "@/lib/types";
-import { getTimeDepositDisplaySnapshot } from "@/lib/panorama-asset-attributes";
+import {
+  getInsuranceDisplaySnapshot,
+  getInsurancePaymentReminderLabel,
+  getPanoramaAssetKindDisplayLabel,
+  getTimeDepositDisplaySnapshot,
+  isInsuranceAsset,
+  isMpfAsset,
+  isTimeDepositAsset,
+} from "@/lib/panorama-asset-attributes";
 
 interface AlternativeHoldingsTableProps {
   holdings: AlternativeAssetHolding[];
@@ -72,10 +80,17 @@ export function AlternativeHoldingsTable({
         cell: ({ row }) => {
           const holding = row.original;
           const timeDepositDisplay = getTimeDepositDisplaySnapshot(holding, asOfDate);
+          const insuranceDisplay = getInsuranceDisplaySnapshot(holding, asOfDate);
+          const reminderLabel =
+            timeDepositDisplay?.daysLeft !== undefined
+              ? `${timeDepositDisplay.daysLeft}d left`
+              : getInsurancePaymentReminderLabel(insuranceDisplay?.daysUntilNextPayment);
           const kindDisplay =
+            getPanoramaAssetKindDisplayLabel(holding) ??
             ALTERNATIVE_ASSET_KIND_DISPLAY_NAMES[
               holding.kind.toUpperCase() as keyof typeof ALTERNATIVE_ASSET_KIND_DISPLAY_NAMES
-            ] ?? holding.kind;
+            ] ??
+            holding.kind;
 
           const handleClick = () => {
             if (onRowClick) {
@@ -101,14 +116,18 @@ export function AlternativeHoldingsTable({
               }
             >
               <div className="bg-muted flex h-10 w-10 items-center justify-center rounded-full">
-                <AssetKindIcon kind={holding.kind} size={20} />
+                <AssetKindIcon holding={holding} size={20} />
               </div>
               <div className="flex flex-col">
                 <div className="flex items-center gap-2">
                   <span className="text-sm font-medium">{holding.name}</span>
-                  {timeDepositDisplay?.daysLeft !== undefined ? (
+                  {reminderLabel ? (
                     <Badge variant="outline" className="text-[10px]">
-                      {timeDepositDisplay.daysLeft}d left
+                      {reminderLabel}
+                    </Badge>
+                  ) : insuranceDisplay?.paymentStatus === "paid_up" ? (
+                    <Badge variant="outline" className="text-[10px]">
+                      Paid-up
                     </Badge>
                   ) : null}
                 </div>
@@ -128,7 +147,11 @@ export function AlternativeHoldingsTable({
         cell: ({ row }) => {
           const holding = row.original;
           const timeDepositDisplay = getTimeDepositDisplaySnapshot(holding, asOfDate);
-          const value = timeDepositDisplay?.currentValue ?? parseFloat(holding.marketValue);
+          const insuranceDisplay = getInsuranceDisplaySnapshot(holding, asOfDate);
+          const value =
+            timeDepositDisplay?.currentValue ??
+            insuranceDisplay?.cashValue ??
+            parseFloat(holding.marketValue);
 
           return (
             <div
@@ -138,6 +161,10 @@ export function AlternativeHoldingsTable({
               {timeDepositDisplay?.isEstimatedValue ? (
                 <Badge variant="outline" className="px-1.5 py-0 text-[10px]">
                   Est.
+                </Badge>
+              ) : insuranceDisplay ? (
+                <Badge variant="outline" className="px-1.5 py-0 text-[10px]">
+                  Cash Value
                 </Badge>
               ) : null}
               <AmountDisplay
@@ -153,9 +180,11 @@ export function AlternativeHoldingsTable({
         sortingFn: (rowA, rowB) => {
           const valueA =
             getTimeDepositDisplaySnapshot(rowA.original, asOfDate)?.currentValue ??
+            getInsuranceDisplaySnapshot(rowA.original, asOfDate)?.cashValue ??
             parseFloat(rowA.original.marketValue);
           const valueB =
             getTimeDepositDisplaySnapshot(rowB.original, asOfDate)?.currentValue ??
+            getInsuranceDisplaySnapshot(rowB.original, asOfDate)?.cashValue ??
             parseFloat(rowB.original.marketValue);
           return valueA - valueB;
         },
@@ -352,8 +381,20 @@ export function AlternativeHoldingsTable({
 /**
  * Icon component for alternative asset kinds (duotone style)
  */
-function AssetKindIcon({ kind, size = 20 }: { kind: string; size?: number }) {
-  switch (kind.toLowerCase()) {
+function AssetKindIcon({ holding, size = 20 }: { holding: AlternativeAssetHolding; size?: number }) {
+  if (isTimeDepositAsset(holding)) {
+    return <Icons.BadgeDollarSign size={size} />;
+  }
+
+  if (isInsuranceAsset(holding)) {
+    return <Icons.Shield size={size} />;
+  }
+
+  if (isMpfAsset(holding)) {
+    return <Icons.Briefcase size={size} />;
+  }
+
+  switch (holding.kind.toLowerCase()) {
     case "property":
       return <Icons.RealEstateDuotone size={size} />;
     case "vehicle":
@@ -362,8 +403,6 @@ function AssetKindIcon({ kind, size = 20 }: { kind: string; size?: number }) {
       return <Icons.CollectibleDuotone size={size} />;
     case "precious":
       return <Icons.PreciousDuotone size={size} />;
-    case "mpf":
-      return <Icons.Briefcase size={size} />;
     case "liability":
       return <Icons.LiabilityDuotone size={size} />;
     default:

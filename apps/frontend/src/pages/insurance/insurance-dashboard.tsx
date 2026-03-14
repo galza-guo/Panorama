@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
-import { AmountDisplay, Page } from "@wealthfolio/ui";
+import { AmountDisplay, Badge, Page } from "@wealthfolio/ui";
 import { Button } from "@wealthfolio/ui/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@wealthfolio/ui/components/ui/card";
 import { Icons } from "@wealthfolio/ui/components/ui/icons";
@@ -13,9 +13,13 @@ import {
   buildInsuranceMetadata,
   buildInsuranceMetadataPatch,
   getAssetOwner,
+  getInsuranceDisplaySnapshot,
+  getInsurancePaymentReminderLabel,
+  getInsurancePaymentStatusLabel,
   isInsuranceAsset,
   parsePanoramaAssetAttributes,
 } from "@/lib/panorama-asset-attributes";
+import type { AlternativeAssetHolding } from "@/lib/types";
 import { useAlternativeAssetMutations } from "@/pages/asset/alternative-assets/hooks";
 
 import {
@@ -31,14 +35,22 @@ interface InsuranceRow {
   owner: string;
   provider: string;
   currency: string;
-  currentValue?: number;
+  cashValue?: number;
   totalPaidToDate?: number;
-  withdrawableValue?: number;
-  valuationDate?: string;
+  paymentStatus?: "paying" | "paid_up";
+  paymentStatusLabel?: "Paying" | "Paid-up";
+  nextDueDate?: string;
+  paymentReminder?: string;
+  valuationDate: string;
 }
 
 function toIsoDate(value: Date): string {
   return value.toISOString().slice(0, 10);
+}
+
+function getTodayDate(): Date {
+  const now = new Date();
+  return new Date(Date.UTC(now.getFullYear(), now.getMonth(), now.getDate()));
 }
 
 function parseOptionalNumber(value: string): number | undefined {
@@ -55,20 +67,32 @@ function parseOptionalNumber(value: string): number | undefined {
   return parsed;
 }
 
-export default function InsuranceDashboard() {
+function getValuationDateForHolding(holding: AlternativeAssetHolding): string {
+  const attributes = parsePanoramaAssetAttributes(holding.metadata);
+
+  return typeof attributes.valuation_date === "string" && attributes.valuation_date.trim()
+    ? attributes.valuation_date.trim()
+    : holding.valuationDate.slice(0, 10);
+}
+
+export default function InsuranceDashboard({ today }: { today?: Date } = {}) {
   const navigate = useNavigate();
   const { data: holdings = [], isLoading } = useAlternativeHoldings();
   const [editorState, setEditorState] = useState<EditorState>(null);
   const { createMutation, updateMetadataMutation, updateValuationMutation } =
     useAlternativeAssetMutations();
+  const effectiveToday = today ?? getTodayDate();
 
   const insuranceHoldings = useMemo(() => {
     return holdings.filter(isInsuranceAsset).sort((a, b) => a.name.localeCompare(b.name));
   }, [holdings]);
 
   const rows = useMemo<InsuranceRow[]>(() => {
+    const asOfDate = toIsoDate(effectiveToday);
+
     return insuranceHoldings.map((holding) => {
       const attributes = parsePanoramaAssetAttributes(holding.metadata);
+      const display = getInsuranceDisplaySnapshot(holding, asOfDate);
       const provider =
         typeof attributes.insurance_provider === "string"
           ? attributes.insurance_provider.trim()
@@ -80,14 +104,16 @@ export default function InsuranceDashboard() {
         owner: getAssetOwner(holding) ?? "Unassigned",
         provider: provider || "Unspecified",
         currency: holding.currency,
-        currentValue: asFiniteNumber(holding.marketValue),
-        totalPaidToDate: asFiniteNumber(attributes.total_paid_to_date),
-        withdrawableValue: asFiniteNumber(attributes.withdrawable_value),
-        valuationDate:
-          typeof attributes.valuation_date === "string" ? attributes.valuation_date : undefined,
+        cashValue: display?.cashValue,
+        totalPaidToDate: display?.totalPaid,
+        paymentStatus: display?.paymentStatus,
+        paymentStatusLabel: getInsurancePaymentStatusLabel(display?.paymentStatus),
+        nextDueDate: display?.nextDueDate,
+        paymentReminder: getInsurancePaymentReminderLabel(display?.daysUntilNextPayment),
+        valuationDate: display?.valuationDate ?? holding.valuationDate.slice(0, 10),
       };
     });
-  }, [insuranceHoldings]);
+  }, [effectiveToday, insuranceHoldings]);
 
   const editingHolding = useMemo(() => {
     if (editorState?.mode !== "edit") {
@@ -108,24 +134,13 @@ export default function InsuranceDashboard() {
     return Array.from(totals.entries()).sort(([left], [right]) => left.localeCompare(right));
   }, [rows]);
 
-  const withdrawableByCurrency = useMemo(() => {
+  const cashValueByCurrency = useMemo(() => {
     const totals = new Map<string, number>();
     for (const row of rows) {
-      if (row.withdrawableValue === undefined) {
+      if (row.cashValue === undefined) {
         continue;
       }
-      totals.set(row.currency, (totals.get(row.currency) ?? 0) + row.withdrawableValue);
-    }
-    return Array.from(totals.entries()).sort(([left], [right]) => left.localeCompare(right));
-  }, [rows]);
-
-  const currentValueByCurrency = useMemo(() => {
-    const totals = new Map<string, number>();
-    for (const row of rows) {
-      if (row.currentValue === undefined) {
-        continue;
-      }
-      totals.set(row.currency, (totals.get(row.currency) ?? 0) + row.currentValue);
+      totals.set(row.currency, (totals.get(row.currency) ?? 0) + row.cashValue);
     }
     return Array.from(totals.entries()).sort(([left], [right]) => left.localeCompare(right));
   }, [rows]);
@@ -138,11 +153,20 @@ export default function InsuranceDashboard() {
     updateValuationMutation.isPending;
 
   const handleSubmit = async (values: InsurancePolicyFormValues) => {
-    const valuationDate = toIsoDate(values.valuationDate);
+    const valuationDate = toIsoDate(effectiveToday);
     const totalPaidToDate = parseOptionalNumber(values.totalPaidToDate);
-    const withdrawableValue = parseOptionalNumber(values.withdrawableValue);
+    const startDate = values.startDate ? toIsoDate(values.startDate) : undefined;
+    const nextDueDate =
+      values.paymentStatus === "paying" && values.nextDueDate
+        ? toIsoDate(values.nextDueDate)
+        : undefined;
 
     if (editorState?.mode === "edit" && editingHolding) {
+      const existingValuationDate = getValuationDateForHolding(editingHolding);
+      const nextCashValue = asFiniteNumber(values.currentValue);
+      const currentCashValue = asFiniteNumber(editingHolding.marketValue);
+      const valuationChanged = currentCashValue !== nextCashValue;
+
       await updateMetadataMutation.mutateAsync({
         assetId: editingHolding.id,
         name: values.name,
@@ -151,15 +175,13 @@ export default function InsuranceDashboard() {
           owner: values.owner,
           policy_type: values.policyType,
           insurance_provider: values.provider,
-          valuation_date: valuationDate,
+          start_date: startDate,
+          valuation_date: valuationChanged ? valuationDate : existingValuationDate,
           total_paid_to_date: totalPaidToDate,
-          withdrawable_value: withdrawableValue,
+          payment_status: values.paymentStatus,
+          next_due_date: nextDueDate,
         }),
       });
-
-      const existingQuoteDate = editingHolding.valuationDate.slice(0, 10);
-      const valuationChanged =
-        editingHolding.marketValue !== values.currentValue || existingQuoteDate !== valuationDate;
 
       if (valuationChanged) {
         await updateValuationMutation.mutateAsync({
@@ -181,9 +203,11 @@ export default function InsuranceDashboard() {
           owner: values.owner,
           policy_type: values.policyType,
           insurance_provider: values.provider,
+          start_date: startDate,
           valuation_date: valuationDate,
           total_paid_to_date: totalPaidToDate,
-          withdrawable_value: withdrawableValue,
+          payment_status: values.paymentStatus,
+          next_due_date: nextDueDate,
         }),
       });
 
@@ -196,9 +220,11 @@ export default function InsuranceDashboard() {
             owner: values.owner,
             policy_type: values.policyType,
             insurance_provider: values.provider,
+            start_date: startDate,
             valuation_date: valuationDate,
             total_paid_to_date: totalPaidToDate,
-            withdrawable_value: withdrawableValue,
+            payment_status: values.paymentStatus,
+            next_due_date: nextDueDate,
           }),
         });
       }
@@ -213,7 +239,7 @@ export default function InsuranceDashboard() {
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">Insurance</h1>
           <p className="text-muted-foreground text-sm">
-            Track policy value, paid-in capital, and withdrawable balances with Panorama metadata.
+            Track current cash value, paid-in premiums, and simple due-date reminders.
           </p>
         </div>
 
@@ -234,14 +260,14 @@ export default function InsuranceDashboard() {
 
           <Card>
             <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium">Current Value</CardTitle>
+              <CardTitle className="text-sm font-medium">Cash Value</CardTitle>
             </CardHeader>
             <CardContent>
-              {currentValueByCurrency.length === 0 ? (
-                <span className="text-muted-foreground text-sm">No values recorded</span>
+              {cashValueByCurrency.length === 0 ? (
+                <span className="text-muted-foreground text-sm">No cash values recorded</span>
               ) : (
                 <div className="space-y-1">
-                  {currentValueByCurrency.map(([currency, value]) => (
+                  {cashValueByCurrency.map(([currency, value]) => (
                     <div key={currency} className="text-sm font-medium">
                       <AmountDisplay value={value} currency={currency} />
                     </div>
@@ -253,14 +279,14 @@ export default function InsuranceDashboard() {
 
           <Card>
             <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium">Withdrawable Value</CardTitle>
+              <CardTitle className="text-sm font-medium">Total Premiums Paid</CardTitle>
             </CardHeader>
             <CardContent>
-              {withdrawableByCurrency.length === 0 ? (
-                <span className="text-muted-foreground text-sm">No values recorded</span>
+              {totalPaidByCurrency.length === 0 ? (
+                <span className="text-muted-foreground text-sm">No premiums recorded</span>
               ) : (
                 <div className="space-y-1">
-                  {withdrawableByCurrency.map(([currency, value]) => (
+                  {totalPaidByCurrency.map(([currency, value]) => (
                     <div key={currency} className="text-sm font-medium">
                       <AmountDisplay value={value} currency={currency} />
                     </div>
@@ -292,7 +318,7 @@ export default function InsuranceDashboard() {
               <div className="border-border/50 bg-success/10 rounded-lg border p-6 text-center">
                 <p className="text-sm">No insurance assets found.</p>
                 <p className="text-muted-foreground mt-1 text-xs">
-                  Add your first policy to track contributions and withdrawable value.
+                  Add your first policy to track current cash value and premium reminders.
                 </p>
                 <Button
                   type="button"
@@ -314,7 +340,18 @@ export default function InsuranceDashboard() {
                   >
                     <div className="flex items-start justify-between gap-2">
                       <div>
-                        <div className="text-sm font-semibold">{row.name}</div>
+                        <div className="flex items-center gap-2">
+                          <div className="text-sm font-semibold">{row.name}</div>
+                          {row.paymentReminder ? (
+                            <Badge variant="outline" className="text-[10px]">
+                              {row.paymentReminder}
+                            </Badge>
+                          ) : row.paymentStatusLabel === "Paid-up" ? (
+                            <Badge variant="outline" className="text-[10px]">
+                              Paid-up
+                            </Badge>
+                          ) : null}
+                        </div>
                         <div className="text-muted-foreground text-xs">{row.provider}</div>
                       </div>
                       <div className="flex items-center gap-2">
@@ -341,28 +378,38 @@ export default function InsuranceDashboard() {
                     <div className="mt-3 grid grid-cols-2 gap-2 text-sm md:grid-cols-5">
                       <div>{row.owner}</div>
                       <div>
-                        {row.currentValue === undefined ? (
-                          <span className="text-muted-foreground">Current: -</span>
+                        {row.cashValue === undefined ? (
+                          <span className="text-muted-foreground">Cash Value: -</span>
                         ) : (
-                          <AmountDisplay value={row.currentValue} currency={row.currency} />
+                          <div className="flex items-center gap-1.5">
+                            <Badge variant="outline" className="px-1.5 py-0 text-[10px]">
+                              Cash Value
+                            </Badge>
+                            <AmountDisplay value={row.cashValue} currency={row.currency} />
+                          </div>
                         )}
                       </div>
                       <div>
                         {row.totalPaidToDate === undefined ? (
-                          <span className="text-muted-foreground">Paid: -</span>
+                          <span className="text-muted-foreground">Premiums: -</span>
                         ) : (
                           <AmountDisplay value={row.totalPaidToDate} currency={row.currency} />
                         )}
                       </div>
                       <div>
-                        {row.withdrawableValue === undefined ? (
-                          <span className="text-muted-foreground">Withdrawable: -</span>
-                        ) : (
-                          <AmountDisplay value={row.withdrawableValue} currency={row.currency} />
-                        )}
+                        <div>{row.paymentStatusLabel ?? <span className="text-muted-foreground">Status: -</span>}</div>
+                        <div className="text-muted-foreground text-xs">
+                          {row.paymentReminder
+                            ? row.paymentReminder
+                            : row.nextDueDate
+                              ? `Due ${row.nextDueDate}`
+                              : row.paymentStatusLabel === "Paid-up"
+                                ? "No more scheduled premiums"
+                                : "No reminder set"}
+                        </div>
                       </div>
                       <div className="text-muted-foreground text-xs">
-                        {row.valuationDate ? `Valuation ${row.valuationDate}` : "Valuation date not set"}
+                        Valuation {row.valuationDate}
                       </div>
                     </div>
                   </div>
@@ -372,20 +419,6 @@ export default function InsuranceDashboard() {
           </CardContent>
         </Card>
 
-        {totalPaidByCurrency.length > 0 ? (
-          <Card>
-            <CardHeader>
-              <CardTitle>Total Paid To Date</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-1">
-              {totalPaidByCurrency.map(([currency, value]) => (
-                <div key={currency} className="text-sm font-medium">
-                  <AmountDisplay value={value} currency={currency} />
-                </div>
-              ))}
-            </CardContent>
-          </Card>
-        ) : null}
       </div>
 
       {editorState ? (

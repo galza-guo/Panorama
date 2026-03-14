@@ -22,6 +22,8 @@ import {
 import { cn } from "@/lib/utils";
 import { useSettingsContext } from "@/lib/settings-provider";
 import {
+  buildInsuranceMetadata,
+  buildInsuranceMetadataPatch,
   buildTimeDepositMetadata,
   buildTimeDepositMetadataPatch,
 } from "@/lib/panorama-asset-attributes";
@@ -35,6 +37,10 @@ import {
   type AlternativeAssetKindApi,
 } from "@/lib/types";
 import {
+  InsurancePolicyEditorSheet,
+  type InsurancePolicyFormValues,
+} from "@/pages/insurance/components/insurance-policy-editor-sheet";
+import {
   TimeDepositEditorSheet,
   type TimeDepositFormValues,
 } from "@/pages/time-deposits/components/time-deposit-editor-sheet";
@@ -46,7 +52,11 @@ export interface LinkableAsset {
 }
 
 const SPECIALIZED_TIME_DEPOSIT_KIND = "TIME_DEPOSIT" as const;
-type QuickAddKind = AlternativeAssetKind | typeof SPECIALIZED_TIME_DEPOSIT_KIND;
+const SPECIALIZED_INSURANCE_KIND = "INSURANCE_POLICY" as const;
+type QuickAddKind =
+  | AlternativeAssetKind
+  | typeof SPECIALIZED_TIME_DEPOSIT_KIND
+  | typeof SPECIALIZED_INSURANCE_KIND;
 
 // Asset type configuration using theme colors
 const ASSET_TYPES = [
@@ -105,6 +115,15 @@ const ASSET_TYPES = [
     borderColor: "border-cyan-400/50",
   },
   {
+    kind: SPECIALIZED_INSURANCE_KIND,
+    label: "Insurance",
+    description: "Cash value & premium reminders",
+    icon: Icons.Shield,
+    iconColor: "text-teal-400",
+    selectedBg: "bg-teal-400/15",
+    borderColor: "border-teal-400/50",
+  },
+  {
     kind: AlternativeAssetKind.LIABILITY,
     label: "Liability",
     description: "Loans & debt",
@@ -155,6 +174,11 @@ function toIsoDate(value: Date): string {
   return value.toISOString().slice(0, 10);
 }
 
+function getTodayDate(): Date {
+  const now = new Date();
+  return new Date(Date.UTC(now.getFullYear(), now.getMonth(), now.getDate()));
+}
+
 function parsePositiveNumber(value: string): number | undefined {
   const trimmed = value.trim();
   if (!trimmed) {
@@ -163,6 +187,20 @@ function parsePositiveNumber(value: string): number | undefined {
 
   const parsed = Number(trimmed);
   if (!Number.isFinite(parsed) || parsed <= 0) {
+    return undefined;
+  }
+
+  return parsed;
+}
+
+function parseOptionalNumber(value: string): number | undefined {
+  const trimmed = value.trim();
+  if (!trimmed) {
+    return undefined;
+  }
+
+  const parsed = Number(trimmed);
+  if (!Number.isFinite(parsed) || parsed < 0) {
     return undefined;
   }
 
@@ -227,6 +265,44 @@ function buildTimeDepositPatch(values: TimeDepositFormValues) {
   };
 }
 
+function buildInsuranceCreateMetadata(
+  values: InsurancePolicyFormValues,
+  valuationDate: string,
+) {
+  return buildInsuranceMetadata({
+    owner: values.owner,
+    policy_type: values.policyType,
+    insurance_provider: values.provider,
+    start_date: values.startDate ? toIsoDate(values.startDate) : undefined,
+    valuation_date: valuationDate,
+    total_paid_to_date: parseOptionalNumber(values.totalPaidToDate),
+    payment_status: values.paymentStatus,
+    next_due_date:
+      values.paymentStatus === "paying" && values.nextDueDate
+        ? toIsoDate(values.nextDueDate)
+        : undefined,
+  });
+}
+
+function buildInsurancePatch(
+  values: InsurancePolicyFormValues,
+  valuationDate: string,
+) {
+  return buildInsuranceMetadataPatch({
+    owner: values.owner,
+    policy_type: values.policyType,
+    insurance_provider: values.provider,
+    start_date: values.startDate ? toIsoDate(values.startDate) : undefined,
+    valuation_date: valuationDate,
+    total_paid_to_date: parseOptionalNumber(values.totalPaidToDate),
+    payment_status: values.paymentStatus,
+    next_due_date:
+      values.paymentStatus === "paying" && values.nextDueDate
+        ? toIsoDate(values.nextDueDate)
+        : undefined,
+  });
+}
+
 function getTimeDepositCurrentValue(values: TimeDepositFormValues): number | undefined {
   const principal = parsePositiveNumber(values.principal);
   const quotedAnnualRate = parsePositiveNumber(values.quotedAnnualRate);
@@ -264,6 +340,7 @@ function formatValueForMutation(value: number | undefined): string | undefined {
 interface AlternativeAssetQuickAddModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  today?: Date;
   defaultKind?: AlternativeAssetKind;
   linkableAssets?: LinkableAsset[];
   linkedAssetId?: string;
@@ -285,6 +362,7 @@ interface AlternativeAssetQuickAddModalProps {
 export function AlternativeAssetQuickAddModal({
   open,
   onOpenChange,
+  today,
   defaultKind,
   linkableAssets = [],
   linkedAssetId: initialLinkedAssetId,
@@ -296,9 +374,11 @@ export function AlternativeAssetQuickAddModal({
 }: AlternativeAssetQuickAddModalProps) {
   const { settings } = useSettingsContext();
   const baseCurrency = settings?.baseCurrency ?? "USD";
+  const effectiveToday = useMemo(() => today ?? getTodayDate(), [today]);
 
   const [step, setStep] = useState<1 | 2>(1);
   const [isTimeDepositFlow, setIsTimeDepositFlow] = useState(false);
+  const [isInsuranceFlow, setIsInsuranceFlow] = useState(false);
   const [hasMortgageChecked, setHasMortgageChecked] = useState(false);
   const [savedPurchaseDate, setSavedPurchaseDate] = useState<Date | undefined>(undefined);
   const [savedPropertyName, setSavedPropertyName] = useState<string | undefined>(undefined);
@@ -315,7 +395,7 @@ export function AlternativeAssetQuickAddModal({
     onCreateSuccess: (response) => {
       onAssetCreated?.(response);
 
-      if (isTimeDepositFlow) {
+      if (isTimeDepositFlow || isInsuranceFlow) {
         return;
       }
 
@@ -339,6 +419,7 @@ export function AlternativeAssetQuickAddModal({
       // Skip step 1 if a defaultKind is provided
       setStep(defaultKind ? 2 : 1);
       setIsTimeDepositFlow(false);
+      setIsInsuranceFlow(false);
       setHasMortgageChecked(false);
       setSavedPurchaseDate(undefined);
       setSavedPropertyName(undefined);
@@ -347,7 +428,7 @@ export function AlternativeAssetQuickAddModal({
         name: defaultName || "",
         currency: baseCurrency,
         currentValue: "",
-        valueDate: defaultOriginationDate || new Date(),
+        valueDate: defaultOriginationDate || effectiveToday,
         linkedAssetId: initialLinkedAssetId,
         liabilityType: defaultLiabilityType,
       });
@@ -360,6 +441,7 @@ export function AlternativeAssetQuickAddModal({
     defaultOriginationDate,
     defaultName,
     baseCurrency,
+    effectiveToday,
   ]);
 
   const selectedAssetType = useMemo(
@@ -391,7 +473,12 @@ export function AlternativeAssetQuickAddModal({
 
   const handleSubmit = async () => {
     if (!canProceed) return;
-    if (formData.kind === SPECIALIZED_TIME_DEPOSIT_KIND) return;
+    if (
+      formData.kind === SPECIALIZED_TIME_DEPOSIT_KIND ||
+      formData.kind === SPECIALIZED_INSURANCE_KIND
+    ) {
+      return;
+    }
 
     const metadata: Record<string, string> = {};
     const isLiability = formData.kind === AlternativeAssetKind.LIABILITY;
@@ -459,6 +546,30 @@ export function AlternativeAssetQuickAddModal({
     setIsTimeDepositFlow(false);
   };
 
+  const handleInsuranceSubmit = async (values: InsurancePolicyFormValues) => {
+    const valuationDate = toIsoDate(effectiveToday);
+    const response = await createMutation.mutateAsync({
+      kind: "other",
+      name: values.name,
+      currency: values.currency,
+      currentValue: values.currentValue,
+      valueDate: valuationDate,
+      metadata: buildInsuranceCreateMetadata(values, valuationDate),
+    });
+
+    if (values.notes) {
+      await updateMetadataMutation.mutateAsync({
+        assetId: response.assetId,
+        name: values.name,
+        notes: values.notes,
+        metadata: buildInsurancePatch(values, valuationDate),
+      });
+    }
+
+    onOpenChange(false);
+    setIsInsuranceFlow(false);
+  };
+
   // Build linkable assets options for liability form (only actual assets, no "none" option)
   const linkableAssetOptions = useMemo(() => {
     return linkableAssets.map((asset) => ({
@@ -488,6 +599,8 @@ export function AlternativeAssetQuickAddModal({
         return "Employer MPF Account...";
       case SPECIALIZED_TIME_DEPOSIT_KIND:
         return "HSBC 3M Deposit...";
+      case SPECIALIZED_INSURANCE_KIND:
+        return "AIA Wealth Series...";
       default:
         return "Asset name...";
     }
@@ -507,6 +620,23 @@ export function AlternativeAssetQuickAddModal({
         }}
         mode="create"
         onSubmit={handleTimeDepositSubmit}
+        isSubmitting={isSubmitting}
+      />
+    );
+  }
+
+  if (isInsuranceFlow) {
+    return (
+      <InsurancePolicyEditorSheet
+        open={open}
+        onOpenChange={(nextOpen) => {
+          if (!nextOpen) {
+            setIsInsuranceFlow(false);
+            onOpenChange(false);
+          }
+        }}
+        mode="create"
+        onSubmit={handleInsuranceSubmit}
         isSubmitting={isSubmitting}
       />
     );
@@ -828,6 +958,10 @@ export function AlternativeAssetQuickAddModal({
                 if (step === 1) {
                   if (formData.kind === SPECIALIZED_TIME_DEPOSIT_KIND) {
                     setIsTimeDepositFlow(true);
+                    return;
+                  }
+                  if (formData.kind === SPECIALIZED_INSURANCE_KIND) {
+                    setIsInsuranceFlow(true);
                     return;
                   }
                   setStep(2);
