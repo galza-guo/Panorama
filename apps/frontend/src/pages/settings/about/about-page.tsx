@@ -14,7 +14,6 @@ import {
 import { Icons } from "@wealthfolio/ui/components/ui/icons";
 import { Separator } from "@wealthfolio/ui/components/ui/separator";
 import { toast } from "@wealthfolio/ui/components/ui/use-toast";
-import { FolderSyncCard } from "@/features/folder-sync/components/folder-sync-card";
 import { SettingsHeader } from "../settings-header";
 
 export default function AboutSettingsPage() {
@@ -190,10 +189,6 @@ export default function AboutSettingsPage() {
                   </div>
                 </div>
               </div>
-
-              <Separator />
-
-              <FolderSyncCard />
             </>
           )}
 

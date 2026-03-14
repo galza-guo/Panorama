@@ -1,5 +1,6 @@
 import { Separator } from "@wealthfolio/ui/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@wealthfolio/ui/components/ui/tabs";
+import { FolderSyncCard } from "@/features/folder-sync/components/folder-sync-card";
 import { SettingsHeader } from "../settings-header";
 import { BackupRestoreForm } from "./backup-restore-form";
 import { ExportForm } from "./exports-form";
@@ -8,19 +9,24 @@ const ExportSettingsPage = () => {
   return (
     <div className="space-y-6">
       <SettingsHeader
-        heading="Data Export & Backup"
-        text="Export your financial data and manage database backups with advanced options."
+        heading="Backup, Sync & Export"
+        text="Manage database backups, shared-folder sync, and data exports."
       />
       <Separator />
 
       <Tabs defaultValue="backup" className="w-full">
-        <TabsList className="grid w-full grid-cols-2">
+        <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="backup">Backup & Restore</TabsTrigger>
+          <TabsTrigger value="sync">Sync</TabsTrigger>
           <TabsTrigger value="export">Data Export</TabsTrigger>
         </TabsList>
 
         <TabsContent value="backup" className="mt-6">
           <BackupRestoreForm />
+        </TabsContent>
+
+        <TabsContent value="sync" className="mt-6">
+          <FolderSyncCard />
         </TabsContent>
 
         <TabsContent value="export" className="mt-6">

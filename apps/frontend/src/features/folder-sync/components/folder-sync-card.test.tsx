@@ -155,6 +155,13 @@ describe("folder sync card", () => {
     render(<FolderSyncCard />);
 
     expect(screen.getByText("Folder Sync")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Open folder sync guide" })).toHaveAttribute(
+      "href",
+      "https://panorama.gallantguo.com/docs/guides/sync",
+    );
+    expect(screen.getByText("Setup")).toBeInTheDocument();
+    expect(screen.getByText("Status")).toBeInTheDocument();
+    expect(screen.getByText("Recent Activity")).toBeInTheDocument();
     expect(screen.getByText("Up to date")).toBeInTheDocument();
     expect(screen.getByText("/tmp/PanoramaSync")).toBeInTheDocument();
     expect(screen.getByText("Last successful sync")).toBeInTheDocument();

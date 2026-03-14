@@ -61,9 +61,9 @@ const settingsSections = [
         icon: <Icons.Blocks className="size-5" />,
       },
       {
-        title: "Backup & Export",
+        title: "Backup, Sync & Export",
         href: "exports",
-        subtitle: "Backups and data exports",
+        subtitle: "Backups, sync, and data exports",
         icon: <Icons.Download className="size-5" />,
       },
     ],

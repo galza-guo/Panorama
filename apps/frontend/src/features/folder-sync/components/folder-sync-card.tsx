@@ -13,6 +13,8 @@ import {
 
 import { useFolderSync } from "../hooks/use-folder-sync";
 
+const folderSyncGuideUrl = "https://panorama.gallantguo.com/docs/guides/sync";
+
 const statusLabels: Record<string, string> = {
   idle: "Idle",
   checking: "Checking",
@@ -94,78 +96,111 @@ export function FolderSyncCard() {
   const errorMessage = actionError ?? lastError;
 
   return (
-    <Card>
-      <CardHeader>
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-          <div className="space-y-1">
-            <CardTitle className="text-base font-medium">Folder Sync</CardTitle>
+    <div className="space-y-6">
+      <div className="space-y-1">
+        <div className="flex items-center gap-2">
+          <h3 className="text-lg font-semibold">Folder Sync</h3>
+          <a
+            href={folderSyncGuideUrl}
+            target="_blank"
+            rel="noreferrer noopener"
+            aria-label="Open folder sync guide"
+            title="Open folder sync guide"
+            className="text-muted-foreground hover:text-foreground inline-flex h-5 w-5 items-center justify-center rounded-full border text-xs font-medium transition-colors"
+          >
+            ?
+          </a>
+        </div>
+        <p className="text-muted-foreground text-sm">
+          Keep shared Panorama data aligned across devices through one Syncthing folder.
+        </p>
+      </div>
+
+      {errorMessage && (
+        <Alert variant="destructive">
+          <AlertDescription>{errorMessage}</AlertDescription>
+        </Alert>
+      )}
+
+      <div className="grid gap-4 md:grid-cols-2">
+        <Card className="flex h-full flex-col">
+          <CardHeader>
+            <CardTitle className="text-lg">Setup</CardTitle>
             <CardDescription>
-              Keep shared Panorama data aligned across devices through one Syncthing folder.
+              Choose or review the shared Syncthing folder used by this device.
             </CardDescription>
-          </div>
-          <Badge variant={getStatusVariant(syncState)}>{getStatusLabel(syncState)}</Badge>
-        </div>
-      </CardHeader>
-      <CardContent className="space-y-5">
-        <div className="space-y-1">
-          <p className="text-muted-foreground text-xs uppercase tracking-wide">Shared folder</p>
-          <p className="bg-muted rounded-md px-3 py-2 font-mono text-xs">
-            {config?.sharedFolderPath ?? "Not configured"}
-          </p>
-        </div>
+          </CardHeader>
+          <CardContent className="space-y-5">
+            <div className="space-y-1">
+              <p className="text-muted-foreground text-xs uppercase tracking-wide">Shared folder</p>
+              <p className="bg-muted rounded-md px-3 py-2 font-mono text-xs">
+                {config?.sharedFolderPath ?? "Not configured"}
+              </p>
+            </div>
 
-        {errorMessage && (
-          <Alert variant="destructive">
-            <AlertDescription>{errorMessage}</AlertDescription>
-          </Alert>
-        )}
+            {!config ? (
+              <div className="flex flex-wrap items-center gap-2">
+                <Button
+                  disabled={isBusy}
+                  onClick={() => runAction("initialize", () => initialize())}
+                >
+                  Initialize Sync
+                </Button>
+                <Button
+                  variant="outline"
+                  disabled={isBusy}
+                  onClick={() => runAction("join", () => join())}
+                >
+                  Join Existing Sync
+                </Button>
+              </div>
+            ) : (
+              <div className="flex flex-wrap items-center gap-2">
+                <Button
+                  variant="outline"
+                  disabled={isBusy}
+                  onClick={() => runAction("retry", retryNow)}
+                >
+                  Check now
+                </Button>
+                <Button
+                  variant="outline"
+                  disabled={isBusy}
+                  onClick={() => runAction("disable", disable)}
+                >
+                  Disable Sync
+                </Button>
+              </div>
+            )}
+          </CardContent>
+        </Card>
 
-        {!config ? (
-          <div className="flex flex-wrap items-center gap-2">
-            <Button disabled={isBusy} onClick={() => runAction("initialize", () => initialize())}>
-              Initialize Sync
-            </Button>
-            <Button
-              variant="outline"
-              disabled={isBusy}
-              onClick={() => runAction("join", () => join())}
-            >
-              Join Existing Sync
-            </Button>
-          </div>
-        ) : (
-          <div className="flex flex-wrap items-center gap-2">
-            <Button
-              variant="outline"
-              disabled={isBusy}
-              onClick={() => runAction("retry", retryNow)}
-            >
-              Check now
-            </Button>
-            <Button
-              variant="outline"
-              disabled={isBusy}
-              onClick={() => runAction("disable", disable)}
-            >
-              Disable Sync
-            </Button>
-          </div>
-        )}
+        <Card className="flex h-full flex-col">
+          <CardHeader className="flex flex-row items-start justify-between gap-3 space-y-0">
+            <div className="space-y-1">
+              <CardTitle className="text-lg">Status</CardTitle>
+              <CardDescription>Review the current sync state and recent timestamps.</CardDescription>
+            </div>
+            <Badge variant={getStatusVariant(syncState)}>{getStatusLabel(syncState)}</Badge>
+          </CardHeader>
+          <CardContent>
+            <dl className="grid gap-4">
+              <TimestampRow label="Last successful sync" value={status?.lastSuccessfulSyncAt} />
+              <TimestampRow label="Last remote change" value={status?.lastRemoteApplyAt} />
+              <TimestampRow label="Last local export" value={status?.lastLocalExportAt} />
+            </dl>
+          </CardContent>
+        </Card>
+      </div>
 
-        <dl className="grid gap-4 md:grid-cols-3">
-          <TimestampRow label="Last successful sync" value={status?.lastSuccessfulSyncAt} />
-          <TimestampRow label="Last remote change" value={status?.lastRemoteApplyAt} />
-          <TimestampRow label="Last local export" value={status?.lastLocalExportAt} />
-        </dl>
-
-        <div className="space-y-3">
-          <div>
-            <p className="text-sm font-medium">Recent sync activity</p>
-            <p className="text-muted-foreground text-xs">
-              The latest import, export, and recovery events from this shared folder.
-            </p>
-          </div>
-
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-lg">Recent Activity</CardTitle>
+          <CardDescription>
+            The latest import, export, and recovery events from this shared folder.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-3">
           {visibleHistory.length === 0 ? (
             <p className="text-muted-foreground text-sm">No sync activity yet.</p>
           ) : (
@@ -188,8 +223,8 @@ export function FolderSyncCard() {
               ))}
             </ul>
           )}
-        </div>
-      </CardContent>
-    </Card>
+        </CardContent>
+      </Card>
+    </div>
   );
 }
