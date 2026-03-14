@@ -7630,7 +7630,7 @@ dependencies = [
 
 [[package]]
 name = "wealthfolio-ai"
-version = "3.0.0"
+version = "3.0.4"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -7654,7 +7654,7 @@ dependencies = [
 
 [[package]]
 name = "wealthfolio-app"
-version = "3.0.0"
+version = "3.0.4"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -7703,7 +7703,7 @@ dependencies = [
 
 [[package]]
 name = "wealthfolio-connect"
-version = "3.0.0"
+version = "3.0.4"
 dependencies = [
  "async-trait",
  "chrono",
@@ -7720,7 +7720,7 @@ dependencies = [
 
 [[package]]
 name = "wealthfolio-core"
-version = "3.0.0"
+version = "3.0.4"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -7759,7 +7759,7 @@ dependencies = [
 
 [[package]]
 name = "wealthfolio-device-sync"
-version = "3.0.0"
+version = "3.0.4"
 dependencies = [
  "async-trait",
  "base64 0.22.1",
@@ -7804,7 +7804,7 @@ dependencies = [
 
 [[package]]
 name = "wealthfolio-server"
-version = "3.0.0"
+version = "3.0.4"
 dependencies = [
  "anyhow",
  "argon2",
@@ -7848,7 +7848,7 @@ dependencies = [
 
 [[package]]
 name = "wealthfolio-storage-sqlite"
-version = "3.0.0"
+version = "3.0.4"
 dependencies = [
  "anyhow",
  "async-trait",
