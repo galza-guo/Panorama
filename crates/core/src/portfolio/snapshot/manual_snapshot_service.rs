@@ -125,7 +125,7 @@ impl ManualSnapshotService {
                 )
                 .await?;
 
-            // For MANUAL data source: update quote mode on existing assets and create a price quote
+            // Keep quote mode in sync for assets imported from manual holdings.
             if let Some(ref mode) = quote_mode_hint {
                 let requested_mode = mode.to_uppercase();
                 let current_mode = asset.quote_mode.as_db_str();
@@ -134,16 +134,22 @@ impl ManualSnapshotService {
                         .update_quote_mode_silent(&asset.id, &requested_mode)
                         .await?;
                 }
+            }
 
-                if requested_mode == "MANUAL" && !holding.average_cost.is_zero() {
-                    self.create_manual_quote(
-                        &asset.id,
-                        holding.average_cost,
-                        &holding.currency,
-                        request.snapshot_date,
-                    )
-                    .await;
-                }
+            if !holding.average_cost.is_zero() {
+                let data_source = if asset.quote_mode.as_db_str() == "MANUAL" {
+                    DataSource::Manual
+                } else {
+                    DataSource::Broker
+                };
+                self.create_fallback_quote(
+                    &asset.id,
+                    holding.average_cost,
+                    &holding.currency,
+                    request.snapshot_date,
+                    data_source,
+                )
+                .await;
             }
 
             asset_ids.push(asset.id.clone());
@@ -238,13 +244,14 @@ impl ManualSnapshotService {
         Ok(asset_ids)
     }
 
-    /// Creates a manual quote for a custom asset, matching the activity creation flow.
-    async fn create_manual_quote(
+    /// Creates a fallback quote for a snapshot-provided price.
+    async fn create_fallback_quote(
         &self,
         asset_id: &str,
         price: Decimal,
         currency: &str,
         date: NaiveDate,
+        data_source: DataSource,
     ) {
         let timestamp = Utc.from_utc_datetime(&date.and_hms_opt(12, 0, 0).unwrap());
         let date_part = timestamp.format("%Y%m%d").to_string();
@@ -261,7 +268,7 @@ impl ManualSnapshotService {
             adjclose: price,
             volume: Decimal::ZERO,
             currency: currency.to_string(),
-            data_source: DataSource::Manual,
+            data_source,
             created_at: Utc::now(),
             notes: None,
         };

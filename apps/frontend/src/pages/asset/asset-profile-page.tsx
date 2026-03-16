@@ -289,7 +289,8 @@ export const AssetProfilePage = () => {
   }, [quoteHistory]);
 
   const { saveQuoteMutation, deleteQuoteMutation } = useQuoteMutations(assetId);
-  const syncMarketDataMutation = useSyncMarketDataMutation(true);
+  const updatePriceMutation = useSyncMarketDataMutation(false);
+  const refreshHistoryMutation = useSyncMarketDataMutation(true);
 
   // Determine if manual tracking based on asset's quoteMode
   const isManualPricingMode = assetProfile?.quoteMode === "MANUAL";
@@ -601,17 +602,25 @@ export const AssetProfilePage = () => {
   const isLoading = isHoldingLoading || isQuotesLoading || isAssetProfileLoading;
   const [refreshConfirmOpen, setRefreshConfirmOpen] = useState(false);
 
-  const handleRefreshQuotes = useCallback(() => {
+  const handleUpdatePrice = useCallback(() => {
     if (!profile?.id) {
       return;
     }
     triggerHaptic();
-    syncMarketDataMutation.mutate([profile.id]);
-  }, [profile?.id, syncMarketDataMutation, triggerHaptic]);
+    updatePriceMutation.mutate([profile.id]);
+  }, [profile?.id, triggerHaptic, updatePriceMutation]);
 
-  const handleRefreshQuotesWithConfirm = useCallback(() => {
+  const handleRefreshHistoryWithConfirm = useCallback(() => {
     setRefreshConfirmOpen(true);
   }, []);
+
+  const handleRefreshHistory = useCallback(() => {
+    if (!profile?.id) {
+      return;
+    }
+    triggerHaptic();
+    refreshHistoryMutation.mutate([profile.id]);
+  }, [profile?.id, refreshHistoryMutation, triggerHaptic]);
 
   const handleBack = useCallback(() => {
     navigate(-1);
@@ -646,12 +655,12 @@ export const AssetProfilePage = () => {
             <Button
               variant="outline"
               size="icon"
-              onClick={handleRefreshQuotesWithConfirm}
-              disabled={syncMarketDataMutation.isPending}
-              title="Refresh Quote"
+              onClick={handleUpdatePrice}
+              disabled={updatePriceMutation.isPending || refreshHistoryMutation.isPending}
+              title="Update Price"
             >
               <Icons.Refresh
-                className={`h-4 w-4 ${syncMarketDataMutation.isPending ? "animate-spin" : ""}`}
+                className={`h-4 w-4 ${updatePriceMutation.isPending ? "animate-spin" : ""}`}
               />
             </Button>
           }
@@ -813,8 +822,13 @@ export const AssetProfilePage = () => {
                         items: [
                           {
                             icon: Icons.Refresh,
-                            label: "Refresh Price",
-                            onClick: handleRefreshQuotesWithConfirm,
+                            label: "Update Price",
+                            onClick: handleUpdatePrice,
+                          },
+                          {
+                            icon: Icons.ClockCounterClockwise,
+                            label: "Refresh History",
+                            onClick: handleRefreshHistoryWithConfirm,
                           },
                           {
                             icon: Icons.Pencil,
@@ -1108,7 +1122,7 @@ export const AssetProfilePage = () => {
       <RefreshQuotesConfirmDialog
         open={refreshConfirmOpen}
         onOpenChange={setRefreshConfirmOpen}
-        onConfirm={handleRefreshQuotes}
+        onConfirm={handleRefreshHistory}
       />
 
       {/* Edit Sheet (for regular assets) */}

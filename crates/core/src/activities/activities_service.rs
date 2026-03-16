@@ -351,14 +351,15 @@ impl ActivityService {
             .and_then(|results| results.first().and_then(|r| r.exchange_mic.clone()))
     }
 
-    /// Creates a manual quote from activity data when quote_mode is MANUAL.
-    /// This ensures the asset has a price point on the activity date.
-    async fn create_manual_quote_from_activity(
+    /// Creates a fallback quote from activity data so the asset has a price point
+    /// on the activity date even before provider history is available.
+    async fn create_fallback_quote_from_activity(
         &self,
         asset_id: &str,
         unit_price: Decimal,
         currency: &str,
         activity_date: &str,
+        data_source: DataSource,
     ) -> Result<()> {
         // Parse activity date
         let timestamp = if let Ok(dt) = DateTime::parse_from_rfc3339(activity_date) {
@@ -388,7 +389,7 @@ impl ActivityService {
             adjclose: unit_price,
             volume: Decimal::ZERO,
             currency: currency.to_string(),
-            data_source: DataSource::Manual,
+            data_source,
             created_at: Utc::now(),
             notes: None,
         };
@@ -772,17 +773,20 @@ impl ActivityService {
                         .await?;
                 }
 
-                // Create manual quote for MANUAL mode assets
-                if requested_mode == "MANUAL" {
-                    if let Some(unit_price) = activity.unit_price {
-                        self.create_manual_quote_from_activity(
-                            asset_id,
-                            unit_price,
-                            &currency,
-                            &activity.activity_date,
-                        )
-                        .await?;
-                    }
+                if let Some(unit_price) = activity.unit_price {
+                    let data_source = if requested_mode == "MANUAL" {
+                        DataSource::Manual
+                    } else {
+                        DataSource::Broker
+                    };
+                    self.create_fallback_quote_from_activity(
+                        asset_id,
+                        unit_price,
+                        &currency,
+                        &activity.activity_date,
+                        data_source,
+                    )
+                    .await?;
                 }
             }
 
@@ -1073,16 +1077,20 @@ impl ActivityService {
                         .await?;
                 }
 
-                if requested_mode == "MANUAL" {
-                    if let Some(Some(unit_price)) = activity.unit_price {
-                        self.create_manual_quote_from_activity(
-                            asset_id,
-                            unit_price,
-                            &currency,
-                            &activity.activity_date,
-                        )
-                        .await?;
-                    }
+                if let Some(Some(unit_price)) = activity.unit_price {
+                    let data_source = if requested_mode == "MANUAL" {
+                        DataSource::Manual
+                    } else {
+                        DataSource::Broker
+                    };
+                    self.create_fallback_quote_from_activity(
+                        asset_id,
+                        unit_price,
+                        &currency,
+                        &activity.activity_date,
+                        data_source,
+                    )
+                    .await?;
                 }
             }
 
@@ -2680,24 +2688,28 @@ impl ActivityServiceTrait for ActivityService {
                 }
             }
 
-            // 6. Handle manual quotes for MANUAL quote mode assets
+            // 6. Create fallback quotes from activity prices
             if let Some(ref asset_id) = resolved_asset_id {
                 if let Some(asset) = ensure_result.assets.get(asset_id) {
-                    if asset.quote_mode == QuoteMode::Manual {
-                        if let Some(unit_price) = activity.unit_price {
-                            let currency = if !activity.currency.is_empty() {
-                                &activity.currency
-                            } else {
-                                &account_currency
-                            };
-                            self.create_manual_quote_from_activity(
-                                asset_id,
-                                unit_price,
-                                currency,
-                                &activity.activity_date,
-                            )
-                            .await?;
-                        }
+                    if let Some(unit_price) = activity.unit_price {
+                        let currency = if !activity.currency.is_empty() {
+                            &activity.currency
+                        } else {
+                            &account_currency
+                        };
+                        let data_source = if asset.quote_mode == QuoteMode::Manual {
+                            DataSource::Manual
+                        } else {
+                            DataSource::Broker
+                        };
+                        self.create_fallback_quote_from_activity(
+                            asset_id,
+                            unit_price,
+                            currency,
+                            &activity.activity_date,
+                            data_source,
+                        )
+                        .await?;
                     }
                 }
             }

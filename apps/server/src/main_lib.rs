@@ -340,6 +340,7 @@ pub async fn build_state(config: &Config) -> anyhow::Result<Arc<AppState>> {
             broker_sync_state_repository,
             import_run_repository,
             snapshot_repository.clone(),
+            quote_service.clone(),
         )
         .with_event_sink(domain_event_sink.clone())
         .with_snapshot_service(snapshot_service.clone()),

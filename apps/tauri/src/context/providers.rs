@@ -257,6 +257,7 @@ pub async fn initialize_context(
             broker_sync_state_repository.clone(),
             import_run_repository.clone(),
             snapshot_repository.clone(),
+            quote_service.clone(),
         )
         .with_event_sink(domain_event_sink.clone())
         .with_snapshot_service(snapshot_service.clone()),

@@ -15,7 +15,7 @@ use crate::broker_ingest::{
     ImportRunRepositoryTrait, ImportRunStatus, ImportRunSummary, ImportRunType, ReviewMode,
 };
 use crate::platform::Platform;
-use chrono::{DateTime, Months, Utc};
+use chrono::{DateTime, Months, TimeZone, Utc};
 use rust_decimal::prelude::FromPrimitive;
 use rust_decimal::Decimal;
 use std::collections::{HashMap, HashSet};
@@ -33,6 +33,7 @@ use wealthfolio_core::events::{DomainEvent, DomainEventSink, NoOpDomainEventSink
 use wealthfolio_core::portfolio::snapshot::{
     AccountStateSnapshot, Position, SnapshotRepositoryTrait, SnapshotServiceTrait, SnapshotSource,
 };
+use wealthfolio_core::quotes::{DataSource, Quote, QuoteServiceTrait};
 use wealthfolio_core::utils::time_utils::valuation_date_today;
 
 const DEFAULT_BROKERAGE_PROVIDER: &str = "snaptrade";
@@ -50,6 +51,7 @@ pub struct BrokerSyncService {
     brokers_sync_state_repository: Arc<dyn BrokerSyncStateRepositoryTrait>,
     import_run_repository: Arc<dyn ImportRunRepositoryTrait>,
     snapshot_repository: Arc<dyn SnapshotRepositoryTrait>,
+    quote_service: Arc<dyn QuoteServiceTrait>,
     snapshot_service: Option<Arc<dyn SnapshotServiceTrait>>,
     event_sink: Arc<dyn DomainEventSink>,
 }
@@ -65,6 +67,7 @@ impl BrokerSyncService {
         brokers_sync_state_repository: Arc<dyn BrokerSyncStateRepositoryTrait>,
         import_run_repository: Arc<dyn ImportRunRepositoryTrait>,
         snapshot_repository: Arc<dyn SnapshotRepositoryTrait>,
+        quote_service: Arc<dyn QuoteServiceTrait>,
     ) -> Self {
         Self {
             account_service,
@@ -75,6 +78,7 @@ impl BrokerSyncService {
             brokers_sync_state_repository,
             import_run_repository,
             snapshot_repository,
+            quote_service,
             snapshot_service: None,
             event_sink: Arc::new(NoOpDomainEventSink),
         }
@@ -749,6 +753,18 @@ impl BrokerSyncServiceTrait for BrokerSyncService {
         };
 
         let positions_count = positions_map.len();
+        let broker_quotes = Self::build_broker_quotes(
+            &today,
+            position_data
+                .iter()
+                .filter_map(|(spec_key, _quantity, price, _avg_cost, currency)| {
+                    spec_key_to_asset_id
+                        .get(spec_key)
+                        .cloned()
+                        .map(|asset_id| (asset_id, *price, currency.clone()))
+                })
+                .collect(),
+        );
 
         // Check if content is unchanged from latest snapshot (skip if identical)
         let tomorrow = today + chrono::Days::new(1);
@@ -759,6 +775,9 @@ impl BrokerSyncServiceTrait for BrokerSyncService {
 
         if let Some(existing) = latest {
             if existing.is_content_equal(&snapshot) {
+                if !broker_quotes.is_empty() {
+                    let _ = self.quote_service.bulk_upsert_quotes(broker_quotes).await;
+                }
                 debug!(
                     "Broker holdings unchanged for account {}, skipping save",
                     account_id
@@ -786,6 +805,10 @@ impl BrokerSyncServiceTrait for BrokerSyncService {
             self.ensure_holdings_history(&account_id).await?;
         }
 
+        if !broker_quotes.is_empty() {
+            let _ = self.quote_service.bulk_upsert_quotes(broker_quotes).await;
+        }
+
         info!(
             "Saved broker holdings for account {}: {} positions (+{}, {} updated, {} removed, {} unchanged), {} assets created, {} new asset IDs",
             account_id,
@@ -805,6 +828,32 @@ impl BrokerSyncServiceTrait for BrokerSyncService {
 }
 
 impl BrokerSyncService {
+    fn build_broker_quotes(
+        date: &chrono::NaiveDate,
+        quotes: Vec<(String, Decimal, String)>,
+    ) -> Vec<Quote> {
+        let timestamp = chrono::Utc.from_utc_datetime(&date.and_hms_opt(12, 0, 0).unwrap());
+        quotes
+            .into_iter()
+            .filter(|(_asset_id, price, _currency)| !price.is_zero())
+            .map(|(asset_id, price, currency)| Quote {
+                id: format!("{}_{}_BROKER", timestamp.format("%Y%m%d"), asset_id.to_uppercase()),
+                asset_id,
+                timestamp,
+                open: price,
+                high: price,
+                low: price,
+                close: price,
+                adjclose: price,
+                volume: Decimal::ZERO,
+                currency,
+                data_source: DataSource::Broker,
+                created_at: chrono::Utc::now(),
+                notes: None,
+            })
+            .collect()
+    }
+
     fn compute_holdings_diff(
         latest_snapshot: Option<&AccountStateSnapshot>,
         current_positions: &HashMap<String, Position>,
@@ -1112,6 +1161,7 @@ mod tests {
     use chrono::Utc;
     use rust_decimal::Decimal;
     use wealthfolio_core::portfolio::snapshot::{AccountStateSnapshot, Position};
+    use wealthfolio_core::utils::time_utils::valuation_date_today;
 
     use super::BrokerSyncService;
 
@@ -1265,5 +1315,24 @@ mod tests {
         assert_eq!(diff.updated_positions, 1);
         assert_eq!(diff.removed_positions, 0);
         assert_eq!(diff.unchanged_positions, 0);
+    }
+
+    #[test]
+    fn build_broker_quotes_uses_position_prices() {
+        let today = valuation_date_today();
+        let quotes = BrokerSyncService::build_broker_quotes(
+            &today,
+            vec![(
+                "asset-aapl".to_string(),
+                decimal("123.45"),
+                "USD".to_string(),
+            )],
+        );
+
+        assert_eq!(quotes.len(), 1);
+        assert_eq!(quotes[0].asset_id, "asset-aapl");
+        assert_eq!(quotes[0].close, decimal("123.45"));
+        assert_eq!(quotes[0].currency, "USD");
+        assert_eq!(quotes[0].data_source, wealthfolio_core::quotes::DataSource::Broker);
     }
 }

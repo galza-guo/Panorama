@@ -331,7 +331,15 @@ mod tests {
 
     // --- Mock QuoteService ---
     #[derive(Clone, Default)]
-    struct MockQuoteService;
+    struct MockQuoteService {
+        saved_quotes: Arc<Mutex<Vec<Quote>>>,
+    }
+
+    impl MockQuoteService {
+        fn get_saved_quotes(&self) -> Vec<Quote> {
+            self.saved_quotes.lock().unwrap().clone()
+        }
+    }
 
     #[async_trait]
     impl QuoteServiceTrait for MockQuoteService {
@@ -413,6 +421,7 @@ mod tests {
         }
 
         async fn update_quote(&self, quote: Quote) -> Result<Quote> {
+            self.saved_quotes.lock().unwrap().push(quote.clone());
             Ok(quote)
         }
 
@@ -829,7 +838,7 @@ mod tests {
         asset_service.add_asset(asset);
 
         // Create the activity service
-        let quote_service = Arc::new(MockQuoteService);
+        let quote_service = Arc::new(MockQuoteService::default());
         let activity_service = ActivityService::new(
             activity_repository,
             account_service,
@@ -901,7 +910,7 @@ mod tests {
         asset_service.add_asset(asset);
 
         // Create the activity service
-        let quote_service = Arc::new(MockQuoteService);
+        let quote_service = Arc::new(MockQuoteService::default());
         let activity_service = ActivityService::new(
             activity_repository,
             account_service,
@@ -974,7 +983,7 @@ mod tests {
         asset_service.add_asset(asset);
 
         // Create the activity service
-        let quote_service = Arc::new(MockQuoteService);
+        let quote_service = Arc::new(MockQuoteService::default());
         let activity_service = ActivityService::new(
             activity_repository,
             account_service,
@@ -1050,7 +1059,7 @@ mod tests {
         );
         asset_service.add_asset(asset);
 
-        let quote_service = Arc::new(MockQuoteService);
+        let quote_service = Arc::new(MockQuoteService::default());
         let activity_service = ActivityService::new(
             activity_repository.clone(),
             account_service,
@@ -1117,7 +1126,7 @@ mod tests {
         );
         asset_service.add_asset(asset);
 
-        let quote_service = Arc::new(MockQuoteService);
+        let quote_service = Arc::new(MockQuoteService::default());
         let activity_service = ActivityService::new(
             activity_repository.clone(),
             account_service,
@@ -1184,7 +1193,7 @@ mod tests {
         );
         asset_service.add_asset(asset);
 
-        let quote_service = Arc::new(MockQuoteService);
+        let quote_service = Arc::new(MockQuoteService::default());
         let activity_service = ActivityService::new(
             activity_repository.clone(),
             account_service,
@@ -1243,7 +1252,7 @@ mod tests {
         let account = create_test_account("acc-1", "USD");
         account_service.add_account(account);
 
-        let quote_service = Arc::new(MockQuoteService);
+        let quote_service = Arc::new(MockQuoteService::default());
         let activity_service = ActivityService::new(
             activity_repository.clone(),
             account_service,
@@ -1296,7 +1305,7 @@ mod tests {
         let account = create_test_account("acc-1", "USD");
         account_service.add_account(account);
 
-        let quote_service = Arc::new(MockQuoteService);
+        let quote_service = Arc::new(MockQuoteService::default());
         let activity_service = ActivityService::new(
             activity_repository.clone(),
             account_service,
@@ -1349,7 +1358,7 @@ mod tests {
         let account = create_test_account("acc-1", "USD");
         account_service.add_account(account);
 
-        let quote_service = Arc::new(MockQuoteService);
+        let quote_service = Arc::new(MockQuoteService::default());
         let activity_service = ActivityService::new(
             activity_repository,
             account_service,
@@ -1409,7 +1418,7 @@ mod tests {
         );
         asset_service.add_asset(asset);
 
-        let quote_service = Arc::new(MockQuoteService);
+        let quote_service = Arc::new(MockQuoteService::default());
         let activity_service = ActivityService::new(
             activity_repository.clone(),
             account_service,
@@ -1476,7 +1485,7 @@ mod tests {
         );
         asset_service.add_asset(asset);
 
-        let quote_service = Arc::new(MockQuoteService);
+        let quote_service = Arc::new(MockQuoteService::default());
         let activity_service = ActivityService::new(
             activity_repository.clone(),
             account_service,
@@ -1544,7 +1553,7 @@ mod tests {
         );
         asset_service.add_asset(asset);
 
-        let quote_service = Arc::new(MockQuoteService);
+        let quote_service = Arc::new(MockQuoteService::default());
         let activity_service = ActivityService::new(
             activity_repository.clone(),
             account_service,
@@ -1612,7 +1621,7 @@ mod tests {
         );
         asset_service.add_asset(asset);
 
-        let quote_service = Arc::new(MockQuoteService);
+        let quote_service = Arc::new(MockQuoteService::default());
         let activity_service = ActivityService::new(
             activity_repository.clone(),
             account_service,
@@ -1682,7 +1691,7 @@ mod tests {
             let account = create_test_account("acc-1", "USD");
             account_service.add_account(account);
 
-            let quote_service = Arc::new(MockQuoteService);
+            let quote_service = Arc::new(MockQuoteService::default());
             let activity_service = ActivityService::new(
                 activity_repository.clone(),
                 account_service,
@@ -1748,7 +1757,7 @@ mod tests {
         asset_service.add_asset(asset);
 
         // Create the activity service
-        let quote_service = Arc::new(MockQuoteService);
+        let quote_service = Arc::new(MockQuoteService::default());
         let activity_service = ActivityService::new(
             activity_repository,
             account_service,
@@ -1825,7 +1834,7 @@ mod tests {
         );
         asset_service.add_asset(asset);
 
-        let quote_service = Arc::new(MockQuoteService);
+        let quote_service = Arc::new(MockQuoteService::default());
         let activity_service = ActivityService::new(
             activity_repository,
             account_service,
@@ -1876,6 +1885,66 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn test_create_activity_creates_broker_fallback_quote_for_market_mode_asset() {
+        let account_service = Arc::new(MockAccountService::new());
+        let asset_service = Arc::new(MockAssetService::new());
+        let fx_service = Arc::new(MockFxService::new());
+        let activity_repository = Arc::new(MockActivityRepository::new());
+
+        let account = create_test_account("acc-1", "USD");
+        account_service.add_account(account);
+
+        let mut asset = create_test_asset("SEC:AAPL:XNAS", "USD");
+        asset.quote_mode = crate::assets::QuoteMode::Market;
+        asset_service.add_asset(asset);
+
+        let quote_service = Arc::new(MockQuoteService::default());
+        let activity_service = ActivityService::new(
+            activity_repository,
+            account_service,
+            asset_service,
+            fx_service,
+            quote_service.clone(),
+        );
+
+        let new_activity = NewActivity {
+            id: Some("activity-1".to_string()),
+            account_id: "acc-1".to_string(),
+            symbol: Some(SymbolInput {
+                id: Some("SEC:AAPL:XNAS".to_string()),
+                quote_mode: Some("MARKET".to_string()),
+                ..Default::default()
+            }),
+            activity_type: "BUY".to_string(),
+            subtype: None,
+            activity_date: "2024-01-15".to_string(),
+            quantity: Some(dec!(10)),
+            unit_price: Some(dec!(150)),
+            currency: "USD".to_string(),
+            fee: Some(dec!(0)),
+            amount: Some(dec!(1500)),
+            status: None,
+            notes: None,
+            fx_rate: None,
+            metadata: None,
+            needs_review: None,
+            source_system: None,
+            source_record_id: None,
+            source_group_id: None,
+            idempotency_key: None,
+        };
+
+        let result = activity_service.create_activity(new_activity).await;
+        assert!(result.is_ok(), "activity creation should succeed");
+
+        let saved_quotes = quote_service.get_saved_quotes();
+        assert_eq!(saved_quotes.len(), 1);
+        assert_eq!(saved_quotes[0].asset_id, "SEC:AAPL:XNAS");
+        assert_eq!(saved_quotes[0].close, dec!(150));
+        assert_eq!(saved_quotes[0].data_source, crate::quotes::DataSource::Broker);
+    }
+
+    #[tokio::test]
     async fn test_check_import_uses_mic_currency_as_quote_ccy_fallback() {
         let account_service = Arc::new(MockAccountService::new());
         let asset_service = Arc::new(MockAssetService::new());
@@ -1885,7 +1954,7 @@ mod tests {
         let account = create_test_account("acc-1", "CAD");
         account_service.add_account(account);
 
-        let quote_service = Arc::new(MockQuoteService);
+        let quote_service = Arc::new(MockQuoteService::default());
         let activity_service = ActivityService::new(
             activity_repository,
             account_service,
@@ -1952,7 +2021,7 @@ mod tests {
         let account = create_test_account("acc-1", "CAD");
         account_service.add_account(account);
 
-        let quote_service = Arc::new(MockQuoteService);
+        let quote_service = Arc::new(MockQuoteService::default());
         let activity_service = ActivityService::new(
             activity_repository,
             account_service,
@@ -2012,7 +2081,7 @@ mod tests {
         let account = create_test_account("acc-1", "CAD");
         account_service.add_account(account);
 
-        let quote_service = Arc::new(MockQuoteService);
+        let quote_service = Arc::new(MockQuoteService::default());
         let activity_service = ActivityService::new(
             activity_repository,
             account_service,
@@ -2088,7 +2157,7 @@ mod tests {
         let asset = create_test_asset("SEC:AZN:XLON", "GBp");
         asset_service.add_asset(asset);
 
-        let quote_service = Arc::new(MockQuoteService);
+        let quote_service = Arc::new(MockQuoteService::default());
         let activity_service = ActivityService::new(
             activity_repository.clone(),
             account_service,
@@ -2178,7 +2247,7 @@ mod tests {
         let asset = create_test_asset("SEC:VOD:XLON", "GBX");
         asset_service.add_asset(asset);
 
-        let quote_service = Arc::new(MockQuoteService);
+        let quote_service = Arc::new(MockQuoteService::default());
         let activity_service = ActivityService::new(
             activity_repository.clone(),
             account_service,
@@ -2240,7 +2309,7 @@ mod tests {
         let asset = create_test_asset("SEC:NPN:XJSE", "ZAc");
         asset_service.add_asset(asset);
 
-        let quote_service = Arc::new(MockQuoteService);
+        let quote_service = Arc::new(MockQuoteService::default());
         let activity_service = ActivityService::new(
             activity_repository.clone(),
             account_service,
@@ -2302,7 +2371,7 @@ mod tests {
         let asset = create_test_asset("SEC:LLOY:XLON", "GBP");
         asset_service.add_asset(asset);
 
-        let quote_service = Arc::new(MockQuoteService);
+        let quote_service = Arc::new(MockQuoteService::default());
         let activity_service = ActivityService::new(
             activity_repository.clone(),
             account_service,

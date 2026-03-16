@@ -343,6 +343,7 @@ impl From<DataSource> for QuoteSource {
     fn from(ds: DataSource) -> Self {
         match ds {
             DataSource::Manual => QuoteSource::Manual,
+            DataSource::Broker => QuoteSource::Provider(ProviderId::new("BROKER")),
             DataSource::Yahoo => QuoteSource::Provider(ProviderId::yahoo()),
             DataSource::AlphaVantage => QuoteSource::Provider(ProviderId::alpha_vantage()),
             DataSource::MarketDataApp => QuoteSource::Provider(ProviderId::marketdata_app()),
