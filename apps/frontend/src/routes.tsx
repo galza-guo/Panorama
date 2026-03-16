@@ -6,6 +6,7 @@ import { OnboardingLayout } from "@/pages/layouts/onboarding-layout";
 import SettingsLayout from "@/pages/settings/settings-layout";
 
 import { getDynamicRoutes, subscribeToNavigationUpdates } from "@/addons/addons-runtime-context";
+import { ConnectVisibilityGate } from "@/features/wealthfolio-connect/components/connect-visibility-gate";
 import AuthCallbackPage from "@/features/wealthfolio-connect/pages/auth-callback-page";
 import ConnectPage from "@/features/wealthfolio-connect/pages/connect-page";
 import ActivityManagerPage from "@/pages/activity/activity-manager-page";
@@ -93,7 +94,14 @@ export function AppRoutes() {
           <Route path="insights" element={<PortfolioInsightsPage />} />
           <Route path="health" element={<HealthPage />} />
           <Route path="assistant" element={<AiAssistantPage />} />
-          <Route path="connect" element={<ConnectPage />} />
+          <Route
+            path="connect"
+            element={
+              <ConnectVisibilityGate redirectTo="/dashboard">
+                <ConnectPage />
+              </ConnectVisibilityGate>
+            }
+          />
           {/* Dynamic addon routes */}
           {dynamicRoutes.map(({ path, component: Component }) => (
             <Route
@@ -121,7 +129,14 @@ export function AppRoutes() {
             <Route path="market-data/import" element={<MarketDataImportPage />} />
             <Route path="securities" element={<AssetsPage />} />
             <Route path="taxonomies" element={<TaxonomiesPage />} />
-            <Route path="connect" element={<ConnectSettingsPage />} />
+            <Route
+              path="connect"
+              element={
+                <ConnectVisibilityGate redirectTo="/settings/general">
+                  <ConnectSettingsPage />
+                </ConnectVisibilityGate>
+              }
+            />
             <Route path="ai-providers" element={<AiProvidersPage />} />
             <Route path="addons" element={<AddonSettingsPage />} />
           </Route>

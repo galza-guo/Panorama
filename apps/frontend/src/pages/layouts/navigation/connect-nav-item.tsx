@@ -1,5 +1,6 @@
 import { SyncStatusIcon } from "@/features/wealthfolio-connect/components/sync-status-icon";
 import { useAggregatedSyncStatus } from "@/features/wealthfolio-connect/hooks";
+import { useSettingsContext } from "@/lib/settings-provider";
 import { Button } from "@wealthfolio/ui/components/ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@wealthfolio/ui/components/ui/tooltip";
 import { cn } from "@wealthfolio/ui/lib/utils";
@@ -12,9 +13,14 @@ interface ConnectNavItemProps {
 }
 
 export function ConnectNavItem({ collapsed }: ConnectNavItemProps) {
+  const { settings } = useSettingsContext();
   const location = useLocation();
   const { status, lastSyncTime } = useAggregatedSyncStatus();
   const isActive = isPathActive(location.pathname, "/connect");
+
+  if (settings && !settings.wealthfolioConnectVisible) {
+    return null;
+  }
 
   const lastSyncedText = lastSyncTime
     ? `Last synced ${formatDistanceToNow(new Date(lastSyncTime), { addSuffix: true })}`

@@ -52,6 +52,9 @@ impl SettingsRepositoryTrait for SettingsRepository {
                 "sync_enabled" => {
                     settings.sync_enabled = value.parse().unwrap_or(true);
                 }
+                "wealthfolio_connect_visible" => {
+                    settings.wealthfolio_connect_visible = value.parse().unwrap_or(true);
+                }
                 _ => {} // Ignore unknown settings
             }
         }
@@ -133,6 +136,16 @@ impl SettingsRepositoryTrait for SettingsRepository {
                         .map_err(StorageError::from)?;
                 }
 
+                if let Some(wealthfolio_connect_visible) = settings.wealthfolio_connect_visible {
+                    diesel::replace_into(app_settings)
+                        .values(&AppSettingDB {
+                            setting_key: "wealthfolio_connect_visible".to_string(),
+                            setting_value: wealthfolio_connect_visible.to_string(),
+                        })
+                        .execute(conn)
+                        .map_err(StorageError::from)?;
+                }
+
                 Ok(())
             })
             .await
@@ -156,6 +169,7 @@ impl SettingsRepositoryTrait for SettingsRepository {
                     "auto_update_check_enabled" => "true",
                     "menu_bar_visible" => "true",
                     "sync_enabled" => "true",
+                    "wealthfolio_connect_visible" => "true",
                     _ => return Err(StorageError::from(diesel::result::Error::NotFound).into()),
                 };
                 Ok(default_value.to_string())

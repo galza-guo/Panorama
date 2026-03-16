@@ -636,6 +636,7 @@ export interface Settings {
   syncEnabled: boolean;
   insuranceVisible: boolean;
   mpfVisible: boolean;
+  wealthfolioConnectVisible: boolean;
 }
 
 export interface SettingsContextType {

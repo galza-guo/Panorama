@@ -2,6 +2,7 @@ import { Separator } from "@wealthfolio/ui/components/ui/separator";
 import { usePlatform } from "@/hooks/use-platform";
 import { SettingsHeader } from "../settings-header";
 import { AutoUpdateSettings } from "./auto-update-settings";
+import { ConnectVisibilitySettings } from "./connect-visibility-settings";
 import { BaseCurrencySettings } from "./currency-settings";
 import { ExchangeRatesSettings } from "./exchange-rates/exchange-rates-settings";
 
@@ -24,6 +25,9 @@ export default function GeneralSettingsPage() {
           <AutoUpdateSettings />
         </div>
       )}
+      <div className="pt-6">
+        <ConnectVisibilitySettings />
+      </div>
     </div>
   );
 }
