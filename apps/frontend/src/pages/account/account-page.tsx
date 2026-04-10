@@ -77,6 +77,11 @@ interface HistoryChartData {
   currency: string;
 }
 
+interface PercentageDisplayPerformance {
+  periodReturn?: number | null;
+  cumulativeMwr?: number | null;
+}
+
 // Map account types to icons for visual distinction
 const accountTypeIcons: Record<AccountType, Icon> = {
   SECURITIES: Icons.Briefcase,
@@ -101,6 +106,22 @@ const formatDate = (dateStr: string): string => {
 
 // Define the initial interval code (consistent with other pages)
 const INITIAL_INTERVAL_CODE: TimePeriod = "3M";
+
+export function getPercentageToDisplay({
+  isHoldingsMode,
+  selectedIntervalCode: _selectedIntervalCode,
+  performance,
+}: {
+  isHoldingsMode: boolean;
+  selectedIntervalCode: TimePeriod;
+  performance: PercentageDisplayPerformance | null | undefined;
+}): number {
+  if (isHoldingsMode) {
+    return performance?.periodReturn ?? 0;
+  }
+
+  return performance?.cumulativeMwr ?? performance?.periodReturn ?? 0;
+}
 
 const AccountPage = () => {
   const { settings } = useSettingsContext();
@@ -251,7 +272,6 @@ const AccountPage = () => {
 
   // Use period gain and return from backend (SOTA calculations for HOLDINGS mode)
   const frontendGainLossAmount = accountPerformance?.periodGain ?? 0;
-  const frontendSimpleReturn = accountPerformance?.periodReturn ?? 0;
 
   const chartData: HistoryChartData[] = useMemo(() => {
     if (!valuationHistory) return [];
@@ -276,20 +296,12 @@ const AccountPage = () => {
   };
 
   const percentageToDisplay = useMemo(() => {
-    // For HOLDINGS mode, always use simple return since TWR/MWR are not meaningful
-    // (they require transaction history to track cash flows)
-    if (isHoldingsMode) {
-      return frontendSimpleReturn;
-    }
-    if (selectedIntervalCode === "ALL") {
-      return frontendSimpleReturn;
-    }
-    // For other intervals, if accountPerformance is available, use cumulativeMwr
-    if (accountPerformance) {
-      return accountPerformance.cumulativeMwr ?? 0;
-    }
-    return 0; // Default if no specific logic matches or data is unavailable
-  }, [accountPerformance, selectedIntervalCode, frontendSimpleReturn, isHoldingsMode]);
+    return getPercentageToDisplay({
+      isHoldingsMode,
+      selectedIntervalCode,
+      performance: accountPerformance,
+    });
+  }, [accountPerformance, selectedIntervalCode, isHoldingsMode]);
 
   const handleAccountSwitch = (selectedAccount: Account) => {
     navigate(`/accounts/${selectedAccount.id}`);

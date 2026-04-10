@@ -2,7 +2,7 @@ use std::collections::HashMap;
 use std::sync::Arc;
 
 use chrono::{NaiveDate, TimeZone, Utc};
-use log::debug;
+use log::{debug, warn};
 use rust_decimal::Decimal;
 use uuid::Uuid;
 
@@ -208,7 +208,11 @@ impl ManualSnapshotService {
             }
         }
 
-        let total_cost_basis: Decimal = positions.values().map(|p| p.total_cost_basis).sum();
+        let total_cost_basis = self.total_cost_basis_in_account_currency(
+            &positions,
+            &request.account_currency,
+            request.snapshot_date,
+        );
 
         let snapshot = AccountStateSnapshot {
             id: format!(
@@ -242,6 +246,55 @@ impl ManualSnapshotService {
         asset_ids.dedup();
 
         Ok(asset_ids)
+    }
+
+    fn total_cost_basis_in_account_currency(
+        &self,
+        positions: &HashMap<String, Position>,
+        account_currency: &str,
+        snapshot_date: NaiveDate,
+    ) -> Decimal {
+        let mut total_cost_basis = Decimal::ZERO;
+
+        for position in positions.values() {
+            if position.currency.is_empty() {
+                warn!(
+                    "Manual snapshot position {} has no currency. Skipping its cost basis.",
+                    position.id
+                );
+                continue;
+            }
+
+            if position.currency == account_currency {
+                total_cost_basis += position.total_cost_basis;
+                continue;
+            }
+
+            match self.fx_service.convert_currency_for_date(
+                position.total_cost_basis,
+                &position.currency,
+                account_currency,
+                snapshot_date,
+            ) {
+                Ok(converted_cost_basis) => {
+                    total_cost_basis += converted_cost_basis;
+                }
+                Err(error) => {
+                    warn!(
+                        "Manual snapshot cost basis conversion failed for position {}: {} {} -> {} on {} ({})",
+                        position.id,
+                        position.total_cost_basis,
+                        position.currency,
+                        account_currency,
+                        snapshot_date,
+                        error
+                    );
+                    total_cost_basis += position.total_cost_basis;
+                }
+            }
+        }
+
+        total_cost_basis
     }
 
     /// Creates a fallback quote for a snapshot-provided price.

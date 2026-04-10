@@ -1941,7 +1941,10 @@ mod tests {
         assert_eq!(saved_quotes.len(), 1);
         assert_eq!(saved_quotes[0].asset_id, "SEC:AAPL:XNAS");
         assert_eq!(saved_quotes[0].close, dec!(150));
-        assert_eq!(saved_quotes[0].data_source, crate::quotes::DataSource::Broker);
+        assert_eq!(
+            saved_quotes[0].data_source,
+            crate::quotes::DataSource::Broker
+        );
     }
 
     #[tokio::test]

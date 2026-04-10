@@ -276,21 +276,17 @@ impl AlternativeAssetService {
             .map(|value| value.eq_ignore_ascii_case("time_deposit"))
             .unwrap_or(false);
 
-        let has_term_dates = metadata
-            .get("start_date")
-            .and_then(Value::as_str)
-            .is_some()
+        let has_term_dates = metadata.get("start_date").and_then(Value::as_str).is_some()
             && metadata
                 .get("maturity_date")
                 .and_then(Value::as_str)
                 .is_some();
 
         let has_principal = Self::decimal_from_json_value(metadata.get("principal")).is_some();
-        let has_return_signal =
-            Self::decimal_from_json_value(metadata.get("quoted_annual_rate")).is_some()
-                || Self::decimal_from_json_value(metadata.get("guaranteed_maturity_value"))
-                    .is_some()
-                || Self::decimal_from_json_value(metadata.get("current_value_override")).is_some();
+        let has_return_signal = Self::decimal_from_json_value(metadata.get("quoted_annual_rate"))
+            .is_some()
+            || Self::decimal_from_json_value(metadata.get("guaranteed_maturity_value")).is_some()
+            || Self::decimal_from_json_value(metadata.get("current_value_override")).is_some();
 
         category || subtype || (has_term_dates && has_principal && has_return_signal)
     }
@@ -326,30 +322,32 @@ impl AlternativeAssetService {
             .unwrap_or("derived");
 
         if valuation_mode.eq_ignore_ascii_case("manual") {
-            let override_value = Self::decimal_from_json_value(metadata.get("current_value_override"))?;
-            let valuation_date =
-                Self::date_from_json_value(metadata.get("valuation_date")).unwrap_or_else(valuation_date_today);
+            let override_value =
+                Self::decimal_from_json_value(metadata.get("current_value_override"))?;
+            let valuation_date = Self::date_from_json_value(metadata.get("valuation_date"))
+                .unwrap_or_else(valuation_date_today);
             let timestamp = Utc.from_utc_datetime(&valuation_date.and_hms_opt(12, 0, 0).unwrap());
             return Some((override_value, timestamp));
         }
 
-        let expected_maturity_value =
-            if let Some(maturity_value) = Self::decimal_from_json_value(metadata.get("guaranteed_maturity_value")) {
-                maturity_value
+        let expected_maturity_value = if let Some(maturity_value) =
+            Self::decimal_from_json_value(metadata.get("guaranteed_maturity_value"))
+        {
+            maturity_value
+        } else {
+            let quoted_rate_pct =
+                Self::decimal_from_json_value(metadata.get("quoted_annual_rate"))?;
+            let total_days = (maturity_date - start_date).num_days().max(0);
+            if total_days == 0 {
+                principal
             } else {
-                let quoted_rate_pct =
-                    Self::decimal_from_json_value(metadata.get("quoted_annual_rate"))?;
-                let total_days = (maturity_date - start_date).num_days().max(0);
-                if total_days == 0 {
-                    principal
-                } else {
-                    let total_days_decimal = Decimal::from(total_days);
-                    principal
-                        * (Decimal::ONE
-                            + (quoted_rate_pct / Decimal::new(100, 0))
-                                * (total_days_decimal / Decimal::from(365)))
-                }
-            };
+                let total_days_decimal = Decimal::from(total_days);
+                principal
+                    * (Decimal::ONE
+                        + (quoted_rate_pct / Decimal::new(100, 0))
+                            * (total_days_decimal / Decimal::from(365)))
+            }
+        };
 
         let total_days = (maturity_date - start_date).num_days().max(0);
         let as_of_date = valuation_date_today();
@@ -361,8 +359,7 @@ impl AlternativeAssetService {
                 expected_maturity_value
             } else {
                 principal
-                    + (expected_maturity_value - principal)
-                        * Decimal::from(elapsed_days)
+                    + (expected_maturity_value - principal) * Decimal::from(elapsed_days)
                         / Decimal::from(total_days)
             }
         };
@@ -1167,9 +1164,8 @@ impl AlternativeAssetServiceTrait for AlternativeAssetService {
                     .and_then(|v| v.as_str())
                     .map(|s| s.to_string());
 
-                let (market_value, valuation_date) =
-                    Self::derive_time_deposit_market_value(&asset)
-                        .unwrap_or((quote.close, quote.timestamp));
+                let (market_value, valuation_date) = Self::derive_time_deposit_market_value(&asset)
+                    .unwrap_or((quote.close, quote.timestamp));
 
                 // Calculate unrealized gain if we have purchase price
                 let (unrealized_gain, unrealized_gain_pct) = if let Some(pp) = purchase_price {
@@ -1405,7 +1401,12 @@ mod tests {
         fn get_latest_quotes(&self, symbols: &[String]) -> Result<HashMap<String, Quote>> {
             Ok(symbols
                 .iter()
-                .filter_map(|symbol| self.quotes.get(symbol).cloned().map(|quote| (symbol.clone(), quote)))
+                .filter_map(|symbol| {
+                    self.quotes
+                        .get(symbol)
+                        .cloned()
+                        .map(|quote| (symbol.clone(), quote))
+                })
                 .collect())
         }
 
@@ -1534,7 +1535,11 @@ mod tests {
             unimplemented!()
         }
 
-        async fn sync(&self, _mode: SyncMode, _asset_ids: Option<Vec<String>>) -> Result<SyncResult> {
+        async fn sync(
+            &self,
+            _mode: SyncMode,
+            _asset_ids: Option<Vec<String>>,
+        ) -> Result<SyncResult> {
             unimplemented!()
         }
 
@@ -1550,7 +1555,11 @@ mod tests {
             unimplemented!()
         }
 
-        async fn handle_activity_created(&self, _symbol: &str, _activity_date: NaiveDate) -> Result<()> {
+        async fn handle_activity_created(
+            &self,
+            _symbol: &str,
+            _activity_date: NaiveDate,
+        ) -> Result<()> {
             unimplemented!()
         }
 
@@ -1803,7 +1812,9 @@ mod tests {
 
         let service = AlternativeAssetService::new(
             Arc::new(MockAlternativeAssetRepository),
-            Arc::new(MockAssetRepository::new(vec![sample_asset(asset_id, metadata)])),
+            Arc::new(MockAssetRepository::new(vec![sample_asset(
+                asset_id, metadata,
+            )])),
             Arc::new(MockQuoteService::new(vec![sample_quote(
                 asset_id,
                 dec!(10000),
@@ -1811,7 +1822,9 @@ mod tests {
             )])),
         );
 
-        let holdings = service.get_alternative_holdings().expect("expected holdings");
+        let holdings = service
+            .get_alternative_holdings()
+            .expect("expected holdings");
         let holding = holdings.first().expect("expected derived holding");
 
         assert_eq!(holding.market_value, dec!(10100));
@@ -1846,7 +1859,9 @@ mod tests {
 
         let service = AlternativeAssetService::new(
             Arc::new(MockAlternativeAssetRepository),
-            Arc::new(MockAssetRepository::new(vec![sample_asset(asset_id, metadata)])),
+            Arc::new(MockAssetRepository::new(vec![sample_asset(
+                asset_id, metadata,
+            )])),
             Arc::new(MockQuoteService::new(vec![sample_quote(
                 asset_id,
                 dec!(10000),
@@ -1854,7 +1869,9 @@ mod tests {
             )])),
         );
 
-        let holdings = service.get_alternative_holdings().expect("expected holdings");
+        let holdings = service
+            .get_alternative_holdings()
+            .expect("expected holdings");
         let holding = holdings.first().expect("expected manual holding");
 
         assert_eq!(holding.market_value, dec!(10123.45));
@@ -1883,7 +1900,9 @@ mod tests {
 
         let service = AlternativeAssetService::new(
             Arc::new(MockAlternativeAssetRepository),
-            Arc::new(MockAssetRepository::new(vec![sample_asset(asset_id, metadata)])),
+            Arc::new(MockAssetRepository::new(vec![sample_asset(
+                asset_id, metadata,
+            )])),
             Arc::new(MockQuoteService::new(vec![sample_quote(
                 asset_id,
                 dec!(10000),
@@ -1891,7 +1910,9 @@ mod tests {
             )])),
         );
 
-        let holdings = service.get_alternative_holdings().expect("expected holdings");
+        let holdings = service
+            .get_alternative_holdings()
+            .expect("expected holdings");
         let holding = holdings.first().expect("expected matured holding");
 
         assert_eq!(holding.market_value, dec!(10200));

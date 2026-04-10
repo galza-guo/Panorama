@@ -596,7 +596,9 @@ impl From<ProviderProfile> for NewAsset {
             normalize_market_symbol_for_provider(Some(profile.symbol.as_str()), Some(&data_source));
         let canonical = canonicalize_market_identity(
             Some(InstrumentType::Equity),
-            normalized_symbol.as_deref().or(Some(profile.symbol.as_str())),
+            normalized_symbol
+                .as_deref()
+                .or(Some(profile.symbol.as_str())),
             None,
             Some(profile.currency.as_str()),
         );
@@ -839,12 +841,14 @@ pub fn canonicalize_market_identity(
                     if let Some(ccy) = mic_to_currency(mic) {
                         normalized_quote = normalize_quote_ccy(Some(ccy));
                     }
-                } else if instrument_symbol.as_deref().is_some_and(|normalized_symbol| {
-                    matches!(
-                        infer_panorama_data_source(normalized_symbol, None),
-                        Some(DATA_SOURCE_TIANTIAN_FUND)
-                    )
-                })
+                } else if instrument_symbol
+                    .as_deref()
+                    .is_some_and(|normalized_symbol| {
+                        matches!(
+                            infer_panorama_data_source(normalized_symbol, None),
+                            Some(DATA_SOURCE_TIANTIAN_FUND)
+                        )
+                    })
                 {
                     normalized_quote = Some("CNY".to_string());
                 }

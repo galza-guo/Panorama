@@ -68,55 +68,6 @@ impl PerformanceService {
         }
     }
 
-    fn get_account_boundary_data(
-        &self,
-        account_id: &str,
-        start_date_opt: Option<NaiveDate>,
-        end_date_opt: Option<NaiveDate>,
-    ) -> Result<(
-        DailyAccountValuation,
-        DailyAccountValuation,
-        NaiveDate,
-        NaiveDate,
-        String,
-    )> {
-        let full_history = self.valuation_service.get_historical_valuations(
-            account_id,
-            start_date_opt,
-            end_date_opt,
-        )?;
-
-        if full_history.len() < 2 {
-            warn!(
-                "Account '{}': Not enough history data ({} points). Cannot calculate performance.",
-                account_id,
-                full_history.len()
-            );
-            return Err(errors::Error::Calculation(
-                errors::CalculatorError::Calculation(format!(
-                    "Account '{}': Not enough history data ({} points).",
-                    account_id,
-                    full_history.len()
-                )),
-            ));
-        }
-
-        let start_point: DailyAccountValuation = full_history.first().unwrap().clone();
-        let end_point: DailyAccountValuation = full_history.last().unwrap().clone();
-
-        let actual_start_date = start_point.valuation_date;
-        let actual_end_date = end_point.valuation_date;
-        let currency = start_point.account_currency.clone();
-
-        Ok((
-            start_point,
-            end_point,
-            actual_start_date,
-            actual_end_date,
-            currency,
-        ))
-    }
-
     /// Internal function for calculating account performance (Full)
     /// For HOLDINGS mode accounts, uses SOTA price-based performance calculations
     async fn calculate_account_performance(
@@ -361,99 +312,10 @@ impl PerformanceService {
         end_date_opt: Option<NaiveDate>,
         tracking_mode: Option<TrackingMode>,
     ) -> Result<PerformanceMetrics> {
-        let (start_point, end_point, actual_start_date, actual_end_date, currency): (
-            DailyAccountValuation,
-            DailyAccountValuation,
-            NaiveDate,
-            NaiveDate,
-            String,
-        ) = self.get_account_boundary_data(account_id, start_date_opt, end_date_opt)?;
-
-        let is_holdings_mode = matches!(tracking_mode, Some(TrackingMode::Holdings));
-
-        let start_value = start_point.total_value;
-        let end_value = end_point.total_value;
-        let start_net_contribution = start_point.net_contribution;
-        let end_net_contribution = end_point.net_contribution;
-        let net_cash_flow = end_net_contribution - start_net_contribution;
-
-        let gain_loss_amount = end_value - start_value - net_cash_flow;
-
-        let simple_total_return = if start_value.is_zero() {
-            Decimal::ZERO
-        } else {
-            (end_value - start_value - net_cash_flow) / start_value
-        };
-
-        let annualized_simple_return = Self::calculate_annualized_return(
-            actual_start_date,
-            actual_end_date,
-            simple_total_return,
-        );
-
-        // SOTA calculations for HOLDINGS mode
-        let (period_gain, period_return) = if is_holdings_mode {
-            let start_unrealized_pnl = start_point.investment_market_value - start_point.cost_basis;
-            let end_unrealized_pnl = end_point.investment_market_value - end_point.cost_basis;
-            let period_gain = end_unrealized_pnl - start_unrealized_pnl;
-
-            let period_return = if start_date_opt.is_none() {
-                // ALL time: return = unrealized_pnl / cost_basis
-                if end_point.cost_basis.is_zero() {
-                    Decimal::ZERO
-                } else {
-                    end_unrealized_pnl / end_point.cost_basis
-                }
-            } else {
-                // Rolling period: return = period_gain / start_investment_value
-                if start_point.investment_market_value.is_zero() {
-                    Decimal::ZERO
-                } else {
-                    period_gain / start_point.investment_market_value
-                }
-            };
-
-            (period_gain, period_return)
-        } else {
-            (gain_loss_amount, simple_total_return)
-        };
-
-        let result = PerformanceMetrics {
-            id: account_id.to_string(),
-            returns: Vec::new(),
-            period_start_date: Some(actual_start_date),
-            period_end_date: Some(actual_end_date),
-            currency,
-            period_gain: period_gain.round_dp(DECIMAL_PRECISION),
-            period_return: period_return.round_dp(DECIMAL_PRECISION),
-            cumulative_twr: if is_holdings_mode {
-                None
-            } else {
-                Some(Decimal::ZERO)
-            },
-            gain_loss_amount: Some(gain_loss_amount.round_dp(DECIMAL_PRECISION)),
-            annualized_twr: if is_holdings_mode {
-                None
-            } else {
-                Some(Decimal::ZERO)
-            },
-            simple_return: simple_total_return.round_dp(DECIMAL_PRECISION),
-            annualized_simple_return: annualized_simple_return.round_dp(DECIMAL_PRECISION),
-            cumulative_mwr: if is_holdings_mode {
-                None
-            } else {
-                Some(Decimal::ZERO)
-            },
-            annualized_mwr: if is_holdings_mode {
-                None
-            } else {
-                Some(Decimal::ZERO)
-            },
-            volatility: Decimal::ZERO,
-            max_drawdown: Decimal::ZERO,
-            is_holdings_mode,
-        };
-
+        let mut result = self
+            .calculate_account_performance(account_id, start_date_opt, end_date_opt, tracking_mode)
+            .await?;
+        result.returns.clear();
         Ok(result)
     }
 

@@ -444,7 +444,9 @@ where
         let mut assets_by_provider: HashMap<String, Vec<String>> = HashMap::new();
         for asset in assets.iter().filter(|a| self.should_sync_asset(a)) {
             let provider = resolve_plan_data_source(
-                existing_states.get(&asset.id).map(|s| s.data_source.as_str()),
+                existing_states
+                    .get(&asset.id)
+                    .map(|s| s.data_source.as_str()),
                 asset,
             );
             assets_by_provider
@@ -1333,7 +1335,9 @@ where
         let mut assets_by_provider: HashMap<String, Vec<String>> = HashMap::new();
         for asset in &syncable {
             let provider = resolve_plan_data_source(
-                existing_states.get(&asset.id).map(|s| s.data_source.as_str()),
+                existing_states
+                    .get(&asset.id)
+                    .map(|s| s.data_source.as_str()),
                 asset,
             );
             assets_by_provider

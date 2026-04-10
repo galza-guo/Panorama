@@ -358,10 +358,9 @@ impl AssetServiceTrait for AssetService {
             .or(existing_asset.instrument_type.clone());
 
         if effective_instrument_type.is_some() {
-            let preferred_provider = Self::preferred_provider_from_config(
-                payload.provider_config.as_ref(),
-            )
-            .or_else(|| existing_asset.preferred_provider());
+            let preferred_provider =
+                Self::preferred_provider_from_config(payload.provider_config.as_ref())
+                    .or_else(|| existing_asset.preferred_provider());
             let should_refresh_quote_ccy = Self::should_refresh_market_quote_ccy_on_mic_change(
                 effective_quote_mode,
                 payload.quote_ccy.as_deref(),

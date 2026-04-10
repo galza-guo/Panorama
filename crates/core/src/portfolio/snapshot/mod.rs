@@ -18,6 +18,9 @@ pub use snapshot_traits::*;
 mod holdings_calculator_tests;
 
 #[cfg(test)]
+mod manual_snapshot_service_tests;
+
+#[cfg(test)]
 pub mod snapshot_service_tests;
 
 #[cfg(test)]

@@ -1,10 +1,10 @@
 "use client";
 
 import { useAccounts } from "@/hooks/use-accounts";
+import { useAccountsPerformanceSummary } from "@/hooks/use-accounts-performance-summary";
 import { useLatestValuations } from "@/hooks/use-latest-valuations";
 import { useSettingsContext } from "@/lib/settings-provider";
-import type { AccountValuation } from "@/lib/types";
-import { calculatePerformanceMetrics } from "@/lib/utils";
+import type { Account, AccountValuation, PerformanceMetrics } from "@/lib/types";
 import { GainAmount, GainPercent, PrivacyAmount } from "@wealthfolio/ui";
 import { Button } from "@wealthfolio/ui/components/ui/button";
 import { Icons } from "@wealthfolio/ui/components/ui/icons";
@@ -29,6 +29,103 @@ interface AccountSummaryDisplayData {
   accountCount?: number;
   accounts?: AccountSummaryDisplayData[];
   displayInAccountCurrency?: boolean;
+  gainLossLabel?: string;
+  returnLabel?: string;
+  compactPerformanceDisplay?: boolean;
+}
+
+interface AccountPerformanceDisplay {
+  totalGainLossAmountAccountCurrency: number | null;
+  totalGainLossAmountBaseCurrency: number | null;
+  totalGainLossPercent: number | null;
+}
+
+interface PerformanceLabels {
+  gainLossLabel: string;
+  returnLabel: string;
+}
+
+function getPerformanceLabels(trackingMode?: Account["trackingMode"]): PerformanceLabels {
+  switch (trackingMode) {
+    case "HOLDINGS":
+      return {
+        gainLossLabel: "Unrealized P&L",
+        returnLabel: "Unrealized Return",
+      };
+    case "TRANSACTIONS":
+      return {
+        gainLossLabel: "Total Gain/Loss",
+        returnLabel: "Total Return",
+      };
+    default:
+      return {
+        gainLossLabel: "Gain/Loss",
+        returnLabel: "Return",
+      };
+  }
+}
+
+function calculateHoldingsFallbackPerformance(
+  valuation: AccountValuation | undefined,
+): AccountPerformanceDisplay {
+  if (!valuation) {
+    return {
+      totalGainLossAmountAccountCurrency: null,
+      totalGainLossAmountBaseCurrency: null,
+      totalGainLossPercent: null,
+    };
+  }
+
+  const fxRate = Number(valuation.fxRateToBase ?? 1) || 1;
+  const gainLossAmount = Number(valuation.investmentMarketValue) - Number(valuation.costBasis);
+  const denominator = Number(valuation.costBasis);
+
+  return {
+    totalGainLossAmountAccountCurrency: gainLossAmount,
+    totalGainLossAmountBaseCurrency: gainLossAmount * fxRate,
+    totalGainLossPercent:
+      denominator !== 0 ? gainLossAmount / denominator : gainLossAmount === 0 ? 0 : null,
+  };
+}
+
+function calculateAccountPerformance(
+  account: Account,
+  valuation: AccountValuation | undefined,
+  performanceSummary: PerformanceMetrics | undefined,
+): AccountPerformanceDisplay {
+  if (!valuation) {
+    return {
+      totalGainLossAmountAccountCurrency: null,
+      totalGainLossAmountBaseCurrency: null,
+      totalGainLossPercent: null,
+    };
+  }
+
+  if (account.trackingMode === "HOLDINGS") {
+    return calculateHoldingsFallbackPerformance(valuation);
+  }
+
+  if (performanceSummary) {
+    const fxRate = Number(valuation.fxRateToBase ?? 1) || 1;
+    const gainLossAmount = Number(performanceSummary.periodGain);
+    const totalReturnPercent =
+      performanceSummary.cumulativeMwr ?? performanceSummary.periodReturn;
+
+    return {
+      totalGainLossAmountAccountCurrency: gainLossAmount,
+      totalGainLossAmountBaseCurrency: gainLossAmount * fxRate,
+      totalGainLossPercent: Number(totalReturnPercent),
+    };
+  }
+
+  if (account.trackingMode === "TRANSACTIONS") {
+    return {
+      totalGainLossAmountAccountCurrency: null,
+      totalGainLossAmountBaseCurrency: null,
+      totalGainLossPercent: null,
+    };
+  }
+  return calculateHoldingsFallbackPerformance(valuation);
 }
 
 const AccountSummarySkeleton = () => (
@@ -106,6 +203,9 @@ const AccountSummaryComponent = React.memo(
       : item.totalGainLossAmountBaseCurrency;
     const gainDisplayCurrency = currency;
     const gainPercentToDisplay = item.totalGainLossPercent;
+    const gainLossLabel = item.gainLossLabel ?? "Gain/Loss";
+    const returnLabel = item.returnLabel ?? "Return";
+    const compactPerformanceDisplay = item.compactPerformanceDisplay ?? false;
 
     const content = (
       <>
@@ -122,26 +222,56 @@ const AccountSummaryComponent = React.memo(
             </p>
             {(gainAmountToDisplay !== null || gainPercentToDisplay !== null) &&
               !(gainAmountToDisplay === 0 && gainPercentToDisplay === 0) && (
-                <div className="flex items-center gap-1.5 md:gap-2">
-                  {gainAmountToDisplay !== null && (
-                    <GainAmount
-                      className="text-xs font-medium md:text-sm md:font-medium"
-                      value={gainAmountToDisplay ?? 0}
-                      currency={gainDisplayCurrency}
-                      displayCurrency={false}
-                      showSign={false}
-                    />
-                  )}
-                  {gainAmountToDisplay !== null && gainPercentToDisplay !== null && (
-                    <Separator orientation="vertical" className="h-3 md:h-4" />
-                  )}
-                  {gainPercentToDisplay !== null && (
-                    <GainPercent
-                      className="text-xs font-medium md:text-sm md:font-medium"
-                      value={gainPercentToDisplay}
-                    />
-                  )}
-                </div>
+                compactPerformanceDisplay ? (
+                  <div className="flex flex-wrap items-center justify-end gap-1.5 md:gap-2">
+                    {gainAmountToDisplay !== null && (
+                      <GainAmount
+                        className="text-xs font-medium md:text-sm md:font-medium"
+                        value={gainAmountToDisplay ?? 0}
+                        currency={gainDisplayCurrency}
+                        displayCurrency={false}
+                      />
+                    )}
+                    {gainPercentToDisplay !== null && (
+                      <GainPercent
+                        className="text-[11px] font-medium md:text-xs"
+                        value={gainPercentToDisplay}
+                        variant="badge"
+                      />
+                    )}
+                  </div>
+                ) : (
+                  <div className="flex flex-wrap items-center justify-end gap-x-1.5 gap-y-0.5 md:gap-x-2">
+                    {gainAmountToDisplay !== null && (
+                      <>
+                        <span className="text-muted-foreground text-[11px] font-medium md:text-xs">
+                          {gainLossLabel}
+                        </span>
+                        <GainAmount
+                          className="text-xs font-medium md:text-sm md:font-medium"
+                          value={gainAmountToDisplay ?? 0}
+                          currency={gainDisplayCurrency}
+                          displayCurrency={false}
+                          showSign={false}
+                        />
+                      </>
+                    )}
+                    {gainAmountToDisplay !== null && gainPercentToDisplay !== null && (
+                      <Separator orientation="vertical" className="h-3 md:h-4" />
+                    )}
+                    {gainPercentToDisplay !== null && (
+                      <>
+                        <span className="text-muted-foreground text-[11px] font-medium md:text-xs">
+                          {returnLabel}
+                        </span>
+                        <GainPercent
+                          className="text-xs font-medium md:text-sm md:font-medium"
+                          value={gainPercentToDisplay}
+                        />
+                      </>
+                    )}
+                  </div>
+                )
               )}
           </div>
           {isGroup ? (
@@ -221,16 +351,26 @@ export const AccountsSummary = React.memo(() => {
   const accountIds = useMemo(() => accounts?.map((acc) => acc.id) ?? [], [accounts]);
 
   const { latestValuations, isLoading: isLoadingValuations } = useLatestValuations(accountIds);
+  const { data: performanceSummaries } = useAccountsPerformanceSummary(accounts);
 
   const combinedAccountViews = useMemo((): AccountSummaryDisplayData[] => {
     if (!accounts || accounts.length === 0) return [];
+
     const valuationMap = new Map<string, AccountValuation>();
     if (latestValuations) {
       latestValuations.forEach((val: AccountValuation) => valuationMap.set(val.accountId, val));
     }
+
+    const performanceSummaryMap = new Map<string, PerformanceMetrics>();
+    if (performanceSummaries) {
+      performanceSummaries.forEach((summary) => performanceSummaryMap.set(summary.id, summary));
+    }
+
     return accounts.map((acc): AccountSummaryDisplayData => {
       const valuation = valuationMap.get(acc.id);
+      const performanceSummary = performanceSummaryMap.get(acc.id);
       const baseCurrency = settings?.baseCurrency ?? "USD";
+      const labels = getPerformanceLabels(acc.trackingMode);
 
       if (!valuation) {
         return {
@@ -244,33 +384,36 @@ export const AccountsSummary = React.memo(() => {
           accountType: acc.accountType,
           accountGroup: acc.group ?? null,
           isGroup: false,
+          gainLossLabel: labels.gainLossLabel,
+          returnLabel: labels.returnLabel,
+          compactPerformanceDisplay: acc.trackingMode === "TRANSACTIONS",
         };
       }
-
-      const { gainLossAmount, simpleReturn } = calculatePerformanceMetrics([valuation], true);
 
       const totalValueAccountCurrency = valuation.totalValue;
       const fxRate = valuation.fxRateToBase ?? 1;
       const totalValueBaseCurrency = totalValueAccountCurrency * fxRate;
-      const totalGainLossAmountAccountCurrency = gainLossAmount;
-      const totalGainLossAmountBaseCurrency = gainLossAmount * fxRate;
+      const performance = calculateAccountPerformance(acc, valuation, performanceSummary);
 
       return {
         accountName: acc.name,
         totalValueBaseCurrency,
         baseCurrency,
-        totalGainLossAmountBaseCurrency,
+        totalGainLossAmountBaseCurrency: performance.totalGainLossAmountBaseCurrency,
         totalValueAccountCurrency,
         accountCurrency: valuation.accountCurrency,
-        totalGainLossAmountAccountCurrency,
-        totalGainLossPercent: simpleReturn,
+        totalGainLossAmountAccountCurrency: performance.totalGainLossAmountAccountCurrency,
+        totalGainLossPercent: performance.totalGainLossPercent,
         accountId: acc.id,
         accountType: acc.accountType,
         accountGroup: acc.group ?? null,
         isGroup: false,
+        gainLossLabel: labels.gainLossLabel,
+        returnLabel: labels.returnLabel,
+        compactPerformanceDisplay: acc.trackingMode === "TRANSACTIONS",
       };
     });
-  }, [accounts, latestValuations, settings?.baseCurrency]);
+  }, [accounts, latestValuations, performanceSummaries, settings?.baseCurrency]);
 
   const toggleGroup = useCallback((groupName: string) => {
     setExpandedGroups((prev) => ({
@@ -361,6 +504,16 @@ export const AccountsSummary = React.memo(() => {
           const groupDisplayCurrency = groupDisplaysAccountCurrency
             ? (groupAccounts[0]?.accountCurrency ?? groupAccounts[0]?.baseCurrency ?? baseCurrency)
             : baseCurrency;
+          const gainLossLabels = new Set(
+            groupAccounts
+              .map((account) => account.gainLossLabel)
+              .filter((label): label is string => Boolean(label)),
+          );
+          const returnLabels = new Set(
+            groupAccounts
+              .map((account) => account.returnLabel)
+              .filter((label): label is string => Boolean(label)),
+          );
 
           const totalValueBaseCurrency = groupAccounts.reduce(
             (sum, acc) => sum + Number(acc.totalValueBaseCurrency),
@@ -372,15 +525,25 @@ export const AccountsSummary = React.memo(() => {
             0,
           );
 
-          const totalNetContributionBase = groupAccounts.reduce((sum, acc) => {
-            const netContribution =
-              Number(acc.totalValueBaseCurrency) - Number(acc.totalGainLossAmountBaseCurrency ?? 0);
-            return sum + netContribution;
-          }, 0);
+          const weightedGroupReturn = groupAccounts.reduce(
+            (accumulator, account) => {
+              const weight = Number(account.totalValueBaseCurrency);
 
-          const groupTotalReturnPercentBase =
-            totalNetContributionBase !== 0
-              ? totalGainLossAmountBase / totalNetContributionBase
+              if (weight <= 0 || account.totalGainLossPercent === null) {
+                return accumulator;
+              }
+
+              return {
+                weightedValue: accumulator.weightedValue + account.totalGainLossPercent * weight,
+                totalWeight: accumulator.totalWeight + weight,
+              };
+            },
+            { weightedValue: 0, totalWeight: 0 },
+          );
+
+          const groupTotalReturnPercent =
+            weightedGroupReturn.totalWeight > 0
+              ? weightedGroupReturn.weightedValue / weightedGroupReturn.totalWeight
               : null;
 
           const totalValueAccountCurrency = groupDisplaysAccountCurrency
@@ -398,23 +561,6 @@ export const AccountsSummary = React.memo(() => {
               )
             : undefined;
 
-          const totalNetContributionAccountCurrency = groupDisplaysAccountCurrency
-            ? groupAccounts.reduce((sum, acc) => {
-                const accountValue = Number(
-                  acc.totalValueAccountCurrency ?? acc.totalValueBaseCurrency,
-                );
-                const accountGainLoss = Number(acc.totalGainLossAmountAccountCurrency ?? 0);
-                return sum + (accountValue - accountGainLoss);
-              }, 0)
-            : undefined;
-
-          const groupTotalReturnPercent = groupDisplaysAccountCurrency
-            ? totalNetContributionAccountCurrency !== undefined &&
-              totalNetContributionAccountCurrency !== 0
-              ? (totalGainLossAmountAccountCurrency ?? 0) / totalNetContributionAccountCurrency
-              : null
-            : groupTotalReturnPercentBase;
-
           actualGroups.push({
             accountName: groupName,
             totalValueBaseCurrency,
@@ -428,6 +574,8 @@ export const AccountsSummary = React.memo(() => {
             accountCount: groupAccounts.length,
             accounts: groupAccounts,
             displayInAccountCurrency: groupDisplaysAccountCurrency,
+            gainLossLabel: gainLossLabels.size === 1 ? [...gainLossLabels][0] : "Mixed P&L",
+            returnLabel: returnLabels.size === 1 ? [...returnLabels][0] : "Mixed Return",
           });
         }
       });
