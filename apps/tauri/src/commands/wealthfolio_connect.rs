@@ -1,6 +1,7 @@
 use crate::context::ServiceContext;
 use crate::secret_store::KeyringSecretStore;
 use log::{error, info};
+use serde::Serialize;
 use std::sync::Arc;
 use tauri::State;
 use wealthfolio_core::secrets::SecretStore;
@@ -75,4 +76,31 @@ pub async fn clear_sync_session(
             errors.join(", ")
         ))
     }
+}
+
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct RestoreSyncSessionResponse {
+    pub access_token: String,
+    pub refresh_token: String,
+}
+
+#[tauri::command]
+pub async fn restore_sync_session(
+    _state: State<'_, Arc<ServiceContext>>, // keep signature consistent
+) -> Result<RestoreSyncSessionResponse, String> {
+    let access_token = KeyringSecretStore
+        .get_secret(SYNC_ACCESS_TOKEN_KEY)
+        .map_err(|e| format!("Failed to read access token: {}", e))?
+        .ok_or_else(|| "No access token configured".to_string())?;
+
+    let refresh_token = KeyringSecretStore
+        .get_secret(SYNC_REFRESH_TOKEN_KEY)
+        .map_err(|e| format!("Failed to read refresh token: {}", e))?
+        .ok_or_else(|| "No refresh token configured".to_string())?;
+
+    Ok(RestoreSyncSessionResponse {
+        access_token,
+        refresh_token,
+    })
 }

@@ -32,3 +32,7 @@ pub const MAX_ACCOUNTS: usize = 50;
 
 /// Maximum number of rows to import from CSV per tool call.
 pub const MAX_IMPORT_ROWS: usize = 500;
+
+/// Maximum total characters of history sent to the LLM.
+/// Messages are taken from most-recent backwards until this budget is exhausted.
+pub const MAX_HISTORY_CHARS: usize = 100_000;

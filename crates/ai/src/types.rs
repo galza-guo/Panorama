@@ -489,6 +489,11 @@ pub trait ChatRepositoryTrait: Send + Sync {
     async fn create_message(&self, message: ChatMessage) -> ChatRepositoryResult<ChatMessage>;
     fn get_message(&self, message_id: &str) -> ChatRepositoryResult<Option<ChatMessage>>;
     fn get_messages_by_thread(&self, thread_id: &str) -> ChatRepositoryResult<Vec<ChatMessage>>;
+    async fn delete_messages_starting_from(
+        &self,
+        thread_id: &str,
+        message_id: &str,
+    ) -> ChatRepositoryResult<()>;
     async fn update_message(&self, message: ChatMessage) -> ChatRepositoryResult<ChatMessage>;
 
     // Tag operations
@@ -866,6 +871,14 @@ pub struct SendMessageRequest {
     /// Tool allowlist for this request (uses all if not specified).
     #[serde(skip_serializing_if = "Option::is_none")]
     pub allowed_tools: Option<Vec<String>>,
+    /// Parent message ID for edit operations.
+    /// When set, AI context is truncated to this message (inclusive).
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub parent_message_id: Option<String>,
+    /// Source message ID for edit operations.
+    /// When set, stored history is rewritten from this message onward.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub source_message_id: Option<String>,
 }
 
 impl SendMessageRequest {

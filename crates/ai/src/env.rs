@@ -655,6 +655,20 @@ pub mod test_env {
                 .unwrap_or_default())
         }
 
+        async fn delete_messages_starting_from(
+            &self,
+            thread_id: &str,
+            message_id: &str,
+        ) -> crate::types::ChatRepositoryResult<()> {
+            let mut messages = self.messages.write().unwrap();
+            if let Some(thread_messages) = messages.get_mut(thread_id) {
+                if let Some(start_index) = thread_messages.iter().position(|m| m.id == message_id) {
+                    thread_messages.truncate(start_index);
+                }
+            }
+            Ok(())
+        }
+
         async fn update_message(
             &self,
             message: crate::types::ChatMessage,

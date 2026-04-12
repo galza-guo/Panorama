@@ -40,4 +40,5 @@ SOP.
 | Date | Branch | From | To | Result | Notes |
 | --- | --- | --- | --- | --- | --- |
 | 2026-03-04 | `panorama-v3` cutover | legacy fork line | `upstream/main` (v3 baseline) | merged | v3 migration completed and default branch switched |
-| 2026-03-05 | `codex/sync-v3.0.3` (planned) | `origin/panorama-v3` @ `68d2b393` | `v3.0.3` | pending | run monthly catch-up and resolve by lane |
+| 2026-03-05 | selective `v3.0.3` review | `origin/panorama-v3` @ `68d2b393` | `v3.0.3` | partially absorbed | selected upstream `v3.0.3` fixes were reviewed and ported, but the tag was not fully merged as a clean baseline |
+| 2026-04-10 | main worktree selective sync | `Panorama main` | `v3.2.1` | in_progress | absorbed selective Connect UI/session work plus AI provider UX, message-edit support, AI history windowing, and Ollama `/v1` URL normalization; documented Panorama fork lanes still protected |

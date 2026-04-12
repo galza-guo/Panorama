@@ -1,3 +1,4 @@
+import { ExternalLink } from "@/components/external-link";
 import { WEALTHFOLIO_CONNECT_PORTAL_URL } from "@/lib/constants";
 import { Button } from "@wealthfolio/ui/components/ui/button";
 import { Icons } from "@wealthfolio/ui/components/ui/icons";
@@ -46,7 +47,7 @@ export function ConnectEmptyState() {
       <div className="w-full max-w-3xl space-y-8 sm:space-y-12">
         {/* Header with Logo */}
         <header className="text-center">
-          <img alt="Panorama" className="mx-auto mb-4 h-16 w-16" src="/logo-vantage.png" />
+          <img alt="Wealthfolio" className="mx-auto mb-4 h-16 w-16" src="/logo-vantage.png" />
           <div className="bg-secondary text-secondary-foreground mb-3 inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-medium">
             <Icons.Sparkles className="h-3 w-3" />
             Optional
@@ -84,10 +85,10 @@ export function ConnectEmptyState() {
         <footer className="flex flex-col items-center gap-4">
           <div className="flex w-full flex-col gap-3 sm:w-auto sm:flex-row sm:items-center sm:justify-center">
             <Button asChild className="from-primary to-primary/90 bg-linear-to-r w-full sm:w-auto">
-              <a href={WEALTHFOLIO_CONNECT_PORTAL_URL} target="_blank" rel="noopener noreferrer">
+              <ExternalLink href={WEALTHFOLIO_CONNECT_PORTAL_URL}>
                 Get Started with Connect
                 <Icons.ExternalLink className="ml-1.5 h-4 w-4" />
-              </a>
+              </ExternalLink>
             </Button>
             <Button variant="outline" asChild className="w-full sm:w-auto">
               <Link to="/settings/connect">
@@ -96,15 +97,13 @@ export function ConnectEmptyState() {
               </Link>
             </Button>
           </div>
-          <a
+          <ExternalLink
             href="https://wealthfolio.app/connect/"
-            target="_blank"
-            rel="noopener noreferrer"
             className="text-muted-foreground hover:text-foreground inline-flex items-center gap-1 text-xs transition-colors"
           >
             Learn more about Connect
             <Icons.ExternalLink className="h-3 w-3" />
-          </a>
+          </ExternalLink>
         </footer>
       </div>
     </div>

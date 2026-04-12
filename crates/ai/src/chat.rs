@@ -38,6 +38,7 @@ use crate::error::AiError;
 use crate::providers::ProviderService;
 use crate::title_generator::truncate_to_title;
 use crate::title_generator::{TitleGenerator, TitleGeneratorConfig, TitleGeneratorTrait};
+use crate::tools::constants::MAX_HISTORY_CHARS;
 use crate::tools::ToolSet;
 use crate::types::{
     AiStreamEvent, ChatMessage, ChatMessageContent, ChatMessagePart, ChatMessageRole,
@@ -51,6 +52,61 @@ fn derive_initial_thread_title(first_user_message: &str) -> Option<String> {
         return None;
     }
     Some(truncate_to_title(trimmed, 50))
+}
+
+fn truncate_messages_for_edit(
+    messages: &mut Vec<ChatMessage>,
+    parent_id: Option<&str>,
+    source_id: Option<&str>,
+) {
+    let truncate_len = source_id
+        .and_then(|id| messages.iter().position(|message| message.id == id))
+        .or_else(|| {
+            parent_id
+                .and_then(|id| messages.iter().position(|message| message.id == id))
+                .map(|index| index + 1)
+        });
+
+    if let Some(truncate_len) = truncate_len {
+        messages.truncate(truncate_len);
+    }
+}
+
+fn build_history_messages_with_budget(
+    messages: &[ChatMessage],
+    max_history_chars: usize,
+) -> Vec<SimpleChatMessage> {
+    let mut history_messages: Vec<SimpleChatMessage> = Vec::new();
+    let mut budget = max_history_chars;
+
+    for message in messages.iter().rev() {
+        let text = message.content.get_text_content();
+        if text.is_empty() {
+            continue;
+        }
+
+        let simple = match message.role {
+            ChatMessageRole::User => SimpleChatMessage::user(&text),
+            ChatMessageRole::Assistant => SimpleChatMessage::assistant(&text),
+            _ => continue,
+        };
+
+        if text.len() > budget {
+            break;
+        }
+
+        budget -= text.len();
+        history_messages.push(simple);
+    }
+
+    history_messages.reverse();
+    history_messages
+}
+
+fn normalize_ollama_base_url(url: &str) -> &str {
+    url.trim_end_matches('/')
+        .trim_end_matches("/v1")
+        .trim_end_matches('/')
 }
 
 // ============================================================================
@@ -194,21 +250,19 @@ impl<E: AiEnvironment + 'static> ChatService<E> {
         info!("Processing message for thread {}", thread_id);
 
         // Load previous messages for context (history)
-        let previous_messages = repo.get_messages_by_thread(&thread_id)?;
-        let history_messages: Vec<SimpleChatMessage> = previous_messages
-            .iter()
-            .filter_map(|msg| {
-                let text = msg.content.get_text_content();
-                if text.is_empty() {
-                    return None;
-                }
-                match msg.role {
-                    ChatMessageRole::User => Some(SimpleChatMessage::user(&text)),
-                    ChatMessageRole::Assistant => Some(SimpleChatMessage::assistant(&text)),
-                    _ => None, // Skip system/tool messages in history
-                }
-            })
-            .collect();
+        let mut previous_messages = repo.get_messages_by_thread(&thread_id)?;
+        truncate_messages_for_edit(
+            &mut previous_messages,
+            request.parent_message_id.as_deref(),
+            request.source_message_id.as_deref(),
+        );
+
+        if let Some(source_message_id) = request.source_message_id.as_deref() {
+            repo.delete_messages_starting_from(&thread_id, source_message_id)
+                .await?;
+        }
+        let history_messages =
+            build_history_messages_with_budget(&previous_messages, MAX_HISTORY_CHARS);
 
         // Save user message immediately to repository
         let user_message = ChatMessage::user(&thread_id, &request.content);
@@ -906,7 +960,7 @@ fn create_ollama_client(
 ) -> Result<ollama::Client<HttpClient>, AiError> {
     let mut builder = ollama::Client::builder().api_key(Nothing);
     if let Some(url) = provider_url {
-        builder = builder.base_url(&url);
+        builder = builder.base_url(normalize_ollama_base_url(&url));
     }
     builder
         .build()
@@ -945,12 +999,7 @@ async fn validate_ollama_model_if_possible(
     model_id: &str,
 ) -> Result<(), AiError> {
     let base = provider_url.unwrap_or("http://localhost:11434");
-    let normalized = base.trim_end_matches('/');
-    let tags_url = if normalized.ends_with("/v1") {
-        format!("{}/api/tags", normalized.trim_end_matches("/v1"))
-    } else {
-        format!("{}/api/tags", normalized)
-    };
+    let tags_url = format!("{}/api/tags", normalize_ollama_base_url(base));
 
     let client = match reqwest::Client::builder()
         .timeout(Duration::from_secs(4))
@@ -1598,6 +1647,18 @@ fn build_history(messages: &[SimpleChatMessage]) -> Result<(Message, Vec<Message
 mod tests {
     use super::*;
     use crate::env::test_env::MockEnvironment;
+    use crate::types::{ChatMessageContent, ChatMessageRole};
+    use chrono::Utc;
+
+    fn make_chat_message(id: &str, role: ChatMessageRole, content: &str) -> ChatMessage {
+        ChatMessage {
+            id: id.to_string(),
+            thread_id: "thread-1".to_string(),
+            role,
+            content: ChatMessageContent::text(content),
+            created_at: Utc::now(),
+        }
+    }
 
     #[tokio::test]
     async fn test_chat_service_create_thread() {
@@ -1629,6 +1690,94 @@ mod tests {
         let tools = service.list_tools();
         assert!(tools.contains(&"get_accounts".to_string()));
         assert!(tools.contains(&"get_holdings".to_string()));
+    }
+
+    #[test]
+    fn test_truncate_messages_to_parent_keeps_all_without_parent() {
+        let mut messages = vec![
+            make_chat_message("m1", ChatMessageRole::User, "one"),
+            make_chat_message("m2", ChatMessageRole::Assistant, "two"),
+            make_chat_message("m3", ChatMessageRole::User, "three"),
+        ];
+
+        truncate_messages_for_edit(&mut messages, None, None);
+
+        assert_eq!(messages.len(), 3);
+        assert_eq!(messages[2].id, "m3");
+    }
+
+    #[test]
+    fn test_truncate_messages_to_parent_truncates_inclusive() {
+        let mut messages = vec![
+            make_chat_message("m1", ChatMessageRole::User, "one"),
+            make_chat_message("m2", ChatMessageRole::Assistant, "two"),
+            make_chat_message("m3", ChatMessageRole::User, "three"),
+        ];
+
+        truncate_messages_for_edit(&mut messages, Some("m2"), Some("m3"));
+
+        assert_eq!(messages.len(), 2);
+        assert_eq!(messages[0].id, "m1");
+        assert_eq!(messages[1].id, "m2");
+    }
+
+    #[test]
+    fn test_truncate_messages_to_parent_keeps_all_when_parent_missing() {
+        let mut messages = vec![
+            make_chat_message("m1", ChatMessageRole::User, "one"),
+            make_chat_message("m2", ChatMessageRole::Assistant, "two"),
+        ];
+
+        truncate_messages_for_edit(&mut messages, Some("missing"), None);
+
+        assert_eq!(messages.len(), 2);
+        assert_eq!(messages[1].id, "m2");
+    }
+
+    #[test]
+    fn test_truncate_messages_for_edit_removes_edited_root_message() {
+        let mut messages = vec![
+            make_chat_message("m1", ChatMessageRole::User, "one"),
+            make_chat_message("m2", ChatMessageRole::Assistant, "two"),
+        ];
+
+        truncate_messages_for_edit(&mut messages, None, Some("m1"));
+
+        assert!(messages.is_empty());
+    }
+
+    #[test]
+    fn test_build_history_messages_with_budget_keeps_most_recent_messages() {
+        let messages = vec![
+            make_chat_message("m1", ChatMessageRole::User, "12345"),
+            make_chat_message("m2", ChatMessageRole::Assistant, "67890"),
+            make_chat_message("m3", ChatMessageRole::User, "abc"),
+        ];
+
+        let history = build_history_messages_with_budget(&messages, 10);
+
+        assert_eq!(history.len(), 2);
+        assert_eq!(history[0].role, "assistant");
+        assert_eq!(history[0].content, "67890");
+        assert_eq!(history[1].role, "user");
+        assert_eq!(history[1].content, "abc");
+    }
+
+    #[test]
+    fn test_build_history_messages_with_budget_skips_empty_and_non_chat_messages() {
+        let mut empty_user = make_chat_message("m1", ChatMessageRole::User, "");
+        empty_user.content = ChatMessageContent::new(vec![]);
+        let system_message = make_chat_message("m2", ChatMessageRole::System, "system");
+        let assistant_message = make_chat_message("m3", ChatMessageRole::Assistant, "reply");
+
+        let history = build_history_messages_with_budget(
+            &[empty_user, system_message, assistant_message],
+            20,
+        );
+
+        assert_eq!(history.len(), 1);
+        assert_eq!(history[0].role, "assistant");
+        assert_eq!(history[0].content, "reply");
     }
 
     #[tokio::test]
@@ -1707,6 +1856,22 @@ mod tests {
         assert!(ollama_model_matches("ministral-3:latest", "ministral-3"));
         assert!(ollama_model_matches("ministral-3", "ministral-3:latest"));
         assert!(!ollama_model_matches("qwen3:8b", "ministral-3"));
+    }
+
+    #[test]
+    fn test_normalize_ollama_base_url_removes_trailing_v1() {
+        assert_eq!(
+            normalize_ollama_base_url("http://localhost:11434/v1"),
+            "http://localhost:11434"
+        );
+        assert_eq!(
+            normalize_ollama_base_url("http://localhost:11434/v1/"),
+            "http://localhost:11434"
+        );
+        assert_eq!(
+            normalize_ollama_base_url("http://localhost:11434/"),
+            "http://localhost:11434"
+        );
     }
 
     #[test]

@@ -84,10 +84,15 @@ fn connect_auth_url() -> Option<String> {
         .ok()
         .map(|v| v.trim().trim_end_matches('/').to_string())
         .filter(|v| !v.is_empty())
+        .or_else(|| option_env!("CONNECT_AUTH_URL").map(|v| v.trim_end_matches('/').to_string()))
+        .or_else(|| Some("https://auth.wealthfolio.app".to_string()))
 }
 
 fn connect_auth_api_key() -> Option<String> {
-    std::env::var("CONNECT_AUTH_PUBLISHABLE_KEY").ok()
+    std::env::var("CONNECT_AUTH_PUBLISHABLE_KEY")
+        .ok()
+        .or_else(|| option_env!("CONNECT_AUTH_PUBLISHABLE_KEY").map(String::from))
+        .or_else(|| Some("sb_publishable_ZSZbXNtWtnh9i2nqJ2UL4A_NV8ZVutd".to_string()))
 }
 
 /// Create a ConnectApiClient with a fresh access token
@@ -127,6 +132,13 @@ struct ConnectAuthErrorResponse {
 #[serde(rename_all = "camelCase")]
 pub struct SyncSessionStatus {
     pub is_configured: bool,
+}
+
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct RestoreSyncSessionResponse {
+    pub access_token: String,
+    pub refresh_token: String,
 }
 
 #[derive(Debug, Serialize)]
@@ -327,6 +339,26 @@ async fn clear_sync_session(State(state): State<Arc<AppState>>) -> ApiResult<Jso
 
     info!("[Connect] Sync session cleared");
     Ok(Json(()))
+}
+
+async fn restore_sync_session(
+    State(state): State<Arc<AppState>>,
+) -> ApiResult<Json<RestoreSyncSessionResponse>> {
+    ensure_cloud_sync_enabled()?;
+
+    let access_token = mint_access_token(&state).await?;
+    let refresh_token = state
+        .secret_store
+        .get_secret(CLOUD_REFRESH_TOKEN_KEY)
+        .map_err(|e| ApiError::Internal(format!("Failed to get refresh token: {}", e)))?
+        .ok_or_else(|| {
+            ApiError::Unauthorized("No refresh token configured. Please sign in first.".to_string())
+        })?;
+
+    Ok(Json(RestoreSyncSessionResponse {
+        access_token,
+        refresh_token,
+    }))
 }
 
 async fn get_sync_session_status(
@@ -1207,6 +1239,7 @@ pub fn router() -> Router<Arc<AppState>> {
         // Session management
         .route("/connect/session", post(store_sync_session))
         .route("/connect/session", delete(clear_sync_session))
+        .route("/connect/session/restore", get(restore_sync_session))
         .route("/connect/session/status", get(get_sync_session_status))
         // List operations (fetch from cloud without syncing)
         .route("/connect/connections", get(list_broker_connections))

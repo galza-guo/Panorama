@@ -1,4 +1,5 @@
-import { useState, useMemo, useRef } from "react";
+import { ExternalLink } from "@/components/external-link";
+import { useState, useMemo, useEffect, useRef } from "react";
 import { Badge } from "@wealthfolio/ui/components/ui/badge";
 import { Button } from "@wealthfolio/ui/components/ui/button";
 import { Icons } from "@wealthfolio/ui/components/ui/icons";
@@ -102,7 +103,7 @@ export function ProviderSettingsCard({
   const [hasLoadedKey, setHasLoadedKey] = useState(false);
   const [customUrlValue, setCustomUrlValue] = useState(provider.customUrl ?? "");
   const [selectedModelForConfig, setSelectedModelForConfig] = useState<string | null>(null);
-  const apiKeyInputRef = useRef<HTMLInputElement>(null);
+  const hasAutoSelectedRef = useRef(false);
 
   // Support both controlled and uncontrolled combobox state
   const [internalComboboxOpen, setInternalComboboxOpen] = useState(false);
@@ -186,16 +187,25 @@ export function ProviderSettingsCard({
   };
 
   const handleSaveApiKey = () => {
-    // Read from DOM input first (covers autofill/password-manager values),
-    // then fall back to React state.
-    const nextValue = (apiKeyInputRef.current?.value ?? apiKeyValue).trim();
-    if (nextValue !== "") {
-      setApiKeyValue(nextValue);
-      onSaveApiKey(nextValue);
+    if (apiKeyValue && apiKeyValue.trim() !== "") {
+      onSaveApiKey(apiKeyValue);
     } else {
       onDeleteApiKey();
     }
   };
+
+  useEffect(() => {
+    if (isOpen && !hasAutoSelectedRef.current && onSetFavoriteModels && provider.enabled) {
+      hasAutoSelectedRef.current = true;
+
+      if (!provider.favoriteModels || provider.favoriteModels.length === 0) {
+        const recommendedModelIds = provider.models.filter((model) => model.isCatalog).map((model) => model.id);
+        if (recommendedModelIds.length > 0) {
+          onSetFavoriteModels(recommendedModelIds);
+        }
+      }
+    }
+  }, [isOpen, onSetFavoriteModels, provider.enabled, provider.favoriteModels, provider.models]);
 
   const handleToggleFavorite = (modelId: string) => {
     if (!onSetFavoriteModels) return;
@@ -324,32 +334,31 @@ export function ProviderSettingsCard({
                         API Key
                       </Label>
                       {provider.documentationUrl && (
-                        <a
+                        <ExternalLink
                           href={provider.documentationUrl}
-                          target="_blank"
-                          rel="noopener noreferrer"
                           className="text-muted-foreground hover:text-foreground inline-flex items-center gap-1 text-xs transition-colors"
                         >
                           Get API key
                           <Icons.ExternalLink className="h-3 w-3" />
-                        </a>
+                        </ExternalLink>
                       )}
                     </div>
                     <div className="flex items-center gap-2">
                       <div className="relative flex-1">
                         <Input
-                          ref={apiKeyInputRef}
                           id={`apikey-${provider.id}`}
                           type={showApiKey ? "text" : "password"}
-                          value={apiKeyValue}
-                          onChange={(e) => setApiKeyValue(e.target.value)}
-                          autoComplete="new-password"
-                          placeholder={
-                            provider.hasApiKey && !hasLoadedKey
-                              ? "Current key saved. Enter new key to replace"
-                              : "Enter API key"
+                          value={
+                            hasLoadedKey || apiKeyValue
+                              ? apiKeyValue
+                              : provider.hasApiKey
+                                ? "••••••••••••••••••••••••"
+                                : ""
                           }
+                          onChange={(e) => setApiKeyValue(e.target.value)}
+                          placeholder={provider.hasApiKey ? "" : "Enter API key"}
                           className="bg-background pr-9 font-mono text-sm"
+                          readOnly={!hasLoadedKey && provider.hasApiKey}
                         />
                         <Button
                           type="button"
@@ -373,7 +382,7 @@ export function ProviderSettingsCard({
                         onClick={handleSaveApiKey}
                         size="default"
                         className="shrink-0"
-                        disabled={isLoadingKey}
+                        disabled={!hasLoadedKey && provider.hasApiKey}
                       >
                         Save
                       </Button>
@@ -663,15 +672,13 @@ export function ProviderSettingsCard({
                         {customUrlField.label}
                       </Label>
                       {customUrlField.helpUrl && (
-                        <a
+                        <ExternalLink
                           href={customUrlField.helpUrl}
-                          target="_blank"
-                          rel="noopener noreferrer"
                           className="text-muted-foreground hover:text-foreground inline-flex items-center gap-1 text-xs transition-colors"
                         >
                           Learn more
                           <Icons.ExternalLink className="h-3 w-3" />
-                        </a>
+                        </ExternalLink>
                       )}
                     </div>
                     <div className="flex items-center gap-2">

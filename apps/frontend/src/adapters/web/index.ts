@@ -236,6 +236,7 @@ export {
   claimPairing,
   getPairingMessages,
   confirmPairing,
+  restoreSyncSession,
   storeSyncSession,
   clearSyncSession,
 } from "../shared/connect";

@@ -144,6 +144,10 @@ export interface AiSendMessageRequest {
   modelId?: string;
   /** Tool allowlist for this request (uses all if not specified). */
   allowedTools?: string[];
+  /** Parent message ID for edit operations. */
+  parentMessageId?: string;
+  /** Source message ID for edit operations. */
+  sourceMessageId?: string;
 }
 
 /**
