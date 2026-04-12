@@ -7,7 +7,9 @@ use chrono::Utc;
 use wealthfolio_core::sync::{
     event_file_name, FolderSyncEventFileV1, FolderSyncMetadataV1, FOLDER_SYNC_VERSION_V1,
 };
-use wealthfolio_storage_sqlite::sync::{AppSyncRepository, FolderSyncRepository, FolderSyncStatusUpdate};
+use wealthfolio_storage_sqlite::sync::{
+    AppSyncRepository, FolderSyncRepository, FolderSyncStatusUpdate,
+};
 
 use crate::services::folder_sync_fs::FolderSyncFsService;
 
@@ -38,7 +40,10 @@ impl FolderSyncExporter {
         }
     }
 
-    pub async fn export_pending_events(&self, limit: i64) -> Result<FolderSyncExportResult, String> {
+    pub async fn export_pending_events(
+        &self,
+        limit: i64,
+    ) -> Result<FolderSyncExportResult, String> {
         let now = Utc::now().to_rfc3339();
         self.ensure_folder_initialized(&now)?;
         self.folder_sync_repository
@@ -73,8 +78,9 @@ impl FolderSyncExporter {
 
         let mut exported_event_ids = Vec::with_capacity(pending.len());
         for event in pending {
-            let payload = serde_json::from_str(&event.payload)
-                .map_err(|err| format!("Failed to parse outbox payload '{}': {err}", event.event_id))?;
+            let payload = serde_json::from_str(&event.payload).map_err(|err| {
+                format!("Failed to parse outbox payload '{}': {err}", event.event_id)
+            })?;
             let event_file = FolderSyncEventFileV1 {
                 version: FOLDER_SYNC_VERSION_V1,
                 event_id: event.event_id.clone(),
@@ -252,7 +258,10 @@ mod tests {
             app_sync_repository,
             folder_sync_repository,
             settings_repository,
-            shared_root: app_data_dir.parent().expect("tempdir root").join("PanoramaSync"),
+            shared_root: app_data_dir
+                .parent()
+                .expect("tempdir root")
+                .join("PanoramaSync"),
             local_device_id,
         }
     }
@@ -278,10 +287,7 @@ mod tests {
                     }),
                 );
                 request.event_id = Some("platform-export-1".to_string());
-                insert_outbox_event(
-                    conn,
-                    request,
-                )?;
+                insert_outbox_event(conn, request)?;
                 Ok(())
             })
             .await
@@ -293,9 +299,15 @@ mod tests {
             FolderSyncFsService::new(context.shared_root.clone()),
             context.local_device_id.clone(),
         );
-        let result = exporter.export_pending_events(20).await.expect("export events");
+        let result = exporter
+            .export_pending_events(20)
+            .await
+            .expect("export events");
 
-        assert_eq!(result.exported_event_ids, vec!["platform-export-1".to_string()]);
+        assert_eq!(
+            result.exported_event_ids,
+            vec!["platform-export-1".to_string()]
+        );
         let event_path = context
             .shared_root
             .join("events")
@@ -303,10 +315,9 @@ mod tests {
             .join("platform-export-1.json");
         assert!(event_path.exists(), "expected exported event file");
 
-        let event_file: FolderSyncEventFileV1 = serde_json::from_slice(
-            &std::fs::read(&event_path).expect("read exported event file"),
-        )
-        .expect("parse exported event file");
+        let event_file: FolderSyncEventFileV1 =
+            serde_json::from_slice(&std::fs::read(&event_path).expect("read exported event file"))
+                .expect("parse exported event file");
         assert_eq!(event_file.event_id, "platform-export-1");
         assert_eq!(event_file.entity, SyncEntity::Platform);
         assert_eq!(event_file.device_id, context.local_device_id);
@@ -318,14 +329,12 @@ mod tests {
                 .len(),
             0
         );
-        assert!(
-            context
-                .folder_sync_repository
-                .get_status()
-                .expect("get status")
-                .last_local_export_at
-                .is_some()
-        );
+        assert!(context
+            .folder_sync_repository
+            .get_status()
+            .expect("get status")
+            .last_local_export_at
+            .is_some());
     }
 
     #[tokio::test]
@@ -348,7 +357,10 @@ mod tests {
             FolderSyncFsService::new(context.shared_root.clone()),
             context.local_device_id.clone(),
         );
-        let result = exporter.export_pending_events(20).await.expect("export events");
+        let result = exporter
+            .export_pending_events(20)
+            .await
+            .expect("export events");
 
         assert!(result.exported_event_ids.is_empty());
         let local_events_dir = context

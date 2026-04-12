@@ -5,7 +5,9 @@ use std::sync::Arc;
 
 use chrono::Utc;
 use wealthfolio_core::sync::{FolderSyncEventFileV1, FOLDER_SYNC_VERSION_V1};
-use wealthfolio_storage_sqlite::sync::{AppSyncRepository, FolderSyncRepository, FolderSyncStatusUpdate};
+use wealthfolio_storage_sqlite::sync::{
+    AppSyncRepository, FolderSyncRepository, FolderSyncStatusUpdate,
+};
 
 use crate::services::folder_sync_fs::FolderSyncFsService;
 
@@ -90,8 +92,7 @@ impl FolderSyncImporter {
         let mut skipped_event_ids = Vec::new();
 
         for event_ref in event_refs {
-            if covered_through_event_id
-                .is_some_and(|cutoff| event_ref.event_id.as_str() <= cutoff)
+            if covered_through_event_id.is_some_and(|cutoff| event_ref.event_id.as_str() <= cutoff)
             {
                 self.folder_sync_repository
                     .mark_event_imported(
@@ -140,7 +141,8 @@ impl FolderSyncImporter {
                     event.version,
                     event_ref.path.display()
                 );
-                self.record_import_error(&event_ref.event_id, &error).await?;
+                self.record_import_error(&event_ref.event_id, &error)
+                    .await?;
                 return Err(error);
             }
             if event.event_id != event_ref.event_id || event.device_id != event_ref.device_id {
@@ -148,7 +150,8 @@ impl FolderSyncImporter {
                     "Folder sync event metadata mismatch for {}",
                     event_ref.path.display()
                 );
-                self.record_import_error(&event_ref.event_id, &error).await?;
+                self.record_import_error(&event_ref.event_id, &error)
+                    .await?;
                 return Err(error);
             }
 
@@ -379,14 +382,15 @@ mod tests {
             load_platform_name(&context.pool, "platform-import-1").as_deref(),
             Some("Imported Platform")
         );
-        assert!(
-            context
-                .folder_sync_repository
-                .is_event_imported("evt-platform-import-1")
-                .expect("import marker")
-        );
+        assert!(context
+            .folder_sync_repository
+            .is_event_imported("evt-platform-import-1")
+            .expect("import marker"));
 
-        let second_result = importer.import_remote_events().await.expect("second import");
+        let second_result = importer
+            .import_remote_events()
+            .await
+            .expect("second import");
         assert!(second_result.applied_event_ids.is_empty());
         assert_eq!(
             load_platform_name(&context.pool, "platform-import-1").as_deref(),
@@ -472,7 +476,10 @@ mod tests {
             context.fs_service.clone(),
             context.local_device_id.clone(),
         );
-        let result = importer.import_remote_events().await.expect("import remote events");
+        let result = importer
+            .import_remote_events()
+            .await
+            .expect("import remote events");
 
         assert_eq!(
             result.applied_event_ids,

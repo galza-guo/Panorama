@@ -76,16 +76,17 @@ impl FolderSyncSnapshotService {
             snapshot_id: snapshot_id.clone(),
             device_id: self.local_device_id.clone(),
             created_at: created_at.clone(),
-            tables: APP_SYNC_TABLES.iter().map(|value| value.to_string()).collect(),
+            tables: APP_SYNC_TABLES
+                .iter()
+                .map(|value| value.to_string())
+                .collect(),
             latest_event_id: self
                 .app_sync_repository
                 .latest_known_event_id()
                 .map_err(|err| err.to_string())?,
             shared_settings: self.collect_shared_settings()?,
         };
-        let snapshot_ref = self
-            .fs_service
-            .write_snapshot(&manifest, &sqlite_bytes)?;
+        let snapshot_ref = self.fs_service.write_snapshot(&manifest, &sqlite_bytes)?;
         self.folder_sync_repository
             .append_history(
                 "snapshot_export".to_string(),
@@ -121,7 +122,8 @@ impl FolderSyncSnapshotService {
             )
             .await
             .map_err(|err| err.to_string())?;
-        self.apply_shared_settings(&latest_snapshot.manifest).await?;
+        self.apply_shared_settings(&latest_snapshot.manifest)
+            .await?;
 
         let importer = FolderSyncImporter::new(
             self.app_sync_repository.clone(),
@@ -176,7 +178,12 @@ impl FolderSyncSnapshotService {
         serde_json::from_slice(
             &fs::read(path).map_err(|err| format!("Failed to read snapshot manifest: {err}"))?,
         )
-        .map_err(|err| format!("Failed to parse snapshot manifest '{}': {err}", path.display()))
+        .map_err(|err| {
+            format!(
+                "Failed to parse snapshot manifest '{}': {err}",
+                path.display()
+            )
+        })
     }
 
     fn backup_if_local_shared_data_exists(&self) -> Result<Option<String>, String> {
@@ -270,8 +277,8 @@ mod tests {
     use wealthfolio_storage_sqlite::settings::SettingsRepository;
     use wealthfolio_storage_sqlite::sync::{AppSyncRepository, FolderSyncRepository};
 
-    use crate::services::folder_sync_fs::FolderSyncFsService;
     use super::FolderSyncSnapshotService;
+    use crate::services::folder_sync_fs::FolderSyncFsService;
 
     struct SnapshotTestDevice {
         app_data_dir: PathBuf,
@@ -600,7 +607,10 @@ mod tests {
         .expect("join with backup");
 
         let backup_path = join_result.backup_path.expect("backup path");
-        assert!(Path::new(&backup_path).exists(), "expected local backup file");
+        assert!(
+            Path::new(&backup_path).exists(),
+            "expected local backup file"
+        );
         assert_eq!(
             load_platform_name(&target.pool, "platform-join-1").as_deref(),
             Some("Source Snapshot")

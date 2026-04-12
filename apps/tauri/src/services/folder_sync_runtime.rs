@@ -140,10 +140,7 @@ async fn run_cycle(
     Ok(())
 }
 
-async fn record_runtime_error(
-    folder_sync_repository: Arc<FolderSyncRepository>,
-    error: String,
-) {
+async fn record_runtime_error(folder_sync_repository: Arc<FolderSyncRepository>, error: String) {
     let now = Utc::now().to_rfc3339();
     if let Err(err) = folder_sync_repository
         .update_status(FolderSyncStatusUpdate {
@@ -180,7 +177,9 @@ mod tests {
 
     use diesel::prelude::*;
     use tempfile::tempdir;
-    use wealthfolio_core::sync::{FolderSyncEventFileV1, SyncEntity, SyncOperation, FOLDER_SYNC_VERSION_V1};
+    use wealthfolio_core::sync::{
+        FolderSyncEventFileV1, SyncEntity, SyncOperation, FOLDER_SYNC_VERSION_V1,
+    };
     use wealthfolio_storage_sqlite::db::{self, write_actor, WriteHandle};
     use wealthfolio_storage_sqlite::schema::platforms;
     use wealthfolio_storage_sqlite::sync::{

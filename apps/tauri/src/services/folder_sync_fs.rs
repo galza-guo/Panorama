@@ -3,11 +3,11 @@
 use std::fs;
 use std::path::{Path, PathBuf};
 
+use uuid::Uuid;
 use wealthfolio_core::sync::{
     event_file_name, snapshot_file_name, FolderSyncEventFileV1, FolderSyncMetadataV1,
     FolderSyncSnapshotManifestV1, FOLDER_SYNC_METADATA_FILE,
 };
-use uuid::Uuid;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct FolderSyncEventFileRef {
@@ -169,7 +169,8 @@ impl FolderSyncFsService {
         for entry in fs::read_dir(&snapshots_root)
             .map_err(|err| format!("Failed to read snapshots directory: {err}"))?
         {
-            let entry = entry.map_err(|err| format!("Failed to read snapshot device entry: {err}"))?;
+            let entry =
+                entry.map_err(|err| format!("Failed to read snapshot device entry: {err}"))?;
             let path = entry.path();
             if !path.is_dir() {
                 continue;
@@ -179,13 +180,15 @@ impl FolderSyncFsService {
             for file in fs::read_dir(&path)
                 .map_err(|err| format!("Failed to read snapshot device directory: {err}"))?
             {
-                let file = file.map_err(|err| format!("Failed to read snapshot file entry: {err}"))?;
+                let file =
+                    file.map_err(|err| format!("Failed to read snapshot file entry: {err}"))?;
                 let manifest_path = file.path();
                 if !manifest_path.is_file() {
                     continue;
                 }
 
-                let Some(file_name) = manifest_path.file_name().and_then(|value| value.to_str()) else {
+                let Some(file_name) = manifest_path.file_name().and_then(|value| value.to_str())
+                else {
                     continue;
                 };
                 let Some(snapshot_id) = file_name.strip_suffix(".json") else {
@@ -237,12 +240,8 @@ fn write_new_file_atomic(target: &Path, bytes: &[u8]) -> Result<(), String> {
             .map_err(|err| format!("Failed to create parent directory: {err}"))?;
     }
 
-    let temp_path = target.with_extension(format!(
-        "{}.tmp",
-        Uuid::new_v4().simple()
-    ));
-    fs::write(&temp_path, bytes)
-        .map_err(|err| format!("Failed to write temporary file: {err}"))?;
+    let temp_path = target.with_extension(format!("{}.tmp", Uuid::new_v4().simple()));
+    fs::write(&temp_path, bytes).map_err(|err| format!("Failed to write temporary file: {err}"))?;
     fs::rename(&temp_path, target)
         .map_err(|err| format!("Failed to finalize file write: {err}"))?;
     Ok(())
@@ -410,7 +409,10 @@ mod tests {
             .expect("write snapshot");
 
         assert_eq!(
-            snapshot.db_path.file_name().and_then(|value| value.to_str()),
+            snapshot
+                .db_path
+                .file_name()
+                .and_then(|value| value.to_str()),
             Some(snapshot_file_name("snapshot-1").as_str())
         );
         assert!(snapshot.db_path.exists());
@@ -454,11 +456,18 @@ mod tests {
             .write_event_file(&event("device-a", "evt-1"))
             .expect("write event");
         let snapshot = service
-            .write_snapshot(&snapshot_manifest("device-a", "snapshot-1"), b"SQLite format 3\0demo")
+            .write_snapshot(
+                &snapshot_manifest("device-a", "snapshot-1"),
+                b"SQLite format 3\0demo",
+            )
             .expect("write snapshot");
 
         assert!(fs::metadata(event_path).expect("event metadata").is_file());
-        assert!(fs::metadata(snapshot.db_path).expect("db metadata").is_file());
-        assert!(fs::metadata(snapshot.manifest_path).expect("manifest metadata").is_file());
+        assert!(fs::metadata(snapshot.db_path)
+            .expect("db metadata")
+            .is_file());
+        assert!(fs::metadata(snapshot.manifest_path)
+            .expect("manifest metadata")
+            .is_file());
     }
 }

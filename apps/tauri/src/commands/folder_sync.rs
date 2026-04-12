@@ -71,7 +71,9 @@ pub struct FolderSyncCommandResult {
     pub backup_path: Option<String>,
 }
 
-fn map_config(config: wealthfolio_storage_sqlite::sync::FolderSyncConfigRecord) -> FolderSyncConfigResult {
+fn map_config(
+    config: wealthfolio_storage_sqlite::sync::FolderSyncConfigRecord,
+) -> FolderSyncConfigResult {
     FolderSyncConfigResult {
         shared_folder_path: config.shared_folder_path,
         device_id: config.device_id,
@@ -136,7 +138,9 @@ pub(crate) async fn initialize_folder_sync_internal(
     shared_folder_path: String,
     device_id: Option<String>,
 ) -> Result<FolderSyncCommandResult, String> {
-    let existing = folder_sync_repository.get_config().map_err(|err| err.to_string())?;
+    let existing = folder_sync_repository
+        .get_config()
+        .map_err(|err| err.to_string())?;
     let device_id = device_id
         .or_else(|| existing.as_ref().map(|config| config.device_id.clone()))
         .unwrap_or_else(|| Uuid::now_v7().to_string());
@@ -152,15 +156,14 @@ pub(crate) async fn initialize_folder_sync_internal(
         )
         .await
         .map_err(|err| err.to_string())?;
-    FolderSyncFsService::new(PathBuf::from(&shared_folder_path))
-        .initialize_folder(
-            &device_id,
-            &FolderSyncMetadataV1 {
-                version: FOLDER_SYNC_VERSION_V1,
-                created_at: now.clone(),
-                created_by_device_id: device_id.clone(),
-            },
-        )?;
+    FolderSyncFsService::new(PathBuf::from(&shared_folder_path)).initialize_folder(
+        &device_id,
+        &FolderSyncMetadataV1 {
+            version: FOLDER_SYNC_VERSION_V1,
+            created_at: now.clone(),
+            created_by_device_id: device_id.clone(),
+        },
+    )?;
 
     let snapshot = FolderSyncSnapshotService::new(
         app_sync_repository,
@@ -189,7 +192,9 @@ pub(crate) async fn join_folder_sync_internal(
     shared_folder_path: String,
     device_id: Option<String>,
 ) -> Result<FolderSyncCommandResult, String> {
-    let existing = folder_sync_repository.get_config().map_err(|err| err.to_string())?;
+    let existing = folder_sync_repository
+        .get_config()
+        .map_err(|err| err.to_string())?;
     let device_id = device_id
         .or_else(|| existing.as_ref().map(|config| config.device_id.clone()))
         .unwrap_or_else(|| Uuid::now_v7().to_string());
@@ -205,15 +210,14 @@ pub(crate) async fn join_folder_sync_internal(
         )
         .await
         .map_err(|err| err.to_string())?;
-    FolderSyncFsService::new(PathBuf::from(&shared_folder_path))
-        .initialize_folder(
-            &device_id,
-            &FolderSyncMetadataV1 {
-                version: FOLDER_SYNC_VERSION_V1,
-                created_at: now,
-                created_by_device_id: device_id.clone(),
-            },
-        )?;
+    FolderSyncFsService::new(PathBuf::from(&shared_folder_path)).initialize_folder(
+        &device_id,
+        &FolderSyncMetadataV1 {
+            version: FOLDER_SYNC_VERSION_V1,
+            created_at: now,
+            created_by_device_id: device_id.clone(),
+        },
+    )?;
 
     let result = FolderSyncSnapshotService::new(
         app_sync_repository,
@@ -355,7 +359,8 @@ pub async fn join_folder_sync(
 pub async fn retry_folder_sync_now(
     state: State<'_, Arc<ServiceContext>>,
 ) -> Result<FolderSyncCommandResult, String> {
-    retry_folder_sync_now_internal(state.app_sync_repository(), state.folder_sync_repository()).await
+    retry_folder_sync_now_internal(state.app_sync_repository(), state.folder_sync_repository())
+        .await
 }
 
 #[tauri::command]
@@ -373,15 +378,17 @@ mod tests {
     use diesel::prelude::*;
     use tempfile::tempdir;
     use wealthfolio_core::settings::SettingsRepositoryTrait;
-    use wealthfolio_core::sync::{FolderSyncEventFileV1, SyncEntity, SyncOperation, FOLDER_SYNC_VERSION_V1};
+    use wealthfolio_core::sync::{
+        FolderSyncEventFileV1, SyncEntity, SyncOperation, FOLDER_SYNC_VERSION_V1,
+    };
     use wealthfolio_storage_sqlite::db::{self, write_actor};
     use wealthfolio_storage_sqlite::schema::platforms;
     use wealthfolio_storage_sqlite::settings::SettingsRepository;
     use wealthfolio_storage_sqlite::sync::{AppSyncRepository, FolderSyncRepository};
 
     use crate::commands::folder_sync::{
-        disable_folder_sync_internal, get_folder_sync_state_internal, initialize_folder_sync_internal,
-        join_folder_sync_internal, retry_folder_sync_now_internal,
+        disable_folder_sync_internal, get_folder_sync_state_internal,
+        initialize_folder_sync_internal, join_folder_sync_internal, retry_folder_sync_now_internal,
     };
     use crate::services::folder_sync_fs::FolderSyncFsService;
     use crate::services::folder_sync_snapshot::FolderSyncSnapshotService;
@@ -463,7 +470,11 @@ mod tests {
             .expect("config");
         assert!(config.is_enabled);
         assert!(shared_root.join("folder.json").exists());
-        assert!(!device.fs_service.list_snapshots().expect("list snapshots").is_empty());
+        assert!(!device
+            .fs_service
+            .list_snapshots()
+            .expect("list snapshots")
+            .is_empty());
     }
 
     #[tokio::test]

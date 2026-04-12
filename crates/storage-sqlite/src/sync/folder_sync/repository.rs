@@ -6,13 +6,11 @@ use chrono::Utc;
 use diesel::dsl::count_star;
 use diesel::prelude::*;
 
+use super::model::{FolderSyncConfigDB, FolderSyncHistoryEntryDB, FolderSyncStatusDB};
 use crate::db::{get_connection, DbPool, WriteHandle};
 use crate::errors::StorageError;
 use crate::schema::{
     folder_sync_config, folder_sync_history, folder_sync_imported_events, folder_sync_status,
-};
-use super::model::{
-    FolderSyncConfigDB, FolderSyncHistoryEntryDB, FolderSyncStatusDB,
 };
 use wealthfolio_core::errors::Result;
 
@@ -173,7 +171,10 @@ impl FolderSyncRepository {
             .await
     }
 
-    pub fn list_recent_history(&self, limit_value: i64) -> Result<Vec<FolderSyncHistoryEntryRecord>> {
+    pub fn list_recent_history(
+        &self,
+        limit_value: i64,
+    ) -> Result<Vec<FolderSyncHistoryEntryRecord>> {
         let mut conn = get_connection(&self.pool)?;
         let rows = folder_sync_history::table
             .select(FolderSyncHistoryEntryDB::as_select())
@@ -193,7 +194,9 @@ impl FolderSyncRepository {
             .first::<FolderSyncStatusDB>(&mut conn)
             .optional()
             .map_err(StorageError::from)?;
-        Ok(row.map(to_status_record).unwrap_or_else(default_status_record))
+        Ok(row
+            .map(to_status_record)
+            .unwrap_or_else(default_status_record))
     }
 
     pub async fn update_status(&self, update: FolderSyncStatusUpdate) -> Result<()> {
@@ -204,16 +207,10 @@ impl FolderSyncRepository {
             last_successful_sync_at: update
                 .last_successful_sync_at
                 .or(current.last_successful_sync_at),
-            last_local_export_at: update
-                .last_local_export_at
-                .or(current.last_local_export_at),
-            last_remote_apply_at: update
-                .last_remote_apply_at
-                .or(current.last_remote_apply_at),
+            last_local_export_at: update.last_local_export_at.or(current.last_local_export_at),
+            last_remote_apply_at: update.last_remote_apply_at.or(current.last_remote_apply_at),
             last_error: update.last_error.unwrap_or(current.last_error),
-            updated_at: update
-                .updated_at
-                .unwrap_or_else(|| Utc::now().to_rfc3339()),
+            updated_at: update.updated_at.unwrap_or_else(|| Utc::now().to_rfc3339()),
         };
 
         self.writer
@@ -287,15 +284,15 @@ fn default_status_record() -> FolderSyncStatusRecord {
 
 #[cfg(test)]
 mod tests {
-    use diesel::RunQueryDsl;
     use diesel::r2d2::{self, Pool};
     use diesel::sqlite::SqliteConnection;
+    use diesel::RunQueryDsl;
     use std::sync::Arc;
     use tempfile::tempdir;
 
     use super::{FolderSyncRepository, FolderSyncStatusUpdate};
-    use crate::db::{create_pool, get_connection, init, run_migrations, write_actor::spawn_writer};
     use crate::db::WriteHandle;
+    use crate::db::{create_pool, get_connection, init, run_migrations, write_actor::spawn_writer};
 
     fn setup_db() -> (
         Arc<Pool<r2d2::ConnectionManager<SqliteConnection>>>,
@@ -369,10 +366,16 @@ mod tests {
             .get_config()
             .expect("load config")
             .expect("config should exist");
-        assert_eq!(config.shared_folder_path, "/Users/example/Sync/PanoramaSync");
+        assert_eq!(
+            config.shared_folder_path,
+            "/Users/example/Sync/PanoramaSync"
+        );
         assert_eq!(config.device_id, "device-a");
         assert!(config.is_enabled);
-        assert_eq!(config.initialized_at.as_deref(), Some(initialized_at.as_str()));
+        assert_eq!(
+            config.initialized_at.as_deref(),
+            Some(initialized_at.as_str())
+        );
         assert_eq!(config.created_at, timestamp);
         assert_eq!(config.updated_at, "2026-03-07T12:00:05.000Z");
     }
