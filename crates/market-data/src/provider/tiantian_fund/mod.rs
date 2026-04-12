@@ -618,9 +618,9 @@ mod tests {
     use super::TiantianFundProvider;
     use crate::provider::MarketDataProvider;
     use crate::InstrumentId;
+    use rust_decimal::Decimal;
     use std::borrow::Cow;
     use std::sync::Arc;
-    use rust_decimal::Decimal;
 
     #[test]
     fn parses_supported_fund_symbols() {
