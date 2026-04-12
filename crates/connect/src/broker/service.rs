@@ -837,7 +837,11 @@ impl BrokerSyncService {
             .into_iter()
             .filter(|(_asset_id, price, _currency)| !price.is_zero())
             .map(|(asset_id, price, currency)| Quote {
-                id: format!("{}_{}_BROKER", timestamp.format("%Y%m%d"), asset_id.to_uppercase()),
+                id: format!(
+                    "{}_{}_BROKER",
+                    timestamp.format("%Y%m%d"),
+                    asset_id.to_uppercase()
+                ),
                 asset_id,
                 timestamp,
                 open: price,
@@ -1333,6 +1337,9 @@ mod tests {
         assert_eq!(quotes[0].asset_id, "asset-aapl");
         assert_eq!(quotes[0].close, decimal("123.45"));
         assert_eq!(quotes[0].currency, "USD");
-        assert_eq!(quotes[0].data_source, wealthfolio_core::quotes::DataSource::Broker);
+        assert_eq!(
+            quotes[0].data_source,
+            wealthfolio_core::quotes::DataSource::Broker
+        );
     }
 }
