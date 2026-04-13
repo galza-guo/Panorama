@@ -48,6 +48,14 @@ pub struct SyncEngineStatusResult {
 }
 
 #[derive(Debug, Clone)]
+pub struct SyncPairingSourceStatusResult {
+    pub status: String,
+    pub message: String,
+    pub local_cursor: i64,
+    pub server_cursor: i64,
+}
+
+#[derive(Debug, Clone)]
 pub struct SyncBootstrapOverwriteCheckTableResult {
     pub table: String,
     pub rows: i64,
@@ -478,6 +486,56 @@ pub async fn get_engine_status(state: &Arc<AppState>) -> Result<SyncEngineStatus
         last_cycle_duration_ms: status.last_cycle_duration_ms,
         background_running,
         bootstrap_required,
+    })
+}
+
+pub async fn get_pairing_source_status(
+    state: &Arc<AppState>,
+) -> Result<SyncPairingSourceStatusResult, String> {
+    ensure_device_sync_enabled()?;
+    let identity = get_sync_identity_from_store(state)
+        .ok_or_else(|| "No sync identity configured. Please enable sync first.".to_string())?;
+    let device_id = identity
+        .device_id
+        .clone()
+        .ok_or_else(|| "No device ID configured".to_string())?;
+    let token = crate::api::connect::mint_access_token(state)
+        .await
+        .map_err(|e| e.to_string())?;
+    let client = create_client();
+    let sync_state = client
+        .get_device(&token, &device_id)
+        .await
+        .map_err(|e| e.to_string())?;
+    if sync_state.trust_state != wealthfolio_device_sync::TrustState::Trusted {
+        return Err("Current device is not ready to connect another device yet.".to_string());
+    }
+
+    let local_cursor = state
+        .app_sync_repository
+        .get_cursor()
+        .map_err(|e| e.to_string())?;
+    let server_cursor = client
+        .get_events_cursor(&token, &device_id)
+        .await
+        .map_err(|e| e.to_string())?
+        .cursor;
+
+    if local_cursor > server_cursor {
+        return Ok(SyncPairingSourceStatusResult {
+            status: "restore_required".to_string(),
+            message: "This device needs to set up sync again before you add another device."
+                .to_string(),
+            local_cursor,
+            server_cursor,
+        });
+    }
+
+    Ok(SyncPairingSourceStatusResult {
+        status: "ready".to_string(),
+        message: "This device is ready to connect another device.".to_string(),
+        local_cursor,
+        server_cursor,
     })
 }
 

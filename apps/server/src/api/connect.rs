@@ -158,6 +158,15 @@ struct DeviceSyncEngineStatusResponse {
 
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
+struct DeviceSyncPairingSourceStatusResponse {
+    status: String,
+    message: String,
+    local_cursor: i64,
+    server_cursor: i64,
+}
+
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
 struct DeviceSyncBootstrapOverwriteCheckTableResponse {
     table: String,
     rows: i64,
@@ -1097,6 +1106,21 @@ async fn get_device_sync_engine_status(
     }))
 }
 
+async fn get_device_sync_pairing_source_status(
+    State(state): State<Arc<AppState>>,
+) -> ApiResult<Json<DeviceSyncPairingSourceStatusResponse>> {
+    ensure_device_sync_enabled()?;
+    let status = device_sync_engine::get_pairing_source_status(&state)
+        .await
+        .map_err(ApiError::Internal)?;
+    Ok(Json(DeviceSyncPairingSourceStatusResponse {
+        status: status.status,
+        message: status.message,
+        local_cursor: status.local_cursor,
+        server_cursor: status.server_cursor,
+    }))
+}
+
 async fn get_device_sync_bootstrap_overwrite_check(
     State(state): State<Arc<AppState>>,
 ) -> ApiResult<Json<DeviceSyncBootstrapOverwriteCheckResponse>> {
@@ -1270,6 +1294,10 @@ pub fn router() -> Router<Arc<AppState>> {
         .route(
             "/connect/device/engine-status",
             get(get_device_sync_engine_status),
+        )
+        .route(
+            "/connect/device/pairing-source-status",
+            get(get_device_sync_pairing_source_status),
         )
         .route(
             "/connect/device/bootstrap-overwrite-check",

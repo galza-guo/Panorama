@@ -16,6 +16,12 @@ import type { KeyBundlePayload } from "../../types";
 interface PairingFlowProps {
   onComplete?: () => void;
   onCancel?: () => void;
+  /** Title shown during the initial step (display_code for issuer, enter_code for claimer) */
+  title?: string;
+  /** Description shown during the initial step */
+  description?: string;
+  /** Override auto-detected role when the surrounding state machine is in transition */
+  forceRole?: "issuer" | "claimer";
 }
 
 // Claimer flow steps
@@ -27,21 +33,56 @@ type ClaimerStep =
   | "success"
   | "error";
 
-export function PairingFlow({ onComplete, onCancel }: PairingFlowProps) {
-  const { state } = useDeviceSync();
+function StepHeader({ title, description }: { title?: string; description?: string }) {
+  if (!title) return null;
+  return (
+    <div className="mb-1 text-center">
+      <p className="text-foreground text-base font-semibold">{title}</p>
+      {description && <p className="text-muted-foreground mt-1 text-sm">{description}</p>}
+    </div>
+  );
+}
 
-  // Determine role: trusted = issuer, untrusted = claimer
-  const isTrusted = state.device?.trustState === "trusted";
+export function PairingFlow({
+  onComplete,
+  onCancel,
+  title,
+  description,
+  forceRole,
+}: PairingFlowProps) {
+  const { state } = useDeviceSync();
+  const initialRoleRef = useRef<"issuer" | "claimer" | null>(forceRole ?? null);
+  if (initialRoleRef.current == null && state.device) {
+    initialRoleRef.current = state.device.trustState === "trusted" ? "issuer" : "claimer";
+  }
+  const isTrusted =
+    initialRoleRef.current != null
+      ? initialRoleRef.current === "issuer"
+      : state.device?.trustState === "trusted";
 
   if (isTrusted) {
-    return <IssuerFlow onComplete={onComplete} onCancel={onCancel} />;
+    return (
+      <IssuerFlow
+        onComplete={onComplete}
+        onCancel={onCancel}
+        title={title}
+        description={description}
+      />
+    );
   } else {
-    return <ClaimerFlow onComplete={onComplete} onCancel={onCancel} />;
+    return (
+      <ClaimerFlow
+        onComplete={onComplete}
+        onCancel={onCancel}
+        title={title}
+        description={description}
+      />
+    );
   }
 }
 
 // Issuer Flow (trusted device - displays QR code)
-function IssuerFlow({ onComplete, onCancel }: PairingFlowProps) {
+function IssuerFlow({ onComplete, onCancel, title, description }: PairingFlowProps) {
   const { state } = useDeviceSync();
   const {
     step,
@@ -96,7 +137,12 @@ function IssuerFlow({ onComplete, onCancel }: PairingFlowProps) {
     case "display_code":
     case "waiting_claim":
       if (pairingCode && expiresAt) {
-        return <DisplayCode code={pairingCode} expiresAt={expiresAt} onCancel={handleCancel} />;
+        return (
+          <>
+            <StepHeader title={title} description={description} />
+            <DisplayCode code={pairingCode} expiresAt={expiresAt} onCancel={handleCancel} />
+          </>
+        );
       }
       return <WaitingState title="Generating code..." onCancel={handleCancel} showQRSkeleton />;
 
@@ -140,7 +186,7 @@ function IssuerFlow({ onComplete, onCancel }: PairingFlowProps) {
 }
 
 // Claimer Flow (untrusted device - enters code and receives keys)
-function ClaimerFlow({ onComplete, onCancel }: PairingFlowProps) {
+function ClaimerFlow({ onComplete, onCancel, title, description }: PairingFlowProps) {
   const { state, actions } = useDeviceSync();
   const [step, setStep] = useState<ClaimerStep>("enter_code");
   const [error, setError] = useState<string | null>(null);
@@ -304,7 +350,12 @@ function ClaimerFlow({ onComplete, onCancel }: PairingFlowProps) {
 
   switch (step) {
     case "enter_code":
-      return <EnterCode onSubmit={handleCodeSubmit} onCancel={handleCancel} error={error} />;
+      return (
+        <>
+          <StepHeader title={title} description={description} />
+          <EnterCode onSubmit={handleCodeSubmit} onCancel={handleCancel} error={error} />
+        </>
+      );
 
     case "connecting":
       return <WaitingState title="Connecting..." onCancel={handleCancel} />;

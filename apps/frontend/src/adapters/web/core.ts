@@ -199,6 +199,10 @@ export const COMMANDS: CommandMap = {
   clear_device_sync_data: { method: "DELETE", path: "/connect/device/sync-data" },
   reinitialize_device_sync: { method: "POST", path: "/connect/device/reinitialize" },
   device_sync_engine_status: { method: "GET", path: "/connect/device/engine-status" },
+  device_sync_pairing_source_status: {
+    method: "GET",
+    path: "/connect/device/pairing-source-status",
+  },
   device_sync_bootstrap_overwrite_check: {
     method: "GET",
     path: "/connect/device/bootstrap-overwrite-check",

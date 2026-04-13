@@ -216,6 +216,7 @@ export {
   clearDeviceSyncData,
   reinitializeDeviceSync,
   getSyncEngineStatus,
+  getPairingSourceStatus,
   deviceSyncBootstrapOverwriteCheck,
   deviceSyncReconcileReadyState,
   syncBootstrapSnapshotIfNeeded,

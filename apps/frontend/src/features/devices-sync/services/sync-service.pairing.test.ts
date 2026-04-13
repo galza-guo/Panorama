@@ -13,6 +13,7 @@ const adapterMocks = vi.hoisted(() => ({
   clearDeviceSyncData: vi.fn(),
   reinitializeDeviceSync: vi.fn(),
   getSyncEngineStatus: vi.fn(),
+  getPairingSourceStatus: vi.fn(),
   deviceSyncBootstrapOverwriteCheck: vi.fn(),
   deviceSyncReconcileReadyState: vi.fn(),
   syncBootstrapSnapshotIfNeeded: vi.fn(),
@@ -131,5 +132,24 @@ describe("syncService pairing remote seed status", () => {
     expect(adapterMocks.confirmPairing).toHaveBeenCalledWith("pair_2", "proof");
     expect(storageMocks.setE2EECredentials).toHaveBeenCalledTimes(1);
     expect(result.remoteSeedPresent).toBe(true);
+  });
+
+  it("returns pairing source readiness details from the adapter", async () => {
+    adapterMocks.getPairingSourceStatus.mockResolvedValue({
+      status: "restore_required",
+      message: "Restore required",
+      localCursor: 11,
+      serverCursor: 8,
+    });
+
+    const result = await syncService.getPairingSourceStatus();
+
+    expect(adapterMocks.getPairingSourceStatus).toHaveBeenCalledTimes(1);
+    expect(result).toEqual({
+      status: "restore_required",
+      message: "Restore required",
+      localCursor: 11,
+      serverCursor: 8,
+    });
   });
 });

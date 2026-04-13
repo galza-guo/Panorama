@@ -7,11 +7,11 @@ import {
   AlertDialogAction,
   AlertDialogContent,
   AlertDialogDescription,
-  AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@wealthfolio/ui/components/ui/alert-dialog";
 import { Icons } from "@wealthfolio/ui";
+import { Button } from "@wealthfolio/ui/components/ui/button";
 import { useState } from "react";
 import { useDeviceSync } from "../providers/device-sync-provider";
 
@@ -42,28 +42,28 @@ export function RecoveryDialog({ open, onOpenChange }: RecoveryDialogProps) {
         <AlertDialogHeader>
           <div className="mb-2 flex items-center gap-2">
             <Icons.AlertTriangle className="h-5 w-5 text-amber-500" />
-            <AlertDialogTitle>Device Removed</AlertDialogTitle>
+            <AlertDialogTitle>Set Up This Device Again</AlertDialogTitle>
           </div>
-          <AlertDialogDescription className="space-y-2">
-            This device was removed from your account, either from another device or from the web
-            portal.
-            <br />
-            You&apos;ll need to re-enable device sync and pair with a trusted device to continue
-            syncing your data.
+          <AlertDialogDescription>
+            Sync was turned off for this device. Set it up again to keep your data up to date
+            across your devices.
           </AlertDialogDescription>
         </AlertDialogHeader>
-        <AlertDialogFooter>
+        <div className="flex flex-col gap-2 sm:flex-row sm:justify-end">
+          <Button variant="ghost" onClick={() => onOpenChange?.(false)} disabled={isRecovering}>
+            Not now
+          </Button>
           <AlertDialogAction onClick={handleRecovery} disabled={isRecovering}>
             {isRecovering ? (
               <>
                 <Icons.Spinner className="mr-2 h-4 w-4 animate-spin" />
-                Resetting...
+                Setting up...
               </>
             ) : (
-              "Understood"
+              "Set Up This Device Again"
             )}
           </AlertDialogAction>
-        </AlertDialogFooter>
+        </div>
       </AlertDialogContent>
     </AlertDialog>
   );

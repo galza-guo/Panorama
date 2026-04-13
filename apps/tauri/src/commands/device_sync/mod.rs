@@ -153,6 +153,15 @@ pub struct SyncEngineStatusResult {
 
 #[derive(Debug, Clone, serde::Serialize)]
 #[serde(rename_all = "camelCase")]
+pub struct SyncPairingSourceStatusResult {
+    pub status: String,
+    pub message: String,
+    pub local_cursor: i64,
+    pub server_cursor: i64,
+}
+
+#[derive(Debug, Clone, serde::Serialize)]
+#[serde(rename_all = "camelCase")]
 pub struct SyncBootstrapOverwriteCheckTableResult {
     pub table: String,
     pub rows: i64,
@@ -837,6 +846,48 @@ pub async fn device_sync_engine_status(
     state: State<'_, Arc<ServiceContext>>,
 ) -> Result<SyncEngineStatusResult, String> {
     sync_engine_status(state).await
+}
+
+#[tauri::command]
+pub async fn device_sync_pairing_source_status(
+    state: State<'_, Arc<ServiceContext>>,
+) -> Result<SyncPairingSourceStatusResult, String> {
+    let token = get_access_token()?;
+    let device_id =
+        get_device_id_from_store().ok_or_else(|| "No device ID configured".to_string())?;
+    let client = create_client()?;
+    let sync_state = client
+        .get_device(&token, &device_id)
+        .await
+        .map_err(|e| e.to_string())?;
+    if sync_state.trust_state != wealthfolio_device_sync::TrustState::Trusted {
+        return Err("Current device is not ready to connect another device yet.".to_string());
+    }
+
+    let sync_repo = state.app_sync_repository();
+    let local_cursor = sync_repo.get_cursor().map_err(|e| e.to_string())?;
+    let server_cursor = client
+        .get_events_cursor(&token, &device_id)
+        .await
+        .map_err(|e| e.to_string())?
+        .cursor;
+
+    if local_cursor > server_cursor {
+        return Ok(SyncPairingSourceStatusResult {
+            status: "restore_required".to_string(),
+            message: "This device needs to set up sync again before you add another device."
+                .to_string(),
+            local_cursor,
+            server_cursor,
+        });
+    }
+
+    Ok(SyncPairingSourceStatusResult {
+        status: "ready".to_string(),
+        message: "This device is ready to connect another device.".to_string(),
+        local_cursor,
+        server_cursor,
+    })
 }
 
 #[tauri::command]

@@ -50,8 +50,10 @@ import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 import { useDevices, useRenameDevice, useRevokeDevice } from "../hooks";
 import { useDeviceSync } from "../providers/device-sync-provider";
+import { syncService } from "../services/sync-service";
 import { SyncStates, type Device, type SyncState } from "../types";
 import { E2EESetupCard } from "./e2ee-setup-card";
+import { WaitingState } from "./pairing-flow";
 import { PairingFlow } from "./pairing-flow";
 import { RecoveryDialog } from "./recovery-dialog";
 
@@ -71,7 +73,14 @@ const platformIcons: Record<string, typeof Icons.Monitor> = {
 export function DeviceSyncSection() {
   const { state, actions } = useDeviceSync();
   const queryClient = useQueryClient();
+  const { data: myDevices } = useDevices("my");
+  const otherConnectedDevices = (myDevices ?? []).filter(
+    (device) => device.trustState !== "revoked" && !device.isCurrent,
+  ).length;
   const [isPairingOpen, setIsPairingOpen] = useState(false);
+  const [isPreparing, setIsPreparing] = useState(false);
+  const [prepareError, setPrepareError] = useState<string | null>(null);
+  const [showReinitConfirmDialog, setShowReinitConfirmDialog] = useState(false);
   const [showRecoveryDialog, setShowRecoveryDialog] = useState(false);
   const [showBootstrapOverwriteDialog, setShowBootstrapOverwriteDialog] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -82,6 +91,8 @@ export function DeviceSyncSection() {
 
   const handlePairingComplete = useCallback(() => {
     setIsPairingOpen(false);
+    setIsPreparing(false);
+    setPrepareError(null);
     queryClient.invalidateQueries({ queryKey: ["sync", "device", "current"] });
     // Refresh state after pairing
     actions.refreshState();
@@ -89,6 +100,8 @@ export function DeviceSyncSection() {
 
   const handlePairingCancel = useCallback(() => {
     setIsPairingOpen(false);
+    setIsPreparing(false);
+    setPrepareError(null);
   }, []);
 
   const handleRefresh = useCallback(() => {
@@ -165,6 +178,59 @@ export function DeviceSyncSection() {
     }
     await handleApplyBootstrapOverwrite();
   }, [handleApplyBootstrapOverwrite, handleBackupBeforeBootstrap]);
+
+  const runReinitAndOpenPairing = useCallback(async () => {
+    setIsPreparing(true);
+    setPrepareError(null);
+    setIsPairingOpen(true);
+    try {
+      await actions.reinitializeSync();
+      setIsPreparing(false);
+    } catch (err) {
+      setPrepareError(err instanceof Error ? err.message : "An unexpected error occurred");
+    }
+  }, [actions]);
+
+  const openClaimerPairingFlow = useCallback(() => {
+    setPrepareError(null);
+    setIsPreparing(false);
+    setIsPairingOpen(true);
+  }, []);
+
+  const beginPairingFlow = useCallback(async () => {
+    setPrepareError(null);
+    setIsPreparing(true);
+
+    try {
+      const pairingSource = await syncService.getPairingSourceStatus();
+      if (pairingSource.status === "restore_required") {
+        if (otherConnectedDevices === 0) {
+          await actions.reinitializeSync();
+          setIsPreparing(false);
+          return;
+        }
+
+        setIsPreparing(false);
+        setShowReinitConfirmDialog(true);
+        return;
+      }
+
+      setIsPreparing(false);
+      setIsPairingOpen(true);
+    } catch (err) {
+      setPrepareError(err instanceof Error ? err.message : "An unexpected error occurred");
+      setIsPairingOpen(true);
+    }
+  }, [actions, otherConnectedDevices]);
+
+  const handleLinkAnotherDevice = useCallback(() => {
+    void beginPairingFlow();
+  }, [beginPairingFlow]);
+
+  const handleReinitConfirm = useCallback(async () => {
+    setShowReinitConfirmDialog(false);
+    await runReinitAndOpenPairing();
+  }, [runReinitAndOpenPairing]);
 
   // Keep recovery dialog strictly in sync with RECOVERY state.
   useEffect(() => {
@@ -268,11 +334,16 @@ export function DeviceSyncSection() {
             onEscapeKeyDown={(e) => e.preventDefault()}
             onInteractOutside={(e) => e.preventDefault()}
           >
-            <DialogHeader className="text-center">
+            <DialogHeader className="sr-only">
               <DialogTitle>Connect This Device</DialogTitle>
-              <DialogDescription>Enter the code from your trusted device</DialogDescription>
             </DialogHeader>
-            <PairingFlow onComplete={handlePairingComplete} onCancel={handlePairingCancel} />
+            <PairingFlow
+              onComplete={handlePairingComplete}
+              onCancel={handlePairingCancel}
+              title="Connect This Device"
+              description="Enter the code from your other connected device"
+              forceRole="claimer"
+            />
           </DialogContent>
         </Dialog>
       </Card>
@@ -316,11 +387,16 @@ export function DeviceSyncSection() {
             onEscapeKeyDown={(e) => e.preventDefault()}
             onInteractOutside={(e) => e.preventDefault()}
           >
-            <DialogHeader className="text-center">
-              <DialogTitle>Update Encryption Keys</DialogTitle>
-              <DialogDescription>Enter the code from your trusted device</DialogDescription>
+            <DialogHeader className="sr-only">
+              <DialogTitle>Update This Device</DialogTitle>
             </DialogHeader>
-            <PairingFlow onComplete={handlePairingComplete} onCancel={handlePairingCancel} />
+            <PairingFlow
+              onComplete={handlePairingComplete}
+              onCancel={handlePairingCancel}
+              title="Update This Device"
+              description="Enter the code from your other connected device"
+              forceRole="claimer"
+            />
           </DialogContent>
         </Dialog>
       </Card>
@@ -329,10 +405,10 @@ export function DeviceSyncSection() {
 
   // READY state - Show connected devices
   const isTrusted = state.device?.trustState === "trusted";
-  const dialogTitle = isTrusted ? "Link New Device" : "Connect This Device";
+  const dialogTitle = isTrusted ? "Connect Another Device" : "Connect This Device";
   const dialogDescription = isTrusted
     ? "Scan or enter this code on your other device"
-    : "Enter the code from your trusted device";
+    : "Enter the code from your other connected device";
 
   return (
     <>
@@ -492,18 +568,27 @@ export function DeviceSyncSection() {
             {!state.device ? (
               <Skeleton className="h-16 w-full rounded-lg" />
             ) : !isTrusted ? (
-              <UntrustedDevicePrompt onStartPairing={() => setIsPairingOpen(true)} />
+              <UntrustedDevicePrompt onStartPairing={openClaimerPairingFlow} />
             ) : (
               <ConnectedDevicesList
                 onResetSync={actions.resetSync}
-                onLinkDevice={() => setIsPairingOpen(true)}
+                onLinkDevice={handleLinkAnotherDevice}
               />
             )}
           </div>
         </CardContent>
 
         {/* Pairing Dialog */}
-        <Dialog open={isPairingOpen} onOpenChange={setIsPairingOpen}>
+        <Dialog
+          open={isPairingOpen}
+          onOpenChange={(open) => {
+            setIsPairingOpen(open);
+            if (!open) {
+              setIsPreparing(false);
+              setPrepareError(null);
+            }
+          }}
+        >
           <DialogContent
             className="max-w-[calc(100vw-2rem)] sm:max-w-sm"
             mobileClassName="pb-8"
@@ -511,11 +596,46 @@ export function DeviceSyncSection() {
             onEscapeKeyDown={(e) => e.preventDefault()}
             onInteractOutside={(e) => e.preventDefault()}
           >
-            <DialogHeader className="text-center">
+            <DialogHeader className="sr-only">
               <DialogTitle>{dialogTitle}</DialogTitle>
               <DialogDescription>{dialogDescription}</DialogDescription>
             </DialogHeader>
-            <PairingFlow onComplete={handlePairingComplete} onCancel={handlePairingCancel} />
+            {isPreparing && !prepareError ? (
+              <WaitingState
+                title="Getting this device ready..."
+                description="This will only take a moment."
+              />
+            ) : isPreparing && prepareError ? (
+              <div className="flex flex-col items-center px-4 py-6">
+                <div className="mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-red-100 dark:bg-red-900/30">
+                  <Icons.XCircle className="h-10 w-10 text-red-600 dark:text-red-500" />
+                </div>
+                <div className="mb-6 text-center">
+                  <p className="text-foreground text-base font-semibold">
+                    We couldn&apos;t finish getting this device ready.
+                  </p>
+                  <p className="text-muted-foreground mt-2 max-w-[240px] text-sm">
+                    {prepareError}
+                  </p>
+                </div>
+                <div className="flex gap-3">
+                  <Button variant="outline" onClick={() => void beginPairingFlow()}>
+                    Try Again
+                  </Button>
+                  <Button variant="ghost" onClick={handlePairingCancel}>
+                    Cancel
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              <PairingFlow
+                onComplete={handlePairingComplete}
+                onCancel={handlePairingCancel}
+                title={dialogTitle}
+                description={dialogDescription}
+                forceRole={isTrusted ? "issuer" : "claimer"}
+              />
+            )}
           </DialogContent>
         </Dialog>
 
@@ -583,6 +703,22 @@ export function DeviceSyncSection() {
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>
+
+        <AlertDialog open={showReinitConfirmDialog} onOpenChange={setShowReinitConfirmDialog}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Set up sync again from this device?</AlertDialogTitle>
+              <AlertDialogDescription>
+                We&apos;ll keep the data on this device and use it to restart sync. Other
+                connected devices may need to be connected again.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Not now</AlertDialogCancel>
+              <Button onClick={() => void handleReinitConfirm()}>Continue</Button>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </Card>
 
       {/* Recovery Dialog */}
@@ -604,15 +740,15 @@ function UntrustedDevicePrompt({
       <div className="bg-muted/50 mb-3 rounded-full p-2.5 sm:mb-4 sm:p-3">
         <Icons.ShieldAlert className="h-5 w-5 opacity-60 sm:h-6 sm:w-6" />
       </div>
-      <p className="text-foreground text-sm font-medium">This device needs pairing</p>
+      <p className="text-foreground text-sm font-medium">This device is not connected yet</p>
       <p className="text-muted-foreground mt-1 max-w-xs text-xs">
         {trustedDeviceCount !== undefined && trustedDeviceCount > 0
-          ? `Enter the pairing code from one of your ${trustedDeviceCount} trusted device${trustedDeviceCount > 1 ? "s" : ""}.`
-          : "Enter the pairing code from a trusted device to sync your data."}
+          ? `Enter the code from one of your ${trustedDeviceCount} other connected device${trustedDeviceCount > 1 ? "s" : ""}.`
+          : "Enter the code from your other connected device to sync your data."}
       </p>
       <Button className="mt-3 sm:mt-4" onClick={onStartPairing}>
         <Icons.Link className="mr-2 h-4 w-4" />
-        Start Pairing
+        Connect This Device
       </Button>
     </div>
   );
@@ -792,7 +928,7 @@ function ConnectedDevicesList({
       <div className="mt-4">
         <Button onClick={onLinkDevice} size="sm">
           <Icons.Link className="mr-2 h-4 w-4" />
-          Link Device
+          Connect Another Device
         </Button>
       </div>
     </div>

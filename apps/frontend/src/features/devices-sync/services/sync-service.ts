@@ -24,6 +24,7 @@ import {
   enableDeviceSync as enableDeviceSyncApi,
   getDevice as getDeviceApi,
   getDeviceSyncState as getDeviceSyncStateApi,
+  getPairingSourceStatus as getPairingSourceStatusApi,
   getPairing as getPairingApi,
   getPairingMessages as getPairingMessagesApi,
   getSyncEngineStatus as getSyncEngineStatusApi,
@@ -188,6 +189,15 @@ class SyncService {
     bootstrapRequired: boolean;
   }> {
     return getSyncEngineStatusApi();
+  }
+
+  async getPairingSourceStatus(): Promise<{
+    status: "ready" | "restore_required";
+    message: string;
+    localCursor: number;
+    serverCursor: number;
+  }> {
+    return getPairingSourceStatusApi();
   }
 
   async reconcileReadyState(): Promise<ReconcileReadyStateResult> {
