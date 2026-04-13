@@ -16,8 +16,8 @@ use rig::{
     client::{CompletionClient, Nothing},
     completion::{CompletionModel, Message},
     message::{
-        AssistantContent, Reasoning, Text, ToolCall as RigToolCall, ToolChoice, ToolResultContent,
-        UserContent,
+        AssistantContent, Document, DocumentMediaType, DocumentSourceKind, Image, ImageMediaType,
+        Reasoning, Text, ToolCall as RigToolCall, ToolChoice, ToolResultContent, UserContent,
     },
     providers::{
         anthropic, gemini, groq,
@@ -38,12 +38,15 @@ use crate::error::AiError;
 use crate::providers::ProviderService;
 use crate::title_generator::truncate_to_title;
 use crate::title_generator::{TitleGenerator, TitleGeneratorConfig, TitleGeneratorTrait};
-use crate::tools::constants::MAX_HISTORY_CHARS;
+use crate::tools::constants::{
+    MAX_ATTACHMENTS_COUNT, MAX_ATTACHMENT_SIZE_BYTES, MAX_HISTORY_CHARS,
+    MAX_TOTAL_ATTACHMENTS_BYTES,
+};
 use crate::tools::ToolSet;
 use crate::types::{
     AiStreamEvent, ChatMessage, ChatMessageContent, ChatMessagePart, ChatMessageRole,
-    ChatRepositoryTrait, ChatThread, ListThreadsRequest, SendMessageRequest, SimpleChatMessage,
-    ThreadPage, ToolCall, ToolResultData,
+    ChatRepositoryTrait, ChatThread, ListThreadsRequest, MessageAttachment, SendMessageRequest,
+    SimpleChatMessage, ThreadPage, ToolCall, ToolResultData,
 };
 
 fn derive_initial_thread_title(first_user_message: &str) -> Option<String> {
@@ -107,6 +110,119 @@ fn normalize_ollama_base_url(url: &str) -> &str {
     url.trim_end_matches('/')
         .trim_end_matches("/v1")
         .trim_end_matches('/')
+}
+
+fn validate_attachments(attachments: &[MessageAttachment]) -> Result<(), AiError> {
+    if attachments.len() > MAX_ATTACHMENTS_COUNT {
+        return Err(AiError::InvalidInput(format!(
+            "Too many attachments: {} (max {})",
+            attachments.len(),
+            MAX_ATTACHMENTS_COUNT
+        )));
+    }
+
+    let mut total_size: usize = 0;
+    for attachment in attachments {
+        let is_binary = attachment.content_type.starts_with("image/")
+            || attachment.content_type == "application/pdf";
+        let effective_size = if is_binary {
+            attachment.data.len() * 3 / 4
+        } else {
+            attachment.data.len()
+        };
+
+        if effective_size > MAX_ATTACHMENT_SIZE_BYTES {
+            return Err(AiError::InvalidInput(format!(
+                "Attachment '{}' too large (max {} MB)",
+                attachment.name,
+                MAX_ATTACHMENT_SIZE_BYTES / (1024 * 1024)
+            )));
+        }
+
+        total_size += effective_size;
+    }
+
+    if total_size > MAX_TOTAL_ATTACHMENTS_BYTES {
+        return Err(AiError::InvalidInput(format!(
+            "Total attachment size too large (max {} MB)",
+            MAX_TOTAL_ATTACHMENTS_BYTES / (1024 * 1024)
+        )));
+    }
+
+    Ok(())
+}
+
+/// Build a multimodal `Message::User` from text content and file attachments.
+fn build_user_prompt(user_message: &str, attachments: &[MessageAttachment]) -> Message {
+    if attachments.is_empty() {
+        return Message::User {
+            content: OneOrMany::one(UserContent::Text(Text {
+                text: user_message.to_string(),
+            })),
+        };
+    }
+
+    let mut parts: Vec<UserContent> = Vec::new();
+    let has_csv = attachments
+        .iter()
+        .any(|attachment| attachment.content_type == "text/csv" || attachment.content_type == "application/csv");
+    let has_image_or_pdf = attachments.iter().any(|attachment| {
+        attachment.content_type.starts_with("image/")
+            || attachment.content_type == "application/pdf"
+    });
+
+    let mut text = String::new();
+    if has_csv {
+        text.push_str("[INSTRUCTION: A CSV file is attached. You MUST call the import_csv tool with the full CSV content in csvContent parameter. Do NOT analyze or summarize the data yourself - use the tool.]\n\n");
+    }
+    if has_image_or_pdf {
+        text.push_str("[INSTRUCTION: Image or PDF file(s) attached. Examine for financial transaction data and use record_activities to create drafts for all extracted transactions.]\n\n");
+    }
+    text.push_str(user_message);
+    parts.push(UserContent::Text(Text { text }));
+
+    for attachment in attachments {
+        match attachment.content_type.as_str() {
+            "text/csv" | "application/csv" => {
+                parts.push(UserContent::Text(Text {
+                    text: format!("[Attached CSV file: {}]\n{}", attachment.name, attachment.data),
+                }));
+            }
+            content_type if content_type.starts_with("image/") => {
+                let media_type = match content_type {
+                    "image/png" => Some(ImageMediaType::PNG),
+                    "image/jpeg" | "image/jpg" => Some(ImageMediaType::JPEG),
+                    "image/webp" => Some(ImageMediaType::WEBP),
+                    "image/gif" => Some(ImageMediaType::GIF),
+                    _ => None,
+                };
+                parts.push(UserContent::Image(Image {
+                    data: DocumentSourceKind::Base64(attachment.data.clone()),
+                    media_type,
+                    detail: None,
+                    additional_params: None,
+                }));
+            }
+            "application/pdf" => {
+                parts.push(UserContent::Document(Document {
+                    data: DocumentSourceKind::Base64(attachment.data.clone()),
+                    media_type: Some(DocumentMediaType::PDF),
+                    additional_params: None,
+                }));
+            }
+            _ => {
+                debug!("Skipping unsupported attachment type: {}", attachment.content_type);
+            }
+        }
+    }
+
+    Message::User {
+        content: OneOrMany::many(parts).unwrap_or_else(|_| {
+            OneOrMany::one(UserContent::Text(Text {
+                text: user_message.to_string(),
+            }))
+        }),
+    }
 }
 
 // ============================================================================
@@ -228,6 +344,8 @@ impl<E: AiEnvironment + 'static> ChatService<E> {
         request: SendMessageRequest,
     ) -> Result<BoxStream<'static, AiStreamEvent>, AiError> {
         let repo = self.env.chat_repository();
+        let attachments = request.attachments.clone().unwrap_or_default();
+        validate_attachments(&attachments)?;
 
         // Get or create thread
         let (thread, is_new_thread, initial_title) = match &request.thread_id {
@@ -264,8 +382,12 @@ impl<E: AiEnvironment + 'static> ChatService<E> {
         let history_messages =
             build_history_messages_with_budget(&previous_messages, MAX_HISTORY_CHARS);
 
-        // Save user message immediately to repository
-        let user_message = ChatMessage::user(&thread_id, &request.content);
+        // Save user message with attachment placeholders; binary payloads are not persisted.
+        let mut persist_text = request.content.clone();
+        for attachment in &attachments {
+            persist_text.push_str(&format!("\n[Attached: {}]", attachment.name));
+        }
+        let user_message = ChatMessage::user(&thread_id, &persist_text);
         repo.create_message(user_message).await?;
 
         // Get provider settings
@@ -300,6 +422,7 @@ impl<E: AiEnvironment + 'static> ChatService<E> {
         let initial_title_clone = initial_title.clone();
         let is_new_thread_clone = is_new_thread;
         let thinking_override = request.config.as_ref().and_then(|c| c.thinking);
+        let attachments_for_stream = attachments.clone();
 
         // Spawn the streaming task
         tokio::spawn(async move {
@@ -308,6 +431,7 @@ impl<E: AiEnvironment + 'static> ChatService<E> {
                 tx.clone(),
                 content,
                 history_messages,
+                attachments_for_stream,
                 provider_id,
                 model_id,
                 thread_id_clone.clone(),
@@ -350,6 +474,7 @@ impl<E: AiEnvironment + 'static> ChatService<E> {
             "get_asset_allocation".to_string(),
             "get_performance".to_string(),
             "record_activity".to_string(),
+            "record_activities".to_string(),
             "import_csv".to_string(),
         ]
     }
@@ -465,6 +590,7 @@ async fn spawn_chat_stream<E: AiEnvironment + 'static>(
     tx: mpsc::Sender<AiStreamEvent>,
     user_message: String,
     history_messages: Vec<SimpleChatMessage>,
+    attachments: Vec<MessageAttachment>,
     provider_id: String,
     model_id: String,
     thread_id: String,
@@ -546,9 +672,19 @@ async fn spawn_chat_stream<E: AiEnvironment + 'static>(
         model_id: model_id.clone(),
     };
 
-    let prompt = Message::User {
-        content: OneOrMany::one(UserContent::Text(Text { text: user_message })),
-    };
+    if !capabilities.vision {
+        if let Some(attachment) = attachments.iter().find(|attachment| {
+            attachment.content_type.starts_with("image/")
+                || attachment.content_type == "application/pdf"
+        }) {
+            return Err(AiError::InvalidInput(format!(
+                "The current model does not support image/PDF attachments ({}). Please switch to a vision-capable model.",
+                attachment.name
+            )));
+        }
+    }
+
+    let prompt = build_user_prompt(&user_message, &attachments);
 
     // Build history from previous messages
     let history: Vec<Message> = history_messages
@@ -637,6 +773,9 @@ async fn spawn_chat_stream<E: AiEnvironment + 'static>(
             }
             if is_allowed("record_activity") {
                 allowed_tools.push(Box::new(tool_set.record_activity));
+            }
+            if is_allowed("record_activities") {
+                allowed_tools.push(Box::new(tool_set.record_activities));
             }
             if is_allowed("import_csv") {
                 allowed_tools.push(Box::new(tool_set.import_csv));
@@ -1647,7 +1786,7 @@ fn build_history(messages: &[SimpleChatMessage]) -> Result<(Message, Vec<Message
 mod tests {
     use super::*;
     use crate::env::test_env::MockEnvironment;
-    use crate::types::{ChatMessageContent, ChatMessageRole};
+    use crate::types::{ChatMessageContent, ChatMessageRole, MessageAttachment};
     use chrono::Utc;
 
     fn make_chat_message(id: &str, role: ChatMessageRole, content: &str) -> ChatMessage {
@@ -1690,6 +1829,7 @@ mod tests {
         let tools = service.list_tools();
         assert!(tools.contains(&"get_accounts".to_string()));
         assert!(tools.contains(&"get_holdings".to_string()));
+        assert!(tools.contains(&"record_activities".to_string()));
     }
 
     #[test]
@@ -1778,6 +1918,48 @@ mod tests {
         assert_eq!(history.len(), 1);
         assert_eq!(history[0].role, "assistant");
         assert_eq!(history[0].content, "reply");
+    }
+
+    #[test]
+    fn test_validate_attachments_rejects_too_many_attachments() {
+        let attachments: Vec<MessageAttachment> = (0..11)
+            .map(|index| MessageAttachment {
+                name: format!("file-{index}.csv"),
+                content_type: "text/csv".to_string(),
+                data: "a,b,c".to_string(),
+            })
+            .collect();
+
+        let err = validate_attachments(&attachments).unwrap_err();
+        match err {
+            AiError::InvalidInput(message) => {
+                assert!(message.contains("Too many attachments"));
+            }
+            other => panic!("unexpected error: {other:?}"),
+        }
+    }
+
+    #[test]
+    fn test_build_user_prompt_includes_csv_and_image_attachment_instructions() {
+        let attachments = vec![
+            MessageAttachment {
+                name: "trades.csv".to_string(),
+                content_type: "text/csv".to_string(),
+                data: "date,type,amount".to_string(),
+            },
+            MessageAttachment {
+                name: "receipt.png".to_string(),
+                content_type: "image/png".to_string(),
+                data: "aW1hZ2UtYmFzZTY0".to_string(),
+            },
+        ];
+
+        let prompt = build_user_prompt("Please import these", &attachments);
+        let debug = format!("{prompt:?}");
+
+        assert!(debug.contains("import_csv tool"));
+        assert!(debug.contains("record_activities"));
+        assert!(debug.contains("Attached CSV file: trades.csv"));
     }
 
     #[tokio::test]

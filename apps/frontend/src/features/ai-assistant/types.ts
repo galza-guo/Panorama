@@ -146,8 +146,22 @@ export interface AiSendMessageRequest {
   allowedTools?: string[];
   /** Parent message ID for edit operations. */
   parentMessageId?: string;
+  /** File attachments (CSV, images, PDFs). */
+  attachments?: AiMessageAttachment[];
   /** Source message ID for edit operations. */
   sourceMessageId?: string;
+}
+
+/**
+ * A file attachment sent with an AI chat message.
+ */
+export interface AiMessageAttachment {
+  /** Original filename. */
+  name: string;
+  /** MIME type (e.g., "text/csv", "image/png", "application/pdf"). */
+  contentType: string;
+  /** File content: plain text for CSV, base64-encoded for images/PDFs. */
+  data: string;
 }
 
 /**
@@ -423,6 +437,112 @@ export type AiChatMessage = ChatMessage;
 
 /** @alias UsageStats - for adapter layer compatibility */
 export type AiUsageStats = UsageStats;
+
+// ============================================================================
+// Record Activities Tool Types
+// ============================================================================
+
+export interface RecordActivitiesIntent {
+  activityType: string;
+  symbol?: string;
+  activityDate: string;
+  quantity?: number;
+  unitPrice?: number;
+  amount?: number;
+  fee?: number;
+  account?: string;
+  subtype?: string;
+  notes?: string;
+}
+
+export interface RecordActivitiesArgs {
+  activities: RecordActivitiesIntent[];
+}
+
+export interface RecordActivitiesValidationError {
+  field: string;
+  message: string;
+}
+
+export interface RecordActivitiesRowValidation {
+  isValid: boolean;
+  missingFields: string[];
+  errors: RecordActivitiesValidationError[];
+}
+
+export interface RecordActivitiesDraft {
+  activityType: string;
+  activityDate: string;
+  symbol?: string;
+  assetId?: string;
+  assetName?: string;
+  quantity?: number;
+  unitPrice?: number;
+  amount?: number;
+  fee?: number;
+  currency: string;
+  accountId?: string;
+  accountName?: string;
+  subtype?: string;
+  notes?: string;
+  priceSource: string;
+  pricingMode: string;
+  isCustomAsset: boolean;
+  assetKind?: string;
+}
+
+export interface RecordActivitiesResolvedAsset {
+  assetId: string;
+  symbol: string;
+  name: string;
+  currency: string;
+  exchange?: string;
+  exchangeMic?: string;
+}
+
+export interface RecordActivitiesSubtypeOption {
+  value: string;
+  label: string;
+}
+
+export interface RecordActivitiesAccountOption {
+  id: string;
+  name: string;
+  currency: string;
+}
+
+export interface RecordActivitiesDraftRow {
+  rowIndex: number;
+  draft: RecordActivitiesDraft;
+  validation: RecordActivitiesRowValidation;
+  errors: string[];
+  resolvedAsset?: RecordActivitiesResolvedAsset;
+  availableSubtypes: RecordActivitiesSubtypeOption[];
+}
+
+export interface RecordActivitiesValidationSummary {
+  totalRows: number;
+  validRows: number;
+  errorRows: number;
+}
+
+export interface RecordActivitiesSubmissionStatus {
+  rowIndex: number;
+  status: "submitted" | "error";
+  error?: string;
+}
+
+export interface RecordActivitiesOutput {
+  drafts: RecordActivitiesDraftRow[];
+  validation: RecordActivitiesValidationSummary;
+  availableAccounts: RecordActivitiesAccountOption[];
+  resolvedAssets?: RecordActivitiesResolvedAsset[];
+  submitted?: boolean;
+  createdCount?: number;
+  errorCount?: number;
+  rowStatuses?: RecordActivitiesSubmissionStatus[];
+  submittedAt?: string;
+}
 
 // ============================================================================
 // Import CSV Tool Types (uses same format as manual import)

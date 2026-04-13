@@ -6,6 +6,8 @@ import {
   parseErrorCode,
   ERROR_CODE_MAP,
   type AiStreamEvent,
+  type AiMessageAttachment,
+  type AiSendMessageRequest,
   type ChatThread,
   type ChatMessage,
   type ChatMessageContent,
@@ -326,6 +328,27 @@ describe("AiStreamEvent type validation", () => {
     if (event.type === "done") {
       expect(event.usage).toBeUndefined();
     }
+  });
+});
+
+describe("AiSendMessageRequest", () => {
+  it("allows attachments and sourceMessageId on the same request", () => {
+    const attachments: AiMessageAttachment[] = [
+      {
+        name: "statement.pdf",
+        contentType: "application/pdf",
+        data: "cGRmLWJhc2U2NA==",
+      },
+    ];
+
+    const request: AiSendMessageRequest = {
+      content: "Review this document",
+      sourceMessageId: "msg-123",
+      attachments,
+    };
+
+    expect(request.sourceMessageId).toBe("msg-123");
+    expect(request.attachments?.[0]?.contentType).toBe("application/pdf");
   });
 });
 

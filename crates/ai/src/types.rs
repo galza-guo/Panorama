@@ -35,6 +35,7 @@ pub const DEFAULT_TOOLS_ALLOWLIST: &[&str] = &[
     "get_asset_allocation",
     "get_goals",
     "record_activity",
+    "record_activities",
     "import_csv",
 ];
 
@@ -879,6 +880,21 @@ pub struct SendMessageRequest {
     /// When set, stored history is rewritten from this message onward.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub source_message_id: Option<String>,
+    /// File attachments (CSV, images, PDFs).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub attachments: Option<Vec<MessageAttachment>>,
+}
+
+/// A file attachment sent with a chat message.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct MessageAttachment {
+    /// Original filename (e.g., "statement.pdf", "trades.csv").
+    pub name: String,
+    /// MIME type (e.g., "text/csv", "image/png", "application/pdf").
+    pub content_type: String,
+    /// File content: plain text for CSV, base64-encoded for images/PDFs.
+    pub data: String,
 }
 
 impl SendMessageRequest {
@@ -1024,6 +1040,7 @@ mod tests {
         let tools = config.get_tools_allowlist();
         assert!(tools.contains(&"get_holdings".to_string()));
         assert!(tools.contains(&"get_accounts".to_string()));
+        assert!(tools.contains(&"record_activities".to_string()));
     }
 
     #[test]
@@ -1076,5 +1093,24 @@ mod tests {
         let simple_msg = SimpleChatMessage::from(&chat_msg);
         assert_eq!(simple_msg.role, "user");
         assert_eq!(simple_msg.content, "Hello world");
+    }
+
+    #[test]
+    fn test_send_message_request_serializes_source_message_id_and_attachments_together() {
+        let request = SendMessageRequest {
+            content: "Review this statement".to_string(),
+            source_message_id: Some("msg-123".to_string()),
+            attachments: Some(vec![MessageAttachment {
+                name: "statement.pdf".to_string(),
+                content_type: "application/pdf".to_string(),
+                data: "cGRmLWJhc2U2NA==".to_string(),
+            }]),
+            ..Default::default()
+        };
+
+        let json = serde_json::to_value(&request).unwrap();
+        assert_eq!(json["sourceMessageId"], "msg-123");
+        assert_eq!(json["attachments"][0]["name"], "statement.pdf");
+        assert_eq!(json["attachments"][0]["contentType"], "application/pdf");
     }
 }
