@@ -473,6 +473,33 @@ export function DeviceSyncProvider({ children }: { children: ReactNode }) {
     };
   }, [state.syncState, state.identity?.deviceId, state.device?.id, runReconcileReadyState]);
 
+  useEffect(() => {
+    if (state.syncState !== SyncStates.READY) return;
+    if (state.bootstrapAction !== "NO_REMOTE_PULL") return;
+
+    const message = state.bootstrapMessage?.toLowerCase() ?? "";
+    const waitingForSnapshot = message.includes("waiting") && message.includes("snapshot");
+    if (!waitingForSnapshot) return;
+
+    let cancelled = false;
+    const timer = setTimeout(() => {
+      void runReconcileReadyState({
+        bypassOverwriteGuard: false,
+        isCancelled: () => cancelled,
+      });
+    }, 4000);
+
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
+  }, [
+    runReconcileReadyState,
+    state.bootstrapAction,
+    state.bootstrapMessage,
+    state.syncState,
+  ]);
+
   // Actions
   const refreshState = useCallback(async () => {
     dispatch({ type: "DETECT_START" });

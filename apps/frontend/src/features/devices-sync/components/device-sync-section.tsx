@@ -88,6 +88,12 @@ export function DeviceSyncSection() {
   const [isBackingUpBeforeBootstrap, setIsBackingUpBeforeBootstrap] = useState(false);
   const [isApplyingBootstrapOverwrite, setIsApplyingBootstrapOverwrite] = useState(false);
   const isBackgroundRunning = state.engineStatus?.backgroundRunning ?? false;
+  const waitingForRemoteSnapshotMessage =
+    state.bootstrapAction === "NO_REMOTE_PULL" &&
+    typeof state.bootstrapMessage === "string" &&
+    /waiting.*snapshot/i.test(state.bootstrapMessage)
+      ? state.bootstrapMessage
+      : null;
 
   const handlePairingComplete = useCallback(() => {
     setIsPairingOpen(false);
@@ -508,7 +514,13 @@ export function DeviceSyncSection() {
                 {state.bootstrapMessage}
               </div>
             )}
-            {state.bootstrapAction === "NO_REMOTE_PULL" && (
+            {waitingForRemoteSnapshotMessage && (
+              <div className="bg-muted/60 text-muted-foreground mb-3 flex items-center gap-2 rounded-md px-3 py-2 text-xs">
+                <Icons.Loader className="h-3.5 w-3.5 animate-spin" />
+                {waitingForRemoteSnapshotMessage}
+              </div>
+            )}
+            {state.bootstrapAction === "NO_REMOTE_PULL" && !waitingForRemoteSnapshotMessage && (
               <div className="bg-muted/60 text-muted-foreground mb-3 flex items-center gap-2 rounded-md px-3 py-2 text-xs">
                 <Icons.Info className="h-3.5 w-3.5" />
                 No data replacement is needed. This device can keep its current data.

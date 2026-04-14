@@ -195,6 +195,33 @@ describe("DeviceSyncSection", () => {
     });
     expect(screen.queryByRole("button", { name: "Continue" })).not.toBeInTheDocument();
   });
+
+  it("shows the upstream waiting-for-snapshot message while a trusted device uploads bootstrap data", () => {
+    hookMocks.useDeviceSync.mockReturnValue({
+      state: {
+        isDetecting: false,
+        syncState: "READY",
+        trustedDevices: [{ id: "trusted-1", name: "Laptop", platform: "mac", lastSeenAt: null }],
+        device: { trustState: "untrusted" },
+        engineStatus: null,
+        bootstrapStatus: "success",
+        bootstrapMessage: "Waiting for a trusted device to upload a snapshot",
+        bootstrapAction: "NO_REMOTE_PULL",
+        bootstrapOverwriteRisk: null,
+        remoteSeedPresent: null,
+      },
+      actions: createActions(),
+    });
+
+    renderWithQueryClient(<DeviceSyncSection />);
+
+    expect(
+      screen.getByText("Waiting for a trusted device to upload a snapshot"),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByText("No data replacement is needed. This device can keep its current data."),
+    ).not.toBeInTheDocument();
+  });
 });
 
 function createActions() {

@@ -29,6 +29,61 @@ struct SnapshotUploadProgressEvent {
 }
 
 const DEVICE_SYNC_SNAPSHOT_UPLOAD_PROGRESS_EVENT: &str = "device-sync:snapshot-upload-progress";
+const SYNC_SOURCE_RESTORE_REQUIRED_CODE: &str = "SYNC_SOURCE_RESTORE_REQUIRED";
+
+fn is_snapshot_index_conflict(message: &str) -> bool {
+    let message = message.to_ascii_lowercase();
+    message.contains("sync_transaction_failed") && message.contains("snapshot index conflict")
+}
+
+fn sync_source_restore_required_error() -> String {
+    format!(
+        "{SYNC_SOURCE_RESTORE_REQUIRED_CODE}: This device needs to set up sync again before you add another device."
+    )
+}
+
+enum MissingSnapshotDisposition {
+    CompleteNoBootstrap { message: String },
+    WaitForSnapshot { message: String },
+}
+
+async fn classify_missing_snapshot_disposition(
+    client: &wealthfolio_device_sync::DeviceSyncClient,
+    token: &str,
+    device_id: &str,
+) -> MissingSnapshotDisposition {
+    match client.get_reconcile_ready_state(token, device_id).await {
+        Ok(reconcile) => match reconcile.action.as_str() {
+            "NOOP" | "PULL_TAIL" => MissingSnapshotDisposition::CompleteNoBootstrap {
+                message: "No remote snapshot is required for this device".to_string(),
+            },
+            "WAIT_SNAPSHOT" | "BOOTSTRAP_SNAPSHOT" => MissingSnapshotDisposition::WaitForSnapshot {
+                message: "Waiting for a trusted device to upload a snapshot".to_string(),
+            },
+            other => {
+                debug!(
+                    "[DeviceSync] Snapshot missing with reconcile action='{}'; waiting for remote snapshot",
+                    other
+                );
+                MissingSnapshotDisposition::WaitForSnapshot {
+                    message:
+                        "Snapshot is not available yet. Waiting for upload from a trusted device."
+                            .to_string(),
+                }
+            }
+        },
+        Err(err) => {
+            debug!(
+                "[DeviceSync] Failed to inspect reconcile action while snapshot missing: {}",
+                err
+            );
+            MissingSnapshotDisposition::WaitForSnapshot {
+                message: "Snapshot is not available yet. Waiting for upload from a trusted device."
+                    .to_string(),
+            }
+        }
+    }
+}
 
 fn emit_snapshot_upload_progress(
     handle: Option<&AppHandle>,
@@ -142,19 +197,32 @@ pub async fn sync_bootstrap_snapshot_if_needed(
         Ok(value) => value,
         Err(err) => {
             if err.status_code() == Some(404) {
-                // No snapshot exists — this is the first device. Mark bootstrap
-                // complete so we don't keep retrying.
-                debug!("[DeviceSync] No snapshot found (404) — first device, skipping bootstrap");
-                sync_repo
-                    .mark_bootstrap_complete(device_id, identity.key_version)
-                    .await
-                    .map_err(|e| e.to_string())?;
-                return Ok(SyncBootstrapResult {
-                    status: "skipped".to_string(),
-                    message: "First device — no snapshot needed".to_string(),
-                    snapshot_id: None,
-                    cursor: Some(sync_repo.get_cursor().map_err(|e| e.to_string())?),
-                });
+                match classify_missing_snapshot_disposition(&client, &token, &device_id).await {
+                    MissingSnapshotDisposition::CompleteNoBootstrap { message } => {
+                        debug!(
+                            "[DeviceSync] No snapshot found (404) and reconcile indicates no bootstrap needed"
+                        );
+                        sync_repo
+                            .mark_bootstrap_complete(device_id.clone(), identity.key_version)
+                            .await
+                            .map_err(|e| e.to_string())?;
+                        return Ok(SyncBootstrapResult {
+                            status: "skipped".to_string(),
+                            message,
+                            snapshot_id: None,
+                            cursor: Some(sync_repo.get_cursor().map_err(|e| e.to_string())?),
+                        });
+                    }
+                    MissingSnapshotDisposition::WaitForSnapshot { message } => {
+                        debug!("[DeviceSync] No snapshot found (404); waiting for trusted device upload");
+                        return Ok(SyncBootstrapResult {
+                            status: "requested".to_string(),
+                            message,
+                            snapshot_id: None,
+                            cursor: Some(sync_repo.get_cursor().map_err(|e| e.to_string())?),
+                        });
+                    }
+                }
             }
             return Err(err.to_string());
         }
@@ -162,20 +230,34 @@ pub async fn sync_bootstrap_snapshot_if_needed(
 
     let latest = match latest {
         Some(value) => value,
-        None => {
-            // No snapshot available yet — mark bootstrap complete.
-            debug!("[DeviceSync] No snapshot available — first device, skipping bootstrap");
-            sync_repo
-                .mark_bootstrap_complete(device_id, identity.key_version)
-                .await
-                .map_err(|e| e.to_string())?;
-            return Ok(SyncBootstrapResult {
-                status: "skipped".to_string(),
-                message: "First device — no snapshot needed".to_string(),
-                snapshot_id: None,
-                cursor: Some(sync_repo.get_cursor().map_err(|e| e.to_string())?),
-            });
-        }
+        None => match classify_missing_snapshot_disposition(&client, &token, &device_id).await {
+            MissingSnapshotDisposition::CompleteNoBootstrap { message } => {
+                debug!(
+                        "[DeviceSync] Snapshot metadata is empty and reconcile indicates no bootstrap needed"
+                    );
+                sync_repo
+                    .mark_bootstrap_complete(device_id.clone(), identity.key_version)
+                    .await
+                    .map_err(|e| e.to_string())?;
+                return Ok(SyncBootstrapResult {
+                    status: "skipped".to_string(),
+                    message,
+                    snapshot_id: None,
+                    cursor: Some(sync_repo.get_cursor().map_err(|e| e.to_string())?),
+                });
+            }
+            MissingSnapshotDisposition::WaitForSnapshot { message } => {
+                debug!(
+                    "[DeviceSync] Snapshot metadata is empty; waiting for trusted device upload"
+                );
+                return Ok(SyncBootstrapResult {
+                    status: "requested".to_string(),
+                    message,
+                    snapshot_id: None,
+                    cursor: Some(sync_repo.get_cursor().map_err(|e| e.to_string())?),
+                });
+            }
+        },
     };
 
     debug!(
@@ -312,8 +394,9 @@ pub async fn generate_snapshot_now_internal(
         .ok_or_else(|| "No device ID configured".to_string())?;
     let key_version = identity.key_version.unwrap_or(1).max(1);
     let token = get_access_token(&context).await?;
+    let client = create_client()?;
 
-    let sync_state = create_client()?
+    let sync_state = client
         .get_device(&token, &device_id)
         .await
         .map_err(|e| e.to_string())?;
@@ -338,6 +421,41 @@ pub async fn generate_snapshot_now_internal(
         return Ok(snapshot_upload_cancelled_result(
             "Snapshot upload cancelled before export",
         ));
+    }
+
+    let local_cursor = context.app_sync_repository().get_cursor().ok();
+    let server_cursor = client
+        .get_events_cursor(&token, &device_id)
+        .await
+        .map_err(|e| e.to_string())?
+        .cursor;
+    if local_cursor.is_some_and(|cursor| cursor > server_cursor) {
+        return Err(sync_source_restore_required_error());
+    }
+    if let Some(cursor) = local_cursor {
+        if let Ok(Some(latest_snapshot)) = client
+            .get_latest_snapshot_with_cursor_fallback(&token, &device_id)
+            .await
+        {
+            if latest_snapshot.oplog_seq >= cursor {
+                info!(
+                    "[DeviceSync] Reusing latest remote snapshot id={} oplog_seq={} for cursor={}",
+                    latest_snapshot.snapshot_id, latest_snapshot.oplog_seq, cursor
+                );
+                emit_snapshot_upload_progress(
+                    handle,
+                    "completed",
+                    100,
+                    "Latest remote snapshot already covers current data",
+                );
+                return Ok(SyncSnapshotUploadResult {
+                    status: "uploaded".to_string(),
+                    snapshot_id: Some(latest_snapshot.snapshot_id),
+                    oplog_seq: Some(latest_snapshot.oplog_seq),
+                    message: "Latest remote snapshot already covers current cursor".to_string(),
+                });
+            }
+        }
     }
 
     let sqlite_bytes = context
@@ -376,7 +494,7 @@ pub async fn generate_snapshot_now_internal(
         key_version,
     )?;
 
-    let base_seq = context.app_sync_repository().get_cursor().ok();
+    let base_seq = local_cursor;
     let upload_headers = wealthfolio_device_sync::SnapshotUploadHeaders {
         event_id: Some(Uuid::now_v7().to_string()),
         schema_version: 1,
@@ -402,7 +520,7 @@ pub async fn generate_snapshot_now_internal(
     );
 
     let runtime = context.device_sync_runtime();
-    let upload_result = create_client()?
+    let upload_result = client
         .upload_snapshot_with_cancel_flag(
             &token,
             &device_id,
@@ -425,6 +543,34 @@ pub async fn generate_snapshot_now_internal(
                 return Ok(snapshot_upload_cancelled_result(
                     "Snapshot upload cancelled during transfer",
                 ));
+            }
+            if is_snapshot_index_conflict(&message) {
+                if let (Some(cursor), Ok(Some(snapshot))) = (
+                    local_cursor,
+                    client
+                        .get_latest_snapshot_with_cursor_fallback(&token, &device_id)
+                        .await,
+                ) {
+                    if snapshot.oplog_seq >= cursor {
+                        info!(
+                            "[DeviceSync] Snapshot conflict resolved by existing remote snapshot id={} oplog_seq={} cursor={}",
+                            snapshot.snapshot_id, snapshot.oplog_seq, cursor
+                        );
+                        emit_snapshot_upload_progress(
+                            handle,
+                            "complete",
+                            100,
+                            "Snapshot already available",
+                        );
+                        return Ok(SyncSnapshotUploadResult {
+                            status: "uploaded".to_string(),
+                            snapshot_id: Some(snapshot.snapshot_id),
+                            oplog_seq: Some(snapshot.oplog_seq),
+                            message: "Latest remote snapshot already covers current cursor"
+                                .to_string(),
+                        });
+                    }
+                }
             }
             return Err(message);
         }
