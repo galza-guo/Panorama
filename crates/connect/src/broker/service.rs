@@ -7,7 +7,8 @@ use std::sync::Arc;
 use super::mapping;
 use super::models::{
     AccountUniversalActivity, BrokerAccount, BrokerConnection, HoldingsBalance, HoldingsDiff,
-    HoldingsPosition, NewAccountInfo, SyncAccountsResponse, SyncConnectionsResponse,
+    HoldingsOptionPosition, HoldingsPosition, NewAccountInfo, SyncAccountsResponse,
+    SyncConnectionsResponse,
 };
 use super::traits::{BrokerSyncServiceTrait, PlatformRepositoryTrait};
 use crate::broker_ingest::{
@@ -533,6 +534,7 @@ impl BrokerSyncServiceTrait for BrokerSyncService {
         account_id: String,
         balances: Vec<HoldingsBalance>,
         positions: Vec<HoldingsPosition>,
+        option_positions: Vec<HoldingsOptionPosition>,
     ) -> Result<(HoldingsDiff, usize, Vec<String>)> {
         use std::collections::VecDeque;
         use wealthfolio_core::assets::InstrumentType;
@@ -582,7 +584,7 @@ impl BrokerSyncServiceTrait for BrokerSyncService {
                 api_symbol.as_deref(),
                 is_crypto_asset,
             );
-            let (symbol, exchange_mic) = match normalized_symbol {
+            let (symbol, mut exchange_mic) = match normalized_symbol {
                 Some(pair) => pair,
                 None if is_crypto_asset => {
                     debug!("Skipping crypto position without symbol");
@@ -593,6 +595,15 @@ impl BrokerSyncServiceTrait for BrokerSyncService {
                     continue;
                 }
             };
+
+            if exchange_mic.is_none() && !is_crypto_asset {
+                exchange_mic = symbol_info.and_then(|s| s.exchange.as_ref()).and_then(|e| {
+                    e.mic_code
+                        .clone()
+                        .filter(|code| !code.trim().is_empty())
+                        .or_else(|| e.code.clone().filter(|code| !code.trim().is_empty()))
+                });
+            }
 
             let units = pos.units.unwrap_or(0.0);
             if units == 0.0 {
@@ -606,11 +617,8 @@ impl BrokerSyncServiceTrait for BrokerSyncService {
                 .and_then(|c| c.code.clone())
                 .unwrap_or_else(|| account_currency.clone());
 
-            let instrument_type = if is_crypto_asset {
-                InstrumentType::Crypto
-            } else {
-                InstrumentType::Equity
-            };
+            let instrument_type =
+                map_broker_symbol_type(symbol_type_code.as_deref(), is_crypto_asset);
 
             let asset_name = symbol_info.and_then(|s| s.name.clone().or(s.description.clone()));
 
@@ -651,6 +659,85 @@ impl BrokerSyncServiceTrait for BrokerSyncService {
             let avg_cost = Decimal::from_f64(pos.average_purchase_price.unwrap_or(0.0))
                 .unwrap_or(price)
                 .round_dp(HOLDINGS_DECIMAL_PRECISION);
+
+            position_data.push((spec_key, quantity, price, avg_cost, currency));
+        }
+
+        for opt_pos in &option_positions {
+            let option_symbol = match opt_pos.resolved_option_symbol() {
+                Some(symbol) => symbol,
+                None => {
+                    debug!("Skipping option position without symbol");
+                    continue;
+                }
+            };
+
+            let ticker = match option_symbol
+                .ticker
+                .as_ref()
+                .filter(|ticker| !ticker.trim().is_empty())
+            {
+                Some(ticker) => ticker.clone(),
+                None => {
+                    debug!("Skipping option position without OCC ticker");
+                    continue;
+                }
+            };
+
+            let contracts = Decimal::from_f64(opt_pos.units.unwrap_or(0.0))
+                .unwrap_or(Decimal::ZERO)
+                .round_dp(HOLDINGS_DECIMAL_PRECISION);
+            if contracts.is_zero() {
+                debug!("Skipping option position {} with zero units", ticker);
+                continue;
+            }
+
+            let normalized_ticker = ticker.trim().to_string();
+            let currency = opt_pos
+                .currency
+                .as_ref()
+                .and_then(|c| c.code.clone())
+                .unwrap_or_else(|| account_currency.clone());
+            let multiplier = if option_symbol.is_mini_option.unwrap_or(false) {
+                Decimal::from(10)
+            } else {
+                Decimal::from(100)
+            };
+            // Panorama's position model does not store a contract multiplier, so we scale
+            // option contracts into equivalent underlying units here.
+            let quantity = (contracts * multiplier).round_dp(HOLDINGS_DECIMAL_PRECISION);
+            let price = Decimal::from_f64(opt_pos.price.unwrap_or(0.0))
+                .unwrap_or(Decimal::ZERO)
+                .round_dp(HOLDINGS_DECIMAL_PRECISION);
+            let avg_cost = Decimal::from_f64(opt_pos.average_purchase_price.unwrap_or(0.0))
+                .unwrap_or(price)
+                .round_dp(HOLDINGS_DECIMAL_PRECISION);
+
+            let spec = AssetSpec {
+                id: None,
+                display_code: Some(normalized_ticker.clone()),
+                instrument_symbol: Some(normalized_ticker.clone()),
+                instrument_exchange_mic: None,
+                instrument_type: Some(InstrumentType::Option),
+                quote_ccy: currency.clone(),
+                quote_ccy_hint: Some(currency.clone()),
+                kind: AssetKind::Investment,
+                quote_mode: None,
+                name: option_symbol
+                    .underlying_symbol
+                    .as_ref()
+                    .and_then(|underlying| underlying.description.clone()),
+            };
+
+            let spec_key = spec
+                .instrument_key()
+                .unwrap_or_else(|| format!("OPTION:{}", normalized_ticker.to_uppercase()));
+
+            if !spec_key_to_idx.contains_key(&spec_key) {
+                let idx = asset_specs.len();
+                asset_specs.push(spec);
+                spec_key_to_idx.insert(spec_key.clone(), idx);
+            }
 
             position_data.push((spec_key, quantity, price, avg_cost, currency));
         }
@@ -1154,6 +1241,24 @@ impl BrokerSyncService {
             broker_account.institution_name, external_id_candidates
         );
         Ok(None)
+    }
+}
+
+/// Maps a broker symbol type code to our instrument type.
+fn map_broker_symbol_type(
+    code: Option<&str>,
+    is_crypto_fallback: bool,
+) -> wealthfolio_core::assets::InstrumentType {
+    use wealthfolio_core::assets::InstrumentType;
+
+    match code.map(|value| value.to_lowercase()).as_deref() {
+        Some("crypto" | "cryptocurrency") => InstrumentType::Crypto,
+        Some("bnd") => InstrumentType::Equity,
+        Some("pm") => InstrumentType::Metal,
+        Some("fx") => InstrumentType::Fx,
+        Some(_) => InstrumentType::Equity,
+        None if is_crypto_fallback => InstrumentType::Crypto,
+        None => InstrumentType::Equity,
     }
 }
 

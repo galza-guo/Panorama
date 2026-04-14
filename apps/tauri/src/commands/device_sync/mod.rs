@@ -34,19 +34,14 @@ pub use engine::{ensure_background_engine_started, ensure_background_engine_stop
 // Shared Constants & Helpers
 // ─────────────────────────────────────────────────────────────────────────────
 
-const CLOUD_ACCESS_TOKEN_KEY: &str = "sync_access_token";
-
 fn cloud_api_base_url() -> Result<String, String> {
     crate::services::cloud_api_base_url().ok_or_else(|| {
         "Cloud API base URL is unavailable. Device sync operations are disabled.".to_string()
     })
 }
 
-fn get_access_token() -> Result<String, String> {
-    KeyringSecretStore
-        .get_secret(CLOUD_ACCESS_TOKEN_KEY)
-        .map_err(|e| format!("Failed to get access token: {}", e))?
-        .ok_or_else(|| "No access token configured. Please sign in first.".to_string())
+pub(super) async fn get_access_token(context: &Arc<ServiceContext>) -> Result<String, String> {
+    context.connect_service().get_valid_access_token().await
 }
 
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
@@ -461,7 +456,7 @@ pub async fn enroll_device(
 ) -> Result<EnrollDeviceResponse, String> {
     info!("[DeviceSync] Enrolling device: {}", display_name);
 
-    let token = get_access_token()?;
+    let token = get_access_token(_state.inner()).await?;
     let client = create_client()?;
 
     let platform = DevicePlatform::detect().to_string();
@@ -509,7 +504,7 @@ pub async fn get_device(
     device_id: Option<String>,
     _state: State<'_, Arc<ServiceContext>>,
 ) -> Result<Device, String> {
-    let token = get_access_token()?;
+    let token = get_access_token(_state.inner()).await?;
     let device_id = device_id
         .or_else(get_device_id_from_store)
         .ok_or_else(|| "No device ID configured".to_string())?;
@@ -527,7 +522,7 @@ pub async fn list_devices(
 ) -> Result<Vec<Device>, String> {
     info!("[DeviceSync] Listing devices (scope: {:?})...", scope);
 
-    let token = get_access_token()?;
+    let token = get_access_token(_state.inner()).await?;
 
     let devices = create_client()?
         .list_devices(&token, scope.as_deref())
@@ -549,7 +544,7 @@ pub async fn update_device(
         device_id, display_name
     );
 
-    let token = get_access_token()?;
+    let token = get_access_token(_state.inner()).await?;
 
     create_client()?
         .update_device(
@@ -571,7 +566,7 @@ pub async fn delete_device(
 ) -> Result<SuccessResponse, String> {
     info!("[DeviceSync] Deleting device: {}", device_id);
 
-    let token = get_access_token()?;
+    let token = get_access_token(_state.inner()).await?;
 
     create_client()?
         .delete_device(&token, &device_id)
@@ -586,7 +581,7 @@ pub async fn revoke_device(
 ) -> Result<SuccessResponse, String> {
     info!("[DeviceSync] Revoking device: {}", device_id);
 
-    let token = get_access_token()?;
+    let token = get_access_token(_state.inner()).await?;
 
     create_client()?
         .revoke_device(&token, &device_id)
@@ -604,7 +599,7 @@ pub async fn initialize_team_keys(
 ) -> Result<InitializeKeysResult, String> {
     info!("[DeviceSync] Initializing team keys...");
 
-    let token = get_access_token()?;
+    let token = get_access_token(_state.inner()).await?;
     let device_id =
         get_device_id_from_store().ok_or_else(|| "No device ID configured".to_string())?;
 
@@ -636,7 +631,7 @@ pub async fn commit_initialize_team_keys(
 ) -> Result<CommitInitializeKeysResponse, String> {
     info!("[DeviceSync] Committing team key initialization...");
 
-    let token = get_access_token()?;
+    let token = get_access_token(_state.inner()).await?;
     let device_id =
         get_device_id_from_store().ok_or_else(|| "No device ID configured".to_string())?;
 
@@ -661,7 +656,7 @@ pub async fn rotate_team_keys(
 ) -> Result<RotateKeysResponse, String> {
     info!("[DeviceSync] Starting key rotation...");
 
-    let token = get_access_token()?;
+    let token = get_access_token(_state.inner()).await?;
     let device_id =
         get_device_id_from_store().ok_or_else(|| "No device ID configured".to_string())?;
 
@@ -678,7 +673,7 @@ pub async fn commit_rotate_team_keys(
 ) -> Result<CommitRotateKeysResponse, String> {
     info!("[DeviceSync] Committing key rotation...");
 
-    let token = get_access_token()?;
+    let token = get_access_token(_state.inner()).await?;
     let device_id =
         get_device_id_from_store().ok_or_else(|| "No device ID configured".to_string())?;
 
@@ -695,7 +690,7 @@ pub async fn reset_team_sync(
 ) -> Result<ResetTeamSyncResponse, String> {
     info!("[DeviceSync] Resetting team sync...");
 
-    let token = get_access_token()?;
+    let token = get_access_token(_state.inner()).await?;
 
     create_client()?
         .reset_team_sync(&token, reason.as_deref())
@@ -852,7 +847,7 @@ pub async fn device_sync_engine_status(
 pub async fn device_sync_pairing_source_status(
     state: State<'_, Arc<ServiceContext>>,
 ) -> Result<SyncPairingSourceStatusResult, String> {
-    let token = get_access_token()?;
+    let token = get_access_token(state.inner()).await?;
     let device_id =
         get_device_id_from_store().ok_or_else(|| "No device ID configured".to_string())?;
     let client = create_client()?;
@@ -949,7 +944,7 @@ pub async fn create_pairing(
 ) -> Result<CreatePairingResponse, String> {
     debug!("[DeviceSync] Creating pairing session...");
 
-    let token = get_access_token()?;
+    let token = get_access_token(_state.inner()).await?;
     let device_id =
         get_device_id_from_store().ok_or_else(|| "No device ID configured".to_string())?;
 
@@ -973,7 +968,7 @@ pub async fn get_pairing(
 ) -> Result<GetPairingResponse, String> {
     debug!("[DeviceSync] Getting pairing session: {}", pairing_id);
 
-    let token = get_access_token()?;
+    let token = get_access_token(_state.inner()).await?;
     let device_id =
         get_device_id_from_store().ok_or_else(|| "No device ID configured".to_string())?;
 
@@ -990,7 +985,7 @@ pub async fn approve_pairing(
 ) -> Result<SuccessResponse, String> {
     debug!("[DeviceSync] Approving pairing session: {}", pairing_id);
 
-    let token = get_access_token()?;
+    let token = get_access_token(_state.inner()).await?;
     let device_id =
         get_device_id_from_store().ok_or_else(|| "No device ID configured".to_string())?;
 
@@ -1012,7 +1007,7 @@ pub async fn complete_pairing(
 ) -> Result<SuccessResponse, String> {
     debug!("[DeviceSync] Completing pairing session: {}", pairing_id);
 
-    let token = get_access_token()?;
+    let token = get_access_token(state.inner()).await?;
     let device_id =
         get_device_id_from_store().ok_or_else(|| "No device ID configured".to_string())?;
 
@@ -1059,7 +1054,7 @@ pub async fn cancel_pairing(
 ) -> Result<SuccessResponse, String> {
     debug!("[DeviceSync] Canceling pairing session: {}", pairing_id);
 
-    let token = get_access_token()?;
+    let token = get_access_token(_state.inner()).await?;
     let device_id =
         get_device_id_from_store().ok_or_else(|| "No device ID configured".to_string())?;
 
@@ -1081,7 +1076,7 @@ pub async fn claim_pairing(
 ) -> Result<ClaimPairingResponse, String> {
     info!("[DeviceSync] Claiming pairing session...");
 
-    let token = get_access_token()?;
+    let token = get_access_token(_state.inner()).await?;
     let device_id =
         get_device_id_from_store().ok_or_else(|| "No device ID configured".to_string())?;
 
@@ -1105,7 +1100,7 @@ pub async fn get_pairing_messages(
 ) -> Result<PairingMessagesResponse, String> {
     debug!("[DeviceSync] Polling for pairing messages: {}", pairing_id);
 
-    let token = get_access_token()?;
+    let token = get_access_token(_state.inner()).await?;
     let device_id =
         get_device_id_from_store().ok_or_else(|| "No device ID configured".to_string())?;
 
@@ -1123,7 +1118,7 @@ pub async fn confirm_pairing(
 ) -> Result<ConfirmPairingResponse, String> {
     info!("[DeviceSync] Confirming pairing: {}", pairing_id);
 
-    let token = get_access_token()?;
+    let token = get_access_token(_state.inner()).await?;
     let device_id =
         get_device_id_from_store().ok_or_else(|| "No device ID configured".to_string())?;
 

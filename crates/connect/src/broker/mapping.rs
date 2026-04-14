@@ -158,6 +158,45 @@ pub fn build_activity_metadata(activity: &AccountUniversalActivity) -> Option<St
         metadata.insert("institution".to_string(), serde_json::json!(institution));
     }
 
+    if let Some(ref symbol) = activity.symbol {
+        let mut symbol_metadata = serde_json::Map::new();
+
+        if let Some(ref id) = symbol.id {
+            symbol_metadata.insert("id".to_string(), serde_json::json!(id));
+        }
+        if let Some(ref value) = symbol.symbol {
+            symbol_metadata.insert("symbol".to_string(), serde_json::json!(value));
+        }
+        if let Some(ref value) = symbol.raw_symbol {
+            symbol_metadata.insert("raw_symbol".to_string(), serde_json::json!(value));
+        }
+        if let Some(ref value) = symbol.figi_code {
+            symbol_metadata.insert("figi_code".to_string(), serde_json::json!(value));
+        }
+        if let Some(ref exchange) = symbol.exchange {
+            if let Some(ref mic) = exchange.mic_code {
+                symbol_metadata.insert("exchange_mic".to_string(), serde_json::json!(mic));
+            }
+        }
+        if let Some(ref symbol_type) = symbol.symbol_type {
+            if let Some(ref code) = symbol_type.code {
+                symbol_metadata.insert("symbol_type_code".to_string(), serde_json::json!(code));
+            }
+        }
+        if let Some(ref currency) = symbol.currency {
+            if let Some(ref code) = currency.code {
+                symbol_metadata.insert("currency_code".to_string(), serde_json::json!(code));
+            }
+        }
+
+        if !symbol_metadata.is_empty() {
+            metadata.insert(
+                "symbol".to_string(),
+                serde_json::Value::Object(symbol_metadata),
+            );
+        }
+    }
+
     if let Some(option_leg_type) = activity
         .option_type
         .as_ref()
@@ -257,6 +296,7 @@ pub fn map_broker_activity(
 
     // Build metadata JSON
     let metadata = build_activity_metadata(activity);
+    let is_never_asset_type = activities::NEVER_ASSET_TYPES.contains(&activity_type.as_str());
 
     let is_cash_like = matches!(
         activity_type.as_str(),
@@ -350,7 +390,9 @@ pub fn map_broker_activity(
     };
 
     // Build SymbolInput for non-cash activities that have a symbol
-    let symbol_input = if is_cash_like && display_symbol.is_none() && option_symbol.is_none() {
+    let symbol_input = if is_never_asset_type {
+        None
+    } else if is_cash_like && display_symbol.is_none() && option_symbol.is_none() {
         // Cash activity without symbol - no asset needed
         None
     } else {
@@ -592,5 +634,49 @@ mod tests {
 
         assert_eq!(symbol.symbol.as_deref(), Some("AAPL"));
         assert_ne!(symbol.kind.as_deref(), Some("OPTION"));
+    }
+
+    #[test]
+    fn test_map_broker_activity_clears_symbol_for_all_never_asset_types() {
+        for activity_type in activities::NEVER_ASSET_TYPES {
+            let activity = AccountUniversalActivity {
+                id: Some(format!("act-{}", activity_type.to_lowercase())),
+                activity_type: Some(activity_type.to_string()),
+                symbol: Some(crate::broker::models::AccountUniversalActivitySymbol {
+                    symbol: Some("AAPL".to_string()),
+                    raw_symbol: Some("AAPL".to_string()),
+                    ..Default::default()
+                }),
+                ..Default::default()
+            };
+
+            let mapped =
+                map_broker_activity(&activity, "acct-1", Some("USD"), Some("USD")).unwrap();
+            assert!(
+                mapped.symbol.is_none(),
+                "expected no symbol for never-asset type {}",
+                activity_type
+            );
+        }
+    }
+
+    #[test]
+    fn test_map_broker_activity_keeps_symbol_for_transfer_with_symbol() {
+        let activity = AccountUniversalActivity {
+            id: Some("act-tr-in".to_string()),
+            activity_type: Some("TRANSFER_IN".to_string()),
+            symbol: Some(crate::broker::models::AccountUniversalActivitySymbol {
+                symbol: Some("AAPL".to_string()),
+                raw_symbol: Some("AAPL".to_string()),
+                ..Default::default()
+            }),
+            ..Default::default()
+        };
+
+        let mapped = map_broker_activity(&activity, "acct-1", Some("USD"), Some("USD")).unwrap();
+        assert_eq!(
+            mapped.symbol.and_then(|symbol| symbol.symbol),
+            Some("AAPL".to_string())
+        );
     }
 }

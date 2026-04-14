@@ -29,13 +29,13 @@ use crate::context::ServiceContext;
 pub async fn run_startup_sync(handle: &AppHandle, context: &Arc<ServiceContext>) {
     info!("Running startup broker sync...");
 
-    // Check subscription status first using ConnectService
-    match context.connect_service().has_active_subscription().await {
+    // Check whether the current plan actually includes broker sync.
+    match context.connect_service().has_broker_sync().await {
         Ok(true) => {
             // User has active subscription, proceed
         }
         Ok(false) => {
-            debug!("Startup sync skipped: no active subscription");
+            debug!("Startup sync skipped: broker sync is not available for this account");
             return;
         }
         Err(e) => {
