@@ -7,10 +7,12 @@ mod engine;
 mod snapshot;
 
 use async_trait::async_trait;
+use chrono::{DateTime, Utc};
 use log::{debug, info};
+use std::collections::HashMap;
 use std::process::Command;
 use std::sync::atomic::Ordering;
-use std::sync::Arc;
+use std::sync::{Arc, Mutex, OnceLock};
 use tauri::{AppHandle, State};
 
 use crate::context::ServiceContext;
@@ -42,6 +44,40 @@ fn cloud_api_base_url() -> Result<String, String> {
 
 pub(super) async fn get_access_token(context: &Arc<ServiceContext>) -> Result<String, String> {
     context.connect_service().get_valid_access_token().await
+}
+
+fn min_snapshot_created_at_state() -> &'static Mutex<HashMap<String, String>> {
+    static STATE: OnceLock<Mutex<HashMap<String, String>>> = OnceLock::new();
+    STATE.get_or_init(|| Mutex::new(HashMap::new()))
+}
+
+pub(super) fn get_min_snapshot_created_at_from_store(device_id: &str) -> Option<String> {
+    min_snapshot_created_at_state()
+        .lock()
+        .ok()
+        .and_then(|guard| guard.get(device_id).cloned())
+}
+
+fn set_min_snapshot_created_at_in_store(device_id: &str, value: &str) {
+    if let Ok(mut guard) = min_snapshot_created_at_state().lock() {
+        guard.insert(device_id.to_string(), value.to_string());
+    }
+}
+
+pub(super) fn remove_min_snapshot_created_at_from_store(device_id: &str) {
+    if let Ok(mut guard) = min_snapshot_created_at_state().lock() {
+        guard.remove(device_id);
+    }
+}
+
+pub(super) fn parse_sync_datetime_to_utc(value: &str) -> Result<DateTime<Utc>, String> {
+    DateTime::parse_from_rfc3339(value)
+        .map(|parsed| parsed.with_timezone(&Utc))
+        .map_err(|err| format!("Invalid sync timestamp: {}", err))
+}
+
+pub(super) fn normalize_sync_datetime(value: &str) -> Result<String, String> {
+    parse_sync_datetime_to_utc(value).map(|parsed| parsed.to_rfc3339())
 }
 
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
@@ -1114,15 +1150,16 @@ pub async fn get_pairing_messages(
 pub async fn confirm_pairing(
     pairing_id: String,
     proof: Option<String>,
-    _state: State<'_, Arc<ServiceContext>>,
+    min_snapshot_created_at: Option<String>,
+    state: State<'_, Arc<ServiceContext>>,
 ) -> Result<ConfirmPairingResponse, String> {
     info!("[DeviceSync] Confirming pairing: {}", pairing_id);
 
-    let token = get_access_token(_state.inner()).await?;
+    let token = get_access_token(state.inner()).await?;
     let device_id =
         get_device_id_from_store().ok_or_else(|| "No device ID configured".to_string())?;
 
-    create_client()?
+    let result = create_client()?
         .confirm_pairing(
             &token,
             &device_id,
@@ -1130,7 +1167,32 @@ pub async fn confirm_pairing(
             ConfirmPairingRequest { proof },
         )
         .await
-        .map_err(|e| e.to_string())
+        .map_err(|e| e.to_string())?;
+
+    if let Some(min_created_at) = min_snapshot_created_at.as_deref() {
+        if let Ok(parsed_min) = parse_sync_datetime_to_utc(min_created_at) {
+            let max_allowed = chrono::Utc::now() + chrono::Duration::minutes(10);
+            if parsed_min > max_allowed {
+                log::warn!(
+                    "[DeviceSync] Ignoring minSnapshotCreatedAt too far in the future: {}",
+                    min_created_at
+                );
+            } else {
+                match normalize_sync_datetime(min_created_at) {
+                    Ok(normalized) => set_min_snapshot_created_at_in_store(&device_id, &normalized),
+                    Err(err) => {
+                        log::warn!(
+                            "[DeviceSync] Ignoring invalid minSnapshotCreatedAt value after normalization: {} ({})",
+                            min_created_at,
+                            err
+                        );
+                    }
+                }
+            }
+        }
+    }
+
+    Ok(result)
 }
 
 #[cfg(test)]

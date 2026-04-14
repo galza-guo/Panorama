@@ -41,3 +41,4 @@ upstream updates.
 | 2026-03-05 | Initial inventory created | Seeded from v3 migration branch and post-cutover fixes |
 | 2026-04-15 | Selective `v3.2.1` sync checkpoint | No new fork-only lanes were introduced while absorbing upstream Connect/device-sync runtime behavior; existing Panorama patches remain the required conflict-resolution source of truth |
 | 2026-04-15 | Device-sync snapshot follow-up | Waiting-state and snapshot-upload hardening were absorbed from upstream without changing any documented Panorama-only patch lanes |
+| 2026-04-15 | Device-sync freshness gate follow-up | Claimer-side snapshot freshness protection was restored in session memory only; no new fork-only lane or schema divergence was introduced |

@@ -1,7 +1,7 @@
 //! Snapshot generation, upload, and bootstrap flows.
 
 use base64::{engine::general_purpose::STANDARD as BASE64_STANDARD, Engine};
-use chrono::Utc;
+use chrono::{Duration, Utc};
 use log::{debug, info};
 use std::sync::atomic::Ordering;
 use std::sync::Arc;
@@ -15,9 +15,11 @@ use wealthfolio_core::sync::APP_SYNC_TABLES;
 use wealthfolio_device_sync::SyncState;
 
 use super::{
-    create_client, encrypt_sync_payload, get_access_token, get_sync_identity_from_store,
-    is_sqlite_image, persist_device_config_from_identity, sha256_checksum, SyncBootstrapResult,
-    SyncIdentity, SyncSnapshotUploadResult,
+    create_client, encrypt_sync_payload, get_access_token, get_min_snapshot_created_at_from_store,
+    get_sync_identity_from_store, is_sqlite_image, normalize_sync_datetime,
+    parse_sync_datetime_to_utc, persist_device_config_from_identity,
+    remove_min_snapshot_created_at_from_store, sha256_checksum, SyncBootstrapResult, SyncIdentity,
+    SyncSnapshotUploadResult,
 };
 
 #[derive(Debug, Clone, serde::Serialize)]
@@ -30,6 +32,7 @@ struct SnapshotUploadProgressEvent {
 
 const DEVICE_SYNC_SNAPSHOT_UPLOAD_PROGRESS_EVENT: &str = "device-sync:snapshot-upload-progress";
 const SYNC_SOURCE_RESTORE_REQUIRED_CODE: &str = "SYNC_SOURCE_RESTORE_REQUIRED";
+const SNAPSHOT_FRESHNESS_CLOCK_SKEW_LEEWAY_SECS: i64 = 120;
 
 fn is_snapshot_index_conflict(message: &str) -> bool {
     let message = message.to_ascii_lowercase();
@@ -81,6 +84,52 @@ async fn classify_missing_snapshot_disposition(
                 message: "Snapshot is not available yet. Waiting for upload from a trusted device."
                     .to_string(),
             }
+        }
+    }
+}
+
+async fn snapshot_satisfies_freshness_gate(
+    client: &wealthfolio_device_sync::DeviceSyncClient,
+    token: &str,
+    device_id: &str,
+    latest: &wealthfolio_device_sync::SnapshotLatestResponse,
+    min_created_at: &str,
+) -> Result<bool, String> {
+    let latest_created_at = parse_sync_datetime_to_utc(&latest.created_at)
+        .map_err(|e| format!("Invalid snapshot created_at in metadata: {}", e))?;
+    let min_created_at = parse_sync_datetime_to_utc(min_created_at)
+        .map_err(|e| format!("Invalid min snapshot freshness gate: {}", e))?;
+    if latest_created_at + Duration::seconds(SNAPSHOT_FRESHNESS_CLOCK_SKEW_LEEWAY_SECS)
+        > min_created_at
+    {
+        return Ok(true);
+    }
+
+    match client.get_events_cursor(token, device_id).await {
+        Ok(cursor) if latest.oplog_seq >= cursor.cursor => {
+            info!(
+                "[DeviceSync] Accepting snapshot {} older than freshness gate because oplog_seq {} already covers remote cursor {}",
+                latest.snapshot_id,
+                latest.oplog_seq,
+                cursor.cursor
+            );
+            Ok(true)
+        }
+        Ok(cursor) => {
+            debug!(
+                "[DeviceSync] Snapshot {} is older than freshness gate and oplog_seq {} does not cover remote cursor {}",
+                latest.snapshot_id,
+                latest.oplog_seq,
+                cursor.cursor
+            );
+            Ok(false)
+        }
+        Err(err) => {
+            debug!(
+                "[DeviceSync] Failed to verify remote cursor for freshness gate on snapshot {}: {}",
+                latest.snapshot_id, err
+            );
+            Ok(false)
         }
     }
 }
@@ -156,6 +205,20 @@ pub async fn sync_bootstrap_snapshot_if_needed(
         .clone()
         .ok_or_else(|| "No device ID configured".to_string())?;
     let token = get_access_token(&context).await?;
+    let min_snapshot_created_at = match get_min_snapshot_created_at_from_store(&device_id) {
+        Some(value) => match normalize_sync_datetime(&value) {
+            Ok(normalized) => Some(normalized),
+            Err(_) => {
+                log::warn!(
+                    "[DeviceSync] Dropping invalid min snapshot freshness gate: {}",
+                    value
+                );
+                remove_min_snapshot_created_at_from_store(&device_id);
+                None
+            }
+        },
+        None => None,
+    };
 
     let sync_state = context
         .device_enroll_service()
@@ -197,6 +260,18 @@ pub async fn sync_bootstrap_snapshot_if_needed(
         Ok(value) => value,
         Err(err) => {
             if err.status_code() == Some(404) {
+                if min_snapshot_created_at.is_some() {
+                    debug!(
+                        "[DeviceSync] No snapshot found (404) while freshness gate is active; waiting for trusted device upload"
+                    );
+                    return Ok(SyncBootstrapResult {
+                        status: "requested".to_string(),
+                        message: "Waiting for a snapshot generated after pairing confirmation"
+                            .to_string(),
+                        snapshot_id: None,
+                        cursor: Some(sync_repo.get_cursor().map_err(|e| e.to_string())?),
+                    });
+                }
                 match classify_missing_snapshot_disposition(&client, &token, &device_id).await {
                     MissingSnapshotDisposition::CompleteNoBootstrap { message } => {
                         debug!(
@@ -230,40 +305,71 @@ pub async fn sync_bootstrap_snapshot_if_needed(
 
     let latest = match latest {
         Some(value) => value,
-        None => match classify_missing_snapshot_disposition(&client, &token, &device_id).await {
-            MissingSnapshotDisposition::CompleteNoBootstrap { message } => {
+        None => {
+            if min_snapshot_created_at.is_some() {
                 debug!(
-                        "[DeviceSync] Snapshot metadata is empty and reconcile indicates no bootstrap needed"
-                    );
-                sync_repo
-                    .mark_bootstrap_complete(device_id.clone(), identity.key_version)
-                    .await
-                    .map_err(|e| e.to_string())?;
-                return Ok(SyncBootstrapResult {
-                    status: "skipped".to_string(),
-                    message,
-                    snapshot_id: None,
-                    cursor: Some(sync_repo.get_cursor().map_err(|e| e.to_string())?),
-                });
-            }
-            MissingSnapshotDisposition::WaitForSnapshot { message } => {
-                debug!(
-                    "[DeviceSync] Snapshot metadata is empty; waiting for trusted device upload"
+                    "[DeviceSync] Snapshot metadata is empty while freshness gate is active; waiting for trusted device upload"
                 );
                 return Ok(SyncBootstrapResult {
                     status: "requested".to_string(),
-                    message,
+                    message: "Waiting for a snapshot generated after pairing confirmation"
+                        .to_string(),
                     snapshot_id: None,
                     cursor: Some(sync_repo.get_cursor().map_err(|e| e.to_string())?),
                 });
             }
-        },
+            match classify_missing_snapshot_disposition(&client, &token, &device_id).await {
+                MissingSnapshotDisposition::CompleteNoBootstrap { message } => {
+                    debug!(
+                        "[DeviceSync] Snapshot metadata is empty and reconcile indicates no bootstrap needed"
+                    );
+                    sync_repo
+                        .mark_bootstrap_complete(device_id.clone(), identity.key_version)
+                        .await
+                        .map_err(|e| e.to_string())?;
+                    return Ok(SyncBootstrapResult {
+                        status: "skipped".to_string(),
+                        message,
+                        snapshot_id: None,
+                        cursor: Some(sync_repo.get_cursor().map_err(|e| e.to_string())?),
+                    });
+                }
+                MissingSnapshotDisposition::WaitForSnapshot { message } => {
+                    debug!(
+                        "[DeviceSync] Snapshot metadata is empty; waiting for trusted device upload"
+                    );
+                    return Ok(SyncBootstrapResult {
+                        status: "requested".to_string(),
+                        message,
+                        snapshot_id: None,
+                        cursor: Some(sync_repo.get_cursor().map_err(|e| e.to_string())?),
+                    });
+                }
+            }
+        }
     };
 
     debug!(
         "[DeviceSync] Latest snapshot metadata: id='{}' schema={} oplog_seq={} size={}",
         latest.snapshot_id, latest.schema_version, latest.oplog_seq, latest.size_bytes
     );
+
+    if let Some(min_created_at) = min_snapshot_created_at.as_deref() {
+        if !snapshot_satisfies_freshness_gate(&client, &token, &device_id, &latest, min_created_at)
+            .await?
+        {
+            debug!(
+                "[DeviceSync] Snapshot {} is older than required freshness gate beyond leeway and does not cover current remote cursor",
+                latest.snapshot_id,
+            );
+            return Ok(SyncBootstrapResult {
+                status: "requested".to_string(),
+                message: "Waiting for a snapshot generated after pairing confirmation".to_string(),
+                snapshot_id: None,
+                cursor: Some(sync_repo.get_cursor().map_err(|e| e.to_string())?),
+            });
+        }
+    }
 
     const LOCAL_SCHEMA_VERSION: i32 = 1;
     if latest.schema_version > LOCAL_SCHEMA_VERSION {
@@ -355,7 +461,7 @@ pub async fn sync_bootstrap_snapshot_if_needed(
             snapshot_path_str,
             tables_to_restore,
             snapshot_oplog_seq,
-            device_id,
+            device_id.clone(),
             identity.key_version,
         )
         .await;
@@ -367,6 +473,7 @@ pub async fn sync_bootstrap_snapshot_if_needed(
         .market_sync_mode(MarketSyncMode::Incremental { asset_ids: None })
         .build();
     emit_portfolio_trigger_recalculate(&handle, payload);
+    remove_min_snapshot_created_at_from_store(&device_id);
 
     Ok(SyncBootstrapResult {
         status: "applied".to_string(),

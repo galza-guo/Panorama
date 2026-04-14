@@ -481,7 +481,11 @@ class SyncService {
     const proof = await crypto.hashPairingCode(proofData);
 
     // Confirm with server
-    const result = await confirmPairingApi(session.pairingId, proof);
+    const result = await confirmPairingApi(
+      session.pairingId,
+      proof,
+      new Date().toISOString(),
+    );
 
     if (!result.success) {
       throw new SyncError(SyncErrorCodes.KEYS_INIT_FAILED, "Failed to confirm pairing");

@@ -129,7 +129,11 @@ describe("syncService pairing remote seed status", () => {
 
     const result = await syncService.confirmPairingAsClaimer(session, keyBundle);
 
-    expect(adapterMocks.confirmPairing).toHaveBeenCalledWith("pair_2", "proof");
+    expect(adapterMocks.confirmPairing).toHaveBeenCalledWith(
+      "pair_2",
+      "proof",
+      expect.any(String),
+    );
     expect(storageMocks.setE2EECredentials).toHaveBeenCalledTimes(1);
     expect(result.remoteSeedPresent).toBe(true);
   });
