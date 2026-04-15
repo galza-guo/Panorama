@@ -33,6 +33,7 @@ upstream updates.
 | P-003 | ACTIVE | SPECIALIZED_ASSETS | MPF dashboard/editor workflow and enrichment hooks | `apps/frontend/src/pages/mpf/mpf-dashboard.tsx`, `apps/frontend/src/pages/mpf/components/mpf-asset-editor-sheet.tsx`, `crates/core/src/assets/alternative_assets_service.rs` | `cargo test -p wealthfolio-core panorama` |
 | P-004 | ACTIVE | COMPATIBILITY | Legacy asset compatibility for instrument mapping and health staleness false-positive fixes | `crates/core/src/assets/assets_model.rs`, `crates/core/src/health/checks/price_staleness.rs`, `crates/core/src/health/service.rs` | `cargo test -p wealthfolio-core test_to_instrument_id_ -- --nocapture`, `cargo test -p wealthfolio-core health -- --nocapture` |
 | P-005 | LOCAL_ONLY | BRANDING_RELEASE | Panorama release endpoints/branding while keeping technical compatibility identifiers | `apps/tauri/tauri.conf.json`, `apps/server/src/api/settings.rs`, `TRADEMARKS.md` | `pnpm build:types`, `pnpm build` |
+| P-006 | LOCAL_ONLY | OTHER | Panorama AI provider catalog and picker UX: keep added providers such as DeepSeek, keep enabled API providers visible before keys are configured, and keep the explicit “Add models...” empty-favorites CTA instead of silently falling back to all catalog models | `crates/ai/src/ai_providers.json`, `apps/frontend/src/features/ai-assistant/hooks/use-chat-model.ts`, `apps/frontend/src/features/ai-assistant/hooks/use-provider-picker.ts`, `apps/frontend/src/features/ai-assistant/components/model-picker.tsx` | `cargo test -p wealthfolio-ai provider_service::tests -- --nocapture`, `pnpm --filter frontend test -- --run` |
 
 ## Change log
 
@@ -42,3 +43,4 @@ upstream updates.
 | 2026-04-15 | Selective `v3.2.1` sync checkpoint | No new fork-only lanes were introduced while absorbing upstream Connect/device-sync runtime behavior; existing Panorama patches remain the required conflict-resolution source of truth |
 | 2026-04-15 | Device-sync snapshot follow-up | Waiting-state and snapshot-upload hardening were absorbed from upstream without changing any documented Panorama-only patch lanes |
 | 2026-04-15 | Device-sync freshness gate follow-up | Claimer-side snapshot freshness protection was restored in session memory only; no new fork-only lane or schema divergence was introduced |
+| 2026-04-16 | AI provider/runtime follow-up | Documented Panorama-specific AI provider catalog/picker behavior as a protected local lane while restoring upstream merged-provider support for saved non-catalog runtime models |

@@ -1,6 +1,7 @@
 //! AI provider service - merges catalog with user settings.
 
 use async_trait::async_trait;
+use std::collections::HashSet;
 use std::sync::Arc;
 
 use wealthfolio_core::errors::{Result, ValidationError};
@@ -238,6 +239,51 @@ impl AiProviderServiceTrait for AiProviderService {
                         }
                     })
                     .collect();
+
+                // Preserve user-selected/favorite runtime models that are not part of the static
+                // catalog so they continue to round-trip through the UI.
+                let mut non_catalog_model_ids: HashSet<String> = HashSet::new();
+                if let Some(selected_model) = &user.selected_model {
+                    if !catalog_provider.models.contains_key(selected_model) {
+                        non_catalog_model_ids.insert(selected_model.clone());
+                    }
+                }
+                for favorite_model in &user.favorite_models {
+                    if !catalog_provider.models.contains_key(favorite_model) {
+                        non_catalog_model_ids.insert(favorite_model.clone());
+                    }
+                }
+                for model_id in user.model_capability_overrides.keys() {
+                    if !catalog_provider.models.contains_key(model_id) {
+                        non_catalog_model_ids.insert(model_id.clone());
+                    }
+                }
+
+                for model_id in non_catalog_model_ids {
+                    let has_overrides = user.model_capability_overrides.contains_key(&model_id);
+                    let base_capabilities = ModelCapabilities {
+                        tools: false,
+                        thinking: false,
+                        vision: false,
+                        streaming: true,
+                    };
+                    let capabilities =
+                        if let Some(overrides) = user.model_capability_overrides.get(&model_id) {
+                            Self::apply_capability_overrides(&base_capabilities, overrides)
+                        } else {
+                            base_capabilities
+                        };
+
+                    models.push(MergedModel {
+                        id: model_id.clone(),
+                        name: Some(model_id.clone()),
+                        capabilities,
+                        is_catalog: false,
+                        is_favorite: user.favorite_models.contains(&model_id),
+                        has_capability_overrides: has_overrides,
+                    });
+                }
+
                 // Sort models alphabetically for consistent ordering
                 models.sort_by(|a, b| a.id.cmp(&b.id));
 
@@ -704,5 +750,71 @@ mod tests {
             .models
             .iter()
             .any(|model| model.id == "deepseek-reasoner" && model.capabilities.thinking));
+    }
+
+    #[test]
+    fn test_get_ai_providers_includes_non_catalog_favorite_models() {
+        let settings_repo = Arc::new(MockSettingsRepository::default());
+        let secret_store = Arc::new(MockSecretStore::default());
+        let custom_model_id = "gpt-5-thinking-preview";
+
+        let mut settings = AiProviderSettings::default();
+        settings.default_provider = Some("openai".to_string());
+        settings.providers.insert(
+            "openai".to_string(),
+            ProviderUserSettings {
+                enabled: true,
+                selected_model: Some(custom_model_id.to_string()),
+                favorite_models: vec![custom_model_id.to_string()],
+                model_capability_overrides: HashMap::from([(
+                    custom_model_id.to_string(),
+                    ModelCapabilityOverrides {
+                        thinking: Some(true),
+                        ..Default::default()
+                    },
+                )]),
+                ..Default::default()
+            },
+        );
+
+        settings_repo
+            .settings
+            .write()
+            .unwrap()
+            .insert(
+                AI_PROVIDER_SETTINGS_KEY.to_string(),
+                serde_json::to_string(&settings).expect("settings should serialize"),
+            );
+
+        let service = AiProviderService::new(
+            settings_repo,
+            secret_store,
+            include_str!("ai_providers.json"),
+        )
+        .expect("catalog should load");
+
+        let response = service.get_ai_providers().expect("providers should load");
+        let provider = response
+            .providers
+            .iter()
+            .find(|provider| provider.id == "openai")
+            .expect("openai provider should be present");
+
+        let custom_model = provider
+            .models
+            .iter()
+            .find(|model| model.id == custom_model_id)
+            .expect("saved non-catalog model should be preserved in merged providers");
+
+        assert_eq!(provider.selected_model.as_deref(), Some(custom_model_id));
+        assert_eq!(provider.favorite_models, vec![custom_model_id.to_string()]);
+        assert_eq!(custom_model.name.as_deref(), Some(custom_model_id));
+        assert!(!custom_model.is_catalog);
+        assert!(custom_model.is_favorite);
+        assert!(custom_model.has_capability_overrides);
+        assert!(custom_model.capabilities.thinking);
+        assert!(!custom_model.capabilities.tools);
+        assert!(!custom_model.capabilities.vision);
+        assert!(custom_model.capabilities.streaming);
     }
 }
