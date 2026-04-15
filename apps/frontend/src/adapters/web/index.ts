@@ -369,6 +369,7 @@ export {
   syncDecrypt,
   syncGeneratePairingCode,
   syncHashPairingCode,
+  syncHmacSha256,
   syncComputeSas,
   syncGenerateDeviceId,
 } from "./crypto";

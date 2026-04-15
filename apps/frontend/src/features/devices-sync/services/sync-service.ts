@@ -357,7 +357,7 @@ class SyncService {
 
     // Create signature
     const signatureData = `complete:${session.pairingId}:${encryptedKeyBundle}`;
-    const signature = await crypto.hashPairingCode(signatureData);
+    const signature = await crypto.hmacSha256(session.sessionKey, signatureData);
 
     // Complete on server (server knows claimer from claim step)
     const result = await completePairingApi(session.pairingId, encryptedKeyBundle, sas, signature);
@@ -478,7 +478,7 @@ class SyncService {
 
     // Compute proof (HMAC of session data)
     const proofData = `confirm:${session.pairingId}:${keyBundle.keyVersion}`;
-    const proof = await crypto.hashPairingCode(proofData);
+    const proof = await crypto.hmacSha256(session.sessionKey, proofData);
 
     // Confirm with server
     const result = await confirmPairingApi(

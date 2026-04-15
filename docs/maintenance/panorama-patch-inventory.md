@@ -44,3 +44,4 @@ upstream updates.
 | 2026-04-15 | Device-sync snapshot follow-up | Waiting-state and snapshot-upload hardening were absorbed from upstream without changing any documented Panorama-only patch lanes |
 | 2026-04-15 | Device-sync freshness gate follow-up | Claimer-side snapshot freshness protection was restored in session memory only; no new fork-only lane or schema divergence was introduced |
 | 2026-04-16 | AI provider/runtime follow-up | Documented Panorama-specific AI provider catalog/picker behavior as a protected local lane while restoring upstream merged-provider support for saved non-catalog runtime models |
+| 2026-04-16 | Device-sync HMAC follow-up | Restored upstream pairing HMAC helpers and crypto command wiring without introducing any new Panorama-only lane; existing patch inventory remains unchanged |

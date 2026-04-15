@@ -52,6 +52,7 @@ const storageMocks = vi.hoisted(() => ({
 const cryptoMocks = vi.hoisted(() => ({
   generatePairingCode: vi.fn(),
   hashPairingCode: vi.fn(),
+  hmacSha256: vi.fn(),
   generateEphemeralKeypair: vi.fn(),
   computeSharedSecret: vi.fn(),
   deriveSessionKey: vi.fn(),
@@ -91,12 +92,16 @@ describe("syncService pairing remote seed status", () => {
     storageMocks.getKeyVersion.mockResolvedValue(7);
     cryptoMocks.encrypt.mockResolvedValue("encrypted_bundle");
     cryptoMocks.computeSAS.mockResolvedValue("sas");
-    cryptoMocks.hashPairingCode.mockResolvedValue("signature");
+    cryptoMocks.hmacSha256.mockResolvedValue("signature");
     adapterMocks.completePairing.mockResolvedValue({ success: true, remoteSeedPresent: false });
 
     const result = await syncService.completePairing(session);
 
     expect(adapterMocks.completePairing).toHaveBeenCalledTimes(1);
+    expect(cryptoMocks.hmacSha256).toHaveBeenCalledWith(
+      "session_key",
+      "complete:pair_1:encrypted_bundle",
+    );
     expect(result.remoteSeedPresent).toBe(false);
   });
 
@@ -119,7 +124,7 @@ describe("syncService pairing remote seed status", () => {
       keyVersion: 8,
     };
 
-    cryptoMocks.hashPairingCode.mockResolvedValue("proof");
+    cryptoMocks.hmacSha256.mockResolvedValue("proof");
     adapterMocks.confirmPairing.mockResolvedValue({
       success: true,
       keyVersion: 8,
@@ -129,6 +134,7 @@ describe("syncService pairing remote seed status", () => {
 
     const result = await syncService.confirmPairingAsClaimer(session, keyBundle);
 
+    expect(cryptoMocks.hmacSha256).toHaveBeenCalledWith("session_key", "confirm:pair_2:8");
     expect(adapterMocks.confirmPairing).toHaveBeenCalledWith(
       "pair_2",
       "proof",

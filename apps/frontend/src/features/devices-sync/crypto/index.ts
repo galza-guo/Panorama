@@ -12,6 +12,7 @@ import {
   syncDecrypt,
   syncGeneratePairingCode,
   syncHashPairingCode,
+  syncHmacSha256,
   syncComputeSas,
   syncGenerateDeviceId,
   type EphemeralKeyPair,
@@ -127,6 +128,14 @@ export async function generatePairingCode(): Promise<string> {
  */
 export async function hashPairingCode(code: string): Promise<string> {
   return syncHashPairingCode(code);
+}
+
+/**
+ * Compute HMAC-SHA256 of data using the given key.
+ * Key is base64-encoded, returns hex-encoded digest.
+ */
+export async function hmacSha256(keyB64: string, data: string): Promise<string> {
+  return syncHmacSha256(keyB64, data);
 }
 
 // Short Authentication String (SAS)
