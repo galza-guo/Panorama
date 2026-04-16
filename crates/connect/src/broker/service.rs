@@ -352,6 +352,7 @@ impl BrokerSyncServiceTrait for BrokerSyncService {
 
         // 3. Convert prepared activities into ActivityUpsert payloads
         let mut activity_upserts: Vec<ActivityUpsert> = Vec::new();
+        let mut quote_data: Vec<(String, Decimal, DateTime<Utc>, String)> = Vec::new();
 
         for prepared in prepare_result.prepared {
             let act = prepared.activity;
@@ -365,6 +366,19 @@ impl BrokerSyncServiceTrait for BrokerSyncService {
             let activity_datetime: DateTime<Utc> = DateTime::parse_from_rfc3339(&act.activity_date)
                 .map(|dt| dt.with_timezone(&Utc))
                 .unwrap_or_else(|_| Utc::now());
+
+            if matches!(act.activity_type.as_str(), "BUY" | "SELL") {
+                if let (Some(ref asset_id), Some(price)) = (&asset_id, act.unit_price) {
+                    if price > Decimal::ZERO {
+                        quote_data.push((
+                            asset_id.clone(),
+                            price,
+                            activity_datetime,
+                            act.currency.clone(),
+                        ));
+                    }
+                }
+            }
 
             // Compute idempotency key for content-based deduplication
             let idempotency_key = compute_idempotency_key(
@@ -417,6 +431,11 @@ impl BrokerSyncServiceTrait for BrokerSyncService {
             .upsert_activities_bulk(activity_upserts)
             .await?;
         let activities_upserted = bulk_result.upserted;
+
+        let trade_quotes = Self::build_trade_activity_quotes(quote_data);
+        if !trade_quotes.is_empty() {
+            let _ = self.quote_service.bulk_upsert_quotes(trade_quotes).await;
+        }
 
         debug!(
             "Upserted {} activities for account {} ({} assets created, {} new asset IDs, {} need review)",
@@ -562,8 +581,9 @@ impl BrokerSyncServiceTrait for BrokerSyncService {
         let mut asset_specs: Vec<AssetSpec> = Vec::new();
         // Keyed by (symbol, currency) → index into asset_specs
         let mut spec_key_to_idx: HashMap<String, usize> = HashMap::new();
-        // Position data: (spec_key, quantity, price, avg_cost)
-        let mut position_data: Vec<(String, Decimal, Decimal, Decimal, String)> = Vec::new();
+        // Position data: (spec_key, quantity, price, avg_cost, currency)
+        let mut position_data: Vec<(String, Decimal, Decimal, Option<Decimal>, String)> =
+            Vec::new();
 
         for pos in &positions {
             let symbol_info = pos.symbol.as_ref().and_then(|s| s.symbol.as_ref());
@@ -656,9 +676,10 @@ impl BrokerSyncServiceTrait for BrokerSyncService {
             let price = Decimal::from_f64(pos.price.unwrap_or(0.0))
                 .unwrap_or(Decimal::ZERO)
                 .round_dp(HOLDINGS_DECIMAL_PRECISION);
-            let avg_cost = Decimal::from_f64(pos.average_purchase_price.unwrap_or(0.0))
-                .unwrap_or(price)
-                .round_dp(HOLDINGS_DECIMAL_PRECISION);
+            let avg_cost = pos
+                .average_purchase_price
+                .and_then(Decimal::from_f64)
+                .map(|value| value.round_dp(HOLDINGS_DECIMAL_PRECISION));
 
             position_data.push((spec_key, quantity, price, avg_cost, currency));
         }
@@ -709,9 +730,10 @@ impl BrokerSyncServiceTrait for BrokerSyncService {
             let price = Decimal::from_f64(opt_pos.price.unwrap_or(0.0))
                 .unwrap_or(Decimal::ZERO)
                 .round_dp(HOLDINGS_DECIMAL_PRECISION);
-            let avg_cost = Decimal::from_f64(opt_pos.average_purchase_price.unwrap_or(0.0))
-                .unwrap_or(price)
-                .round_dp(HOLDINGS_DECIMAL_PRECISION);
+            let avg_cost = opt_pos
+                .average_purchase_price
+                .and_then(Decimal::from_f64)
+                .map(|value| value.round_dp(HOLDINGS_DECIMAL_PRECISION));
 
             let spec = AssetSpec {
                 id: None,
@@ -783,11 +805,16 @@ impl BrokerSyncServiceTrait for BrokerSyncService {
             }
         }
 
+        let tomorrow = today + chrono::Days::new(1);
+        let latest = self
+            .snapshot_repository
+            .get_latest_snapshot_before_date(&account_id, tomorrow)?;
+
         // 4. Build positions_map using resolved asset IDs
         let mut positions_map: HashMap<String, Position> = HashMap::new();
         let mut total_cost_basis = Decimal::ZERO;
 
-        for (spec_key, quantity, _price, avg_cost, currency) in &position_data {
+        for (spec_key, quantity, _price, broker_avg_cost, currency) in &position_data {
             let asset_id = match spec_key_to_asset_id.get(spec_key) {
                 Some(id) => id.clone(),
                 None => {
@@ -796,7 +823,15 @@ impl BrokerSyncServiceTrait for BrokerSyncService {
                 }
             };
 
-            let position_cost_basis = (*quantity * *avg_cost).round_dp(HOLDINGS_DECIMAL_PRECISION);
+            let avg_cost = Self::resolve_position_average_cost(
+                *broker_avg_cost,
+                latest
+                    .as_ref()
+                    .and_then(|snapshot| snapshot.positions.get(&asset_id)),
+                *quantity,
+                currency,
+            );
+            let position_cost_basis = (*quantity * avg_cost).round_dp(HOLDINGS_DECIMAL_PRECISION);
             total_cost_basis += position_cost_basis;
 
             let position = Position {
@@ -804,7 +839,7 @@ impl BrokerSyncServiceTrait for BrokerSyncService {
                 account_id: account_id.clone(),
                 asset_id: asset_id.clone(),
                 quantity: *quantity,
-                average_cost: *avg_cost,
+                average_cost: avg_cost,
                 total_cost_basis: position_cost_basis,
                 currency: currency.clone(),
                 inception_date: now,
@@ -854,10 +889,6 @@ impl BrokerSyncServiceTrait for BrokerSyncService {
         );
 
         // Check if content is unchanged from latest snapshot (skip if identical)
-        let tomorrow = today + chrono::Days::new(1);
-        let latest = self
-            .snapshot_repository
-            .get_latest_snapshot_before_date(&account_id, tomorrow)?;
         let diff = Self::compute_holdings_diff(latest.as_ref(), &positions_map);
 
         if Self::should_preserve_manual_snapshot_for_date(latest.as_ref(), today) {
@@ -868,7 +899,7 @@ impl BrokerSyncServiceTrait for BrokerSyncService {
             return Ok((diff, assets_created, new_asset_ids));
         }
 
-        if let Some(existing) = latest {
+        if let Some(existing) = latest.as_ref() {
             if existing.is_content_equal(&snapshot) {
                 if !broker_quotes.is_empty() {
                     let _ = self.quote_service.bulk_upsert_quotes(broker_quotes).await;
@@ -963,6 +994,66 @@ impl BrokerSyncService {
                 notes: None,
             })
             .collect()
+    }
+
+    fn build_trade_activity_quotes(
+        quotes: Vec<(String, Decimal, DateTime<Utc>, String)>,
+    ) -> Vec<Quote> {
+        let mut quotes_map: HashMap<String, Quote> = HashMap::new();
+        let now = Utc::now();
+
+        for (asset_id, price, activity_datetime, currency) in quotes {
+            if price <= Decimal::ZERO {
+                continue;
+            }
+
+            let quote_id = format!(
+                "{}_{}_BROKER",
+                activity_datetime.format("%Y%m%d"),
+                asset_id.to_uppercase()
+            );
+            quotes_map.insert(
+                quote_id.clone(),
+                Quote {
+                    id: quote_id,
+                    asset_id,
+                    timestamp: activity_datetime,
+                    open: price,
+                    high: price,
+                    low: price,
+                    close: price,
+                    adjclose: price,
+                    volume: Decimal::ZERO,
+                    currency,
+                    data_source: DataSource::Broker,
+                    created_at: now,
+                    notes: None,
+                },
+            );
+        }
+
+        quotes_map.into_values().collect()
+    }
+
+    fn resolve_position_average_cost(
+        broker_average_cost: Option<Decimal>,
+        latest_position: Option<&Position>,
+        quantity: Decimal,
+        currency: &str,
+    ) -> Decimal {
+        if let Some(avg_cost) = broker_average_cost {
+            return avg_cost.round_dp(HOLDINGS_DECIMAL_PRECISION);
+        }
+
+        if let Some(previous) = latest_position {
+            let same_quantity = previous.quantity.round_dp(HOLDINGS_DECIMAL_PRECISION)
+                == quantity.round_dp(HOLDINGS_DECIMAL_PRECISION);
+            if same_quantity && previous.currency == currency {
+                return previous.average_cost.round_dp(HOLDINGS_DECIMAL_PRECISION);
+            }
+        }
+
+        Decimal::ZERO
     }
 
     fn compute_holdings_diff(
@@ -1287,7 +1378,7 @@ mod tests {
     use std::collections::{HashMap, VecDeque};
     use std::str::FromStr;
 
-    use chrono::{NaiveDate, Utc};
+    use chrono::{NaiveDate, TimeZone, Utc};
     use rust_decimal::Decimal;
     use wealthfolio_core::portfolio::snapshot::{AccountStateSnapshot, Position, SnapshotSource};
     use wealthfolio_core::utils::time_utils::valuation_date_today;
@@ -1494,6 +1585,91 @@ mod tests {
                 Some(&manual_yesterday),
                 today,
             )
+        );
+    }
+
+    #[test]
+    fn resolve_position_average_cost_prefers_broker_value() {
+        let latest = position("acc-1", "aapl", "10", "100", "1000", "USD");
+
+        let resolved = BrokerSyncService::resolve_position_average_cost(
+            Some(decimal("125.50")),
+            Some(&latest),
+            decimal("10"),
+            "USD",
+        );
+
+        assert_eq!(resolved, decimal("125.50"));
+    }
+
+    #[test]
+    fn resolve_position_average_cost_reuses_latest_when_quantity_is_unchanged() {
+        let latest = position("acc-1", "aapl", "10", "100.25", "1002.5", "USD");
+
+        let resolved = BrokerSyncService::resolve_position_average_cost(
+            None,
+            Some(&latest),
+            decimal("10.0000000000004"),
+            "USD",
+        );
+
+        assert_eq!(resolved, decimal("100.25"));
+    }
+
+    #[test]
+    fn resolve_position_average_cost_does_not_reuse_latest_when_quantity_or_currency_changes() {
+        let latest = position("acc-1", "aapl", "10", "100.25", "1002.5", "USD");
+
+        let quantity_changed = BrokerSyncService::resolve_position_average_cost(
+            None,
+            Some(&latest),
+            decimal("11"),
+            "USD",
+        );
+        let currency_changed = BrokerSyncService::resolve_position_average_cost(
+            None,
+            Some(&latest),
+            decimal("10"),
+            "CAD",
+        );
+        let missing =
+            BrokerSyncService::resolve_position_average_cost(None, None, decimal("10"), "USD");
+
+        assert_eq!(quantity_changed, Decimal::ZERO);
+        assert_eq!(currency_changed, Decimal::ZERO);
+        assert_eq!(missing, Decimal::ZERO);
+    }
+
+    #[test]
+    fn build_trade_activity_quotes_keeps_last_price_per_asset_day() {
+        let quotes = BrokerSyncService::build_trade_activity_quotes(vec![
+            (
+                "asset-aapl".to_string(),
+                decimal("100.00"),
+                Utc.with_ymd_and_hms(2026, 4, 1, 9, 30, 0).unwrap(),
+                "USD".to_string(),
+            ),
+            (
+                "asset-aapl".to_string(),
+                decimal("101.25"),
+                Utc.with_ymd_and_hms(2026, 4, 1, 15, 45, 0).unwrap(),
+                "USD".to_string(),
+            ),
+            (
+                "asset-msft".to_string(),
+                Decimal::ZERO,
+                Utc.with_ymd_and_hms(2026, 4, 1, 10, 0, 0).unwrap(),
+                "USD".to_string(),
+            ),
+        ]);
+
+        assert_eq!(quotes.len(), 1);
+        assert_eq!(quotes[0].asset_id, "asset-aapl");
+        assert_eq!(quotes[0].close, decimal("101.25"));
+        assert_eq!(quotes[0].currency, "USD");
+        assert_eq!(
+            quotes[0].data_source,
+            wealthfolio_core::quotes::DataSource::Broker
         );
     }
 
