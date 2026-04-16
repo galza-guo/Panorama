@@ -28,6 +28,7 @@ import {
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
 } from "@wealthfolio/ui/components/ui/dialog";
@@ -455,6 +456,7 @@ export function DeviceSyncSection() {
           >
             <DialogHeader className="sr-only">
               <DialogTitle>Connect This Device</DialogTitle>
+              <DialogDescription>Enter the code from your other connected device</DialogDescription>
             </DialogHeader>
             <PairingFlow
               onComplete={handlePairingComplete}
@@ -509,6 +511,7 @@ export function DeviceSyncSection() {
           >
             <DialogHeader className="sr-only">
               <DialogTitle>Update This Device</DialogTitle>
+              <DialogDescription>Enter the code from your other connected device</DialogDescription>
             </DialogHeader>
             <PairingFlow
               onComplete={handlePairingComplete}
@@ -753,6 +756,7 @@ export function DeviceSyncSection() {
           >
             <DialogHeader className="sr-only">
               <DialogTitle>{dialogTitle}</DialogTitle>
+              <DialogDescription>{dialogDescription}</DialogDescription>
             </DialogHeader>
             {isPreparing && !prepareError ? (
               <WaitingState

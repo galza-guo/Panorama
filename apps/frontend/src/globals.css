@@ -541,7 +541,7 @@ body.qr-scan-active .app-shell {
   background: transparent !important;
   background-color: transparent !important;
 }
-body.qr-scan-active .app-shell > ** {
+body.qr-scan-active .app-shell > * {
   background: transparent !important;
 }
 body.qr-scan-active .qr-overlay {
