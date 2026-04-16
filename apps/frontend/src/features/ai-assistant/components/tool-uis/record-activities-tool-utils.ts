@@ -130,7 +130,10 @@ function normalizeRow(
     : undefined;
 
   return {
-    rowIndex: pickNumber(raw, "rowIndex", "row_index") ?? index,
+    rowIndex:
+      pickNumber(raw, "rowIndex", "row_index") ??
+      toNumber(pickUnknownObject(raw.draft)?.rowIndex) ??
+      index,
     draft: normalizeDraft(pickUnknownObject(raw.draft) ?? raw, fallbackCurrency),
     validation: {
       isValid: Boolean(validationRaw.isValid ?? validationRaw.is_valid ?? false),
