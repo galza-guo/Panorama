@@ -300,6 +300,52 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn test_record_activities_all_valid() {
+        let mut env = MockEnvironment::new();
+        env.account_service = Arc::new(MockAccountService {
+            accounts: vec![account("acc-1", "Main Broker", "USD")],
+        });
+        let tool = RecordActivitiesTool::new(Arc::new(env));
+
+        let output = tool
+            .call(RecordActivitiesArgs {
+                activities: vec![
+                    RecordActivityArgs {
+                        activity_type: "DEPOSIT".to_string(),
+                        symbol: None,
+                        activity_date: "2026-01-17".to_string(),
+                        quantity: None,
+                        unit_price: None,
+                        amount: Some(1000.0),
+                        fee: None,
+                        account: None,
+                        subtype: None,
+                        notes: None,
+                    },
+                    RecordActivityArgs {
+                        activity_type: "WITHDRAWAL".to_string(),
+                        symbol: None,
+                        activity_date: "2026-01-18".to_string(),
+                        quantity: None,
+                        unit_price: None,
+                        amount: Some(500.0),
+                        fee: None,
+                        account: None,
+                        subtype: None,
+                        notes: None,
+                    },
+                ],
+            })
+            .await
+            .expect("batch tool should succeed");
+
+        assert_eq!(output.validation.total_rows, 2);
+        assert_eq!(output.validation.valid_rows, 2);
+        assert_eq!(output.validation.error_rows, 0);
+        assert!(output.drafts.iter().all(|row| row.validation.is_valid));
+    }
+
+    #[tokio::test]
     async fn test_record_activities_mixed_valid_invalid_rows() {
         let mut env = MockEnvironment::new();
         env.account_service = Arc::new(MockAccountService {
@@ -384,6 +430,56 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn test_record_activities_required_fields_by_type() {
+        let mut env = MockEnvironment::new();
+        env.account_service = Arc::new(MockAccountService {
+            accounts: vec![account("acc-1", "Main Broker", "USD")],
+        });
+        let tool = RecordActivitiesTool::new(Arc::new(env));
+
+        let output = tool
+            .call(RecordActivitiesArgs {
+                activities: vec![
+                    RecordActivityArgs {
+                        activity_type: "DEPOSIT".to_string(),
+                        symbol: None,
+                        activity_date: "2026-01-17".to_string(),
+                        quantity: None,
+                        unit_price: None,
+                        amount: None,
+                        fee: None,
+                        account: None,
+                        subtype: None,
+                        notes: None,
+                    },
+                    RecordActivityArgs {
+                        activity_type: "SELL".to_string(),
+                        symbol: Some("AAPL".to_string()),
+                        activity_date: "2026-01-17".to_string(),
+                        quantity: Some(2.0),
+                        unit_price: None,
+                        amount: None,
+                        fee: None,
+                        account: None,
+                        subtype: None,
+                        notes: None,
+                    },
+                ],
+            })
+            .await
+            .expect("batch tool should succeed");
+
+        assert!(output.drafts[0]
+            .validation
+            .missing_fields
+            .contains(&"amount".to_string()));
+        assert!(output.drafts[1]
+            .validation
+            .missing_fields
+            .contains(&"unit_price".to_string()));
+    }
+
+    #[tokio::test]
     async fn test_record_activities_collects_unique_resolved_assets() {
         let mut env = MockEnvironment::new();
         env.account_service = Arc::new(MockAccountService {
@@ -436,5 +532,88 @@ mod tests {
 
         assert_eq!(output.resolved_assets.len(), 1);
         assert_eq!(output.resolved_assets[0].asset_id, "SEC:AAPL:XNAS");
+    }
+
+    #[tokio::test]
+    async fn test_record_activities_subtype_handling() {
+        let mut env = MockEnvironment::new();
+        env.account_service = Arc::new(MockAccountService {
+            accounts: vec![account("acc-1", "Main Broker", "USD")],
+        });
+        env.quote_service = Arc::new(MockQuoteService {
+            search_results: RwLock::new(vec![SymbolSearchResult {
+                symbol: "AAPL".to_string(),
+                long_name: "Apple Inc.".to_string(),
+                exchange_mic: Some("XNAS".to_string()),
+                exchange_name: Some("NASDAQ".to_string()),
+                currency: Some("USD".to_string()),
+                existing_asset_id: Some("SEC:AAPL:XNAS".to_string()),
+                ..SymbolSearchResult::default()
+            }]),
+        });
+        let tool = RecordActivitiesTool::new(Arc::new(env));
+
+        let output = tool
+            .call(RecordActivitiesArgs {
+                activities: vec![
+                    RecordActivityArgs {
+                        activity_type: "DIVIDEND".to_string(),
+                        symbol: Some("AAPL".to_string()),
+                        activity_date: "2026-01-17".to_string(),
+                        quantity: Some(1.0),
+                        unit_price: Some(150.0),
+                        amount: None,
+                        fee: None,
+                        account: None,
+                        subtype: Some("DRIP".to_string()),
+                        notes: None,
+                    },
+                    RecordActivityArgs {
+                        activity_type: "INTEREST".to_string(),
+                        symbol: None,
+                        activity_date: "2026-01-17".to_string(),
+                        quantity: None,
+                        unit_price: None,
+                        amount: Some(12.0),
+                        fee: None,
+                        account: None,
+                        subtype: Some("STAKING_REWARD".to_string()),
+                        notes: None,
+                    },
+                    RecordActivityArgs {
+                        activity_type: "CREDIT".to_string(),
+                        symbol: None,
+                        activity_date: "2026-01-17".to_string(),
+                        quantity: None,
+                        unit_price: None,
+                        amount: Some(5.0),
+                        fee: None,
+                        account: None,
+                        subtype: Some("BONUS".to_string()),
+                        notes: None,
+                    },
+                ],
+            })
+            .await
+            .expect("batch tool should succeed");
+
+        assert_eq!(output.drafts[0].draft.subtype.as_deref(), Some("DRIP"));
+        assert_eq!(
+            output.drafts[1].draft.subtype.as_deref(),
+            Some("STAKING_REWARD")
+        );
+        assert_eq!(output.drafts[2].draft.subtype.as_deref(), Some("BONUS"));
+        assert!(output.drafts[0]
+            .available_subtypes
+            .iter()
+            .any(|s| s.value == "DRIP"));
+        assert!(output.drafts[1]
+            .available_subtypes
+            .iter()
+            .any(|s| s.value == "STAKING_REWARD"));
+        assert!(output.drafts[2]
+            .available_subtypes
+            .iter()
+            .any(|s| s.value == "BONUS"));
     }
 }

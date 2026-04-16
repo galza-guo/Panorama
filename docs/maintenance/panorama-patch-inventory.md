@@ -46,3 +46,4 @@ upstream updates.
 | 2026-04-16 | AI provider/runtime follow-up | Documented Panorama-specific AI provider catalog/picker behavior as a protected local lane while restoring upstream merged-provider support for saved non-catalog runtime models |
 | 2026-04-16 | Device-sync HMAC follow-up | Restored upstream pairing HMAC helpers and crypto command wiring without introducing any new Panorama-only lane; existing patch inventory remains unchanged |
 | 2026-04-16 | AI batch row-index follow-up | Restored upstream compatibility for legacy nested `draft.rowIndex` payloads in the batch activity tool UI without changing any documented Panorama-only provider or picker lanes |
+| 2026-04-16 | AI batch contract coverage follow-up | Restored upstream `record_activities` behavior tests for valid-batch summaries, per-type required fields, and subtype preservation; no new Panorama-only lane was introduced because current runtime already satisfied the upstream contract |
