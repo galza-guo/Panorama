@@ -13,11 +13,8 @@ const SYNC_REFRESH_TOKEN_KEY: &str = "sync_refresh_token";
 #[tauri::command]
 pub async fn store_sync_session(
     refresh_token: Option<String>,
-    access_token: Option<String>,
     state: State<'_, Arc<ServiceContext>>,
 ) -> Result<(), String> {
-    let _ = access_token;
-
     match refresh_token.as_deref().map(str::trim) {
         Some(token) if !token.is_empty() => {
             if let Err(e) = KeyringSecretStore.set_secret(SYNC_REFRESH_TOKEN_KEY, token) {

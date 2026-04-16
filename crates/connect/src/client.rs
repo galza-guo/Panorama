@@ -383,18 +383,6 @@ impl ConnectApiClient {
         debug!("[ConnectApi] Broker sync is available");
         Ok(true)
     }
-
-    /// Check if the current user has any active subscription, regardless of plan tier.
-    pub async fn has_active_subscription(&self) -> Result<bool> {
-        let user_info = self.get_user_info().await?;
-        Ok(matches!(
-            user_info
-                .team
-                .and_then(|team| team.subscription_status)
-                .as_deref(),
-            Some("active") | Some("trialing")
-        ))
-    }
 }
 
 // ─────────────────────────────────────────────────────────────────────────────

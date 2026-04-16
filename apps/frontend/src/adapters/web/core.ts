@@ -1035,11 +1035,8 @@ export const invoke = async <T>(command: string, payload?: Record<string, unknow
     }
     // Wealthfolio Connect commands
     case "store_sync_session": {
-      const { accessToken, refreshToken } = payload as {
-        accessToken?: string;
-        refreshToken: string;
-      };
-      body = JSON.stringify({ accessToken, refreshToken });
+      const { refreshToken } = payload as { refreshToken: string };
+      body = JSON.stringify({ refreshToken });
       break;
     }
     case "list_devices":
