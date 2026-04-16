@@ -144,12 +144,10 @@ export interface AiSendMessageRequest {
   modelId?: string;
   /** Tool allowlist for this request (uses all if not specified). */
   allowedTools?: string[];
-  /** Parent message ID for edit operations. */
+  /** Parent message ID for edit operations. When set, AI context is truncated to this message. */
   parentMessageId?: string;
   /** File attachments (CSV, images, PDFs). */
   attachments?: AiMessageAttachment[];
-  /** Source message ID for edit operations. */
-  sourceMessageId?: string;
 }
 
 /**

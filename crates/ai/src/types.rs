@@ -876,10 +876,6 @@ pub struct SendMessageRequest {
     /// When set, AI context is truncated to this message (inclusive).
     #[serde(skip_serializing_if = "Option::is_none")]
     pub parent_message_id: Option<String>,
-    /// Source message ID for edit operations.
-    /// When set, stored history is rewritten from this message onward.
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub source_message_id: Option<String>,
     /// File attachments (CSV, images, PDFs).
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub attachments: Option<Vec<MessageAttachment>>,
@@ -1096,10 +1092,10 @@ mod tests {
     }
 
     #[test]
-    fn test_send_message_request_serializes_source_message_id_and_attachments_together() {
+    fn test_send_message_request_serializes_parent_message_id_and_attachments_together() {
         let request = SendMessageRequest {
             content: "Review this statement".to_string(),
-            source_message_id: Some("msg-123".to_string()),
+            parent_message_id: Some("msg-122".to_string()),
             attachments: Some(vec![MessageAttachment {
                 name: "statement.pdf".to_string(),
                 content_type: "application/pdf".to_string(),
@@ -1109,7 +1105,7 @@ mod tests {
         };
 
         let json = serde_json::to_value(&request).unwrap();
-        assert_eq!(json["sourceMessageId"], "msg-123");
+        assert_eq!(json["parentMessageId"], "msg-122");
         assert_eq!(json["attachments"][0]["name"], "statement.pdf");
         assert_eq!(json["attachments"][0]["contentType"], "application/pdf");
     }

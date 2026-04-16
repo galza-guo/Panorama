@@ -57,18 +57,10 @@ fn derive_initial_thread_title(first_user_message: &str) -> Option<String> {
     Some(truncate_to_title(trimmed, 50))
 }
 
-fn truncate_messages_for_edit(
-    messages: &mut Vec<ChatMessage>,
-    parent_id: Option<&str>,
-    source_id: Option<&str>,
-) {
-    let truncate_len = source_id
+fn truncate_messages_for_edit(messages: &mut Vec<ChatMessage>, parent_id: Option<&str>) {
+    let truncate_len = parent_id
         .and_then(|id| messages.iter().position(|message| message.id == id))
-        .or_else(|| {
-            parent_id
-                .and_then(|id| messages.iter().position(|message| message.id == id))
-                .map(|index| index + 1)
-        });
+        .map(|index| index + 1);
 
     if let Some(truncate_len) = truncate_len {
         messages.truncate(truncate_len);
@@ -369,16 +361,7 @@ impl<E: AiEnvironment + 'static> ChatService<E> {
 
         // Load previous messages for context (history)
         let mut previous_messages = repo.get_messages_by_thread(&thread_id)?;
-        truncate_messages_for_edit(
-            &mut previous_messages,
-            request.parent_message_id.as_deref(),
-            request.source_message_id.as_deref(),
-        );
-
-        if let Some(source_message_id) = request.source_message_id.as_deref() {
-            repo.delete_messages_starting_from(&thread_id, source_message_id)
-                .await?;
-        }
+        truncate_messages_for_edit(&mut previous_messages, request.parent_message_id.as_deref());
         let history_messages =
             build_history_messages_with_budget(&previous_messages, MAX_HISTORY_CHARS);
 
@@ -1840,7 +1823,7 @@ mod tests {
             make_chat_message("m3", ChatMessageRole::User, "three"),
         ];
 
-        truncate_messages_for_edit(&mut messages, None, None);
+        truncate_messages_for_edit(&mut messages, None);
 
         assert_eq!(messages.len(), 3);
         assert_eq!(messages[2].id, "m3");
@@ -1854,11 +1837,10 @@ mod tests {
             make_chat_message("m3", ChatMessageRole::User, "three"),
         ];
 
-        truncate_messages_for_edit(&mut messages, Some("m2"), Some("m3"));
+        truncate_messages_for_edit(&mut messages, Some("m1"));
 
-        assert_eq!(messages.len(), 2);
+        assert_eq!(messages.len(), 1);
         assert_eq!(messages[0].id, "m1");
-        assert_eq!(messages[1].id, "m2");
     }
 
     #[test]
@@ -1868,22 +1850,23 @@ mod tests {
             make_chat_message("m2", ChatMessageRole::Assistant, "two"),
         ];
 
-        truncate_messages_for_edit(&mut messages, Some("missing"), None);
+        truncate_messages_for_edit(&mut messages, Some("missing"));
 
         assert_eq!(messages.len(), 2);
         assert_eq!(messages[1].id, "m2");
     }
 
     #[test]
-    fn test_truncate_messages_for_edit_removes_edited_root_message() {
+    fn test_truncate_messages_to_parent_keeps_edited_root_message() {
         let mut messages = vec![
             make_chat_message("m1", ChatMessageRole::User, "one"),
             make_chat_message("m2", ChatMessageRole::Assistant, "two"),
         ];
 
-        truncate_messages_for_edit(&mut messages, None, Some("m1"));
+        truncate_messages_for_edit(&mut messages, Some("m1"));
 
-        assert!(messages.is_empty());
+        assert_eq!(messages.len(), 1);
+        assert_eq!(messages[0].id, "m1");
     }
 
     #[test]

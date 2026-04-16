@@ -423,6 +423,9 @@ export function useChatRuntime(config?: ChatModelConfig) {
   // Thread ID ref - persists across streaming calls
   const threadIdRef = useRef<string | null>(null);
 
+  // Parent message ID ref - set during edit to truncate AI context
+  const editParentIdRef = useRef<string | null>(null);
+
   // Abort controller for cancelling streams
   const abortControllerRef = useRef<AbortController | null>(null);
 
@@ -623,8 +626,7 @@ export function useChatRuntime(config?: ChatModelConfig) {
             content: contentForAi,
             config,
             threadId: threadIdRef.current ?? undefined,
-            parentMessageId: message.sourceId ? (message.parentId ?? undefined) : undefined,
-            sourceMessageId: message.sourceId ?? undefined,
+            parentMessageId: editParentIdRef.current ?? undefined,
             attachments: attachmentPayloads.length > 0 ? attachmentPayloads : undefined,
           },
           signal,
@@ -820,7 +822,9 @@ export function useChatRuntime(config?: ChatModelConfig) {
         const parentIndex = prev.findIndex((current) => current.id === message.parentId);
         return parentIndex >= 0 ? prev.slice(0, parentIndex + 1) : [];
       });
+      editParentIdRef.current = message.parentId ?? null;
       await handleNew(message);
+      editParentIdRef.current = null;
     },
     [handleNew],
   );

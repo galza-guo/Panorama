@@ -332,7 +332,7 @@ describe("AiStreamEvent type validation", () => {
 });
 
 describe("AiSendMessageRequest", () => {
-  it("allows attachments and sourceMessageId on the same request", () => {
+  it("allows attachments and parentMessageId on the same request", () => {
     const attachments: AiMessageAttachment[] = [
       {
         name: "statement.pdf",
@@ -343,12 +343,22 @@ describe("AiSendMessageRequest", () => {
 
     const request: AiSendMessageRequest = {
       content: "Review this document",
-      sourceMessageId: "msg-123",
+      parentMessageId: "msg-122",
       attachments,
     };
 
-    expect(request.sourceMessageId).toBe("msg-123");
+    expect(request.parentMessageId).toBe("msg-122");
     expect(request.attachments?.[0]?.contentType).toBe("application/pdf");
+  });
+
+  it("does not allow sourceMessageId on send requests", () => {
+    const invalidRequest: AiSendMessageRequest = {
+      content: "Review this document",
+      // @ts-expect-error sourceMessageId is no longer part of the request shape
+      sourceMessageId: "msg-123",
+    };
+
+    expect(invalidRequest.content).toBe("Review this document");
   });
 });
 
