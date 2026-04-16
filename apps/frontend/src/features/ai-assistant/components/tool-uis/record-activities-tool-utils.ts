@@ -82,6 +82,8 @@ function normalizeDraft(raw: UnknownObject, fallbackCurrency: string): RecordAct
     subtype: pickString(raw, "subtype", "subtype"),
     notes: pickString(raw, "notes", "notes"),
     priceSource: pickString(raw, "priceSource", "price_source") ?? "none",
+    // Rust backend sends "pricing_mode"; the single-tool UI historically used "quoteMode".
+    // Accept both for backward compatibility.
     pricingMode:
       pickString(raw, "pricingMode", "pricing_mode") ??
       (typeof raw.quoteMode === "string" ? raw.quoteMode : ""),
@@ -98,14 +100,17 @@ function normalizeRow(
   const validationRaw = pickUnknownObject(raw.validation) ?? {};
   const missingFields = pickArray(validationRaw, "missingFields", "missing_fields") as string[];
 
-  const validationErrors = pickArray(validationRaw, "errors", "errors")
+  const errorsRaw = pickArray(validationRaw, "errors", "errors");
+  const validationErrors = errorsRaw
     .filter((entry): entry is UnknownObject => !!entry && typeof entry === "object")
     .map((entry) => ({
       field: (entry.field as string) ?? "",
       message: (entry.message as string) ?? "",
     }));
 
-  const availableSubtypes = pickArray(raw, "availableSubtypes", "available_subtypes")
+  const availableSubtypesRaw = pickArray(raw, "availableSubtypes", "available_subtypes");
+
+  const availableSubtypes = availableSubtypesRaw
     .filter((entry): entry is UnknownObject => !!entry && typeof entry === "object")
     .map((entry) => ({
       value: (entry.value as string) ?? "",
@@ -167,12 +172,15 @@ export function normalizeRecordActivitiesResult(
     return normalizeRecordActivitiesResult(candidate.data, fallbackCurrency);
   }
 
-  const drafts = pickArray(candidate, "drafts", "drafts")
+  const draftsRaw = pickArray(candidate, "drafts", "drafts");
+  const drafts = draftsRaw
     .filter((entry): entry is UnknownObject => !!entry && typeof entry === "object")
     .map((entry, index) => normalizeRow(entry, fallbackCurrency, index));
 
   const validationRaw = pickUnknownObject(candidate.validation) ?? {};
-  const rowStatuses = pickArray(candidate, "rowStatuses", "row_statuses")
+  const rowStatusesRaw = pickArray(candidate, "rowStatuses", "row_statuses");
+
+  const rowStatuses: RecordActivitiesSubmissionStatus[] = rowStatusesRaw
     .filter((entry): entry is UnknownObject => !!entry && typeof entry === "object")
     .map((entry) => ({
       rowIndex: toNumber(entry.rowIndex ?? entry.row_index) ?? -1,
@@ -180,6 +188,10 @@ export function normalizeRecordActivitiesResult(
       error: (entry.error as string) ?? undefined,
     }))
     .filter((entry) => entry.rowIndex >= 0);
+
+  const accountsRaw = pickArray(candidate, "availableAccounts", "available_accounts");
+
+  const resolvedAssetsRaw = pickArray(candidate, "resolvedAssets", "resolved_assets");
 
   return {
     drafts,
@@ -192,14 +204,14 @@ export function normalizeRecordActivitiesResult(
         pickNumber(validationRaw, "errorRows", "error_rows") ??
         drafts.filter((row) => !row.validation.isValid).length,
     },
-    availableAccounts: pickArray(candidate, "availableAccounts", "available_accounts")
+    availableAccounts: accountsRaw
       .filter((entry): entry is UnknownObject => !!entry && typeof entry === "object")
       .map((entry) => ({
         id: (entry.id as string) ?? "",
         name: (entry.name as string) ?? "",
         currency: (entry.currency as string) ?? fallbackCurrency,
       })),
-    resolvedAssets: pickArray(candidate, "resolvedAssets", "resolved_assets")
+    resolvedAssets: resolvedAssetsRaw
       .filter((entry): entry is UnknownObject => !!entry && typeof entry === "object")
       .map((entry) => ({
         assetId: (entry.assetId as string) ?? (entry.asset_id as string) ?? "",
@@ -277,8 +289,8 @@ export function mapRecordActivitiesSubmission(
   }
 
   if ((result.createdMappings?.length ?? 0) === 0 && (result.created?.length ?? 0) > 0) {
-    for (let index = 0; index < result.created.length && index < orderedRowIndexes.length; index += 1) {
-      const rowIndex = orderedRowIndexes[index];
+    for (let i = 0; i < result.created.length && i < orderedRowIndexes.length; i += 1) {
+      const rowIndex = orderedRowIndexes[i];
       if (!byRow.has(rowIndex)) {
         byRow.set(rowIndex, { rowIndex, status: "submitted" });
       }

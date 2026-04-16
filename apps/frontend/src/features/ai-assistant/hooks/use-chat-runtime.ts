@@ -267,8 +267,8 @@ const fileAttachmentAdapter: AttachmentAdapter = {
       };
     }
 
+    // Images and PDFs: read as base64
     const base64 = await fileToBase64(file);
-
     return {
       id: attachment.id,
       type: isImage ? "image" : "document",
@@ -480,6 +480,7 @@ export function useChatRuntime(config?: ChatModelConfig) {
   // Handle new user message - streams response from AI backend
   const handleNew = useCallback(
     async (message: AppendMessage) => {
+      // Extract text content from the message
       const textContent = message.content
         .filter((part): part is { type: "text"; text: string } => part.type === "text")
         .map((part) => part.text)
@@ -500,9 +501,10 @@ export function useChatRuntime(config?: ChatModelConfig) {
           const isImage = attachment.contentType?.startsWith("image/");
 
           if (isCsv) {
+            // CSV: content stored as text part (plain text)
             const csvText = attachment.content
-              .filter((part): part is { type: "text"; text: string } => part.type === "text")
-              .map((part) => part.text)
+              .filter((c): c is { type: "text"; text: string } => c.type === "text")
+              .map((c) => c.text)
               .join("\n");
             if (csvText) {
               attachmentPayloads.push({
@@ -512,13 +514,14 @@ export function useChatRuntime(config?: ChatModelConfig) {
               });
             }
           } else if (isImage) {
-            const imageContent = attachment.content.find(
-              (part): part is { type: "image"; image: string } => part.type === "image",
+            // Image: content stored as image part (data URL with base64)
+            const imgContent = attachment.content.find(
+              (c): c is { type: "image"; image: string } => c.type === "image",
             );
-            if (imageContent) {
-              const raw = imageContent.image.includes(",")
-                ? imageContent.image.split(",")[1]!
-                : imageContent.image;
+            if (imgContent) {
+              const raw = imgContent.image.includes(",")
+                ? imgContent.image.split(",")[1]!
+                : imgContent.image;
               attachmentPayloads.push({
                 name: attachment.name,
                 contentType: attachment.contentType ?? "image/png",
@@ -526,20 +529,22 @@ export function useChatRuntime(config?: ChatModelConfig) {
               });
             }
           } else {
-            const base64Content = attachment.content.find(
-              (part): part is { type: "text"; text: string } => part.type === "text",
+            // PDF and other binary: content stored as text part (base64)
+            const b64Content = attachment.content.find(
+              (c): c is { type: "text"; text: string } => c.type === "text",
             );
-            if (base64Content) {
+            if (b64Content) {
               attachmentPayloads.push({
                 name: attachment.name,
                 contentType: attachment.contentType ?? "application/octet-stream",
-                data: base64Content.text,
+                data: b64Content.text,
               });
             }
           }
         }
       }
 
+      // Text content only — attachments sent separately in structured field
       const contentForAi = textContent;
       const hasContent = contentForAi.trim() || attachmentPayloads.length > 0;
       if (!hasContent) return;
@@ -816,10 +821,11 @@ export function useChatRuntime(config?: ChatModelConfig) {
     abortControllerRef.current?.abort();
   }, []);
 
+  // Handle message edit - truncate history to parent, then re-run
   const handleEdit = useCallback(
     async (message: AppendMessage) => {
       setMessages((prev) => {
-        const parentIndex = prev.findIndex((current) => current.id === message.parentId);
+        const parentIndex = prev.findIndex((m) => m.id === message.parentId);
         return parentIndex >= 0 ? prev.slice(0, parentIndex + 1) : [];
       });
       editParentIdRef.current = message.parentId ?? null;

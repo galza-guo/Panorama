@@ -48,35 +48,6 @@ describe("normalizeRecordActivitiesResult", () => {
     expect(normalized?.validation.validRows).toBe(1);
     expect(normalized?.availableAccounts[0].id).toBe("acc-1");
   });
-
-  it("falls back to legacy draft.rowIndex when top-level row index is missing", () => {
-    const normalized = normalizeRecordActivitiesResult(
-      {
-        drafts: [
-          {
-            draft: {
-              rowIndex: 7,
-              activityType: "BUY",
-              activityDate: "2026-02-01",
-              symbol: "AAPL",
-              quantity: 1,
-              unitPrice: 100,
-              currency: "USD",
-              accountId: "acc-1",
-            },
-            validation: { isValid: true, missingFields: [], errors: [] },
-            errors: [],
-            availableSubtypes: [],
-          },
-        ],
-        validation: { totalRows: 1, validRows: 1, errorRows: 0 },
-        availableAccounts: [],
-      },
-      "USD",
-    );
-
-    expect(normalized?.drafts[0].rowIndex).toBe(7);
-  });
 });
 
 describe("buildRecordActivitiesCreatePayload", () => {

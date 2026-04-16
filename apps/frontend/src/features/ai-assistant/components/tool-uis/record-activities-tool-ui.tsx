@@ -63,22 +63,6 @@ function countStatuses(statuses: RecordActivitiesSubmissionStatus[]): {
   };
 }
 
-function getRowStatusBadge(
-  status: RecordActivitiesSubmissionStatus | undefined,
-  isValid: boolean,
-): RowStatusBadge {
-  if (status?.status === "submitted") {
-    return { label: "Submitted", variant: "default", className: "" };
-  }
-  if (status?.status === "error") {
-    return { label: "Error", variant: "destructive", className: "" };
-  }
-  if (isValid) {
-    return { label: "Ready", variant: "outline", className: "" };
-  }
-  return { label: "Invalid", variant: "secondary", className: "" };
-}
-
 function RecordActivitiesLoadingSkeleton() {
   return (
     <Card className="bg-muted/40 border-primary/10 w-full overflow-hidden">
@@ -95,18 +79,18 @@ function RecordActivitiesLoadingSkeleton() {
         <Table>
           <TableHeader>
             <TableRow>
-              {Array.from({ length: 9 }).map((_, index) => (
-                <TableHead key={index}>
+              {Array.from({ length: 9 }).map((_, i) => (
+                <TableHead key={i}>
                   <Skeleton className="h-3 w-12" />
                 </TableHead>
               ))}
             </TableRow>
           </TableHeader>
           <TableBody>
-            {Array.from({ length: 4 }).map((_, rowIndex) => (
-              <TableRow key={rowIndex}>
-                {Array.from({ length: 9 }).map((_, columnIndex) => (
-                  <TableCell key={columnIndex}>
+            {Array.from({ length: 4 }).map((_, row) => (
+              <TableRow key={row}>
+                {Array.from({ length: 9 }).map((_, col) => (
+                  <TableCell key={col}>
                     <Skeleton className="h-4 w-full" />
                   </TableCell>
                 ))}
@@ -117,6 +101,26 @@ function RecordActivitiesLoadingSkeleton() {
       </CardContent>
     </Card>
   );
+}
+
+function getRowStatusBadge(
+  status: RecordActivitiesSubmissionStatus | undefined,
+  isValid: boolean,
+): RowStatusBadge {
+  if (status?.status === "submitted") {
+    return {
+      label: "Submitted",
+      variant: "default",
+      className: "",
+    };
+  }
+  if (status?.status === "error") {
+    return { label: "Error", variant: "destructive", className: "" };
+  }
+  if (isValid) {
+    return { label: "Ready", variant: "outline", className: "" };
+  }
+  return { label: "Invalid", variant: "secondary", className: "" };
 }
 
 function RecordActivitiesToolUIContent({
@@ -295,7 +299,6 @@ function RecordActivitiesToolUIContent({
                 const activityBadge = getActivityTypeBadge(row.draft.activityType);
                 const statusEntry = mergedStatuses.get(row.rowIndex);
                 const rowStatusBadge = getRowStatusBadge(statusEntry, row.validation.isValid);
-
                 return (
                   <TableRow key={row.rowIndex} className="text-xs">
                     <TableCell className="py-2 pl-4 tabular-nums">
