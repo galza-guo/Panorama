@@ -542,6 +542,18 @@ pub fn run() {
             commands::device_sync::get_pairing_messages,
             #[cfg(feature = "device-sync")]
             commands::device_sync::confirm_pairing,
+            #[cfg(feature = "device-sync")]
+            commands::device_sync::complete_pairing_with_transfer,
+            #[cfg(feature = "device-sync")]
+            commands::device_sync::confirm_pairing_with_bootstrap,
+            #[cfg(feature = "device-sync")]
+            commands::device_sync::begin_pairing_confirm,
+            #[cfg(feature = "device-sync")]
+            commands::device_sync::get_pairing_flow_state,
+            #[cfg(feature = "device-sync")]
+            commands::device_sync::approve_pairing_overwrite,
+            #[cfg(feature = "device-sync")]
+            commands::device_sync::cancel_pairing_flow,
             // Device enroll service (high-level commands)
             #[cfg(feature = "device-sync")]
             commands::device_enroll_service::get_device_sync_state,

@@ -291,10 +291,11 @@ impl CredentialStore for TauriEnginePorts {
 
 pub(super) async fn run_sync_cycle(
     context: Arc<ServiceContext>,
+    post_bootstrap: bool,
 ) -> Result<SyncCycleResult, String> {
     let runtime = context.device_sync_runtime();
     let ports = TauriEnginePorts::new(Arc::clone(&context));
-    let result = runtime.run_cycle(&ports).await?;
+    let result = runtime.run_cycle(&ports, post_bootstrap).await?;
 
     // Note: on_pull_complete is now called by the engine itself via ReplayStore trait
 
@@ -307,6 +308,7 @@ pub(super) async fn run_sync_cycle(
         needs_bootstrap: result.needs_bootstrap,
         bootstrap_snapshot_id: result.bootstrap_snapshot_id,
         bootstrap_snapshot_seq: result.bootstrap_snapshot_seq,
+        dead_letter_count: result.dead_letter_count,
     })
 }
 

@@ -244,6 +244,13 @@ fn to_device_sync_reconcile_ready_response(
     }
 }
 
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct DeviceSyncReconcileReadyRequest {
+    #[serde(default)]
+    allow_overwrite: bool,
+}
+
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
 struct DeviceSyncSnapshotUploadResponse {
@@ -1168,7 +1175,7 @@ async fn trigger_device_sync_cycle(
     State(state): State<Arc<AppState>>,
 ) -> ApiResult<Json<DeviceSyncCycleResponse>> {
     ensure_device_sync_enabled()?;
-    let result = device_sync_engine::run_sync_cycle(state)
+    let result = device_sync_engine::run_sync_cycle(state, false)
         .await
         .map_err(ApiError::Internal)?;
     Ok(Json(DeviceSyncCycleResponse {
@@ -1207,9 +1214,10 @@ async fn start_device_sync_background_engine(
 
 async fn reconcile_device_sync_ready_state(
     State(state): State<Arc<AppState>>,
+    Json(body): Json<DeviceSyncReconcileReadyRequest>,
 ) -> ApiResult<Json<DeviceSyncReconcileReadyResponse>> {
     ensure_device_sync_enabled()?;
-    let result = device_sync_engine::reconcile_ready_state(state)
+    let result = device_sync_engine::reconcile_ready_state(state, body.allow_overwrite)
         .await
         .map_err(ApiError::Internal)?;
     Ok(Json(to_device_sync_reconcile_ready_response(result)))

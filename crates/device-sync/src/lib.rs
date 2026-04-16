@@ -48,3 +48,15 @@ pub use enroll_service::{
 };
 pub use error::{ApiRetryClass, DeviceSyncError, Result};
 pub use types::*;
+
+pub fn parse_sync_datetime_to_utc(
+    value: &str,
+) -> std::result::Result<chrono::DateTime<chrono::Utc>, String> {
+    chrono::DateTime::parse_from_rfc3339(value)
+        .map(|parsed| parsed.with_timezone(&chrono::Utc))
+        .map_err(|err| format!("Invalid sync timestamp: {}", err))
+}
+
+pub fn normalize_sync_datetime(value: &str) -> std::result::Result<String, String> {
+    parse_sync_datetime_to_utc(value).map(|parsed| parsed.to_rfc3339())
+}
