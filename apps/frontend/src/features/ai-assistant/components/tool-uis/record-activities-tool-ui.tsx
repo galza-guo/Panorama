@@ -20,7 +20,6 @@ import {
   TableRow,
 } from "@wealthfolio/ui";
 import { Icons } from "@wealthfolio/ui/components/ui/icons";
-import { format, parseISO } from "date-fns";
 import { useMemo, useState } from "react";
 import { useRuntimeContext } from "../../hooks/use-runtime-context";
 import type {
@@ -33,6 +32,15 @@ import {
   mapRecordActivitiesSubmission,
   normalizeRecordActivitiesResult,
 } from "./record-activities-tool-utils";
+import {
+  createActivityAmountFormatter,
+  createActivityQuantityFormatter,
+  formatActivityAmount,
+  formatActivityDate,
+  formatActivityQuantity,
+  formatActivityType,
+  getActivityTypeBadge,
+} from "./shared";
 
 type RecordActivitiesToolUIContentProps = ToolCallMessagePartProps<
   RecordActivitiesArgs,
@@ -43,80 +51,6 @@ interface RowStatusBadge {
   label: string;
   variant: "default" | "secondary" | "destructive" | "outline";
   className: string;
-}
-
-function createAmountFormatter(currency: string): Intl.NumberFormat {
-  return new Intl.NumberFormat(undefined, {
-    style: "currency",
-    currency,
-    currencyDisplay: "narrowSymbol",
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  });
-}
-
-function createQuantityFormatter(): Intl.NumberFormat {
-  return new Intl.NumberFormat(undefined, {
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 8,
-  });
-}
-
-function formatActivityDate(dateString: string): string {
-  try {
-    return format(parseISO(dateString), "MMM d, yyyy");
-  } catch {
-    return dateString;
-  }
-}
-
-function formatActivityType(activityType: string): string {
-  return activityType.replace(/_/g, " ");
-}
-
-function getActivityTypeBadge(activityType: string): {
-  variant: "default" | "secondary" | "outline" | "destructive";
-  className: string;
-} {
-  switch (activityType.toUpperCase()) {
-    case "BUY":
-      return { variant: "default", className: "bg-green-600 hover:bg-green-600 text-white" };
-    case "SELL":
-      return { variant: "destructive", className: "" };
-    case "DIVIDEND":
-      return { variant: "default", className: "bg-blue-600 hover:bg-blue-600 text-white" };
-    case "DEPOSIT":
-    case "TRANSFER_IN":
-      return { variant: "default", className: "bg-emerald-600 hover:bg-emerald-600 text-white" };
-    case "WITHDRAWAL":
-    case "TRANSFER_OUT":
-      return { variant: "default", className: "bg-orange-600 hover:bg-orange-600 text-white" };
-    case "INTEREST":
-      return { variant: "default", className: "bg-cyan-600 hover:bg-cyan-600 text-white" };
-    case "FEE":
-    case "TAX":
-      return { variant: "secondary", className: "" };
-    case "SPLIT":
-      return { variant: "outline", className: "" };
-    default:
-      return { variant: "secondary", className: "" };
-  }
-}
-
-function formatActivityAmount(
-  value: number | undefined,
-  isBalanceHidden: boolean,
-  currency: string,
-): string {
-  if (value == null) return "-";
-  if (isBalanceHidden) return "••••";
-  return createAmountFormatter(currency).format(value);
-}
-
-function formatActivityQuantity(value: number | undefined, isBalanceHidden: boolean): string {
-  if (value == null) return "-";
-  if (isBalanceHidden) return "••••";
-  return createQuantityFormatter().format(value);
 }
 
 function countStatuses(statuses: RecordActivitiesSubmissionStatus[]): {
@@ -199,6 +133,8 @@ function RecordActivitiesToolUIContent({
     () => normalizeRecordActivitiesResult(result, baseCurrency),
     [baseCurrency, result],
   );
+  const amountFormatter = useMemo(() => createActivityAmountFormatter(), []);
+  const quantityFormatter = useMemo(() => createActivityQuantityFormatter(), []);
 
   const [localStatuses, setLocalStatuses] = useState<RecordActivitiesSubmissionStatus[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -375,20 +311,35 @@ function RecordActivitiesToolUIContent({
                     </TableCell>
                     <TableCell className="py-2">{row.draft.symbol ?? "-"}</TableCell>
                     <TableCell className="py-2 text-right tabular-nums">
-                      {formatActivityQuantity(row.draft.quantity, isBalanceHidden)}
+                      {formatActivityQuantity(
+                        row.draft.quantity,
+                        quantityFormatter,
+                        isBalanceHidden,
+                      )}
                     </TableCell>
                     <TableCell className="py-2 text-right tabular-nums">
                       {formatActivityAmount(
                         row.draft.unitPrice,
+                        amountFormatter,
                         isBalanceHidden,
                         row.draft.currency,
                       )}
                     </TableCell>
                     <TableCell className="py-2 text-right tabular-nums">
-                      {formatActivityAmount(row.draft.amount, isBalanceHidden, row.draft.currency)}
+                      {formatActivityAmount(
+                        row.draft.amount,
+                        amountFormatter,
+                        isBalanceHidden,
+                        row.draft.currency,
+                      )}
                     </TableCell>
                     <TableCell className="py-2 text-right tabular-nums">
-                      {formatActivityAmount(row.draft.fee, isBalanceHidden, row.draft.currency)}
+                      {formatActivityAmount(
+                        row.draft.fee,
+                        amountFormatter,
+                        isBalanceHidden,
+                        row.draft.currency,
+                      )}
                     </TableCell>
                     <TableCell className="py-2">
                       {row.draft.accountName ?? row.draft.accountId ?? "-"}
