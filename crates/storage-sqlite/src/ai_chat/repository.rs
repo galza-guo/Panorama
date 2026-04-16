@@ -355,63 +355,6 @@ impl ChatRepositoryTrait for AiChatRepository {
             .collect::<ChatRepositoryResult<Vec<_>>>()
     }
 
-    async fn delete_messages_starting_from(
-        &self,
-        thread_id: &str,
-        message_id: &str,
-    ) -> ChatRepositoryResult<()> {
-        let thread_id = thread_id.to_string();
-        let message_id = message_id.to_string();
-
-        self.writer
-            .exec_tx(move |tx| -> CoreResult<()> {
-                let ordered_messages = ai_messages::table
-                    .filter(ai_messages::thread_id.eq(&thread_id))
-                    .order(ai_messages::created_at.asc())
-                    .load::<AiMessageDB>(tx.conn())
-                    .map_err(|e| CoreError::Database(DatabaseError::QueryFailed(e.to_string())))?;
-
-                let Some(start_index) = ordered_messages.iter().position(|m| m.id == message_id)
-                else {
-                    return Ok(());
-                };
-
-                let ids_to_delete: Vec<String> = ordered_messages
-                    .into_iter()
-                    .skip(start_index)
-                    .map(|message| message.id)
-                    .collect();
-
-                if ids_to_delete.is_empty() {
-                    return Ok(());
-                }
-
-                diesel::delete(ai_messages::table.filter(ai_messages::id.eq_any(&ids_to_delete)))
-                    .execute(tx.conn())
-                    .map_err(|e| CoreError::Database(DatabaseError::QueryFailed(e.to_string())))?;
-
-                for id in &ids_to_delete {
-                    tx.delete::<AiMessageDB>(id.clone());
-                }
-
-                diesel::update(ai_threads::table.find(&thread_id))
-                    .set(ai_threads::updated_at.eq(chrono::Utc::now().to_rfc3339()))
-                    .execute(tx.conn())
-                    .map_err(|e| CoreError::Database(DatabaseError::QueryFailed(e.to_string())))?;
-
-                let thread_db = ai_threads::table
-                    .find(&thread_id)
-                    .first::<AiThreadDB>(tx.conn())
-                    .map_err(|e| CoreError::Database(DatabaseError::QueryFailed(e.to_string())))?;
-
-                tx.update(&thread_db)?;
-
-                Ok(())
-            })
-            .await
-            .map_err(core_to_ai_error)
-    }
-
     async fn update_message(&self, message: ChatMessage) -> ChatRepositoryResult<ChatMessage> {
         let message_id = message.id.clone();
         let content_json = convert_content_to_json(&message.content)?;
