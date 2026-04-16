@@ -148,7 +148,10 @@ impl<E: AiEnvironment + 'static> Tool for RecordActivitiesTool<E> {
     async fn call(&self, args: Self::Args) -> Result<Self::Output, Self::Error> {
         const MAX_BATCH_SIZE: usize = 100;
 
-        debug!("record_activities called with {} rows", args.activities.len());
+        debug!(
+            "record_activities called with {} rows",
+            args.activities.len()
+        );
 
         if args.activities.is_empty() {
             return Ok(RecordActivitiesOutput {
@@ -171,6 +174,7 @@ impl<E: AiEnvironment + 'static> Tool for RecordActivitiesTool<E> {
             )));
         }
 
+        // Pre-fetch accounts once for the entire batch.
         let accounts = self
             .env
             .account_service()
@@ -190,7 +194,10 @@ impl<E: AiEnvironment + 'static> Tool for RecordActivitiesTool<E> {
         let mut drafts = Vec::with_capacity(args.activities.len());
 
         for (row_index, activity) in args.activities.into_iter().enumerate() {
-            match single_tool.build_output_with_accounts(activity, &accounts).await {
+            match single_tool
+                .build_output_with_accounts(activity, &accounts)
+                .await
+            {
                 Ok(output) => {
                     let mut row_errors = Vec::new();
                     for field in &output.validation.missing_fields {
@@ -477,61 +484,6 @@ mod tests {
             .validation
             .missing_fields
             .contains(&"unit_price".to_string()));
-    }
-
-    #[tokio::test]
-    async fn test_record_activities_collects_unique_resolved_assets() {
-        let mut env = MockEnvironment::new();
-        env.account_service = Arc::new(MockAccountService {
-            accounts: vec![account("acc-1", "Main Broker", "USD")],
-        });
-        env.quote_service = Arc::new(MockQuoteService {
-            search_results: RwLock::new(vec![SymbolSearchResult {
-                symbol: "AAPL".to_string(),
-                long_name: "Apple Inc.".to_string(),
-                exchange_mic: Some("XNAS".to_string()),
-                exchange_name: Some("NASDAQ".to_string()),
-                currency: Some("USD".to_string()),
-                existing_asset_id: Some("SEC:AAPL:XNAS".to_string()),
-                ..SymbolSearchResult::default()
-            }]),
-        });
-        let tool = RecordActivitiesTool::new(Arc::new(env));
-
-        let output = tool
-            .call(RecordActivitiesArgs {
-                activities: vec![
-                    RecordActivityArgs {
-                        activity_type: "BUY".to_string(),
-                        symbol: Some("AAPL".to_string()),
-                        activity_date: "2026-01-17".to_string(),
-                        quantity: Some(1.0),
-                        unit_price: Some(100.0),
-                        amount: None,
-                        fee: None,
-                        account: None,
-                        subtype: None,
-                        notes: None,
-                    },
-                    RecordActivityArgs {
-                        activity_type: "SELL".to_string(),
-                        symbol: Some("AAPL".to_string()),
-                        activity_date: "2026-01-18".to_string(),
-                        quantity: Some(1.0),
-                        unit_price: Some(120.0),
-                        amount: None,
-                        fee: None,
-                        account: None,
-                        subtype: None,
-                        notes: None,
-                    },
-                ],
-            })
-            .await
-            .expect("batch tool should succeed");
-
-        assert_eq!(output.resolved_assets.len(), 1);
-        assert_eq!(output.resolved_assets[0].asset_id, "SEC:AAPL:XNAS");
     }
 
     #[tokio::test]

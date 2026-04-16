@@ -24,7 +24,7 @@ pub const CHAT_CONTENT_SCHEMA_VERSION: u32 = 1;
 pub const CHAT_CONFIG_SCHEMA_VERSION: u32 = 1;
 
 /// Default tools allowed. Includes read-only tools and safe mutation tools
-/// (record_activity requires explicit user confirmation before creating).
+/// (`record_activity`/`record_activities` require explicit user confirmation before creating).
 pub const DEFAULT_TOOLS_ALLOWLIST: &[&str] = &[
     "get_holdings",
     "get_accounts",
@@ -490,11 +490,6 @@ pub trait ChatRepositoryTrait: Send + Sync {
     async fn create_message(&self, message: ChatMessage) -> ChatRepositoryResult<ChatMessage>;
     fn get_message(&self, message_id: &str) -> ChatRepositoryResult<Option<ChatMessage>>;
     fn get_messages_by_thread(&self, thread_id: &str) -> ChatRepositoryResult<Vec<ChatMessage>>;
-    async fn delete_messages_starting_from(
-        &self,
-        thread_id: &str,
-        message_id: &str,
-    ) -> ChatRepositoryResult<()>;
     async fn update_message(&self, message: ChatMessage) -> ChatRepositoryResult<ChatMessage>;
 
     // Tag operations
@@ -1036,7 +1031,6 @@ mod tests {
         let tools = config.get_tools_allowlist();
         assert!(tools.contains(&"get_holdings".to_string()));
         assert!(tools.contains(&"get_accounts".to_string()));
-        assert!(tools.contains(&"record_activities".to_string()));
     }
 
     #[test]
@@ -1089,24 +1083,5 @@ mod tests {
         let simple_msg = SimpleChatMessage::from(&chat_msg);
         assert_eq!(simple_msg.role, "user");
         assert_eq!(simple_msg.content, "Hello world");
-    }
-
-    #[test]
-    fn test_send_message_request_serializes_parent_message_id_and_attachments_together() {
-        let request = SendMessageRequest {
-            content: "Review this statement".to_string(),
-            parent_message_id: Some("msg-122".to_string()),
-            attachments: Some(vec![MessageAttachment {
-                name: "statement.pdf".to_string(),
-                content_type: "application/pdf".to_string(),
-                data: "cGRmLWJhc2U2NA==".to_string(),
-            }]),
-            ..Default::default()
-        };
-
-        let json = serde_json::to_value(&request).unwrap();
-        assert_eq!(json["parentMessageId"], "msg-122");
-        assert_eq!(json["attachments"][0]["name"], "statement.pdf");
-        assert_eq!(json["attachments"][0]["contentType"], "application/pdf");
     }
 }

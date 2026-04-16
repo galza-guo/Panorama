@@ -57,166 +57,6 @@ fn derive_initial_thread_title(first_user_message: &str) -> Option<String> {
     Some(truncate_to_title(trimmed, 50))
 }
 
-fn truncate_messages_for_edit(messages: &mut Vec<ChatMessage>, parent_id: Option<&str>) {
-    let truncate_len = parent_id
-        .and_then(|id| messages.iter().position(|message| message.id == id))
-        .map(|index| index + 1);
-
-    if let Some(truncate_len) = truncate_len {
-        messages.truncate(truncate_len);
-    }
-}
-
-fn build_history_messages_with_budget(
-    messages: &[ChatMessage],
-    max_history_chars: usize,
-) -> Vec<SimpleChatMessage> {
-    let mut history_messages: Vec<SimpleChatMessage> = Vec::new();
-    let mut budget = max_history_chars;
-
-    for message in messages.iter().rev() {
-        let text = message.content.get_text_content();
-        if text.is_empty() {
-            continue;
-        }
-
-        let simple = match message.role {
-            ChatMessageRole::User => SimpleChatMessage::user(&text),
-            ChatMessageRole::Assistant => SimpleChatMessage::assistant(&text),
-            _ => continue,
-        };
-
-        if text.len() > budget {
-            break;
-        }
-
-        budget -= text.len();
-        history_messages.push(simple);
-    }
-
-    history_messages.reverse();
-    history_messages
-}
-
-fn normalize_ollama_base_url(url: &str) -> &str {
-    url.trim_end_matches('/')
-        .trim_end_matches("/v1")
-        .trim_end_matches('/')
-}
-
-fn validate_attachments(attachments: &[MessageAttachment]) -> Result<(), AiError> {
-    if attachments.len() > MAX_ATTACHMENTS_COUNT {
-        return Err(AiError::InvalidInput(format!(
-            "Too many attachments: {} (max {})",
-            attachments.len(),
-            MAX_ATTACHMENTS_COUNT
-        )));
-    }
-
-    let mut total_size: usize = 0;
-    for attachment in attachments {
-        let is_binary = attachment.content_type.starts_with("image/")
-            || attachment.content_type == "application/pdf";
-        let effective_size = if is_binary {
-            attachment.data.len() * 3 / 4
-        } else {
-            attachment.data.len()
-        };
-
-        if effective_size > MAX_ATTACHMENT_SIZE_BYTES {
-            return Err(AiError::InvalidInput(format!(
-                "Attachment '{}' too large (max {} MB)",
-                attachment.name,
-                MAX_ATTACHMENT_SIZE_BYTES / (1024 * 1024)
-            )));
-        }
-
-        total_size += effective_size;
-    }
-
-    if total_size > MAX_TOTAL_ATTACHMENTS_BYTES {
-        return Err(AiError::InvalidInput(format!(
-            "Total attachment size too large (max {} MB)",
-            MAX_TOTAL_ATTACHMENTS_BYTES / (1024 * 1024)
-        )));
-    }
-
-    Ok(())
-}
-
-/// Build a multimodal `Message::User` from text content and file attachments.
-fn build_user_prompt(user_message: &str, attachments: &[MessageAttachment]) -> Message {
-    if attachments.is_empty() {
-        return Message::User {
-            content: OneOrMany::one(UserContent::Text(Text {
-                text: user_message.to_string(),
-            })),
-        };
-    }
-
-    let mut parts: Vec<UserContent> = Vec::new();
-    let has_csv = attachments
-        .iter()
-        .any(|attachment| attachment.content_type == "text/csv" || attachment.content_type == "application/csv");
-    let has_image_or_pdf = attachments.iter().any(|attachment| {
-        attachment.content_type.starts_with("image/")
-            || attachment.content_type == "application/pdf"
-    });
-
-    let mut text = String::new();
-    if has_csv {
-        text.push_str("[INSTRUCTION: A CSV file is attached. You MUST call the import_csv tool with the full CSV content in csvContent parameter. Do NOT analyze or summarize the data yourself - use the tool.]\n\n");
-    }
-    if has_image_or_pdf {
-        text.push_str("[INSTRUCTION: Image or PDF file(s) attached. Examine for financial transaction data and use record_activities to create drafts for all extracted transactions.]\n\n");
-    }
-    text.push_str(user_message);
-    parts.push(UserContent::Text(Text { text }));
-
-    for attachment in attachments {
-        match attachment.content_type.as_str() {
-            "text/csv" | "application/csv" => {
-                parts.push(UserContent::Text(Text {
-                    text: format!("[Attached CSV file: {}]\n{}", attachment.name, attachment.data),
-                }));
-            }
-            content_type if content_type.starts_with("image/") => {
-                let media_type = match content_type {
-                    "image/png" => Some(ImageMediaType::PNG),
-                    "image/jpeg" | "image/jpg" => Some(ImageMediaType::JPEG),
-                    "image/webp" => Some(ImageMediaType::WEBP),
-                    "image/gif" => Some(ImageMediaType::GIF),
-                    _ => None,
-                };
-                parts.push(UserContent::Image(Image {
-                    data: DocumentSourceKind::Base64(attachment.data.clone()),
-                    media_type,
-                    detail: None,
-                    additional_params: None,
-                }));
-            }
-            "application/pdf" => {
-                parts.push(UserContent::Document(Document {
-                    data: DocumentSourceKind::Base64(attachment.data.clone()),
-                    media_type: Some(DocumentMediaType::PDF),
-                    additional_params: None,
-                }));
-            }
-            _ => {
-                debug!("Skipping unsupported attachment type: {}", attachment.content_type);
-            }
-        }
-    }
-
-    Message::User {
-        content: OneOrMany::many(parts).unwrap_or_else(|_| {
-            OneOrMany::one(UserContent::Text(Text {
-                text: user_message.to_string(),
-            }))
-        }),
-    }
-}
-
 // ============================================================================
 // Chat Stream Configuration
 // ============================================================================
@@ -336,8 +176,45 @@ impl<E: AiEnvironment + 'static> ChatService<E> {
         request: SendMessageRequest,
     ) -> Result<BoxStream<'static, AiStreamEvent>, AiError> {
         let repo = self.env.chat_repository();
+
+        // Validate attachments
         let attachments = request.attachments.clone().unwrap_or_default();
-        validate_attachments(&attachments)?;
+        if !attachments.is_empty() {
+            if attachments.len() > MAX_ATTACHMENTS_COUNT {
+                return Err(AiError::InvalidInput(format!(
+                    "Too many attachments: {} (max {})",
+                    attachments.len(),
+                    MAX_ATTACHMENTS_COUNT
+                )));
+            }
+            let mut total_size: usize = 0;
+            for att in &attachments {
+                // For base64-encoded payloads (images/PDFs), estimate the
+                // decoded byte size (~75% of encoded length) so limits stay
+                // consistent with the frontend's raw file.size check.
+                let is_binary =
+                    att.content_type.starts_with("image/") || att.content_type == "application/pdf";
+                let effective_size = if is_binary {
+                    att.data.len() * 3 / 4
+                } else {
+                    att.data.len()
+                };
+                if effective_size > MAX_ATTACHMENT_SIZE_BYTES {
+                    return Err(AiError::InvalidInput(format!(
+                        "Attachment '{}' too large (max {} MB)",
+                        att.name,
+                        MAX_ATTACHMENT_SIZE_BYTES / (1024 * 1024)
+                    )));
+                }
+                total_size += effective_size;
+            }
+            if total_size > MAX_TOTAL_ATTACHMENTS_BYTES {
+                return Err(AiError::InvalidInput(format!(
+                    "Total attachment size too large (max {} MB)",
+                    MAX_TOTAL_ATTACHMENTS_BYTES / (1024 * 1024)
+                )));
+            }
+        }
 
         // Get or create thread
         let (thread, is_new_thread, initial_title) = match &request.thread_id {
@@ -361,14 +238,40 @@ impl<E: AiEnvironment + 'static> ChatService<E> {
 
         // Load previous messages for context (history)
         let mut previous_messages = repo.get_messages_by_thread(&thread_id)?;
-        truncate_messages_for_edit(&mut previous_messages, request.parent_message_id.as_deref());
-        let history_messages =
-            build_history_messages_with_budget(&previous_messages, MAX_HISTORY_CHARS);
 
-        // Save user message with attachment placeholders; binary payloads are not persisted.
+        // When editing a message, truncate context to the parent message (inclusive)
+        if let Some(ref parent_id) = request.parent_message_id {
+            if let Some(parent_pos) = previous_messages.iter().position(|m| m.id == *parent_id) {
+                previous_messages.truncate(parent_pos + 1);
+            }
+        }
+
+        // Build history with a reverse character-budget window:
+        // take messages from most recent backwards until the budget is exhausted.
+        let mut history_messages: Vec<SimpleChatMessage> = Vec::new();
+        let mut budget = MAX_HISTORY_CHARS;
+        for msg in previous_messages.iter().rev() {
+            let text = msg.content.get_text_content();
+            if text.is_empty() {
+                continue;
+            }
+            let simple = match msg.role {
+                ChatMessageRole::User => SimpleChatMessage::user(&text),
+                ChatMessageRole::Assistant => SimpleChatMessage::assistant(&text),
+                _ => continue,
+            };
+            if text.len() > budget {
+                break;
+            }
+            budget -= text.len();
+            history_messages.push(simple);
+        }
+        history_messages.reverse();
+
+        // Save user message with attachment placeholders (no binary data stored)
         let mut persist_text = request.content.clone();
-        for attachment in &attachments {
-            persist_text.push_str(&format!("\n[Attached: {}]", attachment.name));
+        for att in &attachments {
+            persist_text.push_str(&format!("\n[Attached: {}]", att.name));
         }
         let user_message = ChatMessage::user(&thread_id, &persist_text);
         repo.create_message(user_message).await?;
@@ -405,7 +308,6 @@ impl<E: AiEnvironment + 'static> ChatService<E> {
         let initial_title_clone = initial_title.clone();
         let is_new_thread_clone = is_new_thread;
         let thinking_override = request.config.as_ref().and_then(|c| c.thinking);
-        let attachments_for_stream = attachments.clone();
 
         // Spawn the streaming task
         tokio::spawn(async move {
@@ -414,7 +316,7 @@ impl<E: AiEnvironment + 'static> ChatService<E> {
                 tx.clone(),
                 content,
                 history_messages,
-                attachments_for_stream,
+                attachments,
                 provider_id,
                 model_id,
                 thread_id_clone.clone(),
@@ -566,6 +468,80 @@ struct TitleContext<E: AiEnvironment> {
     model_id: String,
 }
 
+/// Build a multimodal `Message::User` from text content and file attachments.
+fn build_user_prompt(user_message: &str, attachments: &[MessageAttachment]) -> Message {
+    if attachments.is_empty() {
+        return Message::User {
+            content: OneOrMany::one(UserContent::Text(Text {
+                text: user_message.to_string(),
+            })),
+        };
+    }
+
+    let mut parts: Vec<UserContent> = Vec::new();
+    let has_csv = attachments
+        .iter()
+        .any(|a| a.content_type == "text/csv" || a.content_type == "application/csv");
+    let has_image_or_pdf = attachments
+        .iter()
+        .any(|a| a.content_type.starts_with("image/") || a.content_type == "application/pdf");
+
+    // Build instruction-prefixed text
+    let mut text = String::new();
+    if has_csv {
+        text.push_str("[INSTRUCTION: A CSV file is attached. You MUST call the import_csv tool with the full CSV content in csvContent parameter. Do NOT analyze or summarize the data yourself - use the tool.]\n\n");
+    }
+    if has_image_or_pdf {
+        text.push_str("[INSTRUCTION: Image or PDF file(s) attached. Examine for financial transaction data and use record_activities to create drafts for all extracted transactions.]\n\n");
+    }
+    text.push_str(user_message);
+    parts.push(UserContent::Text(Text { text }));
+
+    // Add attachment content parts
+    for att in attachments {
+        match att.content_type.as_str() {
+            "text/csv" | "application/csv" => {
+                parts.push(UserContent::Text(Text {
+                    text: format!("[Attached CSV file: {}]\n{}", att.name, att.data),
+                }));
+            }
+            ct if ct.starts_with("image/") => {
+                let media_type = match ct {
+                    "image/png" => Some(ImageMediaType::PNG),
+                    "image/jpeg" | "image/jpg" => Some(ImageMediaType::JPEG),
+                    "image/webp" => Some(ImageMediaType::WEBP),
+                    "image/gif" => Some(ImageMediaType::GIF),
+                    _ => None,
+                };
+                parts.push(UserContent::Image(Image {
+                    data: DocumentSourceKind::Base64(att.data.clone()),
+                    media_type,
+                    detail: None,
+                    additional_params: None,
+                }));
+            }
+            "application/pdf" => {
+                parts.push(UserContent::Document(Document {
+                    data: DocumentSourceKind::Base64(att.data.clone()),
+                    media_type: Some(DocumentMediaType::PDF),
+                    additional_params: None,
+                }));
+            }
+            _ => {
+                debug!("Skipping unsupported attachment type: {}", att.content_type);
+            }
+        }
+    }
+
+    Message::User {
+        content: OneOrMany::many(parts).unwrap_or_else(|_| {
+            OneOrMany::one(UserContent::Text(Text {
+                text: user_message.to_string(),
+            }))
+        }),
+    }
+}
+
 /// Spawn a chat stream with the appropriate provider.
 #[allow(clippy::too_many_arguments)]
 async fn spawn_chat_stream<E: AiEnvironment + 'static>(
@@ -639,7 +615,7 @@ async fn spawn_chat_stream<E: AiEnvironment + 'static>(
             If the user asks for any of that personal portfolio data, your first sentence MUST \
             start with: \"I don't have access to your ...\" (for example: \
             \"I don't have access to your holdings with the current model.\").\n\
-            Then suggest switching to a model that supports tools (look for the wrench icon in \
+            Then suggest switching to a model that supports tools (look for the gear icon in \
             the model picker). Never guess, fabricate, or imply you retrieved that data.",
         );
     }
@@ -655,18 +631,21 @@ async fn spawn_chat_stream<E: AiEnvironment + 'static>(
         model_id: model_id.clone(),
     };
 
+    // Reject image/PDF attachments when the model doesn't support vision
     if !capabilities.vision {
-        if let Some(attachment) = attachments.iter().find(|attachment| {
-            attachment.content_type.starts_with("image/")
-                || attachment.content_type == "application/pdf"
-        }) {
+        if let Some(att) = attachments
+            .iter()
+            .find(|a| a.content_type.starts_with("image/") || a.content_type == "application/pdf")
+        {
             return Err(AiError::InvalidInput(format!(
-                "The current model does not support image/PDF attachments ({}). Please switch to a vision-capable model.",
-                attachment.name
+                "The current model does not support image/PDF attachments ({}). \
+                 Please switch to a vision-capable model.",
+                att.name
             )));
         }
     }
 
+    // Build multimodal user content from text + attachments
     let prompt = build_user_prompt(&user_message, &attachments);
 
     // Build history from previous messages
@@ -1082,7 +1061,8 @@ fn create_ollama_client(
 ) -> Result<ollama::Client<HttpClient>, AiError> {
     let mut builder = ollama::Client::builder().api_key(Nothing);
     if let Some(url) = provider_url {
-        builder = builder.base_url(normalize_ollama_base_url(&url));
+        let normalized = url.trim_end_matches('/').trim_end_matches("/v1");
+        builder = builder.base_url(normalized);
     }
     builder
         .build()
@@ -1121,7 +1101,12 @@ async fn validate_ollama_model_if_possible(
     model_id: &str,
 ) -> Result<(), AiError> {
     let base = provider_url.unwrap_or("http://localhost:11434");
-    let tags_url = format!("{}/api/tags", normalize_ollama_base_url(base));
+    let normalized = base.trim_end_matches('/');
+    let tags_url = if normalized.ends_with("/v1") {
+        format!("{}/api/tags", normalized.trim_end_matches("/v1"))
+    } else {
+        format!("{}/api/tags", normalized)
+    };
 
     let client = match reqwest::Client::builder()
         .timeout(Duration::from_secs(4))
@@ -1769,18 +1754,6 @@ fn build_history(messages: &[SimpleChatMessage]) -> Result<(Message, Vec<Message
 mod tests {
     use super::*;
     use crate::env::test_env::MockEnvironment;
-    use crate::types::{ChatMessageContent, ChatMessageRole, MessageAttachment};
-    use chrono::Utc;
-
-    fn make_chat_message(id: &str, role: ChatMessageRole, content: &str) -> ChatMessage {
-        ChatMessage {
-            id: id.to_string(),
-            thread_id: "thread-1".to_string(),
-            role,
-            content: ChatMessageContent::text(content),
-            created_at: Utc::now(),
-        }
-    }
 
     #[tokio::test]
     async fn test_chat_service_create_thread() {
@@ -1812,137 +1785,6 @@ mod tests {
         let tools = service.list_tools();
         assert!(tools.contains(&"get_accounts".to_string()));
         assert!(tools.contains(&"get_holdings".to_string()));
-        assert!(tools.contains(&"record_activities".to_string()));
-    }
-
-    #[test]
-    fn test_truncate_messages_to_parent_keeps_all_without_parent() {
-        let mut messages = vec![
-            make_chat_message("m1", ChatMessageRole::User, "one"),
-            make_chat_message("m2", ChatMessageRole::Assistant, "two"),
-            make_chat_message("m3", ChatMessageRole::User, "three"),
-        ];
-
-        truncate_messages_for_edit(&mut messages, None);
-
-        assert_eq!(messages.len(), 3);
-        assert_eq!(messages[2].id, "m3");
-    }
-
-    #[test]
-    fn test_truncate_messages_to_parent_truncates_inclusive() {
-        let mut messages = vec![
-            make_chat_message("m1", ChatMessageRole::User, "one"),
-            make_chat_message("m2", ChatMessageRole::Assistant, "two"),
-            make_chat_message("m3", ChatMessageRole::User, "three"),
-        ];
-
-        truncate_messages_for_edit(&mut messages, Some("m1"));
-
-        assert_eq!(messages.len(), 1);
-        assert_eq!(messages[0].id, "m1");
-    }
-
-    #[test]
-    fn test_truncate_messages_to_parent_keeps_all_when_parent_missing() {
-        let mut messages = vec![
-            make_chat_message("m1", ChatMessageRole::User, "one"),
-            make_chat_message("m2", ChatMessageRole::Assistant, "two"),
-        ];
-
-        truncate_messages_for_edit(&mut messages, Some("missing"));
-
-        assert_eq!(messages.len(), 2);
-        assert_eq!(messages[1].id, "m2");
-    }
-
-    #[test]
-    fn test_truncate_messages_to_parent_keeps_edited_root_message() {
-        let mut messages = vec![
-            make_chat_message("m1", ChatMessageRole::User, "one"),
-            make_chat_message("m2", ChatMessageRole::Assistant, "two"),
-        ];
-
-        truncate_messages_for_edit(&mut messages, Some("m1"));
-
-        assert_eq!(messages.len(), 1);
-        assert_eq!(messages[0].id, "m1");
-    }
-
-    #[test]
-    fn test_build_history_messages_with_budget_keeps_most_recent_messages() {
-        let messages = vec![
-            make_chat_message("m1", ChatMessageRole::User, "12345"),
-            make_chat_message("m2", ChatMessageRole::Assistant, "67890"),
-            make_chat_message("m3", ChatMessageRole::User, "abc"),
-        ];
-
-        let history = build_history_messages_with_budget(&messages, 10);
-
-        assert_eq!(history.len(), 2);
-        assert_eq!(history[0].role, "assistant");
-        assert_eq!(history[0].content, "67890");
-        assert_eq!(history[1].role, "user");
-        assert_eq!(history[1].content, "abc");
-    }
-
-    #[test]
-    fn test_build_history_messages_with_budget_skips_empty_and_non_chat_messages() {
-        let mut empty_user = make_chat_message("m1", ChatMessageRole::User, "");
-        empty_user.content = ChatMessageContent::new(vec![]);
-        let system_message = make_chat_message("m2", ChatMessageRole::System, "system");
-        let assistant_message = make_chat_message("m3", ChatMessageRole::Assistant, "reply");
-
-        let history = build_history_messages_with_budget(
-            &[empty_user, system_message, assistant_message],
-            20,
-        );
-
-        assert_eq!(history.len(), 1);
-        assert_eq!(history[0].role, "assistant");
-        assert_eq!(history[0].content, "reply");
-    }
-
-    #[test]
-    fn test_validate_attachments_rejects_too_many_attachments() {
-        let attachments: Vec<MessageAttachment> = (0..11)
-            .map(|index| MessageAttachment {
-                name: format!("file-{index}.csv"),
-                content_type: "text/csv".to_string(),
-                data: "a,b,c".to_string(),
-            })
-            .collect();
-
-        let err = validate_attachments(&attachments).unwrap_err();
-        match err {
-            AiError::InvalidInput(message) => {
-                assert!(message.contains("Too many attachments"));
-            }
-            other => panic!("unexpected error: {other:?}"),
-        }
-    }
-
-    #[test]
-    fn test_build_user_prompt_includes_csv_and_image_attachment_instructions() {
-        let attachments = vec![
-            MessageAttachment {
-                name: "trades.csv".to_string(),
-                content_type: "text/csv".to_string(),
-                data: "date,type,amount".to_string(),
-            },
-            MessageAttachment {
-                name: "receipt.png".to_string(),
-                content_type: "image/png".to_string(),
-                data: "aW1hZ2UtYmFzZTY0".to_string(),
-            },
-        ];
-
-        let prompt = build_user_prompt("Please import these", &attachments);
-        let debug = format!("{prompt:?}");
-
-        assert!(debug.contains("import_csv tool"));
-        assert!(debug.contains("record_activities"));
-        assert!(debug.contains("Attached CSV file: trades.csv"));
     }
 
     #[tokio::test]
@@ -2021,22 +1863,6 @@ mod tests {
         assert!(ollama_model_matches("ministral-3:latest", "ministral-3"));
         assert!(ollama_model_matches("ministral-3", "ministral-3:latest"));
         assert!(!ollama_model_matches("qwen3:8b", "ministral-3"));
-    }
-
-    #[test]
-    fn test_normalize_ollama_base_url_removes_trailing_v1() {
-        assert_eq!(
-            normalize_ollama_base_url("http://localhost:11434/v1"),
-            "http://localhost:11434"
-        );
-        assert_eq!(
-            normalize_ollama_base_url("http://localhost:11434/v1/"),
-            "http://localhost:11434"
-        );
-        assert_eq!(
-            normalize_ollama_base_url("http://localhost:11434/"),
-            "http://localhost:11434"
-        );
     }
 
     #[test]

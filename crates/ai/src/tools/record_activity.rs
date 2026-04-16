@@ -244,6 +244,7 @@ impl<E: AiEnvironment> RecordActivityTool<E> {
         &self,
         args: RecordActivityArgs,
     ) -> Result<RecordActivityOutput, AiError> {
+        // Fetch accounts, then delegate to the shared implementation.
         let accounts = self
             .env
             .account_service()
@@ -255,7 +256,7 @@ impl<E: AiEnvironment> RecordActivityTool<E> {
 
     /// Build normalized tool output using pre-fetched accounts.
     ///
-    /// Avoids redundant account lookups when processing a batch.
+    /// Avoids redundant DB calls when processing a batch.
     pub(crate) async fn build_output_with_accounts(
         &self,
         args: RecordActivityArgs,
@@ -266,10 +267,12 @@ impl<E: AiEnvironment> RecordActivityTool<E> {
             args.activity_type, args.symbol, args.account, args.activity_date
         );
 
+        // 1. Validate activity type
         let activity_type = self
             .validate_activity_type(&args.activity_type)
             .unwrap_or_else(|| "UNKNOWN".to_string());
 
+        // 2. Build account options from pre-fetched accounts
         debug!("Found {} active accounts", accounts.len());
 
         let available_accounts: Vec<AccountOption> = accounts
@@ -281,6 +284,8 @@ impl<E: AiEnvironment> RecordActivityTool<E> {
             })
             .collect();
 
+        // 3. Resolve account
+        // Treat empty string as None for auto-selection
         let account_hint = args.account.as_deref().filter(|s| !s.is_empty());
         debug!(
             "Account resolution: hint={:?}, num_accounts={}",
@@ -293,14 +298,17 @@ impl<E: AiEnvironment> RecordActivityTool<E> {
             account_id, account_name
         );
 
+        // Get currency from resolved account, or use base currency as fallback
         let currency = account_id
             .as_ref()
             .and_then(|id| accounts.iter().find(|a| &a.id == id))
             .map(|a| a.currency.clone())
             .unwrap_or_else(|| self.env.base_currency());
 
+        // 4. Handle symbol/asset resolution using quote_service
         let (resolved_asset, asset_id, asset_name, is_custom_asset) =
             if let Some(symbol) = &args.symbol {
+                // Search for the symbol using quote_service
                 let search_results = self
                     .env
                     .quote_service()
@@ -309,8 +317,10 @@ impl<E: AiEnvironment> RecordActivityTool<E> {
                     .unwrap_or_default();
 
                 if let Some(top_result) = search_results.first() {
+                    // Found a match - use the top result
                     let asset = ResolvedAsset {
                         asset_id: top_result.existing_asset_id.clone().unwrap_or_else(|| {
+                            // Construct asset ID from symbol and exchange
                             format!(
                                 "{}:{}",
                                 top_result.symbol,
@@ -333,20 +343,30 @@ impl<E: AiEnvironment> RecordActivityTool<E> {
                         false,
                     )
                 } else {
-                    (None, None, Some(symbol.clone()), true)
+                    // No match found - treat as custom asset
+                    (
+                        None,
+                        None,
+                        Some(symbol.clone()),
+                        true, // Mark as custom asset so user can create it
+                    )
                 }
             } else {
                 (None, None, None, false)
             };
 
+        // 5. Determine price source
         let price_source = if args.unit_price.is_some() {
             "user"
         } else {
             "none"
         };
 
+        // 6. Compute amount if not provided
         let amount = self.compute_amount(args.quantity, args.unit_price, args.fee, args.amount);
 
+        // 7. Build draft
+        // Use asset's currency for trading activities, otherwise use account currency
         let draft_currency = resolved_asset
             .as_ref()
             .map(|a| a.currency.clone())
@@ -373,7 +393,10 @@ impl<E: AiEnvironment> RecordActivityTool<E> {
             asset_kind: None,
         };
 
+        // 8. Validate the draft
         let validation = self.validate_draft(&draft);
+
+        // 9. Get available subtypes
         let available_subtypes = get_subtypes_for_activity_type(&activity_type);
 
         Ok(RecordActivityOutput {
