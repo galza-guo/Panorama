@@ -16,7 +16,7 @@ use crate::broker_ingest::{
     ImportRunRepositoryTrait, ImportRunStatus, ImportRunSummary, ImportRunType, ReviewMode,
 };
 use crate::platform::Platform;
-use chrono::{DateTime, Months, TimeZone, Utc};
+use chrono::{DateTime, Months, NaiveDate, TimeZone, Utc};
 use rust_decimal::prelude::FromPrimitive;
 use rust_decimal::Decimal;
 use std::collections::{HashMap, HashSet};
@@ -860,6 +860,14 @@ impl BrokerSyncServiceTrait for BrokerSyncService {
             .get_latest_snapshot_before_date(&account_id, tomorrow)?;
         let diff = Self::compute_holdings_diff(latest.as_ref(), &positions_map);
 
+        if Self::should_preserve_manual_snapshot_for_date(latest.as_ref(), today) {
+            info!(
+                "Skipping broker snapshot save for account {} on {} because a manual snapshot already exists for that date",
+                account_id, today
+            );
+            return Ok((diff, assets_created, new_asset_ids));
+        }
+
         if let Some(existing) = latest {
             if existing.is_content_equal(&snapshot) {
                 if !broker_quotes.is_empty() {
@@ -915,6 +923,18 @@ impl BrokerSyncServiceTrait for BrokerSyncService {
 }
 
 impl BrokerSyncService {
+    fn should_preserve_manual_snapshot_for_date(
+        latest_snapshot: Option<&AccountStateSnapshot>,
+        snapshot_date: NaiveDate,
+    ) -> bool {
+        matches!(
+            latest_snapshot,
+            Some(snapshot)
+                if snapshot.snapshot_date == snapshot_date
+                    && snapshot.source == SnapshotSource::ManualEntry
+        )
+    }
+
     fn build_broker_quotes(
         date: &chrono::NaiveDate,
         quotes: Vec<(String, Decimal, String)>,
@@ -1267,9 +1287,9 @@ mod tests {
     use std::collections::{HashMap, VecDeque};
     use std::str::FromStr;
 
-    use chrono::Utc;
+    use chrono::{NaiveDate, Utc};
     use rust_decimal::Decimal;
-    use wealthfolio_core::portfolio::snapshot::{AccountStateSnapshot, Position};
+    use wealthfolio_core::portfolio::snapshot::{AccountStateSnapshot, Position, SnapshotSource};
     use wealthfolio_core::utils::time_utils::valuation_date_today;
 
     use super::BrokerSyncService;
@@ -1305,6 +1325,23 @@ mod tests {
 
     fn snapshot_with_positions(positions: Vec<Position>) -> AccountStateSnapshot {
         AccountStateSnapshot {
+            positions: positions
+                .into_iter()
+                .map(|p| (p.asset_id.clone(), p))
+                .collect::<HashMap<_, _>>(),
+            ..Default::default()
+        }
+    }
+
+    fn snapshot_with_metadata(
+        snapshot_date: &str,
+        source: SnapshotSource,
+        positions: Vec<Position>,
+    ) -> AccountStateSnapshot {
+        AccountStateSnapshot {
+            snapshot_date: NaiveDate::parse_from_str(snapshot_date, "%Y-%m-%d")
+                .expect("valid snapshot date"),
+            source,
             positions: positions
                 .into_iter()
                 .map(|p| (p.asset_id.clone(), p))
@@ -1424,6 +1461,40 @@ mod tests {
         assert_eq!(diff.updated_positions, 1);
         assert_eq!(diff.removed_positions, 0);
         assert_eq!(diff.unchanged_positions, 0);
+    }
+
+    #[test]
+    fn should_preserve_manual_snapshot_for_same_day_only() {
+        let manual_today = snapshot_with_metadata(
+            "2026-03-29",
+            SnapshotSource::ManualEntry,
+            vec![position("acc-1", "aapl", "10", "100", "1000", "USD")],
+        );
+        let broker_today = snapshot_with_metadata(
+            "2026-03-29",
+            SnapshotSource::BrokerImported,
+            vec![position("acc-1", "aapl", "10", "100", "1000", "USD")],
+        );
+        let manual_yesterday = snapshot_with_metadata(
+            "2026-03-28",
+            SnapshotSource::ManualEntry,
+            vec![position("acc-1", "aapl", "10", "100", "1000", "USD")],
+        );
+        let today = NaiveDate::from_ymd_opt(2026, 3, 29).unwrap();
+
+        assert!(BrokerSyncService::should_preserve_manual_snapshot_for_date(
+            Some(&manual_today),
+            today,
+        ));
+        assert!(
+            !BrokerSyncService::should_preserve_manual_snapshot_for_date(Some(&broker_today), today)
+        );
+        assert!(
+            !BrokerSyncService::should_preserve_manual_snapshot_for_date(
+                Some(&manual_yesterday),
+                today,
+            )
+        );
     }
 
     #[test]
