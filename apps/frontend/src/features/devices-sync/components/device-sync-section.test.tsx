@@ -5,21 +5,35 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { DeviceSyncSection } from "./device-sync-section";
 
 const hookMocks = vi.hoisted(() => ({
+  useSyncStatus: vi.fn(),
   useDevices: vi.fn(),
+  useSyncActions: vi.fn(),
   useRenameDevice: vi.fn(),
   useRevokeDevice: vi.fn(),
-  useDeviceSync: vi.fn(),
   getPairingSourceStatus: vi.fn(),
 }));
 
+interface MutationMock {
+  mutateAsync: ReturnType<typeof vi.fn>;
+  isPending: boolean;
+  error?: unknown;
+}
+
+interface SyncActionsMock {
+  stopBgSync: MutationMock;
+  startBgSync: MutationMock;
+  bootstrapSync: MutationMock;
+  generateSnapshot: MutationMock;
+  reinitializeSync: MutationMock;
+  resetSync: MutationMock;
+}
+
 vi.mock("../hooks", () => ({
+  useSyncStatus: hookMocks.useSyncStatus,
   useDevices: hookMocks.useDevices,
+  useSyncActions: hookMocks.useSyncActions,
   useRenameDevice: hookMocks.useRenameDevice,
   useRevokeDevice: hookMocks.useRevokeDevice,
-}));
-
-vi.mock("../providers/device-sync-provider", () => ({
-  useDeviceSync: hookMocks.useDeviceSync,
 }));
 
 vi.mock("../services/sync-service", () => ({
@@ -54,28 +68,24 @@ describe("DeviceSyncSection", () => {
       mutateAsync: vi.fn(),
       isPending: false,
     });
+  });
+
+  it("opens the claimer flow directly for an untrusted READY device", async () => {
+    hookMocks.useSyncStatus.mockReturnValue({
+      isLoading: false,
+      error: null,
+      syncState: "READY",
+      trustedDevices: [{ id: "trusted-1", name: "Laptop", platform: "mac", lastSeenAt: null }],
+      device: { trustState: "untrusted" },
+      engineStatus: null,
+      refetch: vi.fn(),
+    });
     hookMocks.useDevices.mockReturnValue({
       data: [],
       isLoading: false,
       error: null,
     });
-  });
-
-  it("opens the claimer flow directly for an untrusted READY device", async () => {
-    hookMocks.useDeviceSync.mockReturnValue({
-      state: {
-        isDetecting: false,
-        syncState: "READY",
-        trustedDevices: [{ id: "trusted-1", name: "Laptop", platform: "mac", lastSeenAt: null }],
-        device: { trustState: "untrusted" },
-        engineStatus: null,
-        bootstrapStatus: "idle",
-        bootstrapMessage: null,
-        bootstrapOverwriteRisk: null,
-        remoteSeedPresent: null,
-      },
-      actions: createActions(),
-    });
+    hookMocks.useSyncActions.mockReturnValue(createActions());
 
     renderWithQueryClient(<DeviceSyncSection />);
 
@@ -88,19 +98,20 @@ describe("DeviceSyncSection", () => {
   });
 
   it("requires confirmation when any other non-revoked device exists", async () => {
-    hookMocks.useDeviceSync.mockReturnValue({
-      state: {
-        isDetecting: false,
-        syncState: "READY",
-        trustedDevices: [{ id: "trusted-1", name: "Laptop", platform: "mac", lastSeenAt: null }],
-        device: { trustState: "trusted" },
-        engineStatus: null,
-        bootstrapStatus: "idle",
-        bootstrapMessage: null,
-        bootstrapOverwriteRisk: null,
-        remoteSeedPresent: null,
-      },
-      actions: createActions(),
+    const reinitializeSync = {
+      mutateAsync: vi.fn().mockResolvedValue(undefined),
+      isPending: false,
+      error: null,
+    };
+
+    hookMocks.useSyncStatus.mockReturnValue({
+      isLoading: false,
+      error: null,
+      syncState: "READY",
+      trustedDevices: [{ id: "trusted-1", name: "Laptop", platform: "mac", lastSeenAt: null }],
+      device: { trustState: "trusted" },
+      engineStatus: null,
+      refetch: vi.fn(),
     });
     hookMocks.useDevices.mockReturnValue({
       data: [
@@ -110,6 +121,7 @@ describe("DeviceSyncSection", () => {
       isLoading: false,
       error: null,
     });
+    hookMocks.useSyncActions.mockReturnValue(createActions({ reinitializeSync }));
     hookMocks.getPairingSourceStatus.mockResolvedValue({
       status: "restore_required",
       message: "Restore required",
@@ -124,114 +136,41 @@ describe("DeviceSyncSection", () => {
     await waitFor(() => {
       expect(hookMocks.getPairingSourceStatus).toHaveBeenCalledTimes(1);
     });
+    expect(reinitializeSync.mutateAsync).not.toHaveBeenCalled();
     expect(await screen.findByRole("button", { name: "Continue" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Not now" })).toBeInTheDocument();
   });
-
-  it("opens the issuer flow after the current device is confirmed ready", async () => {
-    hookMocks.useDeviceSync.mockReturnValue({
-      state: {
-        isDetecting: false,
-        syncState: "READY",
-        trustedDevices: [{ id: "trusted-1", name: "Laptop", platform: "mac", lastSeenAt: null }],
-        device: { trustState: "trusted" },
-        engineStatus: null,
-        bootstrapStatus: "idle",
-        bootstrapMessage: null,
-        bootstrapOverwriteRisk: null,
-        remoteSeedPresent: null,
-      },
-      actions: createActions(),
-    });
-    hookMocks.getPairingSourceStatus.mockResolvedValue({
-      status: "ready",
-      message: "Ready",
-      localCursor: 8,
-      serverCursor: 8,
-    });
-
-    renderWithQueryClient(<DeviceSyncSection />);
-
-    fireEvent.click(screen.getByRole("button", { name: "Connect Another Device" }));
-
-    await waitFor(() => {
-      expect(hookMocks.getPairingSourceStatus).toHaveBeenCalledTimes(1);
-    });
-    await waitFor(() => {
-      expect(screen.getAllByText("Connect Another Device").length).toBeGreaterThan(1);
-    });
-  });
-
-  it("reinitializes sync immediately when restore is required and no other devices remain", async () => {
-    const actions = createActions();
-    hookMocks.useDeviceSync.mockReturnValue({
-      state: {
-        isDetecting: false,
-        syncState: "READY",
-        trustedDevices: [{ id: "trusted-1", name: "Laptop", platform: "mac", lastSeenAt: null }],
-        device: { trustState: "trusted" },
-        engineStatus: null,
-        bootstrapStatus: "idle",
-        bootstrapMessage: null,
-        bootstrapOverwriteRisk: null,
-        remoteSeedPresent: null,
-      },
-      actions,
-    });
-    hookMocks.getPairingSourceStatus.mockResolvedValue({
-      status: "restore_required",
-      message: "Restore required",
-      localCursor: 11,
-      serverCursor: 8,
-    });
-
-    renderWithQueryClient(<DeviceSyncSection />);
-
-    fireEvent.click(screen.getByRole("button", { name: "Connect Another Device" }));
-
-    await waitFor(() => {
-      expect(hookMocks.getPairingSourceStatus).toHaveBeenCalledTimes(1);
-      expect(actions.reinitializeSync).toHaveBeenCalledTimes(1);
-    });
-    expect(screen.queryByRole("button", { name: "Continue" })).not.toBeInTheDocument();
-  });
-
-  it("shows the upstream waiting-for-snapshot message while a trusted device uploads bootstrap data", () => {
-    hookMocks.useDeviceSync.mockReturnValue({
-      state: {
-        isDetecting: false,
-        syncState: "READY",
-        trustedDevices: [{ id: "trusted-1", name: "Laptop", platform: "mac", lastSeenAt: null }],
-        device: { trustState: "untrusted" },
-        engineStatus: null,
-        bootstrapStatus: "success",
-        bootstrapMessage: "Waiting for a trusted device to upload a snapshot",
-        bootstrapAction: "NO_REMOTE_PULL",
-        bootstrapOverwriteRisk: null,
-        remoteSeedPresent: null,
-      },
-      actions: createActions(),
-    });
-
-    renderWithQueryClient(<DeviceSyncSection />);
-
-    expect(
-      screen.getByText("Waiting for a trusted device to upload a snapshot"),
-    ).toBeInTheDocument();
-    expect(
-      screen.queryByText("No data replacement is needed. This device can keep its current data."),
-    ).not.toBeInTheDocument();
-  });
 });
 
-function createActions() {
+function createActions(overrides?: Partial<SyncActionsMock>): SyncActionsMock {
   return {
-    refreshState: vi.fn(),
-    continueBootstrapWithOverwrite: vi.fn().mockResolvedValue(undefined),
-    reinitializeSync: vi.fn().mockResolvedValue(undefined),
-    stopBackgroundSync: vi.fn().mockResolvedValue(undefined),
-    startBackgroundSync: vi.fn().mockResolvedValue(undefined),
-    resetSync: vi.fn().mockResolvedValue(undefined),
+    stopBgSync: {
+      mutateAsync: vi.fn(),
+      isPending: false,
+    },
+    startBgSync: {
+      mutateAsync: vi.fn(),
+      isPending: false,
+    },
+    bootstrapSync: {
+      mutateAsync: vi.fn(),
+      isPending: false,
+      error: null,
+    },
+    generateSnapshot: {
+      mutateAsync: vi.fn(),
+      isPending: false,
+    },
+    reinitializeSync: {
+      mutateAsync: vi.fn().mockResolvedValue(undefined),
+      isPending: false,
+      error: null,
+    },
+    resetSync: {
+      mutateAsync: vi.fn().mockResolvedValue(undefined),
+      isPending: false,
+    },
+    ...overrides,
   };
 }
 

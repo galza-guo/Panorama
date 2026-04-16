@@ -11,6 +11,8 @@ interface PairingResultProps {
   error?: string | null;
   onRetry?: () => void;
   onDone?: () => void;
+  retryLabel?: string;
+  doneLabel?: string;
 }
 
 function formatError(error: string | null | undefined): string {
@@ -32,7 +34,14 @@ function formatError(error: string | null | undefined): string {
   return error.length > 100 ? error.slice(0, 97) + "..." : error;
 }
 
-export function PairingResult({ success, error, onRetry, onDone }: PairingResultProps) {
+export function PairingResult({
+  success,
+  error,
+  onRetry,
+  onDone,
+  retryLabel,
+  doneLabel,
+}: PairingResultProps) {
   const hasCalledDone = useRef(false);
 
   // Auto-close on success - call immediately
@@ -74,11 +83,11 @@ export function PairingResult({ success, error, onRetry, onDone }: PairingResult
       <div className="flex gap-3">
         {onRetry && (
           <Button variant="outline" onClick={onRetry}>
-            Try Again
+            {retryLabel ?? "Try Again"}
           </Button>
         )}
         <Button variant={onRetry ? "ghost" : "default"} onClick={onDone}>
-          {onRetry ? "Cancel" : "Close"}
+          {doneLabel ?? (onRetry ? "Cancel" : "Close")}
         </Button>
       </div>
     </div>

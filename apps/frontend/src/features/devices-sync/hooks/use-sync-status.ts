@@ -1,3 +1,8 @@
+// useSyncStatus
+// React Query hook for polling device sync state and engine status.
+// Replaces: state detection useEffect, refreshState(), ENGINE_STATUS action.
+// ==========================================================================
+
 import { useWealthfolioConnect } from "@/features/wealthfolio-connect";
 import { useQuery } from "@tanstack/react-query";
 import { useCallback } from "react";
@@ -13,14 +18,16 @@ export function useSyncStatus() {
 
   const enabled = !!isEnabled && !!isConnected && !!hasSubscription;
 
+  // Query 1: sync state (always active when authenticated)
   const statusQuery = useQuery({
     queryKey: ["sync", "status", enabled ? "enabled" : "disabled"],
     queryFn: async () => {
       try {
         return await syncService.detectState();
-      } catch (error) {
-        if (SyncError.isNoAccessToken(error)) return null;
-        throw error;
+      } catch (err) {
+        // Not signed in — return null defaults, not error
+        if (SyncError.isNoAccessToken(err)) return null;
+        throw err;
       }
     },
     enabled,
@@ -28,6 +35,7 @@ export function useSyncStatus() {
     staleTime: 10_000,
   });
 
+  // Query 2: engine status (only when READY)
   const engineQuery = useQuery({
     queryKey: ["sync", "engine", enabled ? "enabled" : "disabled"],
     queryFn: () => syncService.getEngineStatus(),
@@ -36,17 +44,19 @@ export function useSyncStatus() {
     staleTime: 5_000,
   });
 
+  const data = statusQuery.data;
+
   const refetch = useCallback(() => {
     statusQuery.refetch();
     engineQuery.refetch();
-  }, [engineQuery, statusQuery]);
+  }, [statusQuery.refetch, engineQuery.refetch]);
 
   return {
-    syncState: statusQuery.data?.state ?? SyncStates.FRESH,
-    device: statusQuery.data?.device ?? null,
-    identity: statusQuery.data?.identity ?? null,
-    trustedDevices: statusQuery.data?.trustedDevices ?? [],
-    serverKeyVersion: statusQuery.data?.serverKeyVersion ?? null,
+    syncState: data?.state ?? SyncStates.FRESH,
+    device: data?.device ?? null,
+    identity: data?.identity ?? null,
+    trustedDevices: data?.trustedDevices ?? [],
+    serverKeyVersion: data?.serverKeyVersion ?? null,
     engineStatus: engineQuery.data ?? null,
     engineIsFetching: engineQuery.isFetching,
     isLoading: statusQuery.isLoading,

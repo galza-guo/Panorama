@@ -46,6 +46,12 @@ export type {
   Logger,
 } from "../types";
 
+export type {
+  ConfirmPairingWithBootstrapResult,
+  PairingFlowPhase,
+  PairingFlowResponse,
+} from "../shared/connect";
+
 // Re-export AI types from features/ai-assistant
 export type {
   AiChatMessage,
@@ -237,6 +243,14 @@ export {
   claimPairing,
   getPairingMessages,
   confirmPairing,
+  completePairingWithTransfer,
+  confirmPairingWithBootstrap,
+  beginPairingConfirm,
+  getPairingFlowState,
+  approvePairingOverwrite,
+  cancelPairingFlow,
+  deviceSyncGenerateSnapshotNow,
+  deviceSyncCancelSnapshotUpload,
   restoreSyncSession,
   storeSyncSession,
   clearSyncSession,

@@ -1,25 +1,24 @@
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { RecoveryDialog } from "./recovery-dialog";
 
 const hookMocks = vi.hoisted(() => ({
-  useDeviceSync: vi.fn(),
-  handleRecovery: vi.fn(),
+  mutateAsync: vi.fn(),
 }));
 
-vi.mock("../providers/device-sync-provider", () => ({
-  useDeviceSync: hookMocks.useDeviceSync,
+vi.mock("../hooks", () => ({
+  useSyncActions: () => ({
+    handleRecovery: {
+      mutateAsync: hookMocks.mutateAsync,
+      isPending: false,
+    },
+  }),
 }));
 
 describe("RecoveryDialog", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    hookMocks.handleRecovery.mockResolvedValue(undefined);
-    hookMocks.useDeviceSync.mockReturnValue({
-      actions: {
-        handleRecovery: hookMocks.handleRecovery,
-      },
-    });
+    hookMocks.mutateAsync.mockResolvedValue(undefined);
   });
 
   it("shows the consumer recovery copy and runs recovery on confirm", async () => {
@@ -34,8 +33,6 @@ describe("RecoveryDialog", () => {
 
     fireEvent.click(screen.getByRole("button", { name: "Set Up This Device Again" }));
 
-    await waitFor(() => {
-      expect(hookMocks.handleRecovery).toHaveBeenCalledTimes(1);
-    });
+    expect(hookMocks.mutateAsync).toHaveBeenCalledTimes(1);
   });
 });

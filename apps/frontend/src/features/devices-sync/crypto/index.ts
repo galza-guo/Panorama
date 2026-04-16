@@ -20,23 +20,6 @@ import {
 
 export type { EphemeralKeyPair };
 
-// Base64 utilities (kept for convenience)
-// ----------------------------------------
-
-/**
- * Encode bytes to base64 string
- */
-export function base64Encode(bytes: Uint8Array): string {
-  return btoa(String.fromCharCode(...bytes));
-}
-
-/**
- * Decode base64 string to bytes
- */
-export function base64Decode(str: string): Uint8Array {
-  return Uint8Array.from(atob(str), (c) => c.charCodeAt(0));
-}
-
 // Root Key operations
 // -------------------
 
@@ -130,9 +113,12 @@ export async function hashPairingCode(code: string): Promise<string> {
   return syncHashPairingCode(code);
 }
 
+// HMAC-SHA256
+// -----------
+
 /**
- * Compute HMAC-SHA256 of data using the given key.
- * Key is base64-encoded, returns hex-encoded digest.
+ * Compute HMAC-SHA256 of data using the given key
+ * Key is base64-encoded, returns hex-encoded digest
  */
 export async function hmacSha256(keyB64: string, data: string): Promise<string> {
   return syncHmacSha256(keyB64, data);
