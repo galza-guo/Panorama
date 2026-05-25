@@ -7,17 +7,14 @@ interface ConnectVisibilityGateProps {
   redirectTo: string;
 }
 
-export function ConnectVisibilityGate({
-  children,
-  redirectTo,
-}: ConnectVisibilityGateProps) {
+export function ConnectVisibilityGate({ children, redirectTo }: ConnectVisibilityGateProps) {
   const { settings, isLoading } = useSettingsContext();
 
   if (isLoading) {
     return null;
   }
 
-  if (settings && !settings.wealthfolioConnectVisible) {
+  if (settings?.wealthfolioConnectVisible !== true) {
     return <Navigate to={redirectTo} replace />;
   }
 

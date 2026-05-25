@@ -12,6 +12,10 @@ use wealthfolio_connect::{
     SyncProgressReporter, SyncResult, UserInfo,
 };
 
+const LEGACY_CLOUD_BROKER_SYNC_ENABLED: bool = false;
+const LEGACY_CLOUD_BROKER_SYNC_DISABLED_MESSAGE: &str =
+    "Legacy Wealthfolio Connect broker sync is disabled while local broker connect is introduced.";
+
 // ─────────────────────────────────────────────────────────────────────────────
 // Tauri Progress Reporter
 // ─────────────────────────────────────────────────────────────────────────────
@@ -76,6 +80,11 @@ pub async fn sync_broker_data(
     app: AppHandle,
     state: State<'_, Arc<ServiceContext>>,
 ) -> Result<(), String> {
+    if !LEGACY_CLOUD_BROKER_SYNC_ENABLED {
+        info!("[Connect] {}", LEGACY_CLOUD_BROKER_SYNC_DISABLED_MESSAGE);
+        return Err(LEGACY_CLOUD_BROKER_SYNC_DISABLED_MESSAGE.to_string());
+    }
+
     match state.connect_service().has_broker_sync().await {
         Ok(true) => {}
         Ok(false) => {
@@ -132,6 +141,11 @@ pub async fn perform_broker_sync(
     context: &Arc<ServiceContext>,
     app: Option<&AppHandle>,
 ) -> Result<SyncResult, String> {
+    if !LEGACY_CLOUD_BROKER_SYNC_ENABLED {
+        info!("[Connect] {}", LEGACY_CLOUD_BROKER_SYNC_DISABLED_MESSAGE);
+        return Err(LEGACY_CLOUD_BROKER_SYNC_DISABLED_MESSAGE.to_string());
+    }
+
     info!("Starting broker data sync...");
 
     let client = context.connect_service().get_api_client().await?;

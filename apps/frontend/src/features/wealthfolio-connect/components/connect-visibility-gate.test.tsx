@@ -13,11 +13,38 @@ vi.mock("@/lib/settings-provider", () => ({
 import { ConnectVisibilityGate } from "./connect-visibility-gate";
 
 describe("connect visibility gate", () => {
+  it("redirects away from connect routes when settings are missing", () => {
+    useSettingsContextMock.mockReturnValue({
+      settings: null,
+      isLoading: false,
+    });
+
+    render(
+      <MemoryRouter initialEntries={["/connect"]}>
+        <Routes>
+          <Route
+            path="/connect"
+            element={
+              <ConnectVisibilityGate redirectTo="/settings/general">
+                <div>Connect Page</div>
+              </ConnectVisibilityGate>
+            }
+          />
+          <Route path="/settings/general" element={<div>General Settings</div>} />
+        </Routes>
+      </MemoryRouter>,
+    );
+
+    expect(screen.queryByText("Connect Page")).not.toBeInTheDocument();
+    expect(screen.getByText("General Settings")).toBeInTheDocument();
+  });
+
   it("redirects away from hidden connect routes", () => {
     useSettingsContextMock.mockReturnValue({
       settings: {
         wealthfolioConnectVisible: false,
       },
+      isLoading: false,
     });
 
     render(

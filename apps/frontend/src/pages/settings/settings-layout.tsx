@@ -120,13 +120,11 @@ export default function SettingsLayout() {
   const location = useLocation();
   const navigate = useNavigate();
   const { settings } = useSettingsContext();
-  const wealthfolioConnectVisible = settings?.wealthfolioConnectVisible ?? true;
+  const wealthfolioConnectVisible = settings?.wealthfolioConnectVisible === true;
   const visibleSettingsSections = settingsSections
     .map((section) => ({
       ...section,
-      items: section.items.filter(
-        (item) => item.href !== "connect" || wealthfolioConnectVisible,
-      ),
+      items: section.items.filter((item) => item.href !== "connect" || wealthfolioConnectVisible),
     }))
     .filter((section) => section.items.length > 0);
 
@@ -150,7 +148,7 @@ export default function SettingsLayout() {
             <div className="space-y-6 p-3 pb-[calc(var(--mobile-nav-ui-height)+max(var(--mobile-nav-gap),env(safe-area-inset-bottom)))] lg:p-4 lg:pb-4">
               {visibleSettingsSections.map((section) => (
                 <div key={section.title} className="space-y-3">
-                  <div className="text-muted-foreground px-2 text-xs font-semibold uppercase tracking-widest">
+                  <div className="text-muted-foreground px-2 text-xs font-semibold tracking-widest uppercase">
                     {section.title}
                   </div>
                   <div className="divide-border bg-card divide-y overflow-hidden rounded-2xl border shadow-sm">
@@ -205,7 +203,7 @@ export default function SettingsLayout() {
               <div className="space-y-6">
                 {visibleSettingsSections.map((section) => (
                   <div key={section.title} className="space-y-2">
-                    <div className="text-muted-foreground pl-2 text-sm font-light uppercase tracking-widest">
+                    <div className="text-muted-foreground pl-2 text-sm font-light tracking-widest uppercase">
                       {section.title}
                     </div>
                     <SidebarNav items={section.items} />

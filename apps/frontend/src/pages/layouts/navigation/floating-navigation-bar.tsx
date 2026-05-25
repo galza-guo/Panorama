@@ -1,6 +1,7 @@
 import { LiquidGlass } from "@/components/liquid-glass";
 import { SyncStatusIcon } from "@/features/wealthfolio-connect/components/sync-status-icon";
 import { useAggregatedSyncStatus } from "@/features/wealthfolio-connect/hooks";
+import { useSettingsContext } from "@/lib/settings-provider";
 import { cn } from "@/lib/utils";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuTrigger, Icons } from "@wealthfolio/ui";
 import { motion } from "motion/react";
@@ -19,6 +20,8 @@ export function FloatingNavigationBar({ navigation }: FloatingNavigationBarProps
   const [addonsOpen, setAddonsOpen] = useState(false);
   const uniqueId = useId();
   const { status: syncStatus } = useAggregatedSyncStatus();
+  const { settings } = useSettingsContext();
+  const showLegacyConnect = settings?.wealthfolioConnectVisible === true;
   const baseButtonClass =
     "text-foreground relative z-10 flex h-11 w-full items-center justify-center rounded-full transition-colors";
 
@@ -56,7 +59,7 @@ export function FloatingNavigationBar({ navigation }: FloatingNavigationBarProps
     [primaryItems, secondaryItems],
   );
   const launcherColumn = 1;
-  const connectColumn = 1;
+  const connectColumn = showLegacyConnect ? 1 : 0;
   const visibleCount = 7;
   const visibleItems = baseItems.slice(0, visibleCount);
   const overflowItems = baseItems.slice(visibleCount);
@@ -144,35 +147,37 @@ export function FloatingNavigationBar({ navigation }: FloatingNavigationBarProps
                 <Icons.Search2 className="size-6" />
               </span>
             </button>
-            {/* Connect with status icon */}
-            <Link
-              to="/connect"
-              onClick={() =>
-                handleNavigation("/connect", isPathActive(location.pathname, "/connect"))
-              }
-              aria-label="Connect"
-              className={baseButtonClass}
-              aria-current={isPathActive(location.pathname, "/connect") ? "page" : undefined}
-            >
-              {isPathActive(location.pathname, "/connect") && (
-                <motion.div
-                  layoutId={`floating-nav-indicator-${uniqueId}`}
-                  className="absolute inset-0 -z-10 rounded-full border border-black/10 bg-black/5 shadow-sm dark:border-white/10 dark:bg-white/10"
-                  initial={false}
-                  transition={{
-                    type: "spring",
-                    stiffness: 400,
-                    damping: 30,
-                  }}
-                />
-              )}
-              <span
-                className="relative flex size-7 shrink-0 items-center justify-center outline-none"
-                aria-hidden="true"
+            {/* Legacy cloud Connect is hidden unless explicitly enabled in settings. */}
+            {showLegacyConnect && (
+              <Link
+                to="/connect"
+                onClick={() =>
+                  handleNavigation("/connect", isPathActive(location.pathname, "/connect"))
+                }
+                aria-label="Connect"
+                className={baseButtonClass}
+                aria-current={isPathActive(location.pathname, "/connect") ? "page" : undefined}
               >
-                <SyncStatusIcon status={syncStatus} className="size-6" />
-              </span>
-            </Link>
+                {isPathActive(location.pathname, "/connect") && (
+                  <motion.div
+                    layoutId={`floating-nav-indicator-${uniqueId}`}
+                    className="absolute inset-0 -z-10 rounded-full border border-black/10 bg-black/5 shadow-sm dark:border-white/10 dark:bg-white/10"
+                    initial={false}
+                    transition={{
+                      type: "spring",
+                      stiffness: 400,
+                      damping: 30,
+                    }}
+                  />
+                )}
+                <span
+                  className="relative flex size-7 shrink-0 items-center justify-center outline-none"
+                  aria-hidden="true"
+                >
+                  <SyncStatusIcon status={syncStatus} className="size-6" />
+                </span>
+              </Link>
+            )}
             {hasOverflow && (
               <DropdownMenu open={overflowOpen} onOpenChange={setOverflowOpen}>
                 <DropdownMenuTrigger asChild>
@@ -201,7 +206,7 @@ export function FloatingNavigationBar({ navigation }: FloatingNavigationBarProps
                   side="top"
                   align="end"
                   sideOffset={16}
-                  className="mb-0 mr-0 flex w-48 flex-col gap-1 border-0 bg-transparent p-0 shadow-none ring-0 ring-offset-0"
+                  className="mr-0 mb-0 flex w-48 flex-col gap-1 border-0 bg-transparent p-0 shadow-none ring-0 ring-offset-0"
                 >
                   {overflowItems.map((item) => {
                     const isActive = isPathActive(location.pathname, item.href);
@@ -256,7 +261,7 @@ export function FloatingNavigationBar({ navigation }: FloatingNavigationBarProps
                   side="top"
                   align="end"
                   sideOffset={16}
-                  className="mb-0 mr-0 flex w-48 flex-col gap-1 border-0 bg-transparent p-0 shadow-none ring-0 ring-offset-0"
+                  className="mr-0 mb-0 flex w-48 flex-col gap-1 border-0 bg-transparent p-0 shadow-none ring-0 ring-offset-0"
                 >
                   {addonItems.map((item) => {
                     const isActive = isPathActive(location.pathname, item.href);

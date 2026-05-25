@@ -18,6 +18,24 @@ vi.mock("@/lib/settings-provider", () => ({
 import { ConnectNavItem } from "./connect-nav-item";
 
 describe("connect nav item", () => {
+  it("does not render before Wealthfolio Connect is explicitly enabled", () => {
+    useAggregatedSyncStatusMock.mockReturnValue({
+      status: "idle",
+      lastSyncTime: null,
+    });
+    useSettingsContextMock.mockReturnValue({
+      settings: null,
+    });
+
+    render(
+      <MemoryRouter>
+        <ConnectNavItem collapsed={false} />
+      </MemoryRouter>,
+    );
+
+    expect(screen.queryByRole("link", { name: /connect/i })).not.toBeInTheDocument();
+  });
+
   it("does not render when Wealthfolio Connect visibility is disabled", () => {
     useAggregatedSyncStatusMock.mockReturnValue({
       status: "idle",

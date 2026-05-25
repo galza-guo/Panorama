@@ -10,6 +10,7 @@ import {
   useUpdatePortfolioMutation,
 } from "@/hooks/use-calculate-portfolio";
 import { useRunHealthChecks } from "@/hooks/use-health";
+import { useSettingsContext } from "@/lib/settings-provider";
 import { Button } from "@wealthfolio/ui/components/ui/button";
 import { Icons } from "@wealthfolio/ui/components/ui/icons";
 import { useMemo, useState } from "react";
@@ -31,8 +32,13 @@ export function DashboardActions({ onAddAsset, onAddLiability }: DashboardAction
 
   // Wealthfolio Connect sync
   const { isEnabled, isConnected, userInfo } = useWealthfolioConnect();
+  const { settings } = useSettingsContext();
   const { mutate: syncBrokerData } = useSyncBrokerData();
-  const showSyncAction = isEnabled && isConnected && hasBrokerSync(userInfo);
+  const showSyncAction =
+    settings?.wealthfolioConnectVisible === true &&
+    isEnabled &&
+    isConnected &&
+    hasBrokerSync(userInfo);
 
   // Device sync
   const { syncState } = useSyncStatus();

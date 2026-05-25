@@ -2,6 +2,7 @@ import { Button } from "@wealthfolio/ui/components/ui/button";
 import { Icons } from "@wealthfolio/ui/components/ui/icons";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@wealthfolio/ui/components/ui/tooltip";
 import { formatDistanceToNow } from "date-fns";
+import { useSettingsContext } from "@/lib/settings-provider";
 import { useWealthfolioConnect } from "../providers/wealthfolio-connect-provider";
 import { hasBrokerSync } from "../lib/plan-capabilities";
 import { useAggregatedSyncStatus, useSyncBrokerData } from "../hooks";
@@ -30,11 +31,17 @@ const statusColors: Record<AggregatedSyncStatus, string> = {
  */
 export function SyncButton({ className, showLabel = false, size = "icon" }: SyncButtonProps) {
   const { isEnabled, isConnected, userInfo } = useWealthfolioConnect();
+  const { settings } = useSettingsContext();
   const { status, lastSyncTime } = useAggregatedSyncStatus();
   const { mutate: syncBrokerData, isPending: isSyncing } = useSyncBrokerData();
 
   // Only show when Connect is enabled, connected, and plan includes broker sync
-  if (!isEnabled || !isConnected || !hasBrokerSync(userInfo)) {
+  if (
+    settings?.wealthfolioConnectVisible !== true ||
+    !isEnabled ||
+    !isConnected ||
+    !hasBrokerSync(userInfo)
+  ) {
     return null;
   }
 

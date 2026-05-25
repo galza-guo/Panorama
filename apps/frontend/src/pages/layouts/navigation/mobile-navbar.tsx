@@ -2,6 +2,7 @@ import { LiquidGlass } from "@/components/liquid-glass";
 import { SyncStatusIcon } from "@/features/wealthfolio-connect/components/sync-status-icon";
 import { useAggregatedSyncStatus } from "@/features/wealthfolio-connect/hooks";
 import { useHapticFeedback } from "@/hooks/use-haptic-feedback";
+import { useSettingsContext } from "@/lib/settings-provider";
 import { cn } from "@/lib/utils";
 import {
   DropdownMenu,
@@ -30,6 +31,8 @@ export function MobileNavBar({ navigation }: MobileNavBarProps) {
   const { triggerHaptic } = useHapticFeedback();
   const uniqueId = useId();
   const { status: syncStatus } = useAggregatedSyncStatus();
+  const { settings } = useSettingsContext();
+  const showLegacyConnect = settings?.wealthfolioConnectVisible === true;
 
   const containerClassName = "pointer-events-none fixed inset-x-0 bottom-0 z-50";
 
@@ -73,7 +76,7 @@ export function MobileNavBar({ navigation }: MobileNavBarProps) {
 
   const menuItems = [...primaryItems.slice(2), ...secondaryItems];
 
-  const hasMenu = menuItems.length > 0 || addonItems.length > 0;
+  const hasMenu = menuItems.length > 0 || addonItems.length > 0 || showLegacyConnect;
   const hasAddons = addonItems.length > 0;
   const columnCount = visibleItems.length + (hasMenu ? 1 : 0);
 
@@ -178,7 +181,7 @@ export function MobileNavBar({ navigation }: MobileNavBarProps) {
                   side="top"
                   align="end"
                   sideOffset={16}
-                  className="w-42 mb-0 mr-0 flex flex-col gap-1 border-0 bg-transparent p-0 shadow-none ring-0 ring-offset-0"
+                  className="mr-0 mb-0 flex w-42 flex-col gap-1 border-0 bg-transparent p-0 shadow-none ring-0 ring-offset-0"
                 >
                   {menuItems.map((item) => {
                     const isActive = isPathActive(location.pathname, item.href);
@@ -202,26 +205,28 @@ export function MobileNavBar({ navigation }: MobileNavBarProps) {
                     );
                   })}
 
-                  {/* Connect with status icon */}
-                  <LiquidGlass variant="floating" intensity="subtle">
-                    <Link
-                      to="/connect"
-                      onClick={() => {
-                        const isActive = isPathActive(location.pathname, "/connect");
-                        handleNavigation("/connect", isActive);
-                        setMobileMenuOpen(false);
-                      }}
-                      aria-current={
-                        isPathActive(location.pathname, "/connect") ? "page" : undefined
-                      }
-                      className="relative z-10 flex w-full items-center gap-3 rounded-full px-3 py-2 text-sm"
-                    >
-                      <span className="flex size-6 shrink-0 items-center justify-center">
-                        <SyncStatusIcon status={syncStatus} className="size-5" />
-                      </span>
-                      <span className="truncate text-left">Connect</span>
-                    </Link>
-                  </LiquidGlass>
+                  {/* Legacy cloud Connect is hidden unless explicitly enabled in settings. */}
+                  {showLegacyConnect && (
+                    <LiquidGlass variant="floating" intensity="subtle">
+                      <Link
+                        to="/connect"
+                        onClick={() => {
+                          const isActive = isPathActive(location.pathname, "/connect");
+                          handleNavigation("/connect", isActive);
+                          setMobileMenuOpen(false);
+                        }}
+                        aria-current={
+                          isPathActive(location.pathname, "/connect") ? "page" : undefined
+                        }
+                        className="relative z-10 flex w-full items-center gap-3 rounded-full px-3 py-2 text-sm"
+                      >
+                        <span className="flex size-6 shrink-0 items-center justify-center">
+                          <SyncStatusIcon status={syncStatus} className="size-5" />
+                        </span>
+                        <span className="truncate text-left">Connect</span>
+                      </Link>
+                    </LiquidGlass>
+                  )}
 
                   {hasAddons && (
                     <LiquidGlass variant="floating" intensity="subtle">

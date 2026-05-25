@@ -53,7 +53,7 @@ impl SettingsRepositoryTrait for SettingsRepository {
                     settings.sync_enabled = value.parse().unwrap_or(true);
                 }
                 "wealthfolio_connect_visible" => {
-                    settings.wealthfolio_connect_visible = value.parse().unwrap_or(true);
+                    settings.wealthfolio_connect_visible = value.parse().unwrap_or(false);
                 }
                 _ => {} // Ignore unknown settings
             }
@@ -169,7 +169,7 @@ impl SettingsRepositoryTrait for SettingsRepository {
                     "auto_update_check_enabled" => "true",
                     "menu_bar_visible" => "true",
                     "sync_enabled" => "true",
-                    "wealthfolio_connect_visible" => "true",
+                    "wealthfolio_connect_visible" => "false",
                     _ => return Err(StorageError::from(diesel::result::Error::NotFound).into()),
                 };
                 Ok(default_value.to_string())

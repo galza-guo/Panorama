@@ -27,8 +27,18 @@ impl Default for Settings {
             auto_update_check_enabled: true,
             menu_bar_visible: true,
             sync_enabled: true,
-            wealthfolio_connect_visible: true,
+            wealthfolio_connect_visible: false,
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::Settings;
+
+    #[test]
+    fn defaults_hide_legacy_wealthfolio_connect() {
+        assert!(!Settings::default().wealthfolio_connect_visible);
     }
 }
 
