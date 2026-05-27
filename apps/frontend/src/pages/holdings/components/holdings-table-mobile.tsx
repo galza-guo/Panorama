@@ -1,6 +1,7 @@
 import { TickerAvatar } from "@/components/ticker-avatar";
 import { useBalancePrivacy } from "@/hooks/use-balance-privacy";
 import { PORTFOLIO_ACCOUNT_ID } from "@/lib/constants";
+import { getDisplaySymbol } from "@/lib/symbol-display";
 import { Account, Holding } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { AmountDisplay, FacetedSearchInput, GainPercent, Separator } from "@wealthfolio/ui";
@@ -79,9 +80,14 @@ export const HoldingsTableMobile = ({
       const lowercasedQuery = searchQuery.toLowerCase();
       result = result.filter((holding) => {
         const nameMatch = holding.instrument?.name?.toLowerCase().includes(lowercasedQuery);
+        const displaySymbol = getDisplaySymbol({
+          symbol: holding.instrument?.symbol ?? holding.id,
+          preferredProvider: holding.instrument?.preferredProvider,
+        });
+        const displaySymbolMatch = displaySymbol.toLowerCase().includes(lowercasedQuery);
         const symbolMatch = holding.instrument?.symbol?.toLowerCase().includes(lowercasedQuery);
 
-        return nameMatch || symbolMatch;
+        return nameMatch || displaySymbolMatch || symbolMatch;
       });
     }
 
@@ -92,8 +98,14 @@ export const HoldingsTableMobile = ({
         return valB - valA; // Descending
       }
 
-      const symbolA = a.instrument?.symbol?.toLowerCase() ?? "";
-      const symbolB = b.instrument?.symbol?.toLowerCase() ?? "";
+      const symbolA = getDisplaySymbol({
+        symbol: a.instrument?.symbol ?? a.id,
+        preferredProvider: a.instrument?.preferredProvider,
+      }).toLowerCase();
+      const symbolB = getDisplaySymbol({
+        symbol: b.instrument?.symbol ?? b.id,
+        preferredProvider: b.instrument?.preferredProvider,
+      }).toLowerCase();
       if (symbolA && symbolB) {
         return symbolA.localeCompare(symbolB);
       }
@@ -153,8 +165,13 @@ export const HoldingsTableMobile = ({
           filteredHoldings.map((holding) => {
             const symbol = holding.instrument?.symbol ?? holding.id;
             const isCash = symbol.startsWith("$CASH");
-            const avatarSymbol = isCash ? "$CASH" : symbol;
-            const displaySymbol = isCash ? symbol.split("-")[0] : symbol;
+            const displaySymbol = isCash
+              ? symbol.split("-")[0]
+              : getDisplaySymbol({
+                  symbol,
+                  preferredProvider: holding.instrument?.preferredProvider,
+                });
+            const avatarSymbol = isCash ? "$CASH" : displaySymbol;
             const isNavigable = !isCash && holding.instrument?.symbol;
 
             return (

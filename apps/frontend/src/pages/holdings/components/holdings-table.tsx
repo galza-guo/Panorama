@@ -17,6 +17,7 @@ import { Skeleton } from "@wealthfolio/ui/components/ui/skeleton";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@wealthfolio/ui/components/ui/tooltip";
 import { useBalancePrivacy } from "@/hooks/use-balance-privacy";
 import { useSettingsContext } from "@/lib/settings-provider";
+import { getDisplaySymbol } from "@/lib/symbol-display";
 import { Holding } from "@/lib/types";
 import { AmountDisplay, QuantityDisplay } from "@wealthfolio/ui";
 import { useState } from "react";
@@ -184,7 +185,11 @@ const getColumns = (
     cell: ({ row }) => {
       const navigate = useNavigate();
       const holding = row.original;
-      const symbol = holding.instrument?.symbol ?? holding.id;
+      const rawSymbol = holding.instrument?.symbol ?? holding.id;
+      const symbol = getDisplaySymbol({
+        symbol: rawSymbol,
+        preferredProvider: holding.instrument?.preferredProvider,
+      });
 
       const handleNavigate = () => {
         // Use instrument.id (asset ID) for navigation, not symbol (which may be stripped)
@@ -221,19 +226,30 @@ const getColumns = (
       );
     },
     sortingFn: (rowA, rowB) => {
-      const symbolA = rowA.original.instrument?.symbol ?? rowA.original.id;
-      const symbolB = rowB.original.instrument?.symbol ?? rowB.original.id;
+      const symbolA = getDisplaySymbol({
+        symbol: rowA.original.instrument?.symbol ?? rowA.original.id,
+        preferredProvider: rowA.original.instrument?.preferredProvider,
+      });
+      const symbolB = getDisplaySymbol({
+        symbol: rowB.original.instrument?.symbol ?? rowB.original.id,
+        preferredProvider: rowB.original.instrument?.preferredProvider,
+      });
       return symbolA.localeCompare(symbolB);
     },
     filterFn: (row, _columnId, filterValue) => {
       const holding = row.original;
       const searchTerm = filterValue as string;
+      const displaySymbol = getDisplaySymbol({
+        symbol: holding.instrument?.symbol ?? holding.id,
+        preferredProvider: holding.instrument?.preferredProvider,
+      });
       const nameMatch = holding.instrument?.name?.toLowerCase().includes(searchTerm.toLowerCase());
+      const displaySymbolMatch = displaySymbol.toLowerCase().includes(searchTerm.toLowerCase());
       const symbolMatch = holding.instrument?.symbol
         ?.toLowerCase()
         .includes(searchTerm.toLowerCase());
       const idMatch = holding.id.toLowerCase().includes(searchTerm.toLowerCase());
-      return !!(symbolMatch || nameMatch || idMatch);
+      return !!(displaySymbolMatch || symbolMatch || nameMatch || idMatch);
     },
     enableHiding: false,
   },

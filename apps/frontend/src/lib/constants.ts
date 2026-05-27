@@ -429,6 +429,7 @@ export const InstrumentType = {
   FX: "FX",
   OPTION: "OPTION",
   METAL: "METAL",
+  FUND: "FUND",
 } as const;
 
 export type InstrumentType = (typeof InstrumentType)[keyof typeof InstrumentType];
@@ -440,6 +441,7 @@ export const INSTRUMENT_TYPE_OPTIONS = [
   { value: InstrumentType.FX, label: "FX" },
   { value: InstrumentType.OPTION, label: "Option" },
   { value: InstrumentType.METAL, label: "Metal" },
+  { value: InstrumentType.FUND, label: "Fund" },
 ] as const;
 
 /**

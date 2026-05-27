@@ -224,7 +224,7 @@ export interface SymbolInput {
   name?: string; // Asset name (for custom assets)
   quoteMode?: QuoteMode;
   quoteCcy?: string; // Optional quote currency hint from search/provider (e.g., "GBp")
-  instrumentType?: string; // Optional instrument type hint (e.g., "EQUITY", "CRYPTO")
+  instrumentType?: string; // Optional instrument type hint (e.g., "EQUITY", "FUND", "CRYPTO")
 }
 
 export interface ActivityCreate {
@@ -573,7 +573,7 @@ export interface Asset {
   quoteCcy: string; // Currency prices/valuations are quoted in
 
   // Instrument identity (null for non-market assets)
-  instrumentType?: string | null; // EQUITY, CRYPTO, FX, OPTION, METAL
+  instrumentType?: string | null; // EQUITY, FUND, CRYPTO, FX, OPTION, METAL
   instrumentSymbol?: string | null; // Canonical symbol (AAPL, BTC, EUR)
   instrumentExchangeMic?: string | null; // ISO 10383 MIC (XNAS, XTSE)
 

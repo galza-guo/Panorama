@@ -3,6 +3,7 @@ import { useIsMobileViewport } from "@/hooks/use-platform";
 import { useAssetProfile } from "@/pages/asset/hooks/use-asset-profile";
 import { ActivityType } from "@/lib/constants";
 import { QueryKeys } from "@/lib/query-keys";
+import { getDisplaySymbol } from "@/lib/symbol-display";
 import type { Account, ActivityDetails } from "@/lib/types";
 import {
   accountSupportsActivityType,
@@ -101,7 +102,12 @@ const ActivityManagerPage = () => {
     }
 
     if (assetProfile) {
-      activity.assetSymbol = assetProfile.displayCode ?? assetProfile.instrumentSymbol ?? undefined;
+      activity.assetSymbol =
+        getDisplaySymbol({
+          symbol: assetProfile.displayCode ?? assetProfile.instrumentSymbol,
+          instrumentType: assetProfile.instrumentType,
+          providerConfig: assetProfile.providerConfig,
+        }) || undefined;
       activity.currency = assetProfile.quoteCcy;
       activity.exchangeMic = assetProfile.instrumentExchangeMic ?? undefined;
       activity.assetQuoteMode = assetProfile.quoteMode;

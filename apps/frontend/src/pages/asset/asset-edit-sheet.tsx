@@ -42,6 +42,7 @@ import { MultiSelectTaxonomy } from "@/components/classification/multi-select-ta
 import { useTaxonomies } from "@/hooks/use-taxonomies";
 import { EDITABLE_ASSET_KINDS, ASSET_KIND_DISPLAY_NAMES, type AssetKind } from "@/lib/constants";
 import type { Asset, Quote } from "@/lib/types";
+import { getDisplaySymbol } from "@/lib/symbol-display";
 import { formatAmount } from "@/lib/utils";
 import { getExchanges } from "@/adapters";
 import { useMarketDataProviders } from "@/hooks/use-market-data-providers";
@@ -395,16 +396,23 @@ export function AssetEditSheet({
 
   if (!asset) return null;
 
+  const displaySymbol =
+    getDisplaySymbol({
+      symbol: asset.displayCode ?? asset.instrumentSymbol,
+      instrumentType: asset.instrumentType,
+      providerConfig: asset.providerConfig,
+    }) ||
+    asset.name ||
+    "Unknown";
+
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent side="right" className="pb-safe flex h-full w-full flex-col sm:max-w-2xl">
         <SheetHeader className="shrink-0 pb-4">
           <div className="flex items-center gap-3">
-            <TickerAvatar symbol={asset.displayCode ?? ""} className="size-10" />
+            <TickerAvatar symbol={displaySymbol} className="size-10" />
             <div className="min-w-0 flex-1">
-              <SheetTitle className="truncate text-lg">
-                {asset.displayCode ?? asset.name ?? "Unknown"}
-              </SheetTitle>
+              <SheetTitle className="truncate text-lg">{displaySymbol}</SheetTitle>
               <SheetDescription className="truncate text-sm">
                 {asset.name || "Edit asset"}
               </SheetDescription>
@@ -432,7 +440,7 @@ export function AssetEditSheet({
                   <div className="grid gap-4 md:grid-cols-2">
                     <div className="space-y-2">
                       <label className="text-sm font-medium">Symbol</label>
-                      <Input value={asset.displayCode ?? ""} disabled className="bg-muted/50" />
+                      <Input value={displaySymbol} disabled className="bg-muted/50" />
                     </div>
                     <FormField
                       control={form.control}
@@ -704,7 +712,7 @@ export function AssetEditSheet({
                               No symbol mappings configured
                             </p>
                             <p className="text-muted-foreground text-xs">
-                              Using &quot;{asset.displayCode ?? ""}&quot; for all providers.
+                              Using &quot;{displaySymbol}&quot; for all providers.
                             </p>
                           </div>
                         ) : (

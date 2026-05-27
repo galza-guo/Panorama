@@ -6,6 +6,8 @@
 
 **Architecture:** Add one canonical identity layer in core asset/quote code and use it in search dedupe plus asset creation/update. Keep the existing database fields; derive a stable dedupe key from `instrument_type`, canonical symbol, MIC, quote currency, and preferred provider.
 
+**Implementation note:** The final model uses an explicit `InstrumentType::Fund`. Tiantian funds store a bare fund code such as `001594` in `instrument_symbol`, keep `instrument_exchange_mic=NULL`, and use `display_code=001594.FUND` plus `preferred_provider=TIANTIAN_FUND` for user/provider clarity.
+
 **Tech Stack:** Rust core crates, market-data providers, SQLite-backed repositories, existing Rust unit tests.
 
 ---
@@ -296,7 +298,9 @@ Test that creating or updating an asset with:
 
 stores:
 
-- `instrument_symbol=001594.FUND`
+- `instrument_type=FUND`
+- `instrument_symbol=001594`
+- `display_code=001594.FUND`
 - `instrument_exchange_mic=NULL`
 - `quote_ccy=CNY`
 - `provider_config.preferred_provider=TIANTIAN_FUND`
@@ -352,7 +356,7 @@ The script should:
 
 - require `--db /path/to/app.db`
 - default to dry run
-- find pairs where canonical asset has `.FUND` and Tiantian provider
+- find pairs where canonical asset has display `.FUND`, instrument type `FUND`, and Tiantian provider
 - find bare same-code asset with same or empty name
 - report activity counts and quote counts
 - only auto-deactivate bare duplicate when activity count is zero
@@ -387,7 +391,7 @@ python scripts/repair_market_identity_duplicates.py --db /tmp/panorama-identity-
 sqlite3 /tmp/panorama-identity-repair-test.db "select display_code,is_active from assets where display_code in ('001594','001594.FUND');"
 ```
 
-Expected: canonical `001594.FUND` remains active; bare `001594` is inactive.
+Expected: canonical asset displayed as `001594.FUND` remains active; bare `001594` is inactive.
 
 ---
 

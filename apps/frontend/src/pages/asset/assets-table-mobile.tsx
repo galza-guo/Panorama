@@ -26,6 +26,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@wealthfolio/ui/compone
 import { ASSET_KIND_DISPLAY_NAMES, LatestQuoteSnapshot } from "@/lib/types";
 import { cn, formatAmount, formatDate } from "@/lib/utils";
 import { useSettingsContext } from "@/lib/settings-provider";
+import { getDisplaySymbol } from "@/lib/symbol-display";
 import { ScrollArea, Separator } from "@wealthfolio/ui";
 import {
   getAssetKindForDisplay,
@@ -105,7 +106,13 @@ export function AssetsTableMobile({
       const query = searchQuery.toLowerCase();
       filtered = filtered.filter((asset) =>
         [
+          getDisplaySymbol({
+            symbol: asset.displayCode ?? asset.instrumentSymbol,
+            instrumentType: asset.instrumentType,
+            providerConfig: asset.providerConfig,
+          }),
           asset.displayCode ?? "",
+          asset.instrumentSymbol ?? "",
           asset.name ?? "",
           asset.kind ?? "",
           getPanoramaAssetCategory(asset) ?? "",
@@ -141,8 +148,19 @@ export function AssetsTableMobile({
       });
     }
 
-    // Sort by displayCode
-    filtered.sort((a, b) => (a.displayCode ?? "").localeCompare(b.displayCode ?? ""));
+    filtered.sort((a, b) =>
+      getDisplaySymbol({
+        symbol: a.displayCode ?? a.instrumentSymbol,
+        instrumentType: a.instrumentType,
+        providerConfig: a.providerConfig,
+      }).localeCompare(
+        getDisplaySymbol({
+          symbol: b.displayCode ?? b.instrumentSymbol,
+          instrumentType: b.instrumentType,
+          providerConfig: b.providerConfig,
+        }),
+      ),
+    );
 
     return filtered;
   }, [
@@ -224,6 +242,14 @@ export function AssetsTableMobile({
           const category = getPanoramaAssetCategory(asset);
           const isMpfAsset = category === "MPF";
           const timeDepositDisplay = getTimeDepositDisplayState(asset);
+          const displaySymbol =
+            getDisplaySymbol({
+              symbol: asset.displayCode ?? asset.instrumentSymbol,
+              instrumentType: asset.instrumentType,
+              providerConfig: asset.providerConfig,
+            }) ||
+            asset.name ||
+            "Unknown";
 
           return (
             <Card key={asset.id} className="p-4">
@@ -234,13 +260,13 @@ export function AssetsTableMobile({
                   className="hover:bg-muted/60 focus-visible:ring-ring flex flex-1 items-center gap-3 overflow-hidden rounded-md text-left transition"
                 >
                   <TickerAvatar
-                    symbol={asset.displayCode ?? ""}
+                    symbol={displaySymbol}
                     className="h-10 w-10 flex-shrink-0"
                   />
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-2">
                       <p className="truncate font-semibold">
-                        {asset.displayCode ?? asset.name ?? "Unknown"}
+                        {displaySymbol}
                       </p>
                       <Badge variant="secondary" className="text-[10px] uppercase">
                         {asset.quoteCcy}

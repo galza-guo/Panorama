@@ -41,9 +41,12 @@ interface SymbolSelectorMobileProps {
 // Asset type options for inline form (values are InstrumentType)
 const ASSET_TYPE_OPTIONS = [
   { value: "EQUITY", label: "Security" },
+  { value: "FUND", label: "Fund" },
   { value: "CRYPTO", label: "Crypto" },
   { value: "OTHER", label: "Other" },
 ] as const;
+
+type CustomAssetType = (typeof ASSET_TYPE_OPTIONS)[number]["value"];
 
 export const SymbolSelectorMobile = forwardRef<HTMLButtonElement, SymbolSelectorMobileProps>(
   (
@@ -69,7 +72,7 @@ export const SymbolSelectorMobile = forwardRef<HTMLButtonElement, SymbolSelector
     // Custom asset form state
     const [customSymbol, setCustomSymbol] = useState("");
     const [customName, setCustomName] = useState("");
-    const [customAssetType, setCustomAssetType] = useState<"EQUITY" | "CRYPTO" | "OTHER">("EQUITY");
+    const [customAssetType, setCustomAssetType] = useState<CustomAssetType>("EQUITY");
     const [customCurrency, setCustomCurrency] = useState("");
 
     // Reset state when sheet closes
@@ -137,7 +140,12 @@ export const SymbolSelectorMobile = forwardRef<HTMLButtonElement, SymbolSelector
         longName: customName.trim(),
         shortName: customName.trim(),
         exchange: "MANUAL",
-        quoteType: customAssetType === "CRYPTO" ? "CRYPTOCURRENCY" : "EQUITY",
+        quoteType:
+          customAssetType === "CRYPTO"
+            ? "CRYPTOCURRENCY"
+            : customAssetType === "FUND"
+              ? "FUND"
+              : "EQUITY",
         index: "MANUAL",
         typeDisplay: "Custom Asset",
         dataSource: "MANUAL",
@@ -227,9 +235,7 @@ export const SymbolSelectorMobile = forwardRef<HTMLButtonElement, SymbolSelector
                           <label className="text-base font-medium">Asset Type</label>
                           <Select
                             value={customAssetType}
-                            onValueChange={(value) =>
-                              setCustomAssetType(value as "EQUITY" | "CRYPTO" | "OTHER")
-                            }
+                            onValueChange={(value) => setCustomAssetType(value as CustomAssetType)}
                           >
                             <SelectTrigger>
                               <SelectValue />

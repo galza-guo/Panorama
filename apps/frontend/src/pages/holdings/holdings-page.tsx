@@ -29,6 +29,7 @@ import {
   JsonObject,
 } from "@/lib/types";
 import { canAddHoldings } from "@/lib/activity-restrictions";
+import { getDisplaySymbol } from "@/lib/symbol-display";
 import { useIsMobileViewport } from "@/hooks/use-platform";
 import { HoldingsMobileFilterSheet } from "./components/holdings-mobile-filter-sheet";
 import { HoldingsTable } from "./components/holdings-table";
@@ -441,7 +442,10 @@ export const HoldingsPage = () => {
               onClassify={(holding) =>
                 setClassifyAsset({
                   id: holding.instrument?.id ?? holding.id,
-                  symbol: holding.instrument?.symbol ?? holding.id,
+                  symbol: getDisplaySymbol({
+                    symbol: holding.instrument?.symbol ?? holding.id,
+                    preferredProvider: holding.instrument?.preferredProvider,
+                  }),
                   name: holding.instrument?.name ?? undefined,
                 })
               }

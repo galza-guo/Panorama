@@ -2,6 +2,7 @@ import { TickerAvatar } from "@/components/ticker-avatar";
 import { Card, CardContent, CardHeader, CardTitle } from "@wealthfolio/ui/components/ui/card";
 import { Skeleton } from "@wealthfolio/ui/components/ui/skeleton";
 import { HoldingType, isAlternativeAssetKind, type AssetKind } from "@/lib/constants";
+import { getDisplaySymbol } from "@/lib/symbol-display";
 import { Holding } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { AmountDisplay, Button, GainAmount, GainPercent, Icons } from "@wealthfolio/ui";
@@ -26,8 +27,11 @@ interface HoldingRowProps {
 }
 
 function HoldingRow({ holding, baseCurrency, isHidden, onClick }: HoldingRowProps) {
-  const symbol = holding.instrument?.symbol ?? holding.id;
-  const displayName = symbol.split(".")[0];
+  const symbol = getDisplaySymbol({
+    symbol: holding.instrument?.symbol ?? holding.id,
+    preferredProvider: holding.instrument?.preferredProvider,
+  });
+  const displayName = symbol;
   const marketValue = holding.marketValue?.base ?? 0;
   const gainAmount = holding.unrealizedGain?.base ?? 0;
   const gainPercent = holding.unrealizedGainPct ?? 0;
@@ -95,7 +99,10 @@ function StackedAvatars({ holdings, totalRemaining, onClick }: StackedAvatarsPro
     >
       <div className="flex items-center">
         {displayedHoldings.map((holding, index) => {
-          const symbol = holding.instrument?.symbol ?? holding.id;
+          const symbol = getDisplaySymbol({
+            symbol: holding.instrument?.symbol ?? holding.id,
+            preferredProvider: holding.instrument?.preferredProvider,
+          });
           return (
             <div
               key={holding.id}

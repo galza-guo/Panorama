@@ -29,6 +29,7 @@ import {
   type PanoramaMpfSubfund,
 } from "@/lib/panorama-asset-attributes";
 import { QueryKeys } from "@/lib/query-keys";
+import { getDisplaySymbol } from "@/lib/symbol-display";
 import type { AlternativeAssetHolding } from "@/lib/types";
 import {
   MpfAssetEditorSheet,
@@ -612,7 +613,15 @@ export default function AssetsPage() {
             <AlertDialogTitle>Delete asset</AlertDialogTitle>
             <AlertDialogDescription>
               {assetPendingDelete
-                ? `Are you sure you want to delete ${assetPendingDelete.displayCode ?? assetPendingDelete.name ?? "this asset"}? This will also remove its related quote and cannot be undone.`
+                ? `Are you sure you want to delete ${
+                    getDisplaySymbol({
+                      symbol: assetPendingDelete.displayCode ?? assetPendingDelete.instrumentSymbol,
+                      instrumentType: assetPendingDelete.instrumentType,
+                      providerConfig: assetPendingDelete.providerConfig,
+                    }) ||
+                    assetPendingDelete.name ||
+                    "this asset"
+                  }? This will also remove its related quote and cannot be undone.`
                 : "Are you sure you want to delete this asset? This will also remove related quotes and cannot be undone."}
             </AlertDialogDescription>
           </AlertDialogHeader>
@@ -644,7 +653,17 @@ export default function AssetsPage() {
           }
           setAssetPendingRefetch(null);
         }}
-        assetName={assetPendingRefetch?.displayCode ?? assetPendingRefetch?.name ?? undefined}
+        assetName={
+          assetPendingRefetch
+            ? getDisplaySymbol({
+                symbol: assetPendingRefetch.displayCode ?? assetPendingRefetch.instrumentSymbol,
+                instrumentType: assetPendingRefetch.instrumentType,
+                providerConfig: assetPendingRefetch.providerConfig,
+              }) ||
+              assetPendingRefetch.name ||
+              undefined
+            : undefined
+        }
       />
     </div>
   );

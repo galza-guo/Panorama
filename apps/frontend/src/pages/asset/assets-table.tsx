@@ -29,6 +29,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@wealthfolio/ui/compone
 import { ASSET_KIND_DISPLAY_NAMES, LatestQuoteSnapshot } from "@/lib/types";
 import { formatAmount, formatDate } from "@/lib/utils";
 import { useSettingsContext } from "@/lib/settings-provider";
+import { getDisplaySymbol } from "@/lib/symbol-display";
 import {
   getAssetKindForDisplay,
   getPanoramaAssetEditLabel,
@@ -74,13 +75,25 @@ export function AssetsTable({
     () => [
       {
         id: "symbol",
-        accessorFn: (row) => row.displayCode ?? "",
+        accessorFn: (row) =>
+          getDisplaySymbol({
+            symbol: row.displayCode ?? row.instrumentSymbol,
+            instrumentType: row.instrumentType,
+            providerConfig: row.providerConfig,
+          }),
         header: ({ column }) => <DataTableColumnHeader column={column} title="Security" />,
         size: 220,
         maxSize: 260,
         cell: ({ row }) => {
           const asset = row.original;
-          const displaySymbol = asset.displayCode ?? asset.name ?? "Unknown";
+          const displaySymbol =
+            getDisplaySymbol({
+              symbol: asset.displayCode ?? asset.instrumentSymbol,
+              instrumentType: asset.instrumentType,
+              providerConfig: asset.providerConfig,
+            }) ||
+            asset.name ||
+            "Unknown";
           const panoramaCategory = getPanoramaAssetCategory(asset);
           const timeDepositDisplay = getTimeDepositDisplayState(asset);
           return (
@@ -89,7 +102,7 @@ export function AssetsTable({
               onClick={() => navigate(`/holdings/${encodeURIComponent(asset.id)}`)}
               className="hover:bg-muted/60 focus-visible:ring-ring group flex w-full items-center gap-2.5 rounded-md py-1 text-left transition"
             >
-              <TickerAvatar symbol={asset.displayCode ?? ""} className="h-8 w-8 shrink-0" />
+              <TickerAvatar symbol={displaySymbol} className="h-8 w-8 shrink-0" />
               <div className="min-w-0 flex-1">
                 <div className="flex items-center gap-2">
                   <div className="group-hover:text-primary leading-tight font-semibold transition-colors">

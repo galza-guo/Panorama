@@ -34,6 +34,7 @@ import type { SymbolSearchResult } from "@/lib/types";
 // Simplified asset types for the form (values are InstrumentType)
 const ASSET_TYPE_OPTIONS = [
   { value: "EQUITY", label: "Security (Stock, ETF, Bond)" },
+  { value: "FUND", label: "Fund" },
   { value: "CRYPTO", label: "Cryptocurrency" },
   { value: "OTHER", label: "Other" },
 ] as const;
@@ -45,7 +46,7 @@ const customAssetSchema = z.object({
     .max(20, "Symbol must be 20 characters or less")
     .transform((val) => val.toUpperCase().trim()),
   name: z.string().min(1, "Name is required").max(100, "Name must be 100 characters or less"),
-  assetType: z.enum(["EQUITY", "CRYPTO", "OTHER"]),
+  assetType: z.enum(["EQUITY", "FUND", "CRYPTO", "OTHER"]),
   currency: z.string().min(1, "Currency is required"),
 });
 
@@ -101,7 +102,12 @@ export function CreateCustomAssetDialog({
       longName: values.name,
       shortName: values.name,
       exchange: "MANUAL",
-      quoteType: values.assetType === "CRYPTO" ? "CRYPTOCURRENCY" : "EQUITY",
+      quoteType:
+        values.assetType === "CRYPTO"
+          ? "CRYPTOCURRENCY"
+          : values.assetType === "FUND"
+            ? "FUND"
+            : "EQUITY",
       index: "MANUAL",
       typeDisplay: "Custom Asset",
       dataSource: "MANUAL",

@@ -38,7 +38,7 @@ Examples:
 
 For the database model, this can map to existing fields instead of requiring a new table:
 
-- Tiantian fund: `instrument_type=EQUITY`, `instrument_symbol=001594.FUND`, `instrument_exchange_mic=NULL`, `preferred_provider=TIANTIAN_FUND`
+- Tiantian fund: `instrument_type=FUND`, `instrument_symbol=001594`, `instrument_exchange_mic=NULL`, `display_code=001594.FUND`, `preferred_provider=TIANTIAN_FUND`
 - Mainland stock: `instrument_type=EQUITY`, `instrument_symbol=600519`, `instrument_exchange_mic=XSHG`, `preferred_provider=EASTMONEY_CN`
 - HK stock: `instrument_type=EQUITY`, `instrument_symbol=0700`, `instrument_exchange_mic=XHKG`, provider chosen by settings
 - Crypto: `instrument_type=CRYPTO`, `instrument_symbol=BTC`, `quote_ccy=USD`
@@ -52,7 +52,8 @@ It loses the fact that this is a fund routed through Tiantian. Without that cont
 
 - users may type `001594`
 - search resolves it to one canonical result
-- saved asset identity carries `001594.FUND` plus `TIANTIAN_FUND`
+- saved asset identity carries `instrument_type=FUND`, `instrument_symbol=001594`, and `TIANTIAN_FUND`
+- display can still show `001594.FUND` to make the fund route obvious
 - sync never guesses again
 
 ## Product Behavior
@@ -106,7 +107,7 @@ Add a conservative repair path for known duplicate patterns:
 
 For the observed local case:
 
-- keep `001594.FUND`
+- keep the canonical asset displayed as `001594.FUND`
 - remove or deactivate stale `001594`
 - no activity migration is needed because the bare asset has no activities
 
@@ -115,6 +116,7 @@ For the observed local case:
 ### In Scope
 
 - one canonical identity function for search and asset creation
+- explicit `FUND` instrument type for funds
 - provider-aware search dedupe
 - Tiantian fund canonicalization
 - mainland exchange canonicalization
@@ -134,7 +136,7 @@ For the observed local case:
 Minimum checks:
 
 - searching `001594` returns one fund result, not two identical titles
-- creating from `001594` stores the canonical Tiantian fund identity
+- creating from `001594` stores `instrument_type=FUND`, `instrument_symbol=001594`, and displays `001594.FUND`
 - syncing that asset fetches Tiantian quotes through the latest available NAV
 - searching `600519` still routes to EastMoney Shanghai equity
 - searching `0700.HK` still resolves as HK equity

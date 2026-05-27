@@ -52,11 +52,12 @@ pub enum AssetKind {
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "SCREAMING_SNAKE_CASE")]
 pub enum InstrumentType {
-    Equity, // Stocks, ETFs, bonds, funds, commodity ETFs
+    Equity, // Stocks, ETFs, bonds, commodity ETFs
     Crypto, // Cryptocurrencies
     Fx,     // Currency exchange rates
     Option, // Options contracts
     Metal,  // Precious metal spot prices (XAU, XAG)
+    Fund,   // Mutual/open-ended funds
 }
 
 /// How the asset is priced/quoted
@@ -87,17 +88,20 @@ impl InstrumentType {
             InstrumentType::Fx => "FX",
             InstrumentType::Option => "OPTION",
             InstrumentType::Metal => "METAL",
+            InstrumentType::Fund => "FUND",
         }
     }
 
     /// Parses an instrument type from its database string.
     pub fn from_db_str(s: &str) -> Option<Self> {
-        match s {
+        let normalized = s.trim().to_uppercase();
+        match normalized.as_str() {
             "EQUITY" => Some(InstrumentType::Equity),
             "CRYPTO" => Some(InstrumentType::Crypto),
             "FX" => Some(InstrumentType::Fx),
             "OPTION" => Some(InstrumentType::Option),
             "METAL" => Some(InstrumentType::Metal),
+            "FUND" | "MUTUALFUND" | "MUTUAL_FUND" | "MUTUAL FUND" => Some(InstrumentType::Fund),
             _ => None,
         }
     }
@@ -306,11 +310,17 @@ impl Asset {
 
             if parse_crypto_pair_symbol(&symbol).is_some() {
                 Some(InstrumentType::Crypto)
-            } else if suffix_mic.is_some()
-                || normalized.ends_with(".FUND")
+            } else if normalized.ends_with(".FUND")
                 || matches!(
                     preferred_provider.as_deref(),
-                    Some(DATA_SOURCE_EASTMONEY_CN | DATA_SOURCE_TIANTIAN_FUND)
+                    Some(DATA_SOURCE_TIANTIAN_FUND)
+                )
+            {
+                Some(InstrumentType::Fund)
+            } else if suffix_mic.is_some()
+                || matches!(
+                    preferred_provider.as_deref(),
+                    Some(DATA_SOURCE_EASTMONEY_CN)
                 )
             {
                 Some(InstrumentType::Equity)
@@ -326,6 +336,13 @@ impl Asset {
             .or(inferred_inst_type.as_ref())?;
 
         match inst_type {
+            InstrumentType::Fund => {
+                let (ticker, _) = parse_symbol_with_exchange_suffix(&symbol);
+                Some(InstrumentId::Equity {
+                    ticker: Arc::from(ticker),
+                    mic: None,
+                })
+            }
             InstrumentType::Equity => {
                 let (ticker, suffix_mic) = parse_symbol_with_exchange_suffix(&symbol);
                 let is_tiantian_fund = symbol.trim().to_uppercase().ends_with(".FUND")
@@ -592,10 +609,19 @@ impl From<ProviderProfile> for NewAsset {
             .filter(|isin| !isin.is_empty())
             .map(|isin| serde_json::json!({ "identifiers": { "isin": isin } }));
 
+        let profile_instrument_type = if data_source == DATA_SOURCE_TIANTIAN_FUND {
+            InstrumentType::Fund
+        } else {
+            profile
+                .asset_type
+                .as_deref()
+                .and_then(InstrumentType::from_db_str)
+                .unwrap_or(InstrumentType::Equity)
+        };
         let normalized_symbol =
             normalize_market_symbol_for_provider(Some(profile.symbol.as_str()), Some(&data_source));
         let canonical = canonicalize_market_identity(
-            Some(InstrumentType::Equity),
+            Some(profile_instrument_type.clone()),
             normalized_symbol
                 .as_deref()
                 .or(Some(profile.symbol.as_str())),
@@ -610,7 +636,7 @@ impl From<ProviderProfile> for NewAsset {
             display_code: canonical.display_code,
             quote_mode: QuoteMode::Market,
             quote_ccy: canonical.quote_ccy.unwrap_or(profile.currency),
-            instrument_type: Some(InstrumentType::Equity), // Default; caller can override
+            instrument_type: Some(profile_instrument_type),
             instrument_symbol: canonical.instrument_symbol,
             instrument_exchange_mic: canonical.instrument_exchange_mic,
             provider_config,
@@ -690,6 +716,12 @@ fn is_bare_six_digit_symbol(symbol: &str) -> bool {
     symbol.len() == 6 && symbol.chars().all(|ch| ch.is_ascii_digit())
 }
 
+fn tiantian_fund_code(symbol: &str) -> Option<String> {
+    let normalized = symbol.trim().to_uppercase();
+    let code = normalized.strip_suffix(".FUND").unwrap_or(&normalized);
+    is_bare_six_digit_symbol(code).then(|| code.to_string())
+}
+
 pub fn normalize_market_symbol_for_provider(
     symbol: Option<&str>,
     preferred_provider: Option<&str>,
@@ -758,6 +790,12 @@ pub fn default_market_data_provider_id(
     symbol: Option<&str>,
     exchange_mic: Option<&str>,
 ) -> &'static str {
+    if matches!(instrument_type, Some(InstrumentType::Fund))
+        && symbol.and_then(tiantian_fund_code).is_some()
+    {
+        return DATA_SOURCE_TIANTIAN_FUND;
+    }
+
     if matches!(
         instrument_type,
         Some(InstrumentType::Equity | InstrumentType::Option) | None
@@ -785,6 +823,15 @@ pub fn market_identity_key(
     }
 
     match inst_type {
+        InstrumentType::Fund => {
+            let (base, _) = parse_symbol_with_exchange_suffix(&symbol);
+            let base = base.to_uppercase();
+            if tiantian_fund_code(&base).is_some() {
+                Some(format!("FUND:CN:{base}"))
+            } else {
+                Some(format!("FUND:{base}"))
+            }
+        }
         InstrumentType::Equity | InstrumentType::Option | InstrumentType::Metal => {
             if preferred_provider == Some(DATA_SOURCE_TIANTIAN_FUND) || symbol.ends_with(".FUND") {
                 let code = symbol.strip_suffix(".FUND").unwrap_or(&symbol);
@@ -842,6 +889,7 @@ fn parse_fx_symbol_parts(symbol: &str) -> Option<(String, String)> {
 ///
 /// Rules:
 /// - EQUITY/OPTION/METAL: strip known Yahoo exchange suffixes from symbol, keep MIC separately.
+/// - FUND: store the fund code without exchange/MIC; show local Tiantian funds with `.FUND`.
 /// - CRYPTO: collapse pair symbols (e.g., BTC-USD) to base symbol (BTC), clear MIC.
 /// - FX: normalize to base symbol + quote currency, display as BASE/QUOTE.
 pub fn canonicalize_market_identity(
@@ -855,6 +903,34 @@ pub fn canonicalize_market_identity(
     let mut normalized_quote = normalize_quote_ccy(quote_ccy);
 
     match instrument_type {
+        Some(InstrumentType::Fund) => {
+            let display_code = if let Some(raw) = instrument_symbol.as_deref() {
+                let (base, _) = parse_symbol_with_exchange_suffix(raw);
+                let base = base.to_uppercase();
+                let is_tiantian_fund = tiantian_fund_code(raw).is_some();
+                instrument_symbol = Some(base.clone());
+                instrument_exchange_mic = None;
+
+                if is_tiantian_fund && normalized_quote.is_none() {
+                    normalized_quote = Some("CNY".to_string());
+                }
+
+                Some(if is_tiantian_fund {
+                    format!("{base}.FUND")
+                } else {
+                    base
+                })
+            } else {
+                None
+            };
+
+            CanonicalMarketIdentity {
+                display_code,
+                instrument_symbol,
+                instrument_exchange_mic,
+                quote_ccy: normalized_quote,
+            }
+        }
         Some(InstrumentType::Equity)
         | Some(InstrumentType::Option)
         | Some(InstrumentType::Metal) => {

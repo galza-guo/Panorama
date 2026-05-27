@@ -92,7 +92,14 @@ fn reconcile_quote_currency(quote: &mut Quote, asset: &Asset) {
 
 fn instrument_type_from_search_result(result: &SymbolSearchResult) -> InstrumentType {
     let quote_type = result.quote_type.trim().to_uppercase();
-    if quote_type.contains("CRYPTO") {
+    if result
+        .data_source
+        .as_deref()
+        .is_some_and(|source| source == "TIANTIAN_FUND")
+        || quote_type.contains("FUND")
+    {
+        InstrumentType::Fund
+    } else if quote_type.contains("CRYPTO") {
         InstrumentType::Crypto
     } else if quote_type == "FOREX" || quote_type == "FX" {
         InstrumentType::Fx
@@ -650,6 +657,7 @@ where
             Some(InstrumentType::Metal) => "COMMODITY",
             Some(InstrumentType::Option) => "OPTION",
             Some(InstrumentType::Fx) => "FOREX",
+            Some(InstrumentType::Fund) => "FUND",
             None => "OTHER",
         };
 

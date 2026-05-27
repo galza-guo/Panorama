@@ -22,7 +22,7 @@ const COMMON_CRYPTO_SYMBOLS = new Set([
 ]);
 
 /**
- * Infers whether a search result is equity, crypto, or other.
+ * Infers whether a search result is equity, fund, crypto, or other.
  * Used for UI hints (e.g., which form fields to show).
  * NOT used for asset ID generation — the backend assigns opaque UUIDs.
  */
@@ -31,18 +31,36 @@ export function inferInstrumentType(
   quoteType?: string,
   assetKind?: string,
   exchangeMic?: string,
-): "EQUITY" | "CRYPTO" | "OTHER" {
+): "EQUITY" | "FUND" | "CRYPTO" | "OTHER" {
   if (assetKind) {
     const upper = assetKind.toUpperCase();
-    if (upper === "SECURITY" || upper === "EQUITY" || upper === "INVESTMENT") return "EQUITY";
+    if (
+      upper === "FUND" ||
+      upper === "MUTUALFUND" ||
+      upper === "MUTUAL_FUND" ||
+      upper === "MUTUAL FUND"
+    )
+      return "FUND";
     if (upper === "CRYPTO" || upper === "CRYPTOCURRENCY") return "CRYPTO";
     if (upper === "OTHER" || upper === "ALT") return "OTHER";
+    if (upper === "SECURITY" || upper === "EQUITY") return "EQUITY";
   }
 
   if (quoteType) {
     const upper = quoteType.toUpperCase();
     if (upper === "CRYPTOCURRENCY" || upper === "CRYPTO") return "CRYPTO";
+    if (
+      upper === "FUND" ||
+      upper === "MUTUALFUND" ||
+      upper === "MUTUAL_FUND" ||
+      upper === "MUTUAL FUND"
+    )
+      return "FUND";
     if (upper === "EQUITY" || upper === "ETF" || upper === "INDEX") return "EQUITY";
+  }
+
+  if (assetKind?.toUpperCase() === "INVESTMENT") {
+    return "EQUITY";
   }
 
   if (exchangeMic) {
@@ -89,6 +107,9 @@ export function getAssetIdFromSearchResult(
     case "CRYPTO": {
       const normalizedCurrency = currency.trim().toUpperCase();
       return `CRYPTO:${normalizedSymbol}:${normalizedCurrency}`;
+    }
+    case "FUND": {
+      return `FUND:${normalizedSymbol.replace(/\.FUND$/, "")}`;
     }
     case "EQUITY":
     default: {

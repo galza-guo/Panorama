@@ -30,6 +30,7 @@ import {
 import { Holding, Account, SymbolSearchResult } from "@/lib/types";
 import { getAssetIdFromSearchResult } from "@/lib/asset-utils";
 import { HoldingType } from "@/lib/constants";
+import { getDisplaySymbol } from "@/lib/symbol-display";
 import { cn } from "@/lib/utils";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { QueryKeys } from "@/lib/query-keys";
@@ -37,6 +38,7 @@ import { QueryKeys } from "@/lib/query-keys";
 interface EditableHolding {
   assetId: string;
   symbol: string;
+  displaySymbol: string;
   name?: string;
   quantity: string;
   averageCost: string;
@@ -115,6 +117,10 @@ export const HoldingsEditMode = ({
         return {
           assetId: h.instrument?.id ?? h.id,
           symbol: h.instrument?.symbol ?? h.id,
+          displaySymbol: getDisplaySymbol({
+            symbol: h.instrument?.symbol ?? h.id,
+            preferredProvider: h.instrument?.preferredProvider,
+          }),
           name: h.instrument?.name ?? undefined,
           quantity: String(h.quantity),
           averageCost,
@@ -217,6 +223,11 @@ export const HoldingsEditMode = ({
       const newHolding: EditableHolding = {
         assetId,
         symbol: searchResult.symbol,
+        displaySymbol: getDisplaySymbol({
+          symbol: searchResult.symbol,
+          preferredProvider: searchResult.dataSource,
+          instrumentType: searchResult.quoteType,
+        }),
         name: searchResult.longName || searchResult.shortName,
         quantity: "",
         averageCost: "",
@@ -438,9 +449,14 @@ export const HoldingsEditMode = ({
                         {/* Symbol */}
                         <div className="col-span-5">
                           <div className="flex items-center gap-2">
-                            <TickerAvatar symbol={holding.symbol} className="h-7 w-7 shrink-0" />
+                            <TickerAvatar
+                              symbol={holding.displaySymbol}
+                              className="h-7 w-7 shrink-0"
+                            />
                             <div className="min-w-0">
-                              <div className="truncate text-sm font-medium">{holding.symbol}</div>
+                              <div className="truncate text-sm font-medium">
+                                {holding.displaySymbol}
+                              </div>
                               {holding.name && (
                                 <div className="text-muted-foreground truncate text-xs">
                                   {holding.name}

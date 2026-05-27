@@ -332,6 +332,22 @@ mod tests {
         }
     }
 
+    #[test]
+    fn test_instrument_type_accepts_fund() {
+        let parsed = InstrumentType::from_db_str("FUND");
+
+        assert_eq!(parsed.as_ref().map(InstrumentType::as_db_str), Some("FUND"));
+    }
+
+    #[test]
+    fn test_instrument_type_accepts_mutual_fund_aliases() {
+        for value in ["MUTUALFUND", "MUTUAL_FUND", "Mutual Fund"] {
+            let parsed = InstrumentType::from_db_str(value);
+
+            assert_eq!(parsed.as_ref().map(InstrumentType::as_db_str), Some("FUND"));
+        }
+    }
+
     // Test AssetKind db roundtrip
     #[test]
     fn test_asset_kind_db_roundtrip() {
@@ -470,6 +486,18 @@ mod tests {
     }
 
     #[test]
+    fn test_canonicalize_market_identity_supports_fund_type() {
+        let fund_type = InstrumentType::from_db_str("FUND").expect("FUND should parse");
+        let canonical =
+            canonicalize_market_identity(Some(fund_type), Some("161039.FUND"), None, None);
+
+        assert_eq!(canonical.instrument_symbol.as_deref(), Some("161039"));
+        assert_eq!(canonical.display_code.as_deref(), Some("161039.FUND"));
+        assert_eq!(canonical.instrument_exchange_mic, None);
+        assert_eq!(canonical.quote_ccy.as_deref(), Some("CNY"));
+    }
+
+    #[test]
     fn test_default_market_data_provider_id_prefers_eastmoney_for_cn_equities() {
         assert_eq!(
             default_market_data_provider_id(
@@ -489,6 +517,16 @@ mod tests {
                 Some("161039.FUND"),
                 None
             ),
+            "TIANTIAN_FUND"
+        );
+    }
+
+    #[test]
+    fn test_default_market_data_provider_id_prefers_tiantian_for_fund_type() {
+        let fund_type = InstrumentType::from_db_str("FUND").expect("FUND should parse");
+
+        assert_eq!(
+            default_market_data_provider_id(Some(&fund_type), Some("001594"), None),
             "TIANTIAN_FUND"
         );
     }
@@ -524,6 +562,45 @@ mod tests {
         );
 
         assert_eq!(key.as_deref(), Some("FUND:CN:001594"));
+    }
+
+    #[test]
+    fn test_market_identity_key_fund_type_from_bare_code() {
+        let fund_type = InstrumentType::from_db_str("FUND").expect("FUND should parse");
+        let key = market_identity_key(
+            Some(&fund_type),
+            Some("001594"),
+            None,
+            Some("CNY"),
+            Some("TIANTIAN_FUND"),
+        );
+
+        assert_eq!(key.as_deref(), Some("FUND:CN:001594"));
+    }
+
+    #[test]
+    fn test_to_instrument_id_maps_fund_type_to_tiantian_equity_shape() {
+        let fund_type = InstrumentType::from_db_str("FUND").expect("FUND should parse");
+        let mut asset = create_test_asset(AssetKind::Investment);
+        asset.instrument_type = Some(fund_type);
+        asset.instrument_symbol = Some("001594".to_string());
+        asset.display_code = Some("001594.FUND".to_string());
+        asset.instrument_exchange_mic = None;
+        asset.provider_config = Some(json!({
+            "preferred_provider": "TIANTIAN_FUND"
+        }));
+
+        let instrument = asset.to_instrument_id();
+
+        match instrument {
+            Some(InstrumentId::Equity { ticker, mic }) => {
+                assert_eq!(ticker.as_ref(), "001594");
+                assert_eq!(mic, None);
+            }
+            other => {
+                panic!("Expected fund to resolve through Tiantian equity shape, got {other:?}")
+            }
+        }
     }
 
     #[test]
@@ -563,7 +640,7 @@ mod tests {
     }
 
     #[test]
-    fn test_new_asset_from_tiantian_profile_appends_panorama_fund_suffix() {
+    fn test_new_asset_from_tiantian_profile_uses_fund_type_with_bare_symbol() {
         let profile = ProviderProfile {
             symbol: "003095".to_string(),
             currency: "cny".to_string(),
@@ -573,8 +650,15 @@ mod tests {
 
         let asset = NewAsset::from(profile);
 
-        assert_eq!(asset.instrument_symbol.as_deref(), Some("003095.FUND"));
-        assert_eq!(asset.display_code.as_deref(), Some("003095"));
+        assert_eq!(
+            asset
+                .instrument_type
+                .as_ref()
+                .map(InstrumentType::as_db_str),
+            Some("FUND")
+        );
+        assert_eq!(asset.instrument_symbol.as_deref(), Some("003095"));
+        assert_eq!(asset.display_code.as_deref(), Some("003095.FUND"));
         assert_eq!(asset.instrument_exchange_mic, None);
         assert_eq!(asset.quote_ccy, "CNY");
     }

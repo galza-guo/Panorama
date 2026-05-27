@@ -9,6 +9,7 @@ import { usePersistentState } from "@/hooks/use-persistent-state";
 import { useIsMobileViewport } from "@/hooks/use-platform";
 import { AccountType, HoldingType, PORTFOLIO_ACCOUNT_ID } from "@/lib/constants";
 import { useSettingsContext } from "@/lib/settings-provider";
+import { getDisplaySymbol } from "@/lib/symbol-display";
 import { Account } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { useNavigation } from "@/pages/layouts/navigation/app-navigation";
@@ -46,6 +47,7 @@ const RECENT_ITEMS_KEY = "app-launcher-recent-items";
 interface LauncherHoldingItem {
   id: string;
   symbol: string;
+  rawSymbol: string;
   name?: string | null;
 }
 interface LauncherAccountItem {
@@ -391,11 +393,18 @@ export function AppLauncher() {
     const seenSymbols = new Set<string>();
     return holdings
       .filter((holding) => holding.holdingType !== HoldingType.CASH && holding.instrument?.symbol)
-      .map((holding) => ({
-        id: holding.instrument?.id ?? holding.id,
-        symbol: holding.instrument?.symbol ?? "",
-        name: holding.instrument?.name ?? null,
-      }))
+      .map((holding) => {
+        const rawSymbol = holding.instrument?.symbol ?? "";
+        return {
+          id: holding.instrument?.id ?? holding.id,
+          symbol: getDisplaySymbol({
+            symbol: rawSymbol,
+            preferredProvider: holding.instrument?.preferredProvider,
+          }),
+          rawSymbol,
+          name: holding.instrument?.name ?? null,
+        };
+      })
       .filter((holding) => {
         if (seenSymbols.has(holding.symbol)) {
           return false;
@@ -569,6 +578,7 @@ export function AppLauncher() {
   const filteredHoldings = holdingOptions.filter((holding) => {
     return (
       holding.symbol.toLowerCase().includes(searchLower) ||
+      holding.rawSymbol.toLowerCase().includes(searchLower) ||
       holding.name?.toLowerCase().includes(searchLower)
     );
   });
@@ -695,6 +705,7 @@ export function AppLauncher() {
                   value={holding.symbol}
                   keywords={[
                     holding.symbol,
+                    holding.rawSymbol,
                     holding.name ?? "",
                     "holding",
                     "asset",

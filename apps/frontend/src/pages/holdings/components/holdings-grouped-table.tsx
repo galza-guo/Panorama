@@ -13,6 +13,7 @@ import { Holding, HOLDING_GROUP_ORDER } from "@/lib/types";
 import { AccountType, AssetKind } from "@/lib/constants";
 import { cn, safeDivide } from "@/lib/utils";
 import { useSettingsContext } from "@/lib/settings-provider";
+import { getDisplaySymbol } from "@/lib/symbol-display";
 import { useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 
@@ -184,7 +185,10 @@ function HoldingRow({
   navigate,
   isIndented = false,
 }: HoldingRowProps) {
-  const symbol = holding.instrument?.symbol ?? holding.id;
+  const symbol = getDisplaySymbol({
+    symbol: holding.instrument?.symbol ?? holding.id,
+    preferredProvider: holding.instrument?.preferredProvider,
+  });
 
   const handleNavigate = () => {
     // Use instrument.id (asset ID) for navigation, not symbol (which may be stripped)

@@ -11,6 +11,7 @@ import { PORTFOLIO_ACCOUNT_ID } from "@/lib/constants";
 import { isMpfAsset, isTimeDepositAsset } from "@/lib/panorama-asset-attributes";
 import { QueryKeys } from "@/lib/query-keys";
 import { useSettingsContext } from "@/lib/settings-provider";
+import { getDisplaySymbol } from "@/lib/symbol-display";
 import { AssetKind, Holding, Quote } from "@/lib/types";
 import { useQuery } from "@tanstack/react-query";
 import { AnimatedToggleGroup, Page, PageContent, PageHeader, SwipableView } from "@wealthfolio/ui";
@@ -335,10 +336,17 @@ export const AssetProfilePage = () => {
     const legacy = asset?.metadata?.legacy as
       | { sectors?: string | null; countries?: string | null }
       | undefined;
+    const displaySymbol =
+      getDisplaySymbol({
+        symbol: instrument?.symbol ?? asset?.displayCode ?? assetId,
+        preferredProvider: instrument?.preferredProvider,
+        instrumentType: asset?.instrumentType,
+        providerConfig: asset?.providerConfig,
+      }) || assetId;
 
     return {
       id: instrument?.id ?? asset?.id ?? "",
-      symbol: instrument?.symbol ?? asset?.displayCode ?? assetId,
+      symbol: displaySymbol,
       name: instrument?.name ?? asset?.name ?? "-",
       isin: null,
       assetType: null,
@@ -737,7 +745,7 @@ export const AssetProfilePage = () => {
               title={
                 isAltAsset && altHolding
                   ? altHolding.name
-                  : (assetProfile?.displayCode ?? assetProfile?.name ?? assetId)
+                  : (profile?.symbol ?? assetProfile?.name ?? assetId)
               }
               groups={
                 isAltAsset && altHolding
@@ -854,16 +862,8 @@ export const AssetProfilePage = () => {
               <AlternativeAssetIcon kind={alternativeDisplayKind} size={20} />
             </div>
           ) : (
-            (profile?.symbol ?? holding?.instrument?.symbol ?? assetProfile?.displayCode) && (
-              <TickerAvatar
-                symbol={
-                  profile?.symbol ??
-                  holding?.instrument?.symbol ??
-                  assetProfile?.displayCode ??
-                  assetId
-                }
-                className="size-9"
-              />
+            (profile?.symbol ?? assetId) && (
+              <TickerAvatar symbol={profile?.symbol ?? assetId} className="size-9" />
             )
           )}
           <div className="flex min-w-0 flex-col justify-center">
@@ -875,7 +875,7 @@ export const AssetProfilePage = () => {
                 getAlternativeAssetKindLabel(alternativeDisplayKind)
               ) : (
                 <>
-                  {assetProfile?.displayCode ?? holding?.instrument?.symbol ?? assetId}
+                  {profile?.symbol ?? assetId}
                   {(assetProfile?.quoteCcy ?? profile?.currency) && (
                     <>
                       <span className="bg-muted-foreground/40 h-3 w-px rounded-full" />

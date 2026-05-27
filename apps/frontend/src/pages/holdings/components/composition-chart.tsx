@@ -13,6 +13,8 @@ import { useEffect, useMemo, useRef, type FC } from "react";
 import { Link } from "react-router-dom";
 import { Tooltip as ChartTooltip, ResponsiveContainer, type TreemapNode, Treemap } from "recharts";
 
+import { getSymbolPresentation } from "@/lib/symbol-display";
+
 type ReturnType = "daily" | "total";
 type DisplayMode = "symbol" | "name";
 
@@ -187,6 +189,7 @@ interface TooltipProps {
     value: number;
     payload: {
       symbol: string;
+      symbolHint?: string;
       name?: string;
       gain: number;
       asOfDate?: string;
@@ -216,6 +219,9 @@ const CompositionTooltip = ({ active, payload, settings }: TooltipProps) => {
                 {data.asOfDate ? new Date(data.asOfDate).toLocaleDateString() : ""}
               </span>
             </div>
+            {data.symbolHint ? (
+              <p className="text-muted-foreground text-xs leading-tight">{data.symbolHint}</p>
+            ) : null}
             <p className="text-muted-foreground text-xs leading-tight">{data.name}</p>
           </div>
 
@@ -293,8 +299,13 @@ export function PortfolioComposition({ holdings, isLoading }: PortfolioCompositi
     // Map holdings directly, assuming backend provides aggregated data
     const processedData = holdings
       .map((holding) => {
-        const symbol = holding.instrument?.symbol;
-        if (!symbol) return null; // Skip if no symbol
+        const rawSymbol = holding.instrument?.symbol;
+        if (!rawSymbol) return null; // Skip if no symbol
+
+        const symbolPresentation = getSymbolPresentation({
+          symbol: rawSymbol,
+          preferredProvider: holding.instrument?.preferredProvider,
+        });
 
         const gain =
           returnType === "daily"
@@ -312,7 +323,8 @@ export function PortfolioComposition({ holdings, isLoading }: PortfolioCompositi
 
         return {
           id: holding.instrument?.id, // Asset ID for navigation
-          symbol: symbol,
+          symbol: symbolPresentation.symbol,
+          symbolHint: symbolPresentation.hint,
           name: holding.instrument?.name, // Use symbol for the treemap node name/link
           marketValueConverted: marketValue,
           gain,

@@ -26,9 +26,8 @@ use wealthfolio_market_data::mic_to_currency;
 fn parse_instrument_type_from_provider(asset_type: &str) -> Option<InstrumentType> {
     match asset_type.to_uppercase().as_str() {
         "CRYPTOCURRENCY" | "CRYPTO" => Some(InstrumentType::Crypto),
-        "EQUITY" | "STOCK" | "ETF" | "MUTUALFUND" | "MUTUAL FUND" | "INDEX" => {
-            Some(InstrumentType::Equity)
-        }
+        "EQUITY" | "STOCK" | "ETF" | "INDEX" => Some(InstrumentType::Equity),
+        "FUND" | "MUTUALFUND" | "MUTUAL FUND" | "MUTUAL_FUND" => Some(InstrumentType::Fund),
         "CURRENCY" | "FOREX" | "FX" => Some(InstrumentType::Fx),
         "OPTION" => Some(InstrumentType::Option),
         "COMMODITY" => Some(InstrumentType::Metal),
