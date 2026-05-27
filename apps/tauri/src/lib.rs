@@ -338,6 +338,9 @@ pub fn run() {
             commands::portfolio::get_snapshots,
             commands::portfolio::get_snapshot_by_date,
             commands::portfolio::delete_snapshot,
+            commands::target_allocation::get_target_allocation,
+            commands::target_allocation::save_target_allocation,
+            commands::target_allocation::set_target_allocation_account_default,
             // Contribution limit commands
             commands::limits::get_contribution_limits,
             commands::limits::create_contribution_limit,

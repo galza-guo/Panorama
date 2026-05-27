@@ -50,6 +50,8 @@ pub struct ServiceContext {
     pub folder_sync_runtime: Arc<FolderSyncRuntime>,
     pub holdings_service: Arc<dyn portfolio::holdings::HoldingsServiceTrait>,
     pub allocation_service: Arc<dyn portfolio::allocation::AllocationServiceTrait>,
+    pub target_allocation_service:
+        Arc<dyn portfolio::target_allocation::TargetAllocationServiceTrait>,
     pub valuation_service: Arc<dyn portfolio::valuation::ValuationServiceTrait>,
     pub net_worth_service: Arc<dyn portfolio::net_worth::NetWorthServiceTrait>,
     pub sync_service: Arc<dyn BrokerSyncServiceTrait>,
@@ -147,6 +149,12 @@ impl ServiceContext {
 
     pub fn allocation_service(&self) -> Arc<dyn portfolio::allocation::AllocationServiceTrait> {
         Arc::clone(&self.allocation_service)
+    }
+
+    pub fn target_allocation_service(
+        &self,
+    ) -> Arc<dyn portfolio::target_allocation::TargetAllocationServiceTrait> {
+        Arc::clone(&self.target_allocation_service)
     }
 
     pub fn valuation_service(&self) -> Arc<dyn portfolio::valuation::ValuationServiceTrait> {

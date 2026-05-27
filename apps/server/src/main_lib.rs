@@ -28,6 +28,7 @@ use wealthfolio_core::{
     limits::{ContributionLimitService, ContributionLimitServiceTrait},
     portfolio::allocation::{AllocationService, AllocationServiceTrait},
     portfolio::income::{IncomeService, IncomeServiceTrait},
+    portfolio::target_allocation::{TargetAllocationService, TargetAllocationServiceTrait},
     portfolio::{
         holdings::{
             holdings_valuation_service::HoldingsValuationService, HoldingsService,
@@ -54,7 +55,10 @@ use wealthfolio_storage_sqlite::{
     health::HealthDismissalRepository,
     limits::ContributionLimitRepository,
     market_data::{MarketDataRepository, QuoteSyncStateRepository},
-    portfolio::{snapshot::SnapshotRepository, valuation::ValuationRepository},
+    portfolio::{
+        snapshot::SnapshotRepository, target_allocation::TargetAllocationRepository,
+        valuation::ValuationRepository,
+    },
     settings::SettingsRepository,
     sync::{AppSyncRepository, BrokerSyncStateRepository, ImportRunRepository, PlatformRepository},
     taxonomies::TaxonomyRepository,
@@ -77,6 +81,7 @@ pub struct AppState {
     pub holdings_service: Arc<dyn HoldingsServiceTrait + Send + Sync>,
     pub valuation_service: Arc<dyn ValuationServiceTrait + Send + Sync>,
     pub allocation_service: Arc<dyn AllocationServiceTrait + Send + Sync>,
+    pub target_allocation_service: Arc<dyn TargetAllocationServiceTrait + Send + Sync>,
     pub quote_service: Arc<dyn QuoteServiceTrait + Send + Sync>,
     pub base_currency: Arc<RwLock<String>>,
     pub snapshot_service: Arc<dyn SnapshotServiceTrait + Send + Sync>,
@@ -227,6 +232,10 @@ pub async fn build_state(config: &Config) -> anyhow::Result<Arc<AppState>> {
     );
 
     let valuation_repository = Arc::new(ValuationRepository::new(pool.clone(), writer.clone()));
+    let target_allocation_repository = Arc::new(TargetAllocationRepository::new(
+        pool.clone(),
+        writer.clone(),
+    ));
     let valuation_service = Arc::new(ValuationService::new(
         base_currency.clone(),
         valuation_repository.clone(),
@@ -327,6 +336,15 @@ pub async fn build_state(config: &Config) -> anyhow::Result<Arc<AppState>> {
         )
         .with_event_sink(domain_event_sink.clone()),
     );
+
+    let target_allocation_service: Arc<dyn TargetAllocationServiceTrait + Send + Sync> =
+        Arc::new(TargetAllocationService::new(
+            target_allocation_repository,
+            account_service.clone(),
+            holdings_service.clone(),
+            alternative_asset_service.clone(),
+            fx_service.clone(),
+        ));
 
     // Connect sync service for broker data synchronization
     let platform_repository = Arc::new(PlatformRepository::new(pool.clone(), writer.clone()));
@@ -432,6 +450,7 @@ pub async fn build_state(config: &Config) -> anyhow::Result<Arc<AppState>> {
         holdings_service,
         valuation_service,
         allocation_service,
+        target_allocation_service,
         quote_service,
         base_currency,
         snapshot_service,

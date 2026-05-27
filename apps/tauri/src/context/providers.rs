@@ -25,6 +25,7 @@ use wealthfolio_core::{
         net_worth::NetWorthService,
         performance::PerformanceService,
         snapshot::SnapshotService,
+        target_allocation::TargetAllocationService,
         valuation::ValuationService,
     },
     quotes::{QuoteService, QuoteServiceTrait},
@@ -43,7 +44,10 @@ use wealthfolio_storage_sqlite::{
     health::HealthDismissalRepository,
     limits::ContributionLimitRepository,
     market_data::{MarketDataRepository, QuoteSyncStateRepository},
-    portfolio::{snapshot::SnapshotRepository, valuation::ValuationRepository},
+    portfolio::{
+        snapshot::SnapshotRepository, target_allocation::TargetAllocationRepository,
+        valuation::ValuationRepository,
+    },
     settings::SettingsRepository,
     sync::{
         AppSyncRepository, BrokerSyncStateRepository, FolderSyncRepository, ImportRunRepository,
@@ -83,6 +87,10 @@ pub async fn initialize_context(
     let app_sync_repository = Arc::new(AppSyncRepository::new(pool.clone(), writer.clone()));
     let folder_sync_repository = Arc::new(FolderSyncRepository::new(pool.clone(), writer.clone()));
     let valuation_repository = Arc::new(ValuationRepository::new(pool.clone(), writer.clone()));
+    let target_allocation_repository = Arc::new(TargetAllocationRepository::new(
+        pool.clone(),
+        writer.clone(),
+    ));
     let platform_repository = Arc::new(PlatformRepository::new(pool.clone(), writer.clone()));
     let broker_sync_state_repository =
         Arc::new(BrokerSyncStateRepository::new(pool.clone(), writer.clone()));
@@ -247,6 +255,14 @@ pub async fn initialize_context(
         .with_event_sink(domain_event_sink.clone()),
     );
 
+    let target_allocation_service = Arc::new(TargetAllocationService::new(
+        target_allocation_repository,
+        account_service.clone(),
+        holdings_service.clone(),
+        alternative_asset_service.clone(),
+        fx_service.clone(),
+    ));
+
     let sync_service = Arc::new(
         BrokerSyncService::new(
             account_service.clone(),
@@ -340,6 +356,7 @@ pub async fn initialize_context(
             folder_sync_runtime,
             holdings_service,
             allocation_service,
+            target_allocation_service,
             valuation_service,
             net_worth_service,
             sync_service,

@@ -24,6 +24,7 @@ pub mod secrets;
 pub mod settings;
 #[cfg(feature = "device-sync")]
 pub mod sync_crypto;
+pub mod target_allocation;
 pub mod taxonomy;
 pub mod utilities;
 #[cfg(any(feature = "connect-sync", feature = "device-sync"))]

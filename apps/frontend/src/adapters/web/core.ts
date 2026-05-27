@@ -35,6 +35,12 @@ export const COMMANDS: CommandMap = {
   get_historical_valuations: { method: "GET", path: "/valuations/history" },
   get_latest_valuations: { method: "GET", path: "/valuations/latest" },
   get_portfolio_allocations: { method: "GET", path: "/allocations" },
+  get_target_allocation: { method: "GET", path: "/target-allocation" },
+  save_target_allocation: { method: "POST", path: "/target-allocation" },
+  set_target_allocation_account_default: {
+    method: "POST",
+    path: "/target-allocation/account-default",
+  },
   // Snapshot management
   get_snapshots: { method: "GET", path: "/snapshots" },
   get_snapshot_by_date: { method: "GET", path: "/snapshots/holdings" },
@@ -396,6 +402,21 @@ export const invoke = async <T>(command: string, payload?: Record<string, unknow
       const params = new URLSearchParams();
       params.set("accountId", accountId);
       url += `?${params.toString()}`;
+      break;
+    }
+    case "get_target_allocation":
+      break;
+    case "save_target_allocation": {
+      const { plan } = payload as { plan: Record<string, unknown> };
+      body = JSON.stringify(plan);
+      break;
+    }
+    case "set_target_allocation_account_default": {
+      const { accountId, folderNodeId } = payload as {
+        accountId: string;
+        folderNodeId?: string | null;
+      };
+      body = JSON.stringify({ accountId, folderNodeId });
       break;
     }
     // Snapshot management

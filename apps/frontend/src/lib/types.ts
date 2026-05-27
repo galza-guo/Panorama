@@ -550,6 +550,100 @@ export interface AllocationHoldings {
   currency: string;
 }
 
+export type TargetAllocationNodeKind = "folder" | "asset";
+export type TargetAllocationSubjectType = "position" | "cash" | "standaloneAsset";
+export type TargetAllocationRowKind = "root" | "folder" | "asset" | "other" | "untargeted";
+
+export type TargetAllocationAssetRef =
+  | { kind: "asset"; assetId: string }
+  | { kind: "cash"; currency: string };
+
+export interface TargetAllocationNode {
+  id: string;
+  parentId?: string | null;
+  nodeKind: TargetAllocationNodeKind;
+  name: string;
+  targetPercent?: number | null;
+  assetRef?: TargetAllocationAssetRef | null;
+  color?: string | null;
+  icon?: string | null;
+  sortOrder: number;
+}
+
+export interface TargetAllocationAccountDefault {
+  accountId: string;
+  folderNodeId: string;
+}
+
+export interface TargetAllocationAttribution {
+  subjectKey: string;
+  subjectType: TargetAllocationSubjectType;
+  folderNodeId: string;
+}
+
+export interface TargetAllocationExclusion {
+  subjectKey: string;
+  subjectType: TargetAllocationSubjectType;
+}
+
+export interface TargetAllocationPlanData {
+  hasPlan: boolean;
+  nodes: TargetAllocationNode[];
+  accountDefaults: TargetAllocationAccountDefault[];
+  attributions: TargetAllocationAttribution[];
+  exclusions: TargetAllocationExclusion[];
+}
+
+export interface TargetAllocationHoldingInput {
+  subjectKey: string;
+  subjectType: TargetAllocationSubjectType;
+  accountId?: string | null;
+  accountName?: string | null;
+  assetId?: string | null;
+  currency: string;
+  symbol: string;
+  name?: string | null;
+  valueBase: number;
+}
+
+export type TargetAllocationHoldingBreakdown = TargetAllocationHoldingInput;
+
+export interface TargetAllocationDisplayRow {
+  id: string;
+  kind: TargetAllocationRowKind;
+  nodeKind?: TargetAllocationNodeKind | null;
+  name: string;
+  targetPercent?: number | null;
+  currentPercent: number;
+  effectiveCurrentPercent: number;
+  effectiveTargetPercent?: number | null;
+  currentValue: number;
+  targetValue?: number | null;
+  valueGap?: number | null;
+  percentGap?: number | null;
+  statusSymbol?: string | null;
+  color?: string | null;
+  icon?: string | null;
+  assetRef?: TargetAllocationAssetRef | null;
+  isVirtual: boolean;
+  isAutoTarget: boolean;
+  breakdown: TargetAllocationHoldingBreakdown[];
+  children: TargetAllocationDisplayRow[];
+}
+
+export interface TargetAllocationDashboard {
+  currency: string;
+  hasPlan: boolean;
+  root: TargetAllocationDisplayRow;
+  excludedHoldings: TargetAllocationHoldingBreakdown[];
+}
+
+export interface TargetAllocationView {
+  plan: TargetAllocationPlanData;
+  dashboard: TargetAllocationDashboard;
+  availableHoldings: TargetAllocationHoldingInput[];
+}
+
 /**
  * Asset interface matching the new provider-agnostic backend model
  * Note: Legacy fields (assetClass, assetSubClass, isin, profile) are stored in metadata.legacy

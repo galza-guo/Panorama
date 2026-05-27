@@ -150,6 +150,12 @@ export {
   deleteSnapshot,
 } from "../shared/portfolio";
 
+export {
+  getTargetAllocation,
+  saveTargetAllocation,
+  setTargetAllocationAccountDefault,
+} from "../shared/target-allocation";
+
 // Market Data Commands
 export {
   searchTicker,
