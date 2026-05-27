@@ -1,7 +1,7 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 
 import { Button } from "@wealthfolio/ui/components/ui/button";
 import { Checkbox } from "@wealthfolio/ui/components/ui/checkbox";
@@ -43,6 +43,10 @@ import {
 import { Alert, AlertDescription } from "@wealthfolio/ui/components/ui/alert";
 
 import { useAccountMutations } from "./use-account-mutations";
+import {
+  useSetTargetAllocationAccountDefault,
+  useTargetAllocation,
+} from "@/hooks/use-target-allocation";
 
 const accountTypes: ResponsiveSelectOption[] = [
   { label: "Securities", value: "SECURITIES" },
@@ -62,6 +66,8 @@ interface AccountFormlProps {
 
 export function AccountForm({ defaultValues, onSuccess = () => undefined }: AccountFormlProps) {
   const { createAccountMutation, updateAccountMutation } = useAccountMutations({ onSuccess });
+  const { data: targetAllocation } = useTargetAllocation();
+  const setTargetAccountDefaultMutation = useSetTargetAllocationAccountDefault();
 
   // Track initial tracking mode to detect changes
   const initialTrackingMode = defaultValues?.trackingMode;
@@ -70,6 +76,20 @@ export function AccountForm({ defaultValues, onSuccess = () => undefined }: Acco
   // State for mode switch confirmation dialog
   const [showModeConfirmation, setShowModeConfirmation] = useState(false);
   const [pendingFormData, setPendingFormData] = useState<AccountFormOutput | null>(null);
+  const [targetFolderId, setTargetFolderId] = useState("");
+
+  const targetFolders =
+    targetAllocation?.plan.nodes.filter((node) => node.nodeKind === "folder") ?? [];
+  const showTargetFolderSelector = Boolean(defaultValues?.id && targetAllocation?.plan.hasPlan);
+
+  useEffect(() => {
+    if (!defaultValues?.id || !targetAllocation?.plan.accountDefaults) return;
+    setTargetFolderId(
+      targetAllocation.plan.accountDefaults.find(
+        (accountDefault) => accountDefault.accountId === defaultValues.id,
+      )?.folderNodeId ?? "",
+    );
+  }, [defaultValues?.id, targetAllocation?.plan.accountDefaults]);
 
   const form = useForm<AccountFormInput, unknown, AccountFormOutput>({
     resolver: zodResolver(newAccountSchema),
@@ -85,25 +105,36 @@ export function AccountForm({ defaultValues, onSuccess = () => undefined }: Acco
   // Perform the actual submit (after confirmation if needed)
   // Returns a promise when updating so it can be chained with other operations
   const doSubmit = useCallback(
-    (data: AccountFormOutput, options?: { async?: boolean }) => {
+    async (data: AccountFormOutput) => {
       const { id, trackingMode, ...rest } = data;
 
       if (id) {
-        if (options?.async) {
-          return updateAccountMutation.mutateAsync({
-            id,
-            trackingMode,
-            ...rest,
+        const result = await updateAccountMutation.mutateAsync({
+          id,
+          trackingMode,
+          ...rest,
+        });
+        if (showTargetFolderSelector) {
+          await setTargetAccountDefaultMutation.mutateAsync({
+            accountId: id,
+            folderNodeId: targetFolderId || null,
           });
         }
-        return updateAccountMutation.mutate({ id, trackingMode, ...rest });
+        return result;
       }
-      return createAccountMutation.mutate({ trackingMode, ...rest });
+      createAccountMutation.mutate({ trackingMode, ...rest });
+      return undefined;
     },
-    [createAccountMutation, updateAccountMutation],
+    [
+      createAccountMutation,
+      setTargetAccountDefaultMutation,
+      showTargetFolderSelector,
+      targetFolderId,
+      updateAccountMutation,
+    ],
   );
 
-  function onSubmit(data: AccountFormOutput) {
+  async function onSubmit(data: AccountFormOutput) {
     // Check if this is an existing account (update) and mode is switching from HOLDINGS to TRANSACTIONS
     const isExistingAccount = !!data.id;
     const isSwitchingFromHoldingsToTransactions =
@@ -117,7 +148,7 @@ export function AccountForm({ defaultValues, onSuccess = () => undefined }: Acco
     }
 
     // Otherwise, submit directly
-    doSubmit(data);
+    await doSubmit(data);
   }
 
   // Handle confirmation dialog actions
@@ -126,7 +157,7 @@ export function AccountForm({ defaultValues, onSuccess = () => undefined }: Acco
     if (pendingFormData?.id) {
       try {
         // Save all account details including tracking mode
-        await doSubmit(pendingFormData, { async: true });
+        await doSubmit(pendingFormData);
       } finally {
         setPendingFormData(null);
       }
@@ -230,7 +261,7 @@ export function AccountForm({ defaultValues, onSuccess = () => undefined }: Acco
                 {needsSetup && !currentTrackingMode && (
                   <Alert
                     variant="warning"
-                    className="px-3 py-2.5 [&>svg]:left-3 [&>svg]:top-2.5 [&>svg~*]:pl-6"
+                    className="px-3 py-2.5 [&>svg]:top-2.5 [&>svg]:left-3 [&>svg~*]:pl-6"
                   >
                     <Icons.AlertTriangle className="h-4 w-4" />
                     <AlertDescription className="text-xs">
@@ -286,7 +317,7 @@ export function AccountForm({ defaultValues, onSuccess = () => undefined }: Acco
                 {field.value === "HOLDINGS" && (
                   <Alert
                     variant="warning"
-                    className="px-3 py-2.5 [&>svg]:left-3 [&>svg]:top-2.5 [&>svg~*]:pl-6"
+                    className="px-3 py-2.5 [&>svg]:top-2.5 [&>svg]:left-3 [&>svg~*]:pl-6"
                   >
                     <Icons.AlertTriangle className="h-4 w-4" />
                     <AlertDescription className="text-xs">
@@ -311,7 +342,7 @@ export function AccountForm({ defaultValues, onSuccess = () => undefined }: Acco
             control={form.control}
             name="isActive"
             render={({ field }) => (
-              <FormItem className="flex items-center space-x-3 space-y-0 rounded-lg border p-3">
+              <FormItem className="flex items-center space-y-0 space-x-3 rounded-lg border p-3">
                 <FormControl>
                   <Checkbox
                     checked={!field.value}
@@ -329,12 +360,30 @@ export function AccountForm({ defaultValues, onSuccess = () => undefined }: Acco
             )}
           />
 
+          {showTargetFolderSelector && (
+            <div className="space-y-2">
+              <FormLabel>Default Target Folder</FormLabel>
+              <select
+                value={targetFolderId}
+                onChange={(event) => setTargetFolderId(event.target.value)}
+                className="border-input bg-background ring-offset-background focus:ring-ring flex h-10 w-full rounded-md border px-3 py-2 text-sm focus:ring-2 focus:ring-offset-2 focus:outline-none"
+              >
+                <option value="">Unassigned</option>
+                {targetFolders.map((folder) => (
+                  <option key={folder.id} value={folder.id}>
+                    {folder.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
+
           {defaultValues?.id && (
             <FormField
               control={form.control}
               name="isArchived"
               render={({ field }) => (
-                <FormItem className="border-destructive/30 flex items-center space-x-3 space-y-0 rounded-lg border p-3">
+                <FormItem className="border-destructive/30 flex items-center space-y-0 space-x-3 rounded-lg border p-3">
                   <FormControl>
                     <Checkbox checked={field.value} onCheckedChange={field.onChange} />
                   </FormControl>

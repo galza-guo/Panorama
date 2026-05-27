@@ -9,6 +9,7 @@ import { Card, CardContent, CardHeader } from "@wealthfolio/ui/components/ui/car
 import { Skeleton } from "@wealthfolio/ui/components/ui/skeleton";
 import { Suspense, useMemo, useState } from "react";
 import HoldingsInsightsPage from "../holdings/holdings-insights-page";
+import TargetAllocationPage from "./target-allocation-page";
 
 // Loading skeleton to show while the dashboard is loading
 const DashboardLoader = () => (
@@ -75,6 +76,16 @@ export default function PortfolioInsightsPage() {
           </Suspense>
         ),
         actions: holdingsActions,
+      },
+      {
+        value: "target-allocation",
+        label: "Target",
+        icon: Icons.Target,
+        content: (
+          <Suspense fallback={<DashboardLoader />}>
+            <TargetAllocationPage />
+          </Suspense>
+        ),
       },
       {
         value: "performance",
