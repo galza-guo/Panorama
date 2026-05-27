@@ -103,7 +103,9 @@ This keeps insights and reporting working because they continue to read normal P
 
 ## Webull HK Order Import
 
-Order import should be separate from holdings snapshot sync.
+Order import should be a separate sync step from holdings snapshot sync, but not a
+separate history system. Imported orders must map into Panorama's existing
+activity history pipeline as normal activities.
 
 Use Webull order history and order detail only from `source_from_date` onward. Import filled or partially filled orders as reviewable activities. Use order detail for commission and fee breakdown where needed.
 

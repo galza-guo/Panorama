@@ -12,7 +12,10 @@ use super::auth::{
     generate_signature, SigningHeader, SigningRequest, WEBULL_API_VERSION,
     WEBULL_SIGNATURE_ALGORITHM, WEBULL_SIGNATURE_VERSION,
 };
-use super::models::{CheckTokenRequest, TokenResponse};
+use super::models::{
+    CheckTokenRequest, TokenResponse, WebullAccountBalanceResponse, WebullAccountListResponse,
+    WebullAccountPositionsResponse, WebullStockInstrumentListResponse, WebullStockInstrumentQuery,
+};
 
 const DEFAULT_TIMEOUT_SECS: u64 = 30;
 
@@ -83,6 +86,45 @@ impl WebullHkClient {
         .await
     }
 
+    pub async fn get_account_list(&self) -> Result<WebullAccountListResponse> {
+        self.get_json("/openapi/account/list", Vec::new()).await
+    }
+
+    pub async fn get_account_balance(
+        &self,
+        account_id: &str,
+        total_asset_currency: Option<&str>,
+    ) -> Result<WebullAccountBalanceResponse> {
+        let mut query_params = vec![("account_id".to_string(), account_id.to_string())];
+        if let Some(currency) = total_asset_currency
+            .map(str::trim)
+            .filter(|currency| !currency.is_empty())
+        {
+            query_params.push(("total_asset_currency".to_string(), currency.to_string()));
+        }
+
+        self.get_json("/openapi/assets/balance", query_params).await
+    }
+
+    pub async fn get_account_positions(
+        &self,
+        account_id: &str,
+    ) -> Result<WebullAccountPositionsResponse> {
+        self.get_json(
+            "/openapi/assets/positions",
+            vec![("account_id".to_string(), account_id.to_string())],
+        )
+        .await
+    }
+
+    pub async fn get_stock_instruments(
+        &self,
+        query: WebullStockInstrumentQuery,
+    ) -> Result<WebullStockInstrumentListResponse> {
+        self.get_json("/openapi/instrument/stock/list", query.to_query_params())
+            .await
+    }
+
     async fn post_json<T, B>(&self, path: &str, body: Option<&B>) -> Result<T>
     where
         T: DeserializeOwned,
@@ -108,6 +150,28 @@ impl WebullHkClient {
             request.send().await
         }
         .map_err(|e| Error::Unexpected(format!("Webull HK request failed: {e}")))?;
+
+        parse_response(response).await
+    }
+
+    async fn get_json<T>(&self, path: &str, query_params: Vec<(String, String)>) -> Result<T>
+    where
+        T: DeserializeOwned,
+    {
+        let url = format!("{}{}", self.environment.http_base_url(), path);
+        let query_refs = query_params
+            .iter()
+            .map(|(name, value)| (name.as_str(), value.as_str()))
+            .collect::<Vec<_>>();
+        let headers = self.signed_headers(path, &query_refs, None)?;
+        let response = self
+            .client
+            .get(url)
+            .headers(headers)
+            .query(&query_params)
+            .send()
+            .await
+            .map_err(|e| Error::Unexpected(format!("Webull HK request failed: {e}")))?;
 
         parse_response(response).await
     }
