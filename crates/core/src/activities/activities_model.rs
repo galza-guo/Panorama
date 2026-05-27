@@ -603,6 +603,11 @@ pub struct ActivityImport {
     )]
     pub fx_rate: Option<Decimal>,
     pub subtype: Option<String>,
+    /// True when a TRANSFER_IN/OUT crosses the tracked-account boundary.
+    /// Persisted as `metadata.flow.is_external`, matching the manual transfer form.
+    #[serde(default)]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub is_external: Option<bool>,
 }
 
 /// Model for sorting activities
@@ -1109,6 +1114,12 @@ impl From<ActivityImport> for NewActivity {
             Some(ActivityStatus::Posted)
         };
 
+        let metadata = if import.is_external == Some(true) {
+            Some(serde_json::json!({ "flow": { "is_external": true } }).to_string())
+        } else {
+            None
+        };
+
         NewActivity {
             id: import.id,
             account_id: import.account_id.unwrap_or_default(),
@@ -1124,7 +1135,7 @@ impl From<ActivityImport> for NewActivity {
             status,
             notes: import.comment,
             fx_rate: import.fx_rate,
-            metadata: None,
+            metadata,
             needs_review: None,
             source_system: Some("CSV".to_string()),
             source_record_id: None,

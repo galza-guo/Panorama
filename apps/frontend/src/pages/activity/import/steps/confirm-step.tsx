@@ -125,6 +125,7 @@ function draftToActivityImport(draft: DraftActivity): ActivityImport {
     lineNumber: draft.rowIndex + 1,
     isDraft: false,
     comment: draft.comment,
+    isExternal: draft.isExternal,
   };
 }
 

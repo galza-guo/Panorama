@@ -169,6 +169,7 @@ export const importActivitySchema = z
     comment: z.string().optional(),
     fxRate: decimalLikeSchema.nullable().optional(),
     subtype: z.string().optional(),
+    isExternal: z.boolean().optional(),
   })
   .refine(
     (data) => {

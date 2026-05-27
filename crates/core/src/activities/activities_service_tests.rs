@@ -1870,6 +1870,7 @@ mod tests {
             line_number: Some(1),
             fx_rate: None,
             subtype: None,
+            is_external: None,
         };
 
         let result = activity_service
@@ -1993,6 +1994,7 @@ mod tests {
             line_number: Some(1),
             fx_rate: None,
             subtype: None,
+            is_external: None,
         };
 
         let result = activity_service
@@ -2060,6 +2062,7 @@ mod tests {
             line_number: Some(1),
             fx_rate: None,
             subtype: None,
+            is_external: None,
         };
 
         let result = activity_service
@@ -2120,6 +2123,7 @@ mod tests {
             line_number: Some(1),
             fx_rate: None,
             subtype: None,
+            is_external: None,
         };
 
         let result = activity_service
