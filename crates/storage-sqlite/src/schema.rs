@@ -435,6 +435,58 @@ diesel::table! {
 }
 
 diesel::table! {
+    target_allocation_account_defaults (account_id) {
+        account_id -> Text,
+        folder_node_id -> Text,
+        created_at -> Text,
+        updated_at -> Text,
+    }
+}
+
+diesel::table! {
+    target_allocation_attributions (subject_key) {
+        subject_key -> Text,
+        subject_type -> Text,
+        folder_node_id -> Text,
+        created_at -> Text,
+        updated_at -> Text,
+    }
+}
+
+diesel::table! {
+    target_allocation_exclusions (subject_key) {
+        subject_key -> Text,
+        subject_type -> Text,
+        created_at -> Text,
+    }
+}
+
+diesel::table! {
+    target_allocation_nodes (id) {
+        id -> Text,
+        parent_id -> Nullable<Text>,
+        node_kind -> Text,
+        name -> Text,
+        target_percent -> Nullable<Text>,
+        asset_id -> Nullable<Text>,
+        cash_currency -> Nullable<Text>,
+        color -> Nullable<Text>,
+        icon -> Nullable<Text>,
+        sort_order -> Integer,
+        created_at -> Text,
+        updated_at -> Text,
+    }
+}
+
+diesel::table! {
+    target_allocation_plan (id) {
+        id -> Text,
+        created_at -> Text,
+        updated_at -> Text,
+    }
+}
+
+diesel::table! {
     taxonomies (id) {
         id -> Text,
         name -> Text,
@@ -476,6 +528,9 @@ diesel::joinable!(goals_allocation -> accounts (account_id));
 diesel::joinable!(goals_allocation -> goals (goal_id));
 diesel::joinable!(import_runs -> accounts (account_id));
 diesel::joinable!(quotes -> assets (asset_id));
+diesel::joinable!(target_allocation_account_defaults -> accounts (account_id));
+diesel::joinable!(target_allocation_account_defaults -> target_allocation_nodes (folder_node_id));
+diesel::joinable!(target_allocation_attributions -> target_allocation_nodes (folder_node_id));
 diesel::joinable!(taxonomy_categories -> taxonomies (taxonomy_id));
 
 diesel::allow_tables_to_appear_in_same_query!(
@@ -511,6 +566,11 @@ diesel::allow_tables_to_appear_in_same_query!(
     sync_entity_metadata,
     sync_outbox,
     sync_table_state,
+    target_allocation_account_defaults,
+    target_allocation_attributions,
+    target_allocation_exclusions,
+    target_allocation_nodes,
+    target_allocation_plan,
     taxonomies,
     taxonomy_categories,
 );
