@@ -18,6 +18,10 @@ log = { workspace = true }
 # HTTP client (for Connect API)
 reqwest = { workspace = true }
 base64 = "0.22"
+hmac = "0.12"
+md5 = "0.7"
+sha1 = "0.10"
+urlencoding = "2"
 
 [features]
 default = ["broker"]

@@ -9,6 +9,7 @@ pub mod broker_ingest;
 pub mod client;
 pub mod platform;
 pub mod token_lifecycle;
+pub mod webull_hk;
 
 // Re-export commonly used types
 #[cfg(feature = "broker")]
