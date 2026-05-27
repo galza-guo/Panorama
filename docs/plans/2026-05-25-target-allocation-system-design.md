@@ -1,460 +1,1037 @@
 # Target Allocation System Design
 
-**Goal:** Add a first-class target-allocation system to Panorama so a user can define desired portfolio structure, compare it with current reality, and decide where the next contribution or rebalance should go.
+**Status:** Product design spec, updated from the May 2026 requirements
+interview.
 
-This document is intentionally a product philosophy and design brief, not an implementation plan. The next implementation thread should turn it into schema, API, calculation, and UI work.
+**Goal:** Add a first-class target-allocation system to Panorama so the user can
+define a desired asset structure and compare it with current reality at a
+glance.
+
+This document is a design brief, not an implementation plan. The next thread
+should turn it into schema, API, calculation, and UI work.
+
+## Concise Design Spec
+
+V1 is a current-only visual comparison tool. It does not recommend trades, rank
+what to buy, optimize taxes, or auto-rebalance. It answers: "How does my current
+asset allocation compare with my plan right now?"
+
+The plan covers included assets, not accounts. By default, included assets are
+all assets except liabilities. Users can exclude assets from the plan; excluded
+assets appear in a separate section and do not affect percentages.
+
+The plan is one flexible tree under an implicit `Total Assets` root:
+
+- folder nodes represent pots, categories, sleeves, or any user-created grouping
+- asset nodes represent specific assets or cash identities and are always leaves
+- `Other` is an automatic virtual row for leftover planned capacity
+- `Untargeted` is an automatic current-only row when current assets have no plan
+  slot
+
+Accounts are shortcuts only. A persistent account default can assign all current
+and future holdings in that account to a target folder, but specific holding
+overrides win. Actual attribution is per holding/position, including per
+account-currency cash balance.
+
+Plan percentages are local to the parent, editable to one decimal place, and
+optional. Blank-plan nodes show current allocation only and have no
+drift/status. If explicit child targets total less than 100%, `Other` receives
+the remaining target. Sibling explicit targets may not exceed 100%.
+
+The main dashboard is a tree table with a target rail and current bar for each
+planned row:
+
+- plan: muted thick line with plan percentage at the rail end
+- current: stronger colored bar below with current percentage at the bar end
+- status: symbolic drift marker after current percentage
+- blank-plan rows: current bar only
+
+Status uses local percentage-point drift:
+
+- `~`: within +/- 5 pp
+- `+` / `-`: 5 to 10 pp
+- `++` / `--`: 10 to 20 pp
+- `+++` / `---`: over 20 pp
+
+The page lives inside Insights. Normal mode is read-only dashboard; edit mode is
+an inline draft editor with Save/Cancel.
 
 ## Why This Matters
 
 Panorama already answers an important question: "What do I own?"
 
-The next layer should answer a more useful investor question: "Am I still following my plan?"
+The next layer should answer a more useful investor question: "Am I still
+following my plan?"
 
-For long-term investors, a portfolio is not just a list of accounts and holdings. It is a set of deliberately chosen proportions:
+For long-term investors, a portfolio is not just a list of accounts and
+holdings. It is a deliberately chosen structure:
 
-- emergency cash versus steady assets versus growth assets
+- cash versus steady assets versus growth assets
+- Pot 1 / Pot 2 / Pot 3 / Pot 4 style policy buckets
 - equities versus alternatives
 - A-share versus US versus HK versus other markets
 - broad core versus satellite exposures
-- income, healthcare, semiconductors, defense/aerospace, gold, CTA, BTC, and other intentional sleeves
+- income, healthcare, semiconductors, defense/aerospace, gold, CTA, BTC, and
+  other intentional sleeves
 
-Prices move every day. Cash enters and leaves. New trades happen. Without a target system, the user has to mentally compare current holdings against a separate written plan. That is exactly the kind of work Panorama should absorb.
+Prices move every day. Cash enters and leaves. New trades happen. Without a
+target system, the user has to mentally compare current holdings against a
+separate written plan. Panorama should absorb that mechanical comparison.
 
-The feature should make the plan visible, measurable, and actionable.
-
-## Investment Philosophy
-
-The underlying philosophy is strategic allocation with disciplined rebalancing.
-
-The user defines target weights first. The portfolio then drifts as market prices, FX, cash flows, deposits, withdrawals, and new trades change the real weights. Panorama should continuously compare the two.
-
-The purpose is not to predict short-term winners. The purpose is to keep risk and exposure aligned with the user's own policy.
-
-This naturally creates a "buy low / trim high" discipline:
-
-- if a target sleeve is below target, new money can be directed there first
-- if a sleeve is materially above target, the user can pause fresh buys or consider trimming
-- if a sleeve is within band, Panorama should say "leave it alone"
-
-That last point is important. A good allocation system should reduce unnecessary trading. It should not turn every small drift into an urgent alert.
-
-The system should support both:
-
-- **cash-flow rebalancing:** use new contributions, dividends, or interest to fill underweight sleeves
-- **active rebalancing:** sell overweight sleeves only when drift is large enough to justify transaction cost, tax, and operational friction
-
-Vanguard's public rebalancing guidance makes the same distinction: rebalancing is not market timing, but a way to stay aligned with a long-term asset mix. CFA Institute frames rebalancing as adjusting portfolio weights back toward strategic allocation, while also considering transaction costs, taxes, volatility, and liquidity.
+The feature should make the plan visible, measurable, and easy to inspect.
 
 ## Product Objective
 
-Panorama should become the dashboard where a household can see:
+Panorama should provide a calm allocation dashboard where the user can see:
 
-1. The plan.
-2. Current reality.
-3. Drift from plan.
-4. Whether each sleeve is underweight, in range, or overweight.
-5. The cleanest next action if new cash is available.
+1. The target structure.
+2. Current structure.
+3. Drift from target.
+4. Which parts are under, in range, or over.
+5. Which assets and accounts make up each visible row.
 
-The core screen should feel like an investment policy cockpit, not a trading terminal.
+The feature should not behave like a trading terminal. It should not say what to
+buy or sell. It should give the user a visual instrument panel for their own
+policy.
 
-It should be calm, structural, and easy to scan.
+## V1 Scope
 
-## Core Concepts
+### In Scope
 
-### Allocation Plan
+- one target allocation plan
+- current-only dashboard
+- flexible folder/asset tree
+- all-assets denominator, excluding liabilities
+- user exclusions from the allocation plan
+- local target percentages with one decimal place
+- blank-plan current-only nodes
+- automatic `Other`
+- automatic `Untargeted`
+- per-position holding attribution
+- persistent account default attribution shortcuts
+- account default selector in Account Edit modal when a plan exists
+- asset/cash target leaves
+- not-held asset targets
+- same-asset aggregation within a folder
+- drag-and-drop plus picker-based attribution
+- inline draft editor with Save/Cancel
+- search/filter with tree context
+- remembered tree expansion state
+- mobile read-only dashboard
+- read-only commands/types for add-ons and AI
+- calculation tests plus key UI tests
 
-An allocation plan is a named set of target weights.
+### Out Of Scope For V1
 
-Examples:
+- multiple saved plans
+- historical drift charts
+- effective-dated target or attribution history
+- trading recommendations
+- rebalance instructions
+- tax-lot optimization
+- transaction-cost optimization
+- Monte Carlo planning
+- automatic target optimization
+- taxonomy smart folders
+- taxonomy bulk attribution helpers
+- look-through fund splitting
+- global future asset attribution rules
+- target-plan JSON import/export
+- liabilities in the target tree
+- row detail drawer
+- summary strip
+- notes/descriptions on nodes
+- row virtualization
+- full mobile editing
 
-- `Household Policy v1`
-- `Gallant Pot 3`
-- `Vermouth Toy Sleeve`
-- `Retirement Conservative Plan`
+## Core Model
 
-An allocation plan can be active or archived. Only one plan should be the default for a given scope at a time.
+### One Plan
 
-### Scope
+V1 has exactly one editable plan. There is no archive, active/default selector,
+or scenario comparison.
 
-Targets need a denominator. Without a denominator, percentages become ambiguous.
+This keeps the mental model simple: the plan is "my current target allocation."
 
-Supported scopes should include:
+### Denominator
 
-- whole household balance sheet
-- whole investment portfolio
-- one pot
-- one account
-- one custom group of accounts
-- one parent sleeve inside a plan
+The implicit root is `Total Assets`.
+
+V1 denominator rules:
+
+- include all assets by default
+- exclude liabilities entirely
+- allow users to exclude specific assets from the plan
+- compute all percentages from included assets only
+- show excluded assets separately with value
+
+Liabilities stay in net worth features, not target allocation.
+
+Exclusion has highest precedence. If an asset is excluded from the plan, it
+never contributes to target allocation current value, even if an account default
+or holding override would otherwise place it in the tree.
+
+### Flexible Tree
+
+The tree is like folders and files:
+
+- folders can contain folders and asset leaves
+- asset leaves cannot contain children
+- folders and asset leaves can sit side by side
+- top-level folders may use a Pot 1-4 template, but the UI should use generic
+  language such as "folder"
+
+The database should not hardcode levels such as Pot, Category, Sleeve, and
+Sub-sleeve. It should store parent/child relationships.
+
+### Node And Display Row Types
+
+V1 needs two stored node types and two virtual display rows:
+
+1. **Folder node**
+   - user-created
+   - can have children
+   - can have a local plan percentage or blank plan
+   - has editable name, color, and icon/symbol
+
+2. **Asset node**
+   - user-created
+   - leaf only
+   - references an asset identity, or a cash identity
+   - can have a local plan percentage or blank plan
+   - inherits parent folder color
+   - text-only in V1, no custom icon/color
+
+3. **Other row**
+   - system-created and virtual
+   - not directly editable
+   - always gray
+   - uses a fixed ellipsis icon
+   - displays `auto X%` when it has an automatic plan percentage
+
+4. **Untargeted row**
+   - system-created and virtual
+   - not directly editable
+   - current-only
+   - appears when current assets belong to a parent but no planned child or
+     `Other` slot can contain them
+   - no plan percentage, drift, or status
+
+### Assets, Cash, And Alternative Assets
+
+Asset node identity rules:
+
+- traded asset leaves aggregate matching positions of the same asset identity
+  within the same folder scope
+- cash leaves aggregate by currency within the same folder scope
+- attribution for cash remains per account-currency cash holding
+- alternative assets are unique asset leaves
+- users can add target asset leaves for assets not currently held
 
 Example:
 
 ```text
-Pot 3
-  equities: 92%
-    A-share: 35%
-      CSI300: 40%
-      CSI500: 20%
-      dividend: 6%
-      bank: 10%
-      semiconductors: 6%
-      healthcare: 6%
-      defense/aerospace/aviation chain: 6%
-      toy sleeve: 6%
-    US: 25%
-    HK: 20%
-    Other: 20%
-  alternatives: 8%
-    CTA: 3%
-    BTC ETF: 3%
-    Gold: 2%
+HK Core
+  2800.HK        plan 60.0%, current from all 2800.HK positions attributed to HK Core
+  HKD Cash       plan blank, current from all HKD cash attributed to HK Core
+  Other          auto 40.0%
 ```
 
-The UI must always show the denominator plainly:
+If `2800.HK` is held in three accounts but only two positions are attributed to
+`HK Core`, the `HK Core > 2800.HK` row includes only those two positions.
 
-- "% of total balance sheet"
-- "% of Pot 3"
-- "% of Pot 3 equities"
-- "% of A-share sleeve"
+The same asset may appear under different folders. It may appear only once under
+the same parent folder.
 
-This prevents a common confusion: a sleeve can be 6% of A-share, but only around 1.9% of Pot 3.
+## Attribution Model
 
-### Allocation Node
+### Attribution Is Per Holding
 
-Each target is a node in a tree.
+The real attribution target is an account-specific holding/position.
 
-Each node should have:
+This matters because the same asset can exist in multiple accounts and serve
+different purposes. For example, `2800.HK` in Account A can belong to `Pot 2`,
+while `2800.HK` in Account B can belong to `Pot 3 > HK Core`.
 
-- name
-- target percent
-- optional min / max band
-- parent node
-- classification rule or manual holdings mapping
-- current value
-- current percent
-- target value
-- drift amount
-- drift percentage points
-- status
-
-Status should be simple:
-
-- `underweight`
-- `in range`
-- `overweight`
-- `unclassified`
-
-### Bands
-
-Targets should support bands. Bands are the difference between "watch" and "act".
-
-Minimum version:
-
-- default absolute band, e.g. `+/- 5 percentage points` at top-level buckets
-- tighter band for large core buckets
-- looser band for small satellites
-
-Later versions can support:
-
-- relative bands, e.g. `+/- 20% of target weight`
-- asymmetric bands
-- volatility-aware bands
-
-The first version does not need to optimize bands mathematically. It only needs to make drift visible and stop tiny deviations from becoming noise.
-
-### Classification Source
-
-A target node must know what holdings count toward it.
-
-Panorama already has taxonomy-based allocation views, custom groups, goals, and account-level data. The target allocation system should build on those instead of inventing an unrelated classifier.
-
-Possible mapping inputs:
-
-- taxonomy category, e.g. region, sector, asset class, custom group
-- explicit asset ids
-- account ids
-- pot / bucket assignment
-- manual override
-- look-through allocation from fund metadata
-
-Version 1 should allow explicit asset mapping and taxonomy category mapping. Look-through support can be staged if the existing data is incomplete.
-
-## Desired User Experience
-
-### Plan Setup
-
-The user should be able to create a target plan through a tree editor:
-
-- add parent sleeve
-- add child sleeve
-- set target percent
-- set band
-- choose mapping rule
-- see whether siblings sum to 100%
-
-The editor should not require the user to make the entire household plan at once. They should be able to start with one pot or one account and expand later.
-
-### Tracking Dashboard
-
-The dashboard should show a compact tree/table:
+Cash is also position-like:
 
 ```text
-Pot 3                                 100.0% target   100.0% current   in range
-  Equities                             92.0% target    91.4% current   in range
-    HK                                 20.0% target    14.4% current   underweight
-      2800 core                        60.0% target    30.3% current   underweight
-      3033 offense                     20.0% target     8.2% current   underweight
-      biotech                          10.0% target     4.9% current   underweight
-      income/defense                   10.0% target    10.2% current   in range
+Broker A HKD cash
+Broker A USD cash
+Broker B HKD cash
 ```
 
-Rows should support drill-down:
+Each account-currency cash balance can be attributed separately.
 
-- what holdings are counted here
-- which holdings are unmapped
-- how current value was calculated
-- what the target value would be at today's portfolio size
-- how much cash would be needed to reach target
+Implementation should use stable attribution subject keys, not transient
+calculated row IDs. The minimum subject set is:
 
-### Next Contribution Guidance
+- account security position: `account_id + asset_id`
+- account-currency cash balance: `account_id + currency`
+- standalone asset: `asset_id`
 
-Given available cash, Panorama should be able to answer:
+This lets attribution survive normal value changes, position recalculation, a
+holding disappearing after sale, and the same holding returning later.
 
-> If I have 10,000 CNY/HKD/USD to deploy, which sleeves are most underweight?
+### Holdings Are Attributed To Folders
 
-This should be informational, not a command to trade.
+Holdings are attributed to folders only, not directly to asset leaves.
 
-The guidance can rank deficits:
+Asset leaves are target definitions inside a folder. They automatically match
+holdings by identity within that folder's scope.
 
-1. Largest underweight by currency-compatible sleeve.
-2. Largest underweight by absolute target value gap.
-3. Largest underweight by drift percentage points.
+Example:
 
-Currency matters. If the user has HKD cash, the system should prefer HK sleeves before suggesting unnecessary FX conversion. If the user has CNY cash, it should prefer A-share sleeves. If the user has USD cash, it should prefer US / Other sleeves.
+```text
+HK Core
+  2800.HK   plan 60.0%
+  Other     auto 40.0%
+```
 
-### Rebalance Review
+If a `2800.HK` position is attributed to `HK Core`, it appears under the
+`2800.HK` asset leaf. Other holdings attributed to `HK Core` appear under
+`Other` unless they match another explicit child target.
 
-A rebalance review should show:
+### Account Defaults
 
-- overweight nodes
-- underweight nodes
-- suggested "use new cash first" opportunities
-- optional trim candidates only when a node is materially outside band
-- expected post-action allocation if the user enters hypothetical trades
+Account attribution is a persistent shortcut.
 
-This is not an auto-trading feature.
+If Account A has default target folder `Pot 3`:
 
-Panorama should never place trades. It should help the user see tradeoffs before they act.
+- current holdings without explicit overrides in Account A inherit `Pot 3`
+- future holdings in Account A inherit `Pot 3`
+- explicit holding overrides remain where the user placed them
+- changing Account A's default moves inherited holdings to the new folder
+- changing Account A's default does not move explicit overrides
 
-## MVP Scope
+The Account Edit modal should expose a `Default target folder` selector only
+when a target allocation plan exists.
 
-Version 1 should focus on visibility and manual discipline.
+### Holding Overrides
 
-In scope:
+Specific holding attribution overrides account default attribution.
 
-- create / edit target allocation plan
-- tree of allocation nodes
-- target percentages and bands
-- explicit asset mapping
-- taxonomy category mapping
-- current versus target calculation
-- underweight / in-range / overweight statuses
-- drill-down to counted holdings
-- unmapped holdings list
-- dashboard for one active plan
+When the user assigns one position of an asset, Panorama can ask whether to
+apply the same attribution to other current positions of the same asset. This is
+a one-time bulk action only.
 
-Out of scope for version 1:
+V1 does not create a remembered global rule such as "all future 2800.HK belongs
+to HK Core."
 
-- automatic trading
-- tax-lot optimization
-- transaction-cost optimizer
-- automatic target optimization
-- Monte Carlo planning
-- full look-through for every fund type
-- AI-generated investment advice
+### Manual Only In V1
 
-## Relationship To Existing Panorama Concepts
+V1 attribution is manual, plus account defaults and one-time same-asset apply.
 
-### Goals
+V1 does not include:
 
-Existing goals answer: "How much money do I need for this objective?"
+- taxonomy smart folders
+- taxonomy bulk helpers
+- automatic region/sector/category routing
+- look-through split assignment
 
-Target allocations answer: "How should this pool of money be structured?"
+This keeps behavior predictable. Taxonomies can be used later as smart-folder
+rules or bulk helpers.
 
-They are adjacent but not the same. A goal may use an allocation plan, but an allocation plan should not be implemented as a financial goal.
+## Target Percentages
 
-### Taxonomies
+### Local Percentages
 
-Taxonomies already classify holdings. Target plans should use taxonomy categories as one mapping source.
+Users enter local percentages only.
 
-However, taxonomies alone are not enough. A user may want a sleeve like "HK income line" that maps to a hand-picked basket of H-share banks. That requires explicit asset mapping or a custom group.
+Example:
 
-### Buckets / Pots
+```text
+Total Assets
+  Pot 3       plan 60.0% of Total Assets
+    HK Core   plan 20.0% of Pot 3
+      2800.HK plan 60.0% of HK Core
+```
 
-Pots are high-level policy containers.
+Effective total-assets percentage is calculated and shown in tooltip, not edited
+directly.
 
-Target allocations should work inside pots and across pots. The same engine should support:
+### Precision
 
-- Pot 1 / Pot 2 / Pot 3 / Pot 4
-- Pot 3 geography targets
-- A-share internal sleeves
-- HK internal sleeves
-- alternatives sleeves
+Target percentages allow one decimal place.
 
-### Portfolio Allocation Views
+### Blank Plan Values
 
-Existing allocation charts show current exposure. Target allocation adds the missing comparison layer.
+Plan percentage is optional.
 
-The key new object is not "allocation"; it is "desired allocation versus current allocation."
+If a node has blank plan:
+
+- current percentage is still displayed
+- plan is blank
+- no drift is calculated
+- no status is shown
+- it can be used as current-only organization
+
+When editing a blank asset target, the input should prefill with current local
+percentage as a starting point. The value is not saved unless the user saves it.
+
+User-edited plan percentages persist and never change automatically when prices
+move or new assets are attributed.
+
+### Parent Requirement
+
+A node can have explicit target children only if that node itself has a plan
+percentage, except for the implicit root.
+
+Valid:
+
+```text
+Total Assets
+  Pot 3 plan 60.0%
+    HK Core plan 20.0%
+      2800.HK plan 60.0%
+```
+
+Invalid:
+
+```text
+Total Assets
+  Pot 3 plan 60.0%
+    HK Core plan blank
+      2800.HK plan 60.0%
+```
+
+Blank-plan folders may still have blank-plan children and attributed holdings.
+They are current-only organization nodes.
+
+If a folder's plan percentage is cleared, descendant plan percentages must also
+be cleared. If many targets would be affected, show confirmation.
+
+### Sibling Sum Rules
+
+Explicit child targets may total less than or equal to 100%.
+
+They may never exceed 100%. Save is blocked if siblings exceed 100%.
+
+The editor may offer a `Normalize to 100%` helper that scales sibling targets
+down proportionally inside the draft and shows a toast. It must not auto-save.
+
+There is no V1 helper to split remaining percentage across blank children.
+
+## Other
+
+`Other` replaces the earlier "Residual" concept in UI language.
+
+`Other` is automatic and never directly editable. It exists only when explicit
+child targets total less than 100%. Its target is:
+
+```text
+Other target % = 100% - sum(explicit child target %)
+```
+
+`Other` appears when:
+
+- a parent has at least one explicit child target
+- explicit child targets total less than 100%
+
+`Other` is the plan's deliberate leftover capacity. It can contain blank-plan
+children and current holdings that belong to the parent but do not match an
+explicit planned child.
+
+Clean distinction:
+
+- explicitly attributed holding: belongs to a specific folder
+- child target match: shown under the matching child folder/asset
+- unmatched current value with leftover planned capacity: shown under `Other`
+- unmatched current value with no leftover planned capacity: shown under
+  `Untargeted`
+
+`Other` participates in target/current/status math like a normal planned row,
+but its plan label should be marked automatic, e.g. `auto 40.0%`.
+
+Blank-plan child nodes appear under `Other` in the dashboard when their parent
+has explicit target children and leftover planned capacity. If explicit child
+targets total 100%, blank-plan child nodes appear under `Untargeted` instead.
+The editor can keep them in place and label their Plan cell as `Other` or
+`Untargeted` to make the dashboard behavior clear.
+
+Nested current-only structure should be preserved under `Other`.
+
+Example:
+
+```text
+HK Core plan 20.0%
+  2800.HK plan 60.0%
+  Dividend folder plan blank
+    Bank A plan blank
+    Bank B plan blank
+  Other auto 40.0%
+```
+
+Dashboard:
+
+```text
+HK Core
+  2800.HK
+  Other
+    Dividend folder
+      Bank A
+      Bank B
+```
+
+## Untargeted
+
+`Untargeted` is separate from `Other`.
+
+`Untargeted` appears when current value belongs under a parent but is not
+represented by any stored child node or planned child target, and there is no
+`Other` slot for it. The most common case is a parent whose explicit child
+targets already total 100%.
+
+`Untargeted` has:
+
+- current value
+- current percentage
+- no plan percentage
+- no drift
+- no status
+
+Example:
+
+```text
+HK Core plan 100.0%
+  2800.HK plan 60.0%
+  3033.HK plan 40.0%
+```
+
+If `1211.HK` is attributed to `HK Core`, the dashboard shows:
+
+```text
+HK Core
+  2800.HK
+  3033.HK
+  Untargeted
+    1211.HK
+```
+
+This means `1211.HK` belongs under `HK Core` today, but the plan has no target
+slot for it yet.
 
 ## Calculation Rules
 
 ### Current Value
 
-Each node's current value is the sum of mapped holdings, converted to the plan base currency.
+Root current value is total included assets.
 
-If the node has children, default current value should be the sum of child nodes unless the node has its own direct mapping.
+Folder current value is the sum of all current holdings attributed to that
+folder or any descendant folder.
 
-If a holding maps to multiple children, the system must know the weight split. This is necessary for fund look-through and blended assets.
+Asset node current value is the sum of matching attributed positions inside the
+parent folder scope.
+
+Other current value is unmatched current value inside the parent scope, but only
+when the parent has leftover planned capacity.
+
+Untargeted current value is unmatched current value inside the parent scope when
+no `Other` slot exists for that parent.
+
+All current values should be converted to the user's base currency for math.
+
+### Current Percentage
+
+Root-level current percentage:
+
+```text
+node_current_value / total_included_assets
+```
+
+Nested current percentage:
+
+```text
+node_current_value / parent_current_value
+```
+
+If parent current value is zero, child current percentages display as `0%`.
 
 ### Target Value
 
-Target value is:
+Root-level target value:
 
 ```text
-plan_scope_current_value * target_percent
+total_included_assets * node_target_percent
 ```
 
-For nested nodes:
+Nested target value:
 
 ```text
-parent_target_value * child_target_percent
+parent_target_value * node_target_percent
 ```
 
-The UI should show both local and effective percentages when helpful:
+`Other` target value uses the automatic leftover target percentage.
 
-```text
-Defense/Aerospace = 6% of A-share = 1.932% of Pot 3
-```
+`Untargeted` has no target value.
 
 ### Drift
 
-Drift should be shown in both money and percentage points:
+For nodes with a plan percentage:
 
 ```text
 value_gap = current_value - target_value
 percentage_point_gap = current_percent - target_percent
 ```
 
-For actionability, underweight should be shown as "needs X to target" rather than negative numbers everywhere.
+For nodes without a plan percentage:
 
-### Unknowns
+- no target value
+- no drift
+- no status
 
-Unmapped holdings should be visible. Silent omission is dangerous.
+Main table uses local percentages. Tooltip may show:
 
-A plan should show:
+- local current/plan percentages
+- effective total-assets current/plan percentages
+- current/target money values
+- included holdings/account breakdown
 
-- mapped value
-- unmapped value
-- percentage of scope that is unmapped
+## Status
 
-If unmapped value is material, the dashboard should warn that allocation accuracy is incomplete.
+V1 uses global thresholds only, based on local percentage-point drift from
+target.
 
-## UI Principles
+| Symbol | Meaning               | Threshold        |
+| ------ | --------------------- | ---------------- |
+| `---`  | far below target      | less than -20 pp |
+| `--`   | below target          | -20 to -10 pp    |
+| `-`    | slightly below target | -10 to -5 pp     |
+| `~`    | in range              | within +/- 5 pp  |
+| `+`    | slightly above target | +5 to +10 pp     |
+| `++`   | above target          | +10 to +20 pp    |
+| `+++`  | far above target      | over +20 pp      |
 
-The feature should feel like a control panel, not a spreadsheet.
+Status color is separate from node color:
 
-Preferred UI elements:
+- below target: red-ish
+- in range: blue/neutral
+- above target: green-ish
 
-- tree table for hierarchy
-- progress bars for current versus target
-- status chips for underweight / in range / overweight
-- small drift badges
-- drill-down drawer for holdings
-- setup wizard only for first plan creation
+Use restrained colors and avoid success/error wording. Above target is not
+necessarily good, and below target is not necessarily bad. Do not rely on color
+alone. Always show the symbol.
 
-Avoid:
+## Dashboard UX
 
-- giant pie charts as the main view
-- hiding the denominator
-- implying precision when mappings are incomplete
-- presenting suggested trades as orders
-- making every tiny drift look urgent
+### Location
 
-## Example: Household Policy
+Target Allocation should live inside Insights as a peer section/tab alongside
+Holdings, Performance, and Income.
 
-This example is included to make the product intention concrete. It is not hard-coded product behavior.
+### Default View
+
+Normal view is the read-only dashboard. Editing is entered with an Edit button.
+
+No V1 summary strip. The tree is the main experience.
+
+### Main Visual
+
+Use a tree table/list with one compact visual per row.
+
+For planned rows:
+
+- muted plan rail, more like a thick line than a filled bar
+- plan percentage at the end of the plan rail
+- colorful current bar below the rail, thicker than the plan rail
+- current percentage at the end of the current bar
+- status symbol after current percentage
+- plan rails and current bars are drawn directly, without a 100% background
+  track/notch
+
+For blank-plan rows:
+
+- current bar only
+- current percentage
+- no plan rail
+- no status
+
+For `Other`:
+
+- gray visual identity
+- fixed ellipsis icon
+- auto plan label when applicable, e.g. `auto 12.5%`
+
+For `Untargeted`:
+
+- neutral current-only row
+- no plan rail
+- no status symbol
+
+### Tree Depth
+
+Tree depth should be visually obvious without changing the color system.
+
+- labels use structural tree connector lines, not only chevrons and whitespace
+- plan rails and current bars indent by depth with a clear step size
+- deeper rows keep inherited folder color, but their geometry shows hierarchy
+- chevrons remain for expand/collapse, but are not the only tree cue
+
+### Color And Icons
+
+Current bar color comes from the folder color.
+
+Folder color/icon rules:
+
+- folders inherit color/icon from parent unless explicitly overridden
+- folder name, color, and icon are editable
+- provide about 7-8 restrained selectable colors
+- provide a small set of selectable folder symbols/icons
+
+Asset leaves:
+
+- inherit parent folder color
+- no editable color in V1
+- no icon in V1
+- text-only
+
+`Other`:
+
+- always gray
+- fixed ellipsis icon
+
+### Search
+
+Dashboard includes search/filter by:
+
+- folder name
+- asset name/symbol
+- account name in breakdowns
+
+Search results preserve tree context. Searching `2800` should show matching rows
+with ancestors rather than a flat orphan list.
+
+### Expansion
+
+Tree expand/collapse is supported and remembered locally.
+
+V1 expected size is under 50 rows, so row virtualization is not required.
+
+### Tooltips And Popovers
+
+V1 uses rich tooltips/popovers instead of a row detail drawer.
+
+Tooltips/popovers can show:
+
+- local current/plan percentages
+- effective total-assets current/plan percentages
+- current/target money values
+- compact holdings/account breakdown
+
+If a breakdown is too large, show a compact preview. Do not add a full detail
+drawer in V1.
+
+These details must be reachable by click/tap/focus, not hover only, so mobile
+and keyboard users can inspect the same information.
+
+### Mobile
+
+Mobile supports dashboard/read-only mode.
+
+Mobile uses a responsive tree list with simplified columns, not a horizontal
+scroll table.
+
+Full editing is desktop/tablet only in V1.
+
+## Edit Mode
+
+### Draft Editing
+
+Edit mode is an inline tree editor with draft Save/Cancel.
+
+Changes do not affect the saved dashboard until Save.
+
+Save is blocked if:
+
+- sibling explicit target percentages exceed 100%
+- duplicate sibling folder names exist
+- duplicate asset leaves exist under the same parent
+- a node has explicit target children while its own plan is blank, except root
+
+There is no explicit undo/redo in V1. Save/Cancel is the safety model.
+
+### Editor Columns
+
+Edit mode should clearly separate:
+
+- Current %
+- Plan %
+
+Blank Plan values must look different from user-set Plan values.
+
+For blank-plan nodes that would appear under `Other` or `Untargeted` in
+dashboard, show a simple `Other` or `Untargeted` label in the Plan area.
+
+When the user starts editing a blank Plan value:
+
+- asset target inputs prefill with current local percentage when available
+- folders start blank, because folder targets are policy choices
+
+### Adding Nodes
+
+First-time setup offers:
+
+1. Blank plan.
+2. Pot 1-4 starter template.
+
+The Pot 1-4 template creates folders only, with no target percentages.
+
+Asset target leaves can reference assets that are not currently held. If an
+asset target has no current holding, show `not held` while calculating current
+as 0%.
+
+Not-held asset targets must still reference a stable asset identity. The UI
+should select from an existing asset record or create/link a zero-holding asset
+record; it should not store target leaves as loose text labels.
+
+### Attribution Editing
+
+Attribution/mapping is edited in the same tree.
+
+V1 supports:
+
+- "Add holdings" picker with search and checkboxes
+- drag-and-drop holding assignment into folders
+- drag-and-drop tree node move/reorder
+
+The picker is the reliable accessible path. Drag-and-drop is a convenience.
+Drag-and-drop must not be required to complete any V1 workflow.
+
+### Keyboard
+
+Basic editing shortcuts:
+
+- Enter to edit selected cell/node
+- Escape to cancel cell edit
+- Delete to delete selected node
+- Tab / Shift+Tab for standard navigation
+
+## Tree Mutation Rules
+
+### Deleting Folders
+
+Deleting a folder moves its attributed accounts/holdings to the deleted folder's
+parent.
+
+If a root-level folder is deleted, those attributions become unmatched at root.
+They display under root `Other` if root has leftover planned capacity; otherwise
+they display under root `Untargeted`.
+
+### Moving Folders
+
+Moving a folder carries:
+
+- child nodes
+- attributed holdings
+- attributed account defaults
+
+If the moved folder has a Plan %:
+
+- preserve it if new siblings still total <= 100%
+- otherwise clear the moved folder's Plan %
+- if the moved folder's Plan % is cleared, descendant Plan % values are also
+  cleared
+- show confirmation if many descendant targets would be cleared
+
+### Moving Asset Leaves
+
+Moving an asset target leaf preserves its Plan % if new siblings still total <=
+100%. Otherwise, clear its Plan % in draft.
+
+### Deleting Asset Leaves
+
+Deleting an asset leaf removes only the target definition.
+
+Matching holdings stay attributed to the parent folder. They fall into `Other`
+if the parent has leftover planned capacity; otherwise they fall into
+`Untargeted`.
+
+### Duplicates
+
+Folder names must be unique among siblings only. They do not need to be unique
+globally.
+
+Asset leaves must be unique by identity under the same parent. The same asset
+may appear under different folders.
+
+## Relationship To Existing Panorama Concepts
+
+### Accounts
+
+Accounts are containers and shortcut defaults, not allocation targets.
+
+The user may have multiple securities accounts and mixed-risk holdings inside
+one account. The allocation plan should not assume account equals policy bucket.
+
+### Goals
+
+Goals answer: "How much money do I need for this objective?"
+
+Target allocations answer: "How should this pool of assets be structured?"
+
+They are adjacent but should remain separate in V1.
+
+### Taxonomies
+
+Taxonomies already classify holdings and may power future smart folders or bulk
+helpers.
+
+V1 target allocation attribution is manual only. Do not depend on taxonomy rules
+for V1 behavior.
+
+### Portfolio Allocation Views
+
+Existing allocation charts show current exposure.
+
+Target allocation adds the missing comparison layer: desired structure versus
+current structure.
+
+### Net Worth
+
+Target allocation uses included assets only. It excludes liabilities and any
+user-excluded assets.
+
+Net worth remains the broader balance sheet feature.
+
+## External Read Access
+
+V1 should expose read-only commands/types for future add-ons and AI tools.
+
+Read-only access should include:
+
+- aggregate target-vs-current tree
+- drill-down holding/account breakdowns
+
+V1 does not expose external write APIs for target allocation.
+
+There is no V1 JSON import/export for target plans.
+
+## Sync, Backup, And Local-First
+
+Target allocation data is local app data and should be stored in SQLite.
+
+It should be included in normal backup and device-sync paths. If sync requires
+explicit table registration, the implementation plan must include it.
+
+The feature must not depend on cloud services.
+
+## Testing Expectations
+
+V1 should include:
+
+- calculation tests for nested local/effective percentages
+- tests for `Other` target/current math
+- tests for `Untargeted` current-only rows
+- tests for blank-plan nodes
+- tests for exclusion precedence
+- tests for account-default inheritance versus explicit overrides
+- tests for same-asset aggregation within a folder scope
+- tests for move/delete clearing rules
+- key UI tests for dashboard rendering
+- key UI tests for edit/save validation
+
+Broad mobile editing tests are not needed because mobile editing is out of
+scope.
+
+## Example
+
+This example is illustrative, not hard-coded behavior.
 
 ```text
-Household Balance Sheet
-  Pot 1: living and operating cash
-  Pot 2: steady assets
-  Pot 3: long-term growth
-    Equities: 92%
-      A-share: 35%
-        CSI300: 40%
-        CSI500: 20%
-        Dividend: 6%
-        Bank: 10%
-        Semiconductors: 6%
-        Healthcare: 6%
-        Defense/Aerospace/Aviation Chain: 6%
-        Toy Sleeve: 6%
-      US: 25%
-      HK: 20%
-        2800 core: 60%
-        3033 offense: 20%
-        3069/9069 biotech: 10%
-        income/defense: 10%
-      Other: 20%
-    Alternatives: 8%
-      CTA: 3%
-      BTC ETF: 3%
-      Gold: 2%
-  Pot 4: insurance / long-horizon protection layer
+Total Assets
+  Pot 3 plan 60.0%
+    Equities plan 92.0%
+      A-share plan 35.0%
+        CSI300 plan 40.0%
+        CSI500 plan 20.0%
+        Dividend plan 6.0%
+        Bank plan 10.0%
+        Semiconductors plan 6.0%
+        Healthcare plan 6.0%
+        Defense/Aerospace plan 6.0%
+        Other auto 6.0%
+      US plan 25.0%
+      HK plan 20.0%
+        2800.HK plan 60.0%
+        3033.HK plan 20.0%
+        Biotech plan 10.0%
+        Other auto 10.0%
+      Other auto 20.0%
+    Alternatives plan 8.0%
+      CTA plan 37.5%
+      BTC ETF plan 37.5%
+      Gold plan 25.0%
+  Other auto 40.0%
+    Pot 1
+      Cash
+    Pot 2
+      Steady assets
+    Pot 4
 ```
 
-This is exactly the kind of structure the feature should make easy to define, review, and adjust.
+Notes on the example:
+
+- Pot folders without Plan % are current-only organization until the user sets a
+  target.
+- `Other` appears only where planned children leave room below 100%.
+- `Untargeted` appears when current holdings have no matching planned child and
+  no `Other` room.
+- Asset rows such as `2800.HK` aggregate matching positions attributed inside
+  their parent folder scope.
+- The user can keep much of the tree blank and only target the parts they care
+  about.
 
 ## Success Criteria
 
-The feature succeeds if a user can open Panorama and answer these questions in less than one minute:
+The feature succeeds if the user can open Panorama and answer these questions in
+less than one minute:
 
 - What is my target allocation?
 - What is my current allocation?
-- Which sleeves are underweight?
-- Which sleeves are overweight?
-- Which holdings are counted in each sleeve?
-- What is unmapped?
-- Where should the next contribution probably go?
-- Am I following my own plan?
+- Which areas are under, in range, or over?
+- Which assets are explicitly targeted?
+- What is sitting in Other?
+- What is Untargeted?
+- Which holdings/accounts make up a row?
+- Which assets are excluded from the allocation plan?
+- Am I following my own plan right now?
 
 The feature fails if:
 
-- users still need an external Markdown file or spreadsheet to know their targets
-- percentages are shown without denominators
-- look-through gaps are hidden
-- the UI encourages over-trading
-- the system cannot explain how a sleeve value was calculated
+- users still need an external Markdown file or spreadsheet to know their
+  targets
+- accounts are treated as the true allocation unit
+- percentages are shown without a clear denominator
+- `Other` double-counts or hides current value
+- `Untargeted` rows are confused with planned `Other`
+- blank-plan nodes look like real targets
+- the UI implies trading advice
+- the system cannot explain how a row value was calculated
 
 ## Implementation Direction For Next Thread
 
-Recommended next step: create a concrete implementation plan with schema and API design.
+Recommended next step: create a concrete implementation plan with schema and API
+design.
 
 Likely implementation areas:
 
-- SQLite migrations for allocation plans and nodes
+- SQLite migrations for target allocation nodes, attribution records, account
+  defaults, exclusions, and saved UI metadata
 - repository/service layer in `crates/core` and `crates/storage-sqlite`
-- frontend commands/adapters
-- target allocation dashboard page
-- plan editor
-- mapping UI for assets and taxonomy categories
-- tests for nested percentage math and unmapped holdings
-
-The implementation should stay local-first and should not depend on cloud services.
+- current-value calculation service using existing holdings/net-worth data
+- frontend commands/adapters for desktop and web
+- read-only external/add-on data types
+- Insights target allocation page
+- inline dashboard/editor component
+- Account Edit modal integration
+- tests for math, attribution, and key UI behavior
+- backup/device-sync table registration if required
 
 ## References Consulted
 
-- Vanguard, "Rebalancing your portfolio": https://investor.vanguard.com/investor-resources-education/portfolio-management/rebalancing-your-portfolio
-- Vanguard, "Balancing act: Enhancing target-date fund efficiency": https://corporate.vanguard.com/content/corporatesite/us/en/corp/articles/balancing-act-enhancing-target-date-fund-efficiency.html
-- CFA Institute, "Overview of Asset Allocation": https://www.cfainstitute.org/insights/professional-learning/refresher-readings/2026/overview-asset-allocation
+- Vanguard, "Rebalancing your portfolio":
+  https://investor.vanguard.com/investor-resources-education/portfolio-management/rebalancing-your-portfolio
+- Vanguard, "Balancing act: Enhancing target-date fund efficiency":
+  https://corporate.vanguard.com/content/corporatesite/us/en/corp/articles/balancing-act-enhancing-target-date-fund-efficiency.html
+- CFA Institute, "Overview of Asset Allocation":
+  https://www.cfainstitute.org/insights/professional-learning/refresher-readings/2026/overview-asset-allocation
