@@ -103,6 +103,9 @@ export * from "../shared/secrets";
 // Connect Commands (Broker + Device Sync + Auth)
 export * from "../shared/connect";
 
+// Webull HK Local Connect Commands
+export * from "../shared/webull-hk";
+
 // AI Providers Commands
 export * from "../shared/ai-providers";
 

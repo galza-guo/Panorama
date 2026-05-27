@@ -44,4 +44,18 @@ describe("settings layout", () => {
     expect(screen.queryByText("Wealthfolio Connect")).not.toBeInTheDocument();
     expect(screen.getAllByText("Market Data").length).toBeGreaterThan(0);
   });
+
+  it("shows Webull HK local connect without enabling Wealthfolio Connect", () => {
+    useSettingsContextMock.mockReturnValue({
+      settings: null,
+    });
+
+    render(
+      <MemoryRouter initialEntries={["/settings"]}>
+        <SettingsLayout />
+      </MemoryRouter>,
+    );
+
+    expect(screen.getAllByText("Webull HK").length).toBeGreaterThan(0);
+  });
 });

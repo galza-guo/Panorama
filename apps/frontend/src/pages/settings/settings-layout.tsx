@@ -73,6 +73,12 @@ const settingsSections = [
     title: "Connections",
     items: [
       {
+        title: "Webull HK",
+        href: "webull-hk",
+        subtitle: "Local account linking",
+        icon: <Icons.Link className="size-5" />,
+      },
+      {
         title: "Wealthfolio Connect",
         href: "connect",
         subtitle: "Broker and device linking",
