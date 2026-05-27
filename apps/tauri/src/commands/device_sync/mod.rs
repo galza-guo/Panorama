@@ -1,7 +1,7 @@
 //! Commands for device sync and E2EE pairing.
 //!
 //! This module provides Tauri commands that wrap the shared device sync client,
-//! handling token/device ID storage via the keyring.
+//! handling token/device ID storage via the app secret store.
 
 mod engine;
 mod snapshot;
@@ -15,8 +15,7 @@ use std::sync::{Arc, Mutex, OnceLock};
 use tauri::{AppHandle, State};
 
 use crate::context::ServiceContext;
-use crate::secret_store::KeyringSecretStore;
-use wealthfolio_core::secrets::SecretStore;
+use crate::secret_store::shared_secret_store;
 use wealthfolio_device_sync::engine as shared_sync_engine;
 use wealthfolio_device_sync::{
     ClaimPairingRequest, ClaimPairingResponse, CommitInitializeKeysRequest,
@@ -56,7 +55,7 @@ pub(crate) struct SyncIdentity {
 fn get_sync_identity_from_store() -> Option<SyncIdentity> {
     const SYNC_IDENTITY_KEY: &str = "sync_identity";
 
-    match KeyringSecretStore.get_secret(SYNC_IDENTITY_KEY) {
+    match shared_secret_store().get_secret(SYNC_IDENTITY_KEY) {
         Ok(Some(json)) => match serde_json::from_str::<SyncIdentity>(&json) {
             Ok(identity) => {
                 if let Some(ref device_id) = identity.device_id {
