@@ -441,8 +441,9 @@ function transformRowToActivity(
   const normalizedSubtype = normalizeSubtype(rawSubtype || "");
 
   // Apply Symbol Mapping BEFORE determining activity type logic
-  if (activity.symbol && mapping.symbolMappings[activity.symbol]) {
-    activity.symbol = mapping.symbolMappings[activity.symbol];
+  if (activity.symbol) {
+    const symbolKey = activity.symbol.trim();
+    activity.symbol = mapping.symbolMappings[symbolKey] || symbolKey;
   }
 
   // 2. Determine Activity Type

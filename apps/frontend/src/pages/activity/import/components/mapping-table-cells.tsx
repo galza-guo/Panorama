@@ -360,18 +360,20 @@ export function MappingCell({
   }
 
   if (field === ImportFormat.SYMBOL) {
+    const symbol = value.trim();
+
     // Skip symbol display when not required (pure cash types, cash symbols)
     const csvType = getMappedValue(row, ImportFormat.ACTIVITY_TYPE)?.trim();
     const appType = csvType ? findMappedActivityType(csvType, mapping.activityMappings) : null;
-    if (appType && (!isSymbolRequired(appType) || isCashSymbol(value))) {
+    if (appType && (!isSymbolRequired(appType) || isCashSymbol(symbol))) {
       return <span className="text-muted-foreground text-xs">-</span>;
     }
 
-    const isInvalid = invalidSymbols.includes(value || ""); // handle empty string case for invalidSymbols check
-    const mappedSymbol = mapping.symbolMappings[value];
+    const isInvalid = invalidSymbols.includes(symbol);
+    const mappedSymbol = mapping.symbolMappings[symbol];
     return (
       <SymbolDisplayCell
-        csvSymbol={value}
+        csvSymbol={symbol}
         mappedSymbol={mappedSymbol}
         isInvalid={isInvalid}
         handleSymbolMapping={handleSymbolMapping}
