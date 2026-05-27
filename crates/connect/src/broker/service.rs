@@ -1578,7 +1578,10 @@ mod tests {
             today,
         ));
         assert!(
-            !BrokerSyncService::should_preserve_manual_snapshot_for_date(Some(&broker_today), today)
+            !BrokerSyncService::should_preserve_manual_snapshot_for_date(
+                Some(&broker_today),
+                today
+            )
         );
         assert!(
             !BrokerSyncService::should_preserve_manual_snapshot_for_date(

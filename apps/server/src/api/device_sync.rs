@@ -19,10 +19,10 @@ use crate::main_lib::AppState;
 use wealthfolio_device_sync::{
     ClaimPairingRequest, ClaimPairingResponse, CommitInitializeKeysRequest,
     CommitInitializeKeysResponse, CommitRotateKeysRequest, CommitRotateKeysResponse,
-    CompletePairingRequest, ConfirmPairingRequest, ConfirmPairingResponse,
-    CreatePairingRequest, CreatePairingResponse, Device, DeviceSyncClient, EnrollDeviceResponse,
-    GetPairingResponse, InitializeKeysResult, PairingMessagesResponse, RegisterDeviceRequest,
-    ResetTeamSyncResponse, RotateKeysResponse, SuccessResponse, SyncIdentity, UpdateDeviceRequest,
+    CompletePairingRequest, ConfirmPairingRequest, ConfirmPairingResponse, CreatePairingRequest,
+    CreatePairingResponse, Device, DeviceSyncClient, EnrollDeviceResponse, GetPairingResponse,
+    InitializeKeysResult, PairingMessagesResponse, RegisterDeviceRequest, ResetTeamSyncResponse,
+    RotateKeysResponse, SuccessResponse, SyncIdentity, UpdateDeviceRequest,
 };
 
 // Storage keys (without prefix - the SecretStore adds "wealthfolio_" prefix)

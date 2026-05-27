@@ -777,14 +777,10 @@ mod tests {
             },
         );
 
-        settings_repo
-            .settings
-            .write()
-            .unwrap()
-            .insert(
-                AI_PROVIDER_SETTINGS_KEY.to_string(),
-                serde_json::to_string(&settings).expect("settings should serialize"),
-            );
+        settings_repo.settings.write().unwrap().insert(
+            AI_PROVIDER_SETTINGS_KEY.to_string(),
+            serde_json::to_string(&settings).expect("settings should serialize"),
+        );
 
         let service = AiProviderService::new(
             settings_repo,

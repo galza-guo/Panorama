@@ -165,7 +165,10 @@ mod tests {
             },
         );
 
-        assert_eq!(runtime.get_flow_pairing_id(&flow_id).as_deref(), Some("pairing-1"));
+        assert_eq!(
+            runtime.get_flow_pairing_id(&flow_id).as_deref(),
+            Some("pairing-1")
+        );
         assert!(matches!(
             runtime.get_flow_phase(&flow_id),
             Some(PairingFlowPhase::Syncing { detail }) if detail == "waiting_snapshot"

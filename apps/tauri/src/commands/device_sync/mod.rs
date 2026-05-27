@@ -21,11 +21,10 @@ use wealthfolio_device_sync::engine as shared_sync_engine;
 use wealthfolio_device_sync::{
     ClaimPairingRequest, ClaimPairingResponse, CommitInitializeKeysRequest,
     CommitInitializeKeysResponse, CommitRotateKeysRequest, CommitRotateKeysResponse,
-    CompletePairingRequest, ConfirmPairingRequest, ConfirmPairingResponse,
-    CreatePairingRequest, CreatePairingResponse, Device, DevicePlatform, DeviceSyncClient,
-    EnrollDeviceResponse, GetPairingResponse, InitializeKeysResult, PairingMessagesResponse,
-    RegisterDeviceRequest, ResetTeamSyncResponse, RotateKeysResponse, SuccessResponse,
-    UpdateDeviceRequest,
+    CompletePairingRequest, ConfirmPairingRequest, ConfirmPairingResponse, CreatePairingRequest,
+    CreatePairingResponse, Device, DevicePlatform, DeviceSyncClient, EnrollDeviceResponse,
+    GetPairingResponse, InitializeKeysResult, PairingMessagesResponse, RegisterDeviceRequest,
+    ResetTeamSyncResponse, RotateKeysResponse, SuccessResponse, UpdateDeviceRequest,
 };
 use wealthfolio_storage_sqlite::sync::SyncTableRowCount;
 
