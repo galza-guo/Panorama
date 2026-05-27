@@ -1404,6 +1404,59 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn test_resolve_calculation_end_date_extends_past_new_york_cutoff() {
+        let now = DateTime::parse_from_rfc3339("2026-04-18T02:00:00Z")
+            .unwrap()
+            .with_timezone(&Utc);
+        let activity_date = NaiveDate::from_ymd_opt(2026, 4, 18).unwrap();
+        let deposit = create_test_activity(
+            "act1",
+            "acc1",
+            Some("CASH:USD"),
+            "DEPOSIT",
+            activity_date,
+            None,
+            None,
+            Some(dec!(1000)),
+            "USD",
+        );
+
+        let calculation_end_date = SnapshotService::resolve_calculation_end_date(now, &[deposit]);
+
+        assert_eq!(
+            calculation_end_date, activity_date,
+            "the latest posted activity date should win when UTC is already on the next day"
+        );
+    }
+
+    #[tokio::test]
+    async fn test_resolve_calculation_end_date_does_not_advance_for_future_activity_dates() {
+        let now = DateTime::parse_from_rfc3339("2026-04-18T02:00:00Z")
+            .unwrap()
+            .with_timezone(&Utc);
+        let future_activity_date = NaiveDate::from_ymd_opt(2026, 4, 19).unwrap();
+        let deposit = create_test_activity(
+            "act1",
+            "acc1",
+            Some("CASH:USD"),
+            "DEPOSIT",
+            future_activity_date,
+            None,
+            None,
+            Some(dec!(1000)),
+            "USD",
+        );
+
+        let calculation_end_date = SnapshotService::resolve_calculation_end_date(now, &[deposit]);
+
+        assert_eq!(
+            calculation_end_date,
+            NaiveDate::from_ymd_opt(2026, 4, 18).unwrap(),
+            "future-dated activities should not push snapshot generation past utc today"
+        );
+    }
+
+    #[tokio::test]
     async fn test_calculate_holdings_snapshots_persists_keyframes() {
         let base = Arc::new(RwLock::new("CAD".to_string()));
 

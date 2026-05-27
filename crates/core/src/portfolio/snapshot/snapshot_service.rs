@@ -13,7 +13,9 @@ use crate::portfolio::performance::{classify_flow_for_scope, FlowType, Performan
 use crate::portfolio::snapshot::{
     AccountStateSnapshot, HoldingsCalculationWarning, Lot, Position, SnapshotSource,
 };
-use crate::utils::time_utils::{get_days_between, valuation_date_today};
+use crate::utils::time_utils::{
+    get_days_between, valuation_date_from_utc, valuation_date_today, DEFAULT_VALUATION_TZ,
+};
 
 use async_trait::async_trait;
 use chrono::{Months, NaiveDate, Utc};
@@ -157,6 +159,24 @@ impl SnapshotService {
                 asset_ids,
             });
         }
+    }
+
+    pub(crate) fn resolve_calculation_end_date(
+        now: chrono::DateTime<Utc>,
+        activities: &[Activity],
+    ) -> NaiveDate {
+        let valuation_cutoff = valuation_date_from_utc(now, DEFAULT_VALUATION_TZ);
+        let utc_today = now.date_naive();
+
+        activities
+            .iter()
+            .filter(|activity| activity.is_posted())
+            .map(Activity::effective_date)
+            .max()
+            // Let same-day transactions appear immediately even when New York is still on
+            // the previous date, without advancing snapshots for genuinely future-dated entries.
+            .map(|latest_activity_date| latest_activity_date.min(utc_today).max(valuation_cutoff))
+            .unwrap_or(valuation_cutoff)
     }
 
     // Create a virtual account object for TOTAL
@@ -375,7 +395,7 @@ impl SnapshotService {
             .min()
             .unwrap_or_else(valuation_date_today);
 
-        let calculation_end_date = valuation_date_today();
+        let calculation_end_date = Self::resolve_calculation_end_date(Utc::now(), &all_activities);
 
         Ok((
             accounts_to_process,
