@@ -25,8 +25,9 @@ use super::sync_state::{QuoteSyncState, SymbolSyncPlan, SyncMode, SyncStateStore
 use super::types::{quote_id, AssetId, Day, QuoteSource};
 use crate::activities::ActivityRepositoryTrait;
 use crate::assets::{
-    canonicalize_market_identity, default_market_data_provider_id, Asset, AssetKind,
-    AssetRepositoryTrait, InstrumentType, ProviderProfile, QuoteMode,
+    canonicalize_market_identity, default_market_data_provider_id, market_identity_key,
+    normalize_market_symbol_for_provider, Asset, AssetKind, AssetRepositoryTrait, InstrumentType,
+    ProviderProfile, QuoteMode,
 };
 use crate::errors::Result;
 use crate::fx::currency::{get_normalization_rule, normalize_currency_code};
@@ -87,6 +88,151 @@ fn reconcile_quote_currency(quote: &mut Quote, asset: &Asset) {
     if let Some(effective) = resolve_effective_quote_currency(&asset.quote_ccy, &quote.currency) {
         quote.currency = effective;
     }
+}
+
+fn instrument_type_from_search_result(result: &SymbolSearchResult) -> InstrumentType {
+    let quote_type = result.quote_type.trim().to_uppercase();
+    if quote_type.contains("CRYPTO") {
+        InstrumentType::Crypto
+    } else if quote_type == "FOREX" || quote_type == "FX" {
+        InstrumentType::Fx
+    } else if quote_type == "COMMODITY" || quote_type == "METAL" {
+        InstrumentType::Metal
+    } else {
+        InstrumentType::Equity
+    }
+}
+
+fn search_result_identity_key(result: &SymbolSearchResult) -> Option<String> {
+    let provider = result.data_source.as_deref();
+    let instrument_type = instrument_type_from_search_result(result);
+    let normalized_symbol =
+        normalize_market_symbol_for_provider(Some(result.symbol.as_str()), provider);
+    let canonical = canonicalize_market_identity(
+        Some(instrument_type.clone()),
+        normalized_symbol.as_deref(),
+        result.exchange_mic.as_deref(),
+        result.currency.as_deref(),
+    );
+
+    market_identity_key(
+        Some(&instrument_type),
+        canonical.instrument_symbol.as_deref(),
+        canonical.instrument_exchange_mic.as_deref(),
+        canonical
+            .quote_ccy
+            .as_deref()
+            .or(result.currency.as_deref()),
+        provider,
+    )
+}
+
+fn normalized_search_name(result: &SymbolSearchResult) -> Option<String> {
+    let name = if result.long_name.trim().is_empty() {
+        result.short_name.trim()
+    } else {
+        result.long_name.trim()
+    };
+
+    if name.is_empty() {
+        None
+    } else {
+        Some(name.to_lowercase())
+    }
+}
+
+fn six_digit_code_from_search_symbol(symbol: &str) -> Option<String> {
+    let normalized = symbol.trim().to_uppercase();
+    let code = normalized.strip_suffix(".FUND").unwrap_or(&normalized);
+    if code.len() == 6 && code.chars().all(|ch| ch.is_ascii_digit()) {
+        Some(code.to_string())
+    } else {
+        None
+    }
+}
+
+fn is_china_code_search_result(result: &SymbolSearchResult) -> bool {
+    result
+        .currency
+        .as_deref()
+        .is_some_and(|currency| currency.eq_ignore_ascii_case("CNY"))
+        || result
+            .data_source
+            .as_deref()
+            .is_some_and(|source| matches!(source, "TIANTIAN_FUND" | "EASTMONEY_CN"))
+        || result.symbol.to_uppercase().ends_with(".FUND")
+}
+
+fn search_result_alias_key(result: &SymbolSearchResult) -> Option<String> {
+    if !is_china_code_search_result(result) {
+        return None;
+    }
+
+    let code = six_digit_code_from_search_symbol(&result.symbol)?;
+    let name = normalized_search_name(result)?;
+    Some(format!("CN_CODE:{code}:{name}"))
+}
+
+fn is_tiantian_fund_search_result(result: &SymbolSearchResult) -> bool {
+    result.symbol.to_uppercase().ends_with(".FUND")
+        || result
+            .data_source
+            .as_deref()
+            .is_some_and(|source| source == "TIANTIAN_FUND")
+}
+
+fn has_canonical_market_hint(result: &SymbolSearchResult) -> bool {
+    result.symbol.to_uppercase().ends_with(".FUND") || result.exchange_mic.is_some()
+}
+
+fn should_replace_search_result(
+    current: &SymbolSearchResult,
+    candidate: &SymbolSearchResult,
+) -> bool {
+    let current_is_fund = is_tiantian_fund_search_result(current);
+    let candidate_is_fund = is_tiantian_fund_search_result(candidate);
+    if current_is_fund != candidate_is_fund {
+        return candidate_is_fund;
+    }
+
+    if current.is_existing != candidate.is_existing {
+        return candidate.is_existing;
+    }
+
+    let current_has_hint = has_canonical_market_hint(current);
+    let candidate_has_hint = has_canonical_market_hint(candidate);
+    if current_has_hint != candidate_has_hint {
+        return candidate_has_hint;
+    }
+
+    candidate.score > current.score
+}
+
+fn dedupe_symbol_search_results(results: Vec<SymbolSearchResult>) -> Vec<SymbolSearchResult> {
+    let mut by_key: HashMap<String, SymbolSearchResult> = HashMap::new();
+    let mut passthrough = Vec::new();
+
+    for result in results {
+        let key = search_result_alias_key(&result).or_else(|| search_result_identity_key(&result));
+        let Some(key) = key else {
+            passthrough.push(result);
+            continue;
+        };
+
+        match by_key.get_mut(&key) {
+            Some(current) if should_replace_search_result(current, &result) => {
+                *current = result;
+            }
+            Some(_) => {}
+            None => {
+                by_key.insert(key, result);
+            }
+        }
+    }
+
+    let mut deduped = by_key.into_values().collect::<Vec<_>>();
+    deduped.extend(passthrough);
+    deduped
 }
 
 /// Latest quote payload enriched with backend freshness computation.
@@ -835,27 +981,13 @@ where
             .map(|asset| Self::asset_to_quote_summary(asset))
             .collect();
 
-        // 4. Build a set of existing (symbol, exchange_mic) pairs for deduplication
-        let existing_keys: HashSet<(String, Option<String>)> = existing_summaries
-            .iter()
-            .map(|s| (s.symbol.clone(), s.exchange_mic.clone()))
-            .collect();
-
-        // 5. Filter provider results to exclude duplicates
-        let new_provider_results: Vec<SymbolSearchResult> = provider_results
-            .into_iter()
-            .filter(|r| {
-                // Check if this symbol+exchange combo already exists
-                !existing_keys.contains(&(r.symbol.clone(), r.exchange_mic.clone()))
-            })
-            .collect();
-
-        // 6. Merge existing assets first, then provider results
-        let mut merged = Vec::with_capacity(existing_summaries.len() + new_provider_results.len());
+        // 4. Merge existing assets first, then provider results.
+        let mut merged = Vec::with_capacity(existing_summaries.len() + provider_results.len());
         merged.extend(existing_summaries);
-        merged.extend(new_provider_results);
+        merged.extend(provider_results);
+        let mut merged = dedupe_symbol_search_results(merged);
 
-        // 7. Sort results: existing first, then by exchange relevance (if currency), then by score
+        // 5. Sort results: existing first, then by exchange relevance (if currency), then by score
         let preferred_exchanges = account_currency
             .map(exchanges_for_currency)
             .unwrap_or_default();
@@ -1765,5 +1897,66 @@ mod tests {
 
         reconcile_quote_currency(&mut quote, &asset);
         assert_eq!(quote.currency, "GBp");
+    }
+
+    fn symbol_search_result(
+        symbol: &str,
+        name: &str,
+        exchange_mic: Option<&str>,
+        data_source: &str,
+        is_existing: bool,
+    ) -> SymbolSearchResult {
+        SymbolSearchResult {
+            symbol: symbol.to_string(),
+            short_name: name.to_string(),
+            long_name: name.to_string(),
+            exchange: String::new(),
+            exchange_mic: exchange_mic.map(str::to_string),
+            exchange_name: None,
+            quote_type: "EQUITY".to_string(),
+            type_display: "EQUITY".to_string(),
+            currency: Some("CNY".to_string()),
+            currency_source: Some("provider".to_string()),
+            data_source: Some(data_source.to_string()),
+            is_existing,
+            existing_asset_id: is_existing.then(|| format!("asset-{symbol}")),
+            index: String::new(),
+            score: if is_existing { 100.0 } else { 12000.0 },
+        }
+    }
+
+    #[test]
+    fn test_search_result_identity_key_normalizes_tiantian_fund_symbol() {
+        let result = symbol_search_result(
+            "001594.FUND",
+            "天弘中证银行ETF联接A",
+            None,
+            "TIANTIAN_FUND",
+            false,
+        );
+
+        assert_eq!(
+            search_result_identity_key(&result).as_deref(),
+            Some("FUND:CN:001594")
+        );
+    }
+
+    #[test]
+    fn test_dedupe_search_results_prefers_canonical_tiantian_fund_alias() {
+        let legacy_existing =
+            symbol_search_result("001594", "天弘中证银行ETF联接A", None, "YAHOO", true);
+        let canonical_provider = symbol_search_result(
+            "001594.FUND",
+            "天弘中证银行ETF联接A",
+            None,
+            "TIANTIAN_FUND",
+            false,
+        );
+
+        let results = dedupe_symbol_search_results(vec![legacy_existing, canonical_provider]);
+
+        assert_eq!(results.len(), 1);
+        assert_eq!(results[0].symbol, "001594.FUND");
+        assert_eq!(results[0].data_source.as_deref(), Some("TIANTIAN_FUND"));
     }
 }

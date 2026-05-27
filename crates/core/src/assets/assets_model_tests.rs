@@ -3,7 +3,7 @@
 #[cfg(test)]
 mod tests {
     use crate::assets::{
-        canonicalize_market_identity, default_market_data_provider_id,
+        canonicalize_market_identity, default_market_data_provider_id, market_identity_key,
         resolve_quote_ccy_precedence, Asset, AssetKind, InstrumentId, InstrumentType, NewAsset,
         OptionSpec, ProviderProfile, QuoteCcyResolutionSource, QuoteMode,
     };
@@ -491,6 +491,75 @@ mod tests {
             ),
             "TIANTIAN_FUND"
         );
+    }
+
+    #[test]
+    fn test_market_identity_key_tiantian_fund_from_suffix() {
+        let canonical = canonicalize_market_identity(
+            Some(InstrumentType::Equity),
+            Some("001594.FUND"),
+            None,
+            Some("CNY"),
+        );
+
+        let key = market_identity_key(
+            Some(&InstrumentType::Equity),
+            canonical.instrument_symbol.as_deref(),
+            canonical.instrument_exchange_mic.as_deref(),
+            canonical.quote_ccy.as_deref(),
+            Some("TIANTIAN_FUND"),
+        );
+
+        assert_eq!(key.as_deref(), Some("FUND:CN:001594"));
+    }
+
+    #[test]
+    fn test_market_identity_key_tiantian_fund_from_preferred_provider() {
+        let key = market_identity_key(
+            Some(&InstrumentType::Equity),
+            Some("001594"),
+            None,
+            Some("CNY"),
+            Some("TIANTIAN_FUND"),
+        );
+
+        assert_eq!(key.as_deref(), Some("FUND:CN:001594"));
+    }
+
+    #[test]
+    fn test_market_identity_key_mainland_equity() {
+        let canonical = canonicalize_market_identity(
+            Some(InstrumentType::Equity),
+            Some("600519"),
+            Some("XSHG"),
+            Some("CNY"),
+        );
+
+        let key = market_identity_key(
+            Some(&InstrumentType::Equity),
+            canonical.instrument_symbol.as_deref(),
+            canonical.instrument_exchange_mic.as_deref(),
+            canonical.quote_ccy.as_deref(),
+            Some("EASTMONEY_CN"),
+        );
+
+        assert_eq!(key.as_deref(), Some("EQUITY:XSHG:600519"));
+    }
+
+    #[test]
+    fn test_market_identity_key_crypto() {
+        let canonical =
+            canonicalize_market_identity(Some(InstrumentType::Crypto), Some("BTC-USD"), None, None);
+
+        let key = market_identity_key(
+            Some(&InstrumentType::Crypto),
+            canonical.instrument_symbol.as_deref(),
+            canonical.instrument_exchange_mic.as_deref(),
+            canonical.quote_ccy.as_deref(),
+            None,
+        );
+
+        assert_eq!(key.as_deref(), Some("CRYPTO:BTC/USD"));
     }
 
     #[test]

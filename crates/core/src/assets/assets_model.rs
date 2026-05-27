@@ -771,6 +771,52 @@ pub fn default_market_data_provider_id(
     DATA_SOURCE_YAHOO
 }
 
+pub fn market_identity_key(
+    instrument_type: Option<&InstrumentType>,
+    instrument_symbol: Option<&str>,
+    instrument_exchange_mic: Option<&str>,
+    quote_ccy: Option<&str>,
+    preferred_provider: Option<&str>,
+) -> Option<String> {
+    let inst_type = instrument_type?;
+    let symbol = instrument_symbol?.trim().to_uppercase();
+    if symbol.is_empty() {
+        return None;
+    }
+
+    match inst_type {
+        InstrumentType::Equity | InstrumentType::Option | InstrumentType::Metal => {
+            if preferred_provider == Some(DATA_SOURCE_TIANTIAN_FUND) || symbol.ends_with(".FUND") {
+                let code = symbol.strip_suffix(".FUND").unwrap_or(&symbol);
+                if code.len() == 6 && code.chars().all(|ch| ch.is_ascii_digit()) {
+                    return Some(format!("FUND:CN:{code}"));
+                }
+            }
+
+            instrument_exchange_mic
+                .map(str::trim)
+                .filter(|mic| !mic.is_empty())
+                .map(|mic| {
+                    format!(
+                        "{}:{}:{}",
+                        inst_type.as_db_str(),
+                        mic.to_uppercase(),
+                        symbol
+                    )
+                })
+                .or_else(|| Some(format!("{}:{}", inst_type.as_db_str(), symbol)))
+        }
+        InstrumentType::Crypto => {
+            let quote = quote_ccy.map(str::trim).filter(|quote| !quote.is_empty())?;
+            Some(format!("CRYPTO:{}/{}", symbol, quote.to_uppercase()))
+        }
+        InstrumentType::Fx => {
+            let quote = quote_ccy.map(str::trim).filter(|quote| !quote.is_empty())?;
+            Some(format!("FX:{}/{}", symbol, quote.to_uppercase()))
+        }
+    }
+}
+
 fn parse_fx_symbol_parts(symbol: &str) -> Option<(String, String)> {
     let trimmed = symbol.trim().to_uppercase();
     let cleaned = trimmed.strip_suffix("=X").unwrap_or(&trimmed);

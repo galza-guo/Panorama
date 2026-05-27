@@ -26,10 +26,11 @@ pub use alternative_assets_traits::{
 };
 pub use asset_id::{parse_crypto_pair_symbol, parse_symbol_with_exchange_suffix};
 pub use assets_model::{
-    canonicalize_market_identity, default_market_data_provider_id, normalize_quote_ccy_code,
-    resolve_quote_ccy_precedence, Asset, AssetKind, AssetMetadata, AssetProfileEnrichmentStats,
-    AssetSpec, Country, EnsureAssetsResult, InstrumentId, InstrumentType, NewAsset, OptionSpec,
-    ProviderProfile, QuoteCcyResolutionSource, QuoteMode, Sector, UpdateAssetProfile,
+    canonicalize_market_identity, default_market_data_provider_id, market_identity_key,
+    normalize_market_symbol_for_provider, normalize_quote_ccy_code, resolve_quote_ccy_precedence,
+    Asset, AssetKind, AssetMetadata, AssetProfileEnrichmentStats, AssetSpec, Country,
+    EnsureAssetsResult, InstrumentId, InstrumentType, NewAsset, OptionSpec, ProviderProfile,
+    QuoteCcyResolutionSource, QuoteMode, Sector, UpdateAssetProfile,
 };
 pub use assets_service::AssetService;
 pub use assets_traits::{AssetRepositoryTrait, AssetServiceTrait};
