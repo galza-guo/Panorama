@@ -629,20 +629,52 @@ No V1 summary strip. The tree is the main experience.
 
 Use a tree table/list with one compact visual per row.
 
+Hovering any row for 2 seconds opens row details; users should not need to aim
+specifically at the rail or bar. The detail popover should anchor near the hover
+location rather than always opening from the row's left edge.
+
+Clicking/tapping a row performs the row's primary action:
+
+- asset/holding rows navigate to the existing holding detail page
+- folder rows expand/collapse
+- root and virtual rows with children also expand/collapse
+
+The tree includes a visible root row:
+
+- root label: `Total Assets`
+- root amount: total current portfolio value
+- root can expand/collapse all allocation rows
+- no plan rail or current bar, because root is always 100%
+
 For planned rows:
 
 - muted plan rail, more like a thick line than a filled bar
-- plan percentage at the end of the plan rail
+- plan metric at the end of the plan rail
 - colorful current bar below the rail, thicker than the plan rail
-- current percentage at the end of the current bar
-- status symbol after current percentage
+- current metric at the end of the current bar
+- status symbol beside the row label, not beside the current metric
 - plan rails and current bars are drawn directly, without a 100% background
   track/notch
+- within each folder and at the top level under `Total Assets`, rows are
+  displayed by planned weight from heaviest to lightest; rows without a planned
+  weight appear after planned rows
+
+Metrics next to rails/bars can be toggled between:
+
+- percentage only
+- amount only
+- percentage + amount
+
+The metric toggle should use the app's existing icon set. Percentage mode uses a
+percent icon; amount mode uses a money/amount icon rather than the percent icon.
+
+Metric labels should sit close to the right end of the actual rail/bar, not in a
+separate far-right column.
 
 For blank-plan rows:
 
 - current bar only
-- current percentage
+- current metric
 - no plan rail
 - no status
 
@@ -666,6 +698,11 @@ Tree depth should be visually obvious without changing the color system.
 - plan rails and current bars indent by depth with a clear step size
 - deeper rows keep inherited folder color, but their geometry shows hierarchy
 - chevrons remain for expand/collapse, but are not the only tree cue
+- chevrons are scoped to expand/collapse only, matching folder row click
+  behavior
+- rows highlight subtly on hover for easier scanning
+- folder rows, including top-level pots and nested categories/subcategories, do
+  not draw their own bottom divider line
 
 ### Color And Icons
 
@@ -721,8 +758,8 @@ Tooltips/popovers can show:
 If a breakdown is too large, show a compact preview. Do not add a full detail
 drawer in V1.
 
-These details must be reachable by click/tap/focus, not hover only, so mobile
-and keyboard users can inspect the same information.
+Keyboard focus opens these details immediately. In V1, pointer users get the
+detail popover on delayed hover while click/tap is reserved for row actions.
 
 ### Mobile
 
