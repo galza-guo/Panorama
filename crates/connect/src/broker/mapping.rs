@@ -19,6 +19,37 @@ use wealthfolio_core::fx::currency::{get_normalization_rule, normalize_amount, r
 /// Minimum confidence score to consider a mapping reliable
 const CONFIDENCE_THRESHOLD: f64 = 0.7;
 
+fn normalize_occ_option_symbol(symbol: &str) -> Option<String> {
+    let compact: String = symbol.chars().filter(|ch| !ch.is_whitespace()).collect();
+    if compact.len() < 15 || compact.len() > 21 {
+        return None;
+    }
+
+    let bytes = compact.as_bytes();
+    let type_index = bytes
+        .iter()
+        .position(|byte| *byte == b'C' || *byte == b'P')?;
+    if type_index < 7 || type_index + 9 != compact.len() {
+        return None;
+    }
+
+    let date_start = type_index.checked_sub(6)?;
+    if !bytes[date_start..type_index]
+        .iter()
+        .all(|byte| byte.is_ascii_digit())
+    {
+        return None;
+    }
+    if !bytes[type_index + 1..]
+        .iter()
+        .all(|byte| byte.is_ascii_digit())
+    {
+        return None;
+    }
+
+    Some(compact)
+}
+
 /// Determine if an activity needs user review based on various signals.
 ///
 /// Returns `true` if the activity should be flagged for review.
@@ -380,7 +411,8 @@ pub fn map_broker_activity(
         .option_symbol
         .as_ref()
         .and_then(|s| s.ticker.clone())
-        .filter(|t| !t.trim().is_empty());
+        .filter(|t| !t.trim().is_empty())
+        .map(|t| normalize_occ_option_symbol(&t).unwrap_or(t));
     let is_option_activity = option_symbol.is_some() || option_leg_type.is_some();
     // Option contracts are uniquely identified by OCC ticker; adding underlying MIC can fragment identity.
     let exchange_mic = if is_option_activity {
@@ -611,6 +643,27 @@ mod tests {
         assert_eq!(symbol.kind.as_deref(), Some("OPTION"));
         assert_eq!(symbol.exchange_mic, None);
         assert_eq!(mapped.subtype.as_deref(), Some("BUY_TO_OPEN"));
+    }
+
+    #[test]
+    fn test_map_broker_activity_normalizes_padded_occ_option_symbol() {
+        let activity = AccountUniversalActivity {
+            id: Some("act-opt".to_string()),
+            activity_type: Some("BUY".to_string()),
+            option_type: Some("BUY_TO_OPEN".to_string()),
+            option_symbol: Some(AccountUniversalActivityOptionSymbol {
+                ticker: Some("GOOGL 260116C00200000".to_string()),
+                ..Default::default()
+            }),
+            ..Default::default()
+        };
+
+        let mapped = map_broker_activity(&activity, "acct-1", Some("USD"), Some("USD")).unwrap();
+        let symbol = mapped
+            .symbol
+            .expect("option activities should produce symbol");
+
+        assert_eq!(symbol.symbol.as_deref(), Some("GOOGL260116C00200000"));
     }
 
     #[test]
