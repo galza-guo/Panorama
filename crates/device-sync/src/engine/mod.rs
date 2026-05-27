@@ -33,8 +33,15 @@ pub fn backoff_seconds(consecutive_failures: i32) -> i64 {
     2_i64.pow(capped as u32) * BASE_DELAY_SECONDS
 }
 
-fn remote_entity_id_is_valid(entity_id: &str) -> bool {
-    Uuid::parse_str(entity_id).is_ok()
+fn remote_entity_id_is_valid(entity: &SyncEntity, entity_id: &str) -> bool {
+    match entity {
+        SyncEntity::TargetAllocationPlan
+        | SyncEntity::TargetAllocationNode
+        | SyncEntity::TargetAllocationAccountDefault
+        | SyncEntity::TargetAllocationAttribution
+        | SyncEntity::TargetAllocationExclusion => !entity_id.trim().is_empty(),
+        _ => Uuid::parse_str(entity_id).is_ok(),
+    }
 }
 
 fn sync_entity_name(entity: &SyncEntity) -> &'static str {
@@ -53,6 +60,11 @@ fn sync_entity_name(entity: &SyncEntity) -> &'static str {
         SyncEntity::ContributionLimit => "contribution_limit",
         SyncEntity::Platform => "platform",
         SyncEntity::Snapshot => "snapshot",
+        SyncEntity::TargetAllocationPlan => "target_allocation_plan",
+        SyncEntity::TargetAllocationNode => "target_allocation_node",
+        SyncEntity::TargetAllocationAccountDefault => "target_allocation_account_default",
+        SyncEntity::TargetAllocationAttribution => "target_allocation_attribution",
+        SyncEntity::TargetAllocationExclusion => "target_allocation_exclusion",
     }
 }
 
@@ -397,7 +409,7 @@ where
     let mut future_key_version_event_ids = Vec::new();
 
     for event in pending {
-        if !remote_entity_id_is_valid(&event.entity_id) {
+        if !remote_entity_id_is_valid(&event.entity, &event.entity_id) {
             warn!(
                 "[DeviceSync] Marking outbox event dead due to non-UUID entity_id (event_id={}, entity={:?}, entity_id={})",
                 event.event_id,

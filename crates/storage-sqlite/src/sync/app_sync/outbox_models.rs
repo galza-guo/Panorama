@@ -8,6 +8,10 @@ use crate::goals::{GoalDB, GoalsAllocationDB};
 use crate::limits::ContributionLimitDB;
 use crate::market_data::QuoteDB;
 use crate::portfolio::snapshot::AccountStateSnapshotDB;
+use crate::portfolio::target_allocation::{
+    TargetAllocationAccountDefaultDB, TargetAllocationAttributionDB, TargetAllocationExclusionDB,
+    TargetAllocationNodeDB, TargetAllocationPlanDB,
+};
 use crate::sync::platform::PlatformDB;
 use crate::sync::SyncOutboxModel;
 use crate::sync::{
@@ -173,5 +177,57 @@ impl SyncOutboxModel for AccountStateSnapshotDB {
             _ => SnapshotSource::Calculated,
         };
         should_sync_outbox_for_snapshot_source(source) && Uuid::parse_str(&self.id).is_ok()
+    }
+}
+
+impl SyncOutboxModel for TargetAllocationPlanDB {
+    const ENTITY: SyncEntity = SyncEntity::TargetAllocationPlan;
+
+    fn sync_entity_id(&self) -> &str {
+        &self.id
+    }
+}
+
+impl SyncOutboxModel for TargetAllocationNodeDB {
+    const ENTITY: SyncEntity = SyncEntity::TargetAllocationNode;
+
+    fn sync_entity_id(&self) -> &str {
+        &self.id
+    }
+}
+
+impl SyncOutboxModel for TargetAllocationAccountDefaultDB {
+    const ENTITY: SyncEntity = SyncEntity::TargetAllocationAccountDefault;
+
+    fn sync_entity_id(&self) -> &str {
+        &self.account_id
+    }
+
+    fn delete_payload(entity_id: &str) -> serde_json::Value {
+        serde_json::json!({ "accountId": entity_id })
+    }
+}
+
+impl SyncOutboxModel for TargetAllocationAttributionDB {
+    const ENTITY: SyncEntity = SyncEntity::TargetAllocationAttribution;
+
+    fn sync_entity_id(&self) -> &str {
+        &self.subject_key
+    }
+
+    fn delete_payload(entity_id: &str) -> serde_json::Value {
+        serde_json::json!({ "subjectKey": entity_id })
+    }
+}
+
+impl SyncOutboxModel for TargetAllocationExclusionDB {
+    const ENTITY: SyncEntity = SyncEntity::TargetAllocationExclusion;
+
+    fn sync_entity_id(&self) -> &str {
+        &self.subject_key
+    }
+
+    fn delete_payload(entity_id: &str) -> serde_json::Value {
+        serde_json::json!({ "subjectKey": entity_id })
     }
 }

@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 
 /// Canonical list of local tables that participate in app-side device sync.
 /// Order matters: parent tables before children (FK dependencies).
-pub const APP_SYNC_TABLES: [&str; 15] = [
+pub const APP_SYNC_TABLES: [&str; 20] = [
     // Base tables (no FK deps)
     "platforms",
     "assets",
@@ -15,6 +15,14 @@ pub const APP_SYNC_TABLES: [&str; 15] = [
     "contribution_limits",
     // Depends on: platforms
     "accounts",
+    "target_allocation_plan",
+    // Depends on: target_allocation_nodes self-tree
+    "target_allocation_nodes",
+    // Depends on: accounts, target_allocation_nodes
+    "target_allocation_account_defaults",
+    // Depends on: target_allocation_nodes
+    "target_allocation_attributions",
+    "target_allocation_exclusions",
     // Depends on: accounts
     "import_runs",
     // Depends on: accounts, assets, import_runs, goals, ai_threads
@@ -45,6 +53,11 @@ pub enum SyncEntity {
     ContributionLimit,
     Platform,
     Snapshot,
+    TargetAllocationPlan,
+    TargetAllocationNode,
+    TargetAllocationAccountDefault,
+    TargetAllocationAttribution,
+    TargetAllocationExclusion,
 }
 
 /// Supported sync operations.
@@ -262,6 +275,11 @@ mod tests {
             SyncEntity::ContributionLimit,
             SyncEntity::Platform,
             SyncEntity::Snapshot,
+            SyncEntity::TargetAllocationPlan,
+            SyncEntity::TargetAllocationNode,
+            SyncEntity::TargetAllocationAccountDefault,
+            SyncEntity::TargetAllocationAttribution,
+            SyncEntity::TargetAllocationExclusion,
         ]
         .iter()
         .map(|entity| serde_json::to_string(entity).expect("serialize sync entity"))
@@ -282,6 +300,11 @@ mod tests {
             "\"contribution_limit\"",
             "\"platform\"",
             "\"snapshot\"",
+            "\"target_allocation_plan\"",
+            "\"target_allocation_node\"",
+            "\"target_allocation_account_default\"",
+            "\"target_allocation_attribution\"",
+            "\"target_allocation_exclusion\"",
         ];
 
         assert_eq!(actual, expected);

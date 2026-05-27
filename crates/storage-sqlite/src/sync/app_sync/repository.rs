@@ -344,6 +344,17 @@ fn entity_storage_mapping(entity: &SyncEntity) -> Option<(&'static str, &'static
         SyncEntity::ContributionLimit => Some(("contribution_limits", "id")),
         SyncEntity::Platform => Some(("platforms", "id")),
         SyncEntity::Snapshot => Some(("holdings_snapshots", "id")),
+        SyncEntity::TargetAllocationPlan => Some(("target_allocation_plan", "id")),
+        SyncEntity::TargetAllocationNode => Some(("target_allocation_nodes", "id")),
+        SyncEntity::TargetAllocationAccountDefault => {
+            Some(("target_allocation_account_defaults", "account_id"))
+        }
+        SyncEntity::TargetAllocationAttribution => {
+            Some(("target_allocation_attributions", "subject_key"))
+        }
+        SyncEntity::TargetAllocationExclusion => {
+            Some(("target_allocation_exclusions", "subject_key"))
+        }
     }
 }
 
@@ -2229,6 +2240,11 @@ mod tests {
             SyncEntity::ContributionLimit,
             SyncEntity::Platform,
             SyncEntity::Snapshot,
+            SyncEntity::TargetAllocationPlan,
+            SyncEntity::TargetAllocationNode,
+            SyncEntity::TargetAllocationAccountDefault,
+            SyncEntity::TargetAllocationAttribution,
+            SyncEntity::TargetAllocationExclusion,
         ];
 
         for entity in entities {

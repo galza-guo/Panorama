@@ -69,5 +69,25 @@ pub fn default_adapter_descriptors() -> Vec<EntityAdapterDescriptor> {
             entity: SyncEntity::Snapshot,
             table_name: "holdings_snapshots",
         },
+        EntityAdapterDescriptor {
+            entity: SyncEntity::TargetAllocationPlan,
+            table_name: "target_allocation_plan",
+        },
+        EntityAdapterDescriptor {
+            entity: SyncEntity::TargetAllocationNode,
+            table_name: "target_allocation_nodes",
+        },
+        EntityAdapterDescriptor {
+            entity: SyncEntity::TargetAllocationAccountDefault,
+            table_name: "target_allocation_account_defaults",
+        },
+        EntityAdapterDescriptor {
+            entity: SyncEntity::TargetAllocationAttribution,
+            table_name: "target_allocation_attributions",
+        },
+        EntityAdapterDescriptor {
+            entity: SyncEntity::TargetAllocationExclusion,
+            table_name: "target_allocation_exclusions",
+        },
     ]
 }
