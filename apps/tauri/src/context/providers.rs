@@ -38,6 +38,7 @@ use wealthfolio_storage_sqlite::{
     activities::ActivityRepository,
     ai_chat::AiChatRepository,
     assets::{AlternativeAssetRepository, AssetRepository},
+    connectors::ConnectorRepository,
     db::{self, write_actor},
     fx::FxRepository,
     goals::GoalRepository,
@@ -76,6 +77,7 @@ pub async fn initialize_context(
     let account_repository = Arc::new(AccountRepository::new(pool.clone(), writer.clone()));
     let activity_repository = Arc::new(ActivityRepository::new(pool.clone(), writer.clone()));
     let asset_repository = Arc::new(AssetRepository::new(pool.clone(), writer.clone()));
+    let connector_repository = Arc::new(ConnectorRepository::new(pool.clone(), writer.clone()));
     let goal_repo = Arc::new(GoalRepository::new(pool.clone(), writer.clone()));
     let market_data_repo = Arc::new(MarketDataRepository::new(pool.clone(), writer.clone()));
     let limit_repository = Arc::new(ContributionLimitRepository::new(
@@ -341,6 +343,8 @@ pub async fn initialize_context(
             settings_repository,
             settings_service,
             account_service,
+            activity_repository,
+            connector_repository,
             activity_service,
             asset_service,
             goal_service,
