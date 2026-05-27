@@ -85,6 +85,41 @@ fn child<'a>(row: &'a TargetAllocationDisplayRow, name: &str) -> &'a TargetAlloc
         .unwrap_or_else(|| panic!("expected child {name} under {}", row.name))
 }
 
+fn child_names(row: &TargetAllocationDisplayRow) -> Vec<&str> {
+    row.children
+        .iter()
+        .map(|child| child.name.as_str())
+        .collect()
+}
+
+#[test]
+fn orders_children_by_planned_weight_descending() {
+    let input = TargetAllocationInput {
+        nodes: vec![
+            folder("growth", None, "Growth", Some(dec!(20))),
+            folder("core", None, "Core", Some(dec!(70))),
+            folder("income", None, "Income", Some(dec!(10))),
+            asset("light", "core", "Light", "asset-light", Some(dec!(10))),
+            asset("heavy", "core", "Heavy", "asset-heavy", Some(dec!(70))),
+            asset("blank", "core", "Blank", "asset-blank", None),
+            asset("medium", "core", "Medium", "asset-medium", Some(dec!(20))),
+        ],
+        ..default_input()
+    };
+
+    let dashboard = TargetAllocationCalculator::calculate(input).expect("calculation succeeds");
+    let core = child(&dashboard.root, "Core");
+
+    assert_eq!(
+        child_names(&dashboard.root),
+        vec!["Core", "Growth", "Income"]
+    );
+    assert_eq!(
+        child_names(core),
+        vec!["Heavy", "Medium", "Light", "Untargeted"]
+    );
+}
+
 #[test]
 fn calculates_other_only_from_leftover_target_capacity() {
     let input = TargetAllocationInput {

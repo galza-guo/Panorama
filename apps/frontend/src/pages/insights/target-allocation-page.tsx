@@ -1,10 +1,16 @@
 import { Button } from "@wealthfolio/ui/components/ui/button";
 import { Icons, AmountDisplay, EmptyPlaceholder } from "@wealthfolio/ui";
 import { Input } from "@wealthfolio/ui/components/ui/input";
-import { Popover, PopoverContent, PopoverTrigger } from "@wealthfolio/ui/components/ui/popover";
+import {
+  Popover,
+  PopoverAnchor,
+  PopoverContent,
+  PopoverTrigger,
+} from "@wealthfolio/ui/components/ui/popover";
 import { Skeleton } from "@wealthfolio/ui/components/ui/skeleton";
 import { toast } from "@wealthfolio/ui/components/ui/use-toast";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { useNavigate } from "react-router-dom";
 
 import { useAccounts } from "@/hooks/use-accounts";
 import { useBalancePrivacy } from "@/hooks/use-balance-privacy";
@@ -34,6 +40,9 @@ const NODE_ICONS = ["folder", "target", "wallet", "sparkles", "circleGauge", "pi
 const TREE_LINE_WIDTH_PX = 28;
 const BAR_INDENT_PX = 36;
 const MAX_BAR_INDENT_PX = 144;
+const HOVER_DETAILS_OPEN_DELAY_MS = 2000;
+
+type TargetMetricMode = "percentage" | "amount" | "both";
 
 function makeId(prefix: string) {
   return `${prefix}-${globalThis.crypto?.randomUUID?.() ?? Math.random().toString(36).slice(2)}`;
@@ -103,6 +112,22 @@ function flattenRows(row: TargetAllocationDisplayRow): TargetAllocationDisplayRo
 function rowsById(root?: TargetAllocationDisplayRow) {
   if (!root) return new Map<string, TargetAllocationDisplayRow>();
   return new Map(flattenRows(root).map((row) => [row.id, row]));
+}
+
+function compareRowsByPlannedWeight(a: TargetAllocationDisplayRow, b: TargetAllocationDisplayRow) {
+  const aTarget = a.targetPercent;
+  const bTarget = b.targetPercent;
+
+  if (aTarget !== null && aTarget !== undefined && bTarget !== null && bTarget !== undefined) {
+    return bTarget - aTarget;
+  }
+  if (aTarget !== null && aTarget !== undefined) return -1;
+  if (bTarget !== null && bTarget !== undefined) return 1;
+  return 0;
+}
+
+function displayChildrenByPlannedWeight(children: TargetAllocationDisplayRow[]) {
+  return [...children].sort(compareRowsByPlannedWeight);
 }
 
 function buildNodeTree(
@@ -279,13 +304,35 @@ function treeBarIndent(depth: number) {
   return Math.min(depth * BAR_INDENT_PX, MAX_BAR_INDENT_PX);
 }
 
+function nextMetricMode(mode: TargetMetricMode): TargetMetricMode {
+  if (mode === "percentage") return "amount";
+  if (mode === "amount") return "both";
+  return "percentage";
+}
+
+function metricModeLabel(mode: TargetMetricMode) {
+  if (mode === "percentage") return "Percent";
+  if (mode === "amount") return "Amount";
+  return "Both";
+}
+
+function metricModeIcon(mode: TargetMetricMode) {
+  if (mode === "percentage") return Icons.Percent;
+  if (mode === "amount") return Icons.BadgeDollarSign;
+  return Icons.ArrowLeftRight;
+}
+
 function TreeConnector({
+  isRoot,
   ancestorContinuations,
   isLast,
 }: {
+  isRoot: boolean;
   ancestorContinuations: boolean[];
   isLast: boolean;
 }) {
+  if (isRoot) return null;
+
   const currentDepth = ancestorContinuations.length;
   const width = (currentDepth + 1) * TREE_LINE_WIDTH_PX;
   const currentLeft = currentDepth * TREE_LINE_WIDTH_PX + TREE_LINE_WIDTH_PX / 2;
@@ -317,6 +364,46 @@ function TreeConnector({
         }}
       />
     </div>
+  );
+}
+
+function TargetMetricLabel({
+  percent,
+  value,
+  currency,
+  mode,
+  isBalanceHidden,
+  isAuto,
+}: {
+  percent?: number | null;
+  value?: number | null;
+  currency: string;
+  mode: TargetMetricMode;
+  isBalanceHidden: boolean;
+  isAuto?: boolean;
+}) {
+  const showPercent = mode === "percentage" || mode === "both";
+  const showAmount = mode === "amount" || mode === "both";
+
+  return (
+    <span className="flex shrink-0 items-center gap-1 text-xs whitespace-nowrap tabular-nums">
+      {showPercent && percent !== null && percent !== undefined && (
+        <span className="text-muted-foreground">
+          {isAuto ? `auto ${formatPercent(percent)}` : formatPercent(percent)}
+        </span>
+      )}
+      {showPercent && showAmount && value !== null && value !== undefined && (
+        <span className="text-muted-foreground/70">·</span>
+      )}
+      {showAmount && value !== null && value !== undefined && (
+        <AmountDisplay
+          value={value}
+          currency={currency}
+          isHidden={isBalanceHidden}
+          className="text-muted-foreground"
+        />
+      )}
+    </span>
   );
 }
 
@@ -385,6 +472,7 @@ interface TargetRowProps {
   depth: number;
   ancestorContinuations: boolean[];
   isLast: boolean;
+  metricMode: TargetMetricMode;
   inheritedColor?: string;
   currency: string;
   expandedIds: string[];
@@ -398,6 +486,7 @@ function TargetRow({
   depth,
   ancestorContinuations,
   isLast,
+  metricMode,
   inheritedColor,
   currency,
   expandedIds,
@@ -405,13 +494,27 @@ function TargetRow({
   query,
   isBalanceHidden,
 }: TargetRowProps) {
+  const navigate = useNavigate();
   const rowColor =
-    row.kind === "other" || row.kind === "untargeted"
-      ? "#8a8f98"
-      : row.color || inheritedColor || NODE_COLORS[0];
+    row.kind === "root"
+      ? "#52525b"
+      : row.kind === "other" || row.kind === "untargeted"
+        ? "#8a8f98"
+        : row.color || inheritedColor || NODE_COLORS[0];
+  const isRoot = row.kind === "root";
+  const isFolderRow = row.kind === "folder";
   const hasChildren = row.children.length > 0;
+  const displayChildren = displayChildrenByPlannedWeight(row.children);
   const isExpanded = expandedIds.includes(row.id);
-  const Icon = row.kind === "asset" ? Icons.File : iconForName(row.icon);
+  const [detailsOpen, setDetailsOpen] = useState(false);
+  const [detailsAnchor, setDetailsAnchor] = useState<{ x: number; y: number } | null>(null);
+  const openDetailsTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const closeDetailsTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const Icon = isRoot
+    ? Icons.CircleGauge
+    : row.kind === "asset"
+      ? Icons.File
+      : iconForName(row.icon);
   const matchesQuery = query.trim()
     ? row.name.toLowerCase().includes(query.toLowerCase()) ||
       row.breakdown.some((holding) =>
@@ -420,176 +523,323 @@ function TargetRow({
           .includes(query.toLowerCase()),
       )
     : true;
-  const childMatches = row.children.some((child) =>
+  const childMatches = displayChildren.some((child) =>
     flattenRows(child).some((nested) =>
       `${nested.name} ${nested.breakdown.map((holding) => holding.symbol).join(" ")}`
         .toLowerCase()
         .includes(query.toLowerCase()),
     ),
   );
+  const assetDetailId =
+    row.kind === "asset"
+      ? row.assetRef?.kind === "asset"
+        ? row.assetRef.assetId
+        : row.breakdown.find((holding) => holding.assetId)?.assetId
+      : null;
+  const canNavigateToAsset = row.kind === "asset" && !!assetDetailId;
+  const canToggleRow = hasChildren && row.kind !== "asset";
+  const isClickableRow = canNavigateToAsset || canToggleRow;
+
+  const clearCloseDetailsTimer = () => {
+    if (!closeDetailsTimeoutRef.current) return;
+    clearTimeout(closeDetailsTimeoutRef.current);
+    closeDetailsTimeoutRef.current = null;
+  };
+
+  const clearOpenDetailsTimer = () => {
+    if (!openDetailsTimeoutRef.current) return;
+    clearTimeout(openDetailsTimeoutRef.current);
+    openDetailsTimeoutRef.current = null;
+  };
+
+  const updateDetailsAnchor = (x: number, y: number) => {
+    setDetailsAnchor((previousAnchor) => {
+      if (
+        previousAnchor &&
+        Math.abs(previousAnchor.x - x) < 16 &&
+        Math.abs(previousAnchor.y - y) < 16
+      ) {
+        return previousAnchor;
+      }
+      return { x, y };
+    });
+  };
+
+  const openDetailsAt = (x: number, y: number) => {
+    clearOpenDetailsTimer();
+    clearCloseDetailsTimer();
+    updateDetailsAnchor(x, y);
+    setDetailsOpen(true);
+  };
+
+  const scheduleOpenDetailsAt = (x: number, y: number) => {
+    clearCloseDetailsTimer();
+    updateDetailsAnchor(x, y);
+    if (detailsOpen || openDetailsTimeoutRef.current) return;
+    openDetailsTimeoutRef.current = setTimeout(() => {
+      openDetailsTimeoutRef.current = null;
+      setDetailsOpen(true);
+    }, HOVER_DETAILS_OPEN_DELAY_MS);
+  };
+
+  const openDetailsAtRowCenter = (element: HTMLElement) => {
+    const rect = element.getBoundingClientRect();
+    openDetailsAt(rect.left + rect.width / 2, rect.top + rect.height / 2);
+  };
+
+  const scheduleCloseDetails = () => {
+    clearOpenDetailsTimer();
+    clearCloseDetailsTimer();
+    closeDetailsTimeoutRef.current = setTimeout(() => setDetailsOpen(false), 100);
+  };
+
+  const toggleRow = () => {
+    if (!canToggleRow) return;
+    setExpandedIds(
+      isExpanded ? expandedIds.filter((id) => id !== row.id) : [...expandedIds, row.id],
+    );
+  };
+
+  const runRowAction = () => {
+    if (canNavigateToAsset && assetDetailId) {
+      navigate(`/holdings/${encodeURIComponent(assetDetailId)}`);
+      return;
+    }
+    toggleRow();
+  };
+
+  useEffect(() => {
+    return () => {
+      if (openDetailsTimeoutRef.current) {
+        clearTimeout(openDetailsTimeoutRef.current);
+      }
+      if (closeDetailsTimeoutRef.current) {
+        clearTimeout(closeDetailsTimeoutRef.current);
+      }
+    };
+  }, []);
 
   if (!matchesQuery && !childMatches) return null;
 
   return (
     <div>
-      <div className="group grid min-h-[58px] grid-cols-[minmax(180px,1fr)_minmax(180px,2fr)_auto] items-center gap-3 border-b px-3 py-2 last:border-b-0 max-md:grid-cols-1">
-        <div className="flex min-w-0 items-center gap-2">
-          <TreeConnector ancestorContinuations={ancestorContinuations} isLast={isLast} />
-          <Button
-            type="button"
-            size="icon-xs"
-            variant="ghost"
-            className={cn("size-6 shrink-0", !hasChildren && "invisible")}
-            onClick={() =>
-              setExpandedIds(
-                isExpanded ? expandedIds.filter((id) => id !== row.id) : [...expandedIds, row.id],
-              )
-            }
-            aria-label={isExpanded ? "Collapse row" : "Expand row"}
-          >
-            {isExpanded ? (
-              <Icons.ChevronDown className="h-3.5 w-3.5" />
-            ) : (
-              <Icons.ChevronRight className="h-3.5 w-3.5" />
-            )}
-          </Button>
-          <span
-            className="flex size-7 shrink-0 items-center justify-center rounded-md text-white"
-            style={{ backgroundColor: rowColor }}
-          >
-            <Icon className="h-3.5 w-3.5" />
-          </span>
-          <span className="truncate text-sm font-medium">{row.name}</span>
-        </div>
-
-        <Popover>
-          <PopoverTrigger asChild>
-            <button
+      <Popover open={detailsOpen} onOpenChange={setDetailsOpen}>
+        {detailsAnchor && (
+          <PopoverAnchor asChild>
+            <span
+              aria-hidden="true"
+              className="pointer-events-none fixed h-px w-px"
+              style={{ left: detailsAnchor.x, top: detailsAnchor.y }}
+            />
+          </PopoverAnchor>
+        )}
+        <div
+          role={isClickableRow ? "button" : undefined}
+          tabIndex={isClickableRow ? 0 : undefined}
+          onPointerEnter={(event) => scheduleOpenDetailsAt(event.clientX, event.clientY)}
+          onPointerMove={(event) => scheduleOpenDetailsAt(event.clientX, event.clientY)}
+          onPointerLeave={scheduleCloseDetails}
+          onFocus={(event) => openDetailsAtRowCenter(event.currentTarget)}
+          onBlur={scheduleCloseDetails}
+          onClick={runRowAction}
+          onKeyDown={(event) => {
+            if (!isClickableRow || (event.key !== "Enter" && event.key !== " ")) return;
+            event.preventDefault();
+            runRowAction();
+          }}
+          className={cn(
+            "group hover:bg-muted/45 grid min-h-[58px] grid-cols-[minmax(220px,1fr)_minmax(240px,2fr)] items-center gap-3 px-3 py-2 transition-colors max-md:grid-cols-1",
+            isClickableRow ? "cursor-pointer" : "cursor-default",
+            !isFolderRow && "border-b last:border-b-0",
+            isRoot && "bg-muted/20",
+          )}
+        >
+          <div className="flex min-w-0 items-center gap-2">
+            <TreeConnector
+              isRoot={isRoot}
+              ancestorContinuations={ancestorContinuations}
+              isLast={isLast}
+            />
+            <Button
               type="button"
-              className="focus-visible:ring-ring min-w-0 rounded-md text-left focus-visible:ring-2 focus-visible:outline-none"
+              size="icon-xs"
+              variant="ghost"
+              className={cn("size-6 shrink-0", !hasChildren && "invisible")}
+              onClick={(event) => {
+                event.stopPropagation();
+                toggleRow();
+              }}
+              onKeyDown={(event) => event.stopPropagation()}
+              aria-label={isExpanded ? "Collapse row" : "Expand row"}
+            >
+              {isExpanded ? (
+                <Icons.ChevronDown className="h-3.5 w-3.5" />
+              ) : (
+                <Icons.ChevronRight className="h-3.5 w-3.5" />
+              )}
+            </Button>
+            <span
+              className="flex size-7 shrink-0 items-center justify-center rounded-md text-white"
+              style={{ backgroundColor: rowColor }}
+            >
+              <Icon className="h-3.5 w-3.5" />
+            </span>
+            <span className="min-w-0">
+              <span className="flex min-w-0 items-center gap-1.5">
+                <span className="truncate text-sm font-medium">{row.name}</span>
+                {!isRoot && row.statusSymbol && (
+                  <span
+                    className={cn("shrink-0 text-xs font-semibold", statusClass(row.statusSymbol))}
+                  >
+                    {row.statusSymbol}
+                  </span>
+                )}
+              </span>
+              {isRoot && (
+                <AmountDisplay
+                  value={row.currentValue}
+                  currency={currency}
+                  isHidden={isBalanceHidden}
+                  className="text-muted-foreground block truncate text-xs"
+                />
+              )}
+            </span>
+          </div>
+
+          {!isRoot ? (
+            <div
+              className="min-w-0 rounded-md text-left"
               style={{ paddingLeft: treeBarIndent(depth) }}
             >
               <div className="space-y-1.5">
                 {row.targetPercent !== null && row.targetPercent !== undefined && (
-                  <div className="grid grid-cols-[1fr_auto] items-center gap-2">
+                  <div className="flex min-w-0 items-center gap-2">
                     <div
-                      className="bg-muted-foreground/40 h-1.5 rounded-full"
+                      className="bg-muted-foreground/40 h-1.5 min-w-0 shrink rounded-full"
                       style={{ width: `${Math.min(Math.max(row.targetPercent, 0), 100)}%` }}
                     />
-                    <span className="text-muted-foreground min-w-14 text-right text-xs tabular-nums">
-                      {row.isAutoTarget
-                        ? `auto ${formatPercent(row.targetPercent)}`
-                        : formatPercent(row.targetPercent)}
-                    </span>
+                    <TargetMetricLabel
+                      percent={row.targetPercent}
+                      value={row.targetValue}
+                      currency={currency}
+                      mode={metricMode}
+                      isBalanceHidden={isBalanceHidden}
+                      isAuto={row.isAutoTarget}
+                    />
                   </div>
                 )}
-                <div className="grid grid-cols-[1fr_auto] items-center gap-2">
+                <div className="flex min-w-0 items-center gap-2">
                   <div
-                    className="h-3 rounded-full"
+                    className="h-3 min-w-0 shrink rounded-full"
                     style={{
                       width: `${Math.min(Math.max(row.currentPercent, 0), 100)}%`,
                       backgroundColor: rowColor,
                     }}
                   />
-                  <span className="flex min-w-20 justify-end gap-1 text-xs tabular-nums">
-                    <span>{formatPercent(row.currentPercent)}</span>
-                    {row.statusSymbol && (
-                      <span className={cn("font-semibold", statusClass(row.statusSymbol))}>
-                        {row.statusSymbol}
-                      </span>
-                    )}
-                  </span>
-                </div>
-              </div>
-            </button>
-          </PopoverTrigger>
-          <PopoverContent align="start" className="w-80">
-            <div className="space-y-3 text-sm">
-              <div className="grid grid-cols-2 gap-2">
-                <div>
-                  <div className="text-muted-foreground text-xs">Current</div>
-                  <div className="font-medium">{formatPercent(row.currentPercent)}</div>
-                </div>
-                <div>
-                  <div className="text-muted-foreground text-xs">Plan</div>
-                  <div className="font-medium">
-                    {row.targetPercent !== null && row.targetPercent !== undefined
-                      ? formatPercent(row.targetPercent)
-                      : "Blank"}
-                  </div>
-                </div>
-                <div>
-                  <div className="text-muted-foreground text-xs">Effective current</div>
-                  <div className="font-medium">{formatPercent(row.effectiveCurrentPercent)}</div>
-                </div>
-                <div>
-                  <div className="text-muted-foreground text-xs">Effective plan</div>
-                  <div className="font-medium">
-                    {row.effectiveTargetPercent !== null && row.effectiveTargetPercent !== undefined
-                      ? formatPercent(row.effectiveTargetPercent)
-                      : "Blank"}
-                  </div>
-                </div>
-              </div>
-              <div className="grid grid-cols-2 gap-2">
-                <div>
-                  <div className="text-muted-foreground text-xs">Current value</div>
-                  <AmountDisplay
+                  <TargetMetricLabel
+                    percent={row.currentPercent}
                     value={row.currentValue}
+                    currency={currency}
+                    mode={metricMode}
+                    isBalanceHidden={isBalanceHidden}
+                  />
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div />
+          )}
+        </div>
+        <PopoverContent
+          align="start"
+          className="w-80"
+          onPointerEnter={() => {
+            clearOpenDetailsTimer();
+            clearCloseDetailsTimer();
+            setDetailsOpen(true);
+          }}
+          onPointerLeave={scheduleCloseDetails}
+        >
+          <div className="space-y-3 text-sm">
+            <div className="grid grid-cols-2 gap-2">
+              <div>
+                <div className="text-muted-foreground text-xs">Current</div>
+                <div className="font-medium">{formatPercent(row.currentPercent)}</div>
+              </div>
+              <div>
+                <div className="text-muted-foreground text-xs">Plan</div>
+                <div className="font-medium">
+                  {row.targetPercent !== null && row.targetPercent !== undefined
+                    ? formatPercent(row.targetPercent)
+                    : "Blank"}
+                </div>
+              </div>
+              <div>
+                <div className="text-muted-foreground text-xs">Effective current</div>
+                <div className="font-medium">{formatPercent(row.effectiveCurrentPercent)}</div>
+              </div>
+              <div>
+                <div className="text-muted-foreground text-xs">Effective plan</div>
+                <div className="font-medium">
+                  {row.effectiveTargetPercent !== null && row.effectiveTargetPercent !== undefined
+                    ? formatPercent(row.effectiveTargetPercent)
+                    : "Blank"}
+                </div>
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-2">
+              <div>
+                <div className="text-muted-foreground text-xs">Current value</div>
+                <AmountDisplay
+                  value={row.currentValue}
+                  currency={currency}
+                  isHidden={isBalanceHidden}
+                />
+              </div>
+              <div>
+                <div className="text-muted-foreground text-xs">Target value</div>
+                {row.targetValue !== null && row.targetValue !== undefined ? (
+                  <AmountDisplay
+                    value={row.targetValue}
                     currency={currency}
                     isHidden={isBalanceHidden}
                   />
-                </div>
-                <div>
-                  <div className="text-muted-foreground text-xs">Target value</div>
-                  {row.targetValue !== null && row.targetValue !== undefined ? (
-                    <AmountDisplay
-                      value={row.targetValue}
-                      currency={currency}
-                      isHidden={isBalanceHidden}
-                    />
-                  ) : (
-                    <span className="text-muted-foreground">Blank</span>
-                  )}
+                ) : (
+                  <span className="text-muted-foreground">Blank</span>
+                )}
+              </div>
+            </div>
+            {row.breakdown.length > 0 && (
+              <div>
+                <div className="text-muted-foreground mb-1 text-xs">Included holdings/accounts</div>
+                <div className="max-h-32 space-y-1 overflow-auto">
+                  {row.breakdown.slice(0, 8).map((holding) => (
+                    <div
+                      key={holding.subjectKey}
+                      className="flex items-center justify-between gap-2"
+                    >
+                      <span className="truncate">{holding.symbol}</span>
+                      <span className="text-muted-foreground truncate text-xs">
+                        {holding.accountName ?? "Standalone"}
+                      </span>
+                    </div>
+                  ))}
                 </div>
               </div>
-              {row.breakdown.length > 0 && (
-                <div>
-                  <div className="text-muted-foreground mb-1 text-xs">
-                    Included holdings/accounts
-                  </div>
-                  <div className="max-h-32 space-y-1 overflow-auto">
-                    {row.breakdown.slice(0, 8).map((holding) => (
-                      <div
-                        key={holding.subjectKey}
-                        className="flex items-center justify-between gap-2"
-                      >
-                        <span className="truncate">{holding.symbol}</span>
-                        <span className="text-muted-foreground truncate text-xs">
-                          {holding.accountName ?? "Standalone"}
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
-          </PopoverContent>
-        </Popover>
-
-        <div className="text-muted-foreground justify-self-end text-xs tabular-nums max-md:justify-self-start">
-          <AmountDisplay value={row.currentValue} currency={currency} isHidden={isBalanceHidden} />
-        </div>
-      </div>
+            )}
+          </div>
+        </PopoverContent>
+      </Popover>
       {hasChildren && isExpanded && (
         <div>
-          {row.children.map((child, index) => (
+          {displayChildren.map((child, index) => (
             <TargetRow
               key={child.id}
               row={child}
               depth={depth + 1}
               ancestorContinuations={[...ancestorContinuations, !isLast]}
-              isLast={index === row.children.length - 1}
+              isLast={index === displayChildren.length - 1}
+              metricMode={metricMode}
               inheritedColor={rowColor}
               currency={currency}
               expandedIds={expandedIds}
@@ -1017,9 +1267,14 @@ export default function TargetAllocationPage() {
   const [isEditing, setIsEditing] = useState(false);
   const [draft, setDraft] = useState<TargetAllocationPlanData>(buildBlankPlan());
   const [query, setQuery] = useState("");
+  const [metricMode, setMetricMode] = usePersistentState<TargetMetricMode>(
+    "target-allocation-metric-mode",
+    "both",
+  );
   const [expandedIds, setExpandedIds] = usePersistentState<string[]>("target-allocation-expanded", [
     "root",
   ]);
+  const MetricModeIcon = metricModeIcon(metricMode);
 
   useEffect(() => {
     if (data?.plan && !isEditing) setDraft(data.plan);
@@ -1092,6 +1347,16 @@ export default function TargetAllocationPage() {
           />
         </div>
         <div className="flex gap-2">
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={() => setMetricMode(nextMetricMode(metricMode))}
+            title="Toggle rail and bar labels"
+          >
+            <MetricModeIcon className="h-4 w-4" />
+            {metricModeLabel(metricMode)}
+          </Button>
           {isEditing ? (
             <>
               <Button
@@ -1132,24 +1397,18 @@ export default function TargetAllocationPage() {
         />
       ) : (
         <div className="overflow-hidden rounded-md border">
-          {data.dashboard.root.children.length === 0 ? (
-            <div className="text-muted-foreground p-8 text-center text-sm">No rows</div>
-          ) : (
-            data.dashboard.root.children.map((row, index) => (
-              <TargetRow
-                key={row.id}
-                row={row}
-                depth={0}
-                ancestorContinuations={[]}
-                isLast={index === data.dashboard.root.children.length - 1}
-                currency={data.dashboard.currency}
-                expandedIds={expandedIds}
-                setExpandedIds={setExpandedIds}
-                query={query}
-                isBalanceHidden={isBalanceHidden}
-              />
-            ))
-          )}
+          <TargetRow
+            row={data.dashboard.root}
+            depth={0}
+            ancestorContinuations={[]}
+            isLast
+            metricMode={metricMode}
+            currency={data.dashboard.currency}
+            expandedIds={expandedIds}
+            setExpandedIds={setExpandedIds}
+            query={query}
+            isBalanceHidden={isBalanceHidden}
+          />
         </div>
       )}
     </div>

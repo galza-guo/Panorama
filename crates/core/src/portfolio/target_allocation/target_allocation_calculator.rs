@@ -346,6 +346,7 @@ fn build_display_children(
             planned_rows.push(untargeted);
         }
 
+        sort_rows_by_planned_weight(&mut planned_rows);
         return planned_rows;
     }
 
@@ -365,8 +366,18 @@ fn build_display_children(
             Vec::new(),
         ));
     }
+    sort_rows_by_planned_weight(&mut rows);
 
     rows
+}
+
+fn sort_rows_by_planned_weight(rows: &mut [TargetAllocationDisplayRow]) {
+    rows.sort_by(|a, b| match (a.target_percent, b.target_percent) {
+        (Some(a_target), Some(b_target)) => b_target.cmp(&a_target),
+        (Some(_), None) => std::cmp::Ordering::Less,
+        (None, Some(_)) => std::cmp::Ordering::Greater,
+        (None, None) => std::cmp::Ordering::Equal,
+    });
 }
 
 fn build_node_row(
