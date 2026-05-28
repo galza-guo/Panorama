@@ -25,6 +25,7 @@ pub struct AccountDto {
     pub account_type: String,
     pub currency: String,
     pub is_active: bool,
+    pub account_owner: Option<String>,
 }
 
 /// Output envelope for accounts tool.
@@ -98,6 +99,7 @@ impl<E: AiEnvironment + 'static> Tool for GetAccountsTool<E> {
                 account_type: a.account_type,
                 currency: a.currency,
                 is_active: a.is_active,
+                account_owner: a.account_owner,
             })
             .collect();
 

@@ -289,6 +289,7 @@ const SettingsAccountsPage = () => {
       </div>
       <AccountEditModal
         account={selectedAccount || undefined}
+        accounts={accounts}
         open={visibleModal}
         onClose={() => setVisibleModal(false)}
       />

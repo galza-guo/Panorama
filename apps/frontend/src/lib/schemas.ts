@@ -64,6 +64,11 @@ export const importMappingSchema = z.object({
 
 export const trackingModeSchema = z.enum(["TRANSACTIONS", "HOLDINGS", "NOT_SET"]);
 
+const nullableTrimmedStringSchema = z.preprocess(
+  (value) => (typeof value === "string" ? value.trim() || null : value),
+  z.string().nullable(),
+);
+
 export const newAccountSchema = z.object({
   id: z.string().uuid().optional(),
   name: z
@@ -82,6 +87,7 @@ export const newAccountSchema = z.object({
   currency: z.string({ required_error: "Please select a currency." }),
   trackingMode: trackingModeSchema.optional().default("NOT_SET"),
   meta: z.string().nullable().optional(),
+  accountOwner: nullableTrimmedStringSchema.optional(),
 });
 
 export const newGoalSchema = z.object({

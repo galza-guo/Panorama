@@ -907,6 +907,7 @@ mod tests {
             provider_account_id: None,
             is_archived: false,
             tracking_mode: crate::accounts::TrackingMode::NotSet,
+            account_owner: None,
         }
     }
 
@@ -4374,6 +4375,7 @@ mod tests {
             provider_account_id: None,
             is_archived,
             tracking_mode: crate::accounts::TrackingMode::NotSet,
+            account_owner: None,
         }
     }
 

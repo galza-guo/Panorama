@@ -166,6 +166,7 @@ export interface Account {
   meta?: string;
   provider?: string;
   providerAccountId?: string;
+  accountOwner?: string | null;
 }
 
 /**

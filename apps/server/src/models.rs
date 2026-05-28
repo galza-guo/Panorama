@@ -22,6 +22,7 @@ pub struct Account {
     pub meta: Option<String>,
     pub provider: Option<String>,
     pub provider_account_id: Option<String>,
+    pub account_owner: Option<String>,
 }
 
 impl From<core_accounts::Account> for Account {
@@ -49,6 +50,7 @@ impl From<core_accounts::Account> for Account {
             meta: a.meta,
             provider: a.provider,
             provider_account_id: a.provider_account_id,
+            account_owner: a.account_owner,
         }
     }
 }
@@ -73,6 +75,7 @@ pub struct NewAccount {
     pub meta: Option<String>,
     pub provider: Option<String>,
     pub provider_account_id: Option<String>,
+    pub account_owner: Option<String>,
 }
 
 fn default_tracking_mode() -> String {
@@ -104,6 +107,7 @@ impl From<NewAccount> for core_accounts::NewAccount {
             meta: a.meta,
             provider: a.provider,
             provider_account_id: a.provider_account_id,
+            account_owner: a.account_owner,
         }
     }
 }
@@ -124,6 +128,7 @@ pub struct AccountUpdate {
     pub meta: Option<String>,
     pub provider: Option<String>,
     pub provider_account_id: Option<String>,
+    pub account_owner: Option<String>,
 }
 
 impl From<AccountUpdate> for core_accounts::AccountUpdate {
@@ -142,6 +147,7 @@ impl From<AccountUpdate> for core_accounts::AccountUpdate {
             meta: a.meta,
             provider: a.provider,
             provider_account_id: a.provider_account_id,
+            account_owner: a.account_owner,
         }
     }
 }

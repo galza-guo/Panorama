@@ -63,6 +63,7 @@ export interface Account {
   meta?: string; // Optional - additional metadata as JSON string
   provider?: string; // Optional - sync provider (e.g., 'SNAPTRADE', 'PLAID', 'MANUAL')
   providerAccountId?: string; // Optional - account ID in the provider's system
+  accountOwner?: string | null; // Optional owner name for household/shared accounts
 }
 
 /**

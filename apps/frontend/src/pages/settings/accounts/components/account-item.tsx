@@ -88,6 +88,12 @@ export function AccountItem({
                 <span>{account.group}</span>
               </>
             )}
+            {account.accountOwner && (
+              <>
+                <span>·</span>
+                <span>{account.accountOwner}</span>
+              </>
+            )}
             <span>·</span>
             <TooltipProvider>
               <Tooltip delayDuration={300}>

@@ -44,6 +44,8 @@ pub struct Account {
     pub is_archived: bool,
     /// Tracking mode for the account
     pub tracking_mode: TrackingMode,
+    /// Optional owner name for household or shared accounts
+    pub account_owner: Option<String>,
 }
 
 /// Input model for creating a new account.
@@ -67,6 +69,8 @@ pub struct NewAccount {
     pub is_archived: bool,
     #[serde(default)]
     pub tracking_mode: TrackingMode,
+    #[serde(default)]
+    pub account_owner: Option<String>,
 }
 
 impl NewAccount {
@@ -103,6 +107,8 @@ pub struct AccountUpdate {
     pub provider_account_id: Option<String>,
     pub is_archived: Option<bool>,
     pub tracking_mode: Option<TrackingMode>,
+    #[serde(default)]
+    pub account_owner: Option<String>,
 }
 
 impl AccountUpdate {

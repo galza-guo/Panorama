@@ -41,6 +41,7 @@ pub struct AccountDB {
     pub provider_account_id: Option<String>,
     pub is_archived: bool,
     pub tracking_mode: String,
+    pub account_owner: Option<String>,
 }
 
 // Conversion implementations
@@ -68,6 +69,7 @@ impl From<AccountDB> for Account {
             provider_account_id: db.provider_account_id,
             is_archived: db.is_archived,
             tracking_mode,
+            account_owner: db.account_owner,
         }
     }
 }
@@ -98,6 +100,7 @@ impl From<NewAccount> for AccountDB {
             provider_account_id: domain.provider_account_id,
             is_archived: domain.is_archived,
             tracking_mode,
+            account_owner: domain.account_owner,
         }
     }
 }
@@ -130,6 +133,7 @@ impl From<AccountUpdate> for AccountDB {
             provider_account_id: domain.provider_account_id,
             is_archived: domain.is_archived.unwrap_or(false),
             tracking_mode,
+            account_owner: domain.account_owner,
         }
     }
 }

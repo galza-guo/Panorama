@@ -199,6 +199,7 @@ impl SnapshotService {
             provider_account_id: None,
             is_archived: false,
             tracking_mode: crate::accounts::TrackingMode::NotSet,
+            account_owner: None,
         }
     }
 

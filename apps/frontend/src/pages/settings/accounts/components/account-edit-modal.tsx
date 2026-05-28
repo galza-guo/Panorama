@@ -6,11 +6,12 @@ import { AccountForm } from "./account-form";
 
 export interface AccountEditModalProps {
   account?: Account;
+  accounts?: Account[];
   open?: boolean;
   onClose?: () => void;
 }
 
-export function AccountEditModal({ account, open, onClose }: AccountEditModalProps) {
+export function AccountEditModal({ account, accounts = [], open, onClose }: AccountEditModalProps) {
   const { settings } = useSettingsContext();
 
   const defaultValues = {
@@ -25,12 +26,13 @@ export function AccountEditModal({ account, open, onClose }: AccountEditModalPro
     isArchived: account?.isArchived ?? false,
     trackingMode: account?.trackingMode,
     meta: account?.meta,
+    accountOwner: account?.accountOwner ?? null,
   };
 
   return (
     <Dialog open={open} onOpenChange={onClose} useIsMobile={useIsMobileViewport}>
       <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-[625px]">
-        <AccountForm defaultValues={defaultValues} onSuccess={onClose} />
+        <AccountForm accounts={accounts} defaultValues={defaultValues} onSuccess={onClose} />
       </DialogContent>
     </Dialog>
   );

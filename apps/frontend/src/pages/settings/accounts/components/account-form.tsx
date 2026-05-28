@@ -1,7 +1,7 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useId, useMemo } from "react";
 
 import { Button } from "@wealthfolio/ui/components/ui/button";
 import { Checkbox } from "@wealthfolio/ui/components/ui/checkbox";
@@ -47,6 +47,7 @@ import {
   useSetTargetAllocationAccountDefault,
   useTargetAllocation,
 } from "@/hooks/use-target-allocation";
+import type { Account } from "@/lib/types";
 
 const accountTypes: ResponsiveSelectOption[] = [
   { label: "Securities", value: "SECURITIES" },
@@ -60,14 +61,20 @@ type AccountFormInput = z.input<typeof newAccountSchema>;
 type AccountFormOutput = z.output<typeof newAccountSchema>;
 
 interface AccountFormlProps {
+  accounts?: Pick<Account, "accountOwner">[];
   defaultValues?: AccountFormInput;
   onSuccess?: () => void;
 }
 
-export function AccountForm({ defaultValues, onSuccess = () => undefined }: AccountFormlProps) {
+export function AccountForm({
+  accounts = [],
+  defaultValues,
+  onSuccess = () => undefined,
+}: AccountFormlProps) {
   const { createAccountMutation, updateAccountMutation } = useAccountMutations({ onSuccess });
   const { data: targetAllocation } = useTargetAllocation();
   const setTargetAccountDefaultMutation = useSetTargetAllocationAccountDefault();
+  const accountOwnerOptionsId = useId();
 
   // Track initial tracking mode to detect changes
   const initialTrackingMode = defaultValues?.trackingMode;
@@ -81,6 +88,24 @@ export function AccountForm({ defaultValues, onSuccess = () => undefined }: Acco
   const targetFolders =
     targetAllocation?.plan.nodes.filter((node) => node.nodeKind === "folder") ?? [];
   const showTargetFolderSelector = Boolean(defaultValues?.id && targetAllocation?.plan.hasPlan);
+  const accountOwnerOptions = useMemo(() => {
+    const owners = new Set<string>();
+
+    for (const account of accounts) {
+      const owner = account.accountOwner?.trim();
+      if (owner) {
+        owners.add(owner);
+      }
+    }
+
+    const defaultOwner =
+      typeof defaultValues?.accountOwner === "string" ? defaultValues.accountOwner.trim() : "";
+    if (defaultOwner) {
+      owners.add(defaultOwner);
+    }
+
+    return [...owners].sort((a, b) => a.localeCompare(b));
+  }, [accounts, defaultValues?.accountOwner]);
 
   useEffect(() => {
     if (!defaultValues?.id || !targetAllocation?.plan.accountDefaults) return;
@@ -207,6 +232,33 @@ export function AccountForm({ defaultValues, onSuccess = () => undefined }: Acco
                 <FormControl>
                   <Input placeholder="Retirement, 401K, RRSP, TFSA,..." {...field} />
                 </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={form.control}
+            name="accountOwner"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Account Owner</FormLabel>
+                <FormControl>
+                  <Input
+                    placeholder="Owner name"
+                    list={accountOwnerOptions.length > 0 ? accountOwnerOptionsId : undefined}
+                    value={typeof field.value === "string" ? field.value : ""}
+                    onChange={field.onChange}
+                  />
+                </FormControl>
+                {accountOwnerOptions.length > 0 && (
+                  <datalist id={accountOwnerOptionsId}>
+                    {accountOwnerOptions.map((owner) => (
+                      <option key={owner} value={owner}>
+                        {owner}
+                      </option>
+                    ))}
+                  </datalist>
+                )}
                 <FormMessage />
               </FormItem>
             )}
