@@ -25,7 +25,7 @@ import AboutSettingsPage from "./about-page";
 describe("about settings page", () => {
   beforeEach(() => {
     getAppInfoMock.mockResolvedValue({
-      version: "3.2.2",
+      version: "3.2.3",
       dbPath: "/tmp/panorama.db",
       logsDir: "/tmp/logs",
     });

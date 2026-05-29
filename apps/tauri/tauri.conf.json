@@ -27,7 +27,7 @@
   },
   "productName": "Panorama",
   "mainBinaryName": "Panorama",
-  "version": "3.2.2",
+  "version": "3.2.3",
   "identifier": "com.gallantguo.panorama",
   "plugins": {
     "updater": {
