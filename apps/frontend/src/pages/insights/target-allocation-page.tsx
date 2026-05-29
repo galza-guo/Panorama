@@ -2,17 +2,19 @@ import { Button } from "@wealthfolio/ui/components/ui/button";
 import { Icons, AmountDisplay, EmptyPlaceholder } from "@wealthfolio/ui";
 import { Input } from "@wealthfolio/ui/components/ui/input";
 import {
-  Popover,
-  PopoverAnchor,
-  PopoverContent,
-  PopoverTrigger,
-} from "@wealthfolio/ui/components/ui/popover";
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@wealthfolio/ui/components/ui/dialog";
+import { Popover, PopoverAnchor, PopoverContent } from "@wealthfolio/ui/components/ui/popover";
 import { Skeleton } from "@wealthfolio/ui/components/ui/skeleton";
 import { toast } from "@wealthfolio/ui/components/ui/use-toast";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
-import { useAccounts } from "@/hooks/use-accounts";
 import { useBalancePrivacy } from "@/hooks/use-balance-privacy";
 import { usePersistentState } from "@/hooks/use-persistent-state";
 import { useSaveTargetAllocation, useTargetAllocation } from "@/hooks/use-target-allocation";
@@ -24,6 +26,25 @@ import type {
   TargetAllocationPlanData,
 } from "@/lib/types";
 import { cn } from "@/lib/utils";
+import {
+  AUTOMATIC_STYLE_VALUE,
+  applyNodeEditDraft,
+  assetNodeMatchingHoldings,
+  buildHoldingAssignmentGroups,
+  canMoveNodeUnder,
+  compactFolderPath,
+  deleteFolderAndMoveContentsToParent,
+  deleteFolderAndUntargetContents,
+  deleteNodeDirectly,
+  explicitUntargetHoldings,
+  folderHasContents,
+  holdingAccountDefaultPath,
+  holdingAssignmentState,
+  moveNodeUnder,
+  nodeEditDraftFromNode,
+  untargetAssetNode,
+  type NodeEditDraft,
+} from "./target-allocation-editor-utils";
 
 const NODE_COLORS = [
   "#3b82f6",
@@ -41,8 +62,23 @@ const TREE_LINE_WIDTH_PX = 28;
 const BAR_INDENT_PX = 36;
 const MAX_BAR_INDENT_PX = 144;
 const HOVER_DETAILS_OPEN_DELAY_MS = 2000;
+const EXCLUDED_ASSETS_NAME = "Excluded Assets";
+const EMPTY_NODE_EDIT_DRAFT: NodeEditDraft = {
+  name: "",
+  color: AUTOMATIC_STYLE_VALUE,
+  icon: AUTOMATIC_STYLE_VALUE,
+};
+const NODE_ICON_LABELS: Record<string, string> = {
+  folder: "Folder",
+  target: "Target",
+  wallet: "Wallet",
+  sparkles: "Sparkles",
+  circleGauge: "Gauge",
+  pieChart: "Pie",
+};
 
 type TargetMetricMode = "percentage" | "amount" | "both";
+type AssetUntargetMode = "accountDefault" | "explicitUntargeted";
 
 function makeId(prefix: string) {
   return `${prefix}-${globalThis.crypto?.randomUUID?.() ?? Math.random().toString(36).slice(2)}`;
@@ -75,20 +111,36 @@ function displayHoldingName(holding: TargetAllocationHoldingInput) {
   return holding.name || holding.symbol || holding.subjectKey;
 }
 
+function buildExcludedAssetsNode(sortOrder: number): TargetAllocationNode {
+  return {
+    id: makeId("folder"),
+    parentId: null,
+    nodeKind: "folder",
+    name: EXCLUDED_ASSETS_NAME,
+    targetPercent: 0,
+    assetRef: null,
+    color: NODE_COLORS[7],
+    icon: "ellipsis",
+    sortOrder,
+  };
+}
+
 function buildPotTemplate(): TargetAllocationPlanData {
+  const potNodes = [1, 2, 3, 4].map((number, index) => ({
+    id: makeId("folder"),
+    parentId: null,
+    nodeKind: "folder" as const,
+    name: `Pot ${number}`,
+    targetPercent: null,
+    assetRef: null,
+    color: NODE_COLORS[index],
+    icon: "folder",
+    sortOrder: index,
+  }));
+
   return {
     hasPlan: true,
-    nodes: [1, 2, 3, 4].map((number, index) => ({
-      id: makeId("folder"),
-      parentId: null,
-      nodeKind: "folder" as const,
-      name: `Pot ${number}`,
-      targetPercent: null,
-      assetRef: null,
-      color: NODE_COLORS[index],
-      icon: "folder",
-      sortOrder: index,
-    })),
+    nodes: [...potNodes, buildExcludedAssetsNode(potNodes.length)],
     accountDefaults: [],
     attributions: [],
     exclusions: [],
@@ -98,7 +150,7 @@ function buildPotTemplate(): TargetAllocationPlanData {
 function buildBlankPlan(): TargetAllocationPlanData {
   return {
     hasPlan: true,
-    nodes: [],
+    nodes: [buildExcludedAssetsNode(0)],
     accountDefaults: [],
     attributions: [],
     exclusions: [],
@@ -190,106 +242,98 @@ function IconBadge({
   );
 }
 
-function NodeColorPicker({
-  value,
-  inheritedColor,
-  onChange,
+function effectiveFolderStyle(nodes: TargetAllocationNode[], nodeId?: string | null) {
+  let color: string | null | undefined;
+  let icon: string | null | undefined;
+  let current = nodeId ? nodes.find((node) => node.id === nodeId) : undefined;
+  const seen = new Set<string>();
+
+  while (current && current.nodeKind === "folder" && !seen.has(current.id)) {
+    seen.add(current.id);
+    color ??= current.color;
+    icon ??= current.icon;
+    if (color && icon) break;
+    current = current.parentId ? nodes.find((node) => node.id === current?.parentId) : undefined;
+  }
+
+  return {
+    color: color ?? NODE_COLORS[0],
+    icon: icon ?? "folder",
+  };
+}
+
+function FolderStyleChoices({
+  draft,
+  setDraft,
 }: {
-  value?: string | null;
-  inheritedColor?: string | null;
-  onChange: (color: string | null) => void;
+  draft: NodeEditDraft;
+  setDraft: (draft: NodeEditDraft) => void;
 }) {
-  const currentColor = value || inheritedColor || NODE_COLORS[0];
   return (
-    <Popover>
-      <PopoverTrigger asChild>
-        <Button
-          type="button"
-          variant="outline"
-          size="icon-sm"
-          title="Change color"
-          aria-label="Change color"
-        >
-          <span
-            className="size-4 rounded-full border border-black/10"
-            style={{ backgroundColor: currentColor }}
-          />
-        </Button>
-      </PopoverTrigger>
-      <PopoverContent align="end" className="w-auto p-2">
-        <div className="grid grid-cols-4 gap-1">
+    <div className="grid gap-4">
+      <div className="grid gap-2">
+        <div className="text-muted-foreground text-xs font-medium">Color</div>
+        <div className="flex flex-wrap gap-2">
+          <Button
+            type="button"
+            variant={draft.color === AUTOMATIC_STYLE_VALUE ? "secondary" : "outline"}
+            size="sm"
+            onClick={() => setDraft({ ...draft, color: AUTOMATIC_STYLE_VALUE })}
+          >
+            Automatic
+          </Button>
           {NODE_COLORS.map((color) => (
             <Button
               key={color}
               type="button"
-              variant="ghost"
+              variant="outline"
               size="icon-sm"
               title={color}
               aria-label={`Use color ${color}`}
-              onClick={() => onChange(color)}
-              className={cn(value === color && "ring-ring ring-2")}
+              onClick={() => setDraft({ ...draft, color })}
+              className={cn(draft.color === color && "ring-ring ring-2")}
             >
-              <span className="size-4 rounded-full" style={{ backgroundColor: color }} />
+              <span
+                className="size-4 rounded-full border border-black/10"
+                style={{ backgroundColor: color }}
+              />
             </Button>
           ))}
+        </div>
+      </div>
+
+      <div className="grid gap-2">
+        <div className="text-muted-foreground text-xs font-medium">Symbol</div>
+        <div className="flex flex-wrap gap-2">
           <Button
             type="button"
-            variant="ghost"
+            variant={draft.icon === AUTOMATIC_STYLE_VALUE ? "secondary" : "outline"}
             size="sm"
-            onClick={() => onChange(null)}
-            className="col-span-4 justify-start px-2"
+            onClick={() => setDraft({ ...draft, icon: AUTOMATIC_STYLE_VALUE })}
           >
-            Inherit
+            Automatic
           </Button>
-        </div>
-      </PopoverContent>
-    </Popover>
-  );
-}
-
-function NodeIconPicker({
-  value,
-  onChange,
-}: {
-  value?: string | null;
-  onChange: (icon: string) => void;
-}) {
-  const currentIcon = value || "folder";
-  return (
-    <Popover>
-      <PopoverTrigger asChild>
-        <Button
-          type="button"
-          variant="outline"
-          size="icon-sm"
-          title="Change symbol"
-          aria-label="Change symbol"
-        >
-          <IconBadge icon={currentIcon} color="#8a8f98" className="size-5 rounded-sm" />
-        </Button>
-      </PopoverTrigger>
-      <PopoverContent align="end" className="w-auto p-2">
-        <div className="grid grid-cols-3 gap-1">
           {NODE_ICONS.map((icon) => {
             const Icon = iconForName(icon);
             return (
               <Button
                 key={icon}
                 type="button"
-                variant="ghost"
-                size="icon-sm"
-                title={icon}
-                aria-label={`Use ${icon} symbol`}
-                onClick={() => onChange(icon)}
-                className={cn(currentIcon === icon && "ring-ring ring-2")}
+                variant="outline"
+                size="sm"
+                title={NODE_ICON_LABELS[icon] ?? icon}
+                aria-label={`Use ${NODE_ICON_LABELS[icon] ?? icon} symbol`}
+                onClick={() => setDraft({ ...draft, icon })}
+                className={cn("gap-1.5", draft.icon === icon && "ring-ring ring-2")}
               >
-                <Icon className="h-4 w-4" />
+                <Icon className="h-3.5 w-3.5" />
+                <span>{NODE_ICON_LABELS[icon] ?? icon}</span>
               </Button>
             );
           })}
         </div>
-      </PopoverContent>
-    </Popover>
+      </div>
+    </div>
   );
 }
 
@@ -320,6 +364,17 @@ function metricModeIcon(mode: TargetMetricMode) {
   if (mode === "percentage") return Icons.Percent;
   if (mode === "amount") return Icons.BadgeDollarSign;
   return Icons.ArrowLeftRight;
+}
+
+function UnassignedMark({ title = "Unassigned" }: { title?: string }) {
+  return (
+    <span
+      title={title}
+      className="inline-flex size-5 shrink-0 items-center justify-center rounded-full bg-amber-100 text-xs font-semibold text-amber-700 ring-1 ring-amber-200 dark:bg-amber-950/40 dark:text-amber-300 dark:ring-amber-800"
+    >
+      !
+    </span>
+  );
 }
 
 function TreeConnector({
@@ -862,9 +917,80 @@ interface EditorProps {
 }
 
 function TargetAllocationEditor({ draft, setDraft, viewHoldings, dashboardRows }: EditorProps) {
-  const folders = folderOptions(draft.nodes);
-  const [assetParentId, setAssetParentId] = useState<string>("");
-  const [selectedHoldingKey, setSelectedHoldingKey] = useState<string>("");
+  const folders = useMemo(() => folderOptions(draft.nodes), [draft.nodes]);
+  const [editingNodeId, setEditingNodeId] = useState<string | null>(null);
+  const [nodeEditDraft, setNodeEditDraft] = useState<NodeEditDraft>(EMPTY_NODE_EDIT_DRAFT);
+  const [movingNodeId, setMovingNodeId] = useState<string | null>(null);
+  const [movingHoldingKey, setMovingHoldingKey] = useState<string | null>(null);
+  const [moveDestinationId, setMoveDestinationId] = useState<string | null | undefined>();
+  const [deletingFolderId, setDeletingFolderId] = useState<string | null>(null);
+  const [untargetingAssetId, setUntargetingAssetId] = useState<string | null>(null);
+  const editingNode = editingNodeId
+    ? draft.nodes.find((node) => node.id === editingNodeId)
+    : undefined;
+  const movingNode = movingNodeId
+    ? draft.nodes.find((node) => node.id === movingNodeId)
+    : undefined;
+  const movingHolding = movingHoldingKey
+    ? viewHoldings.find((holding) => holding.subjectKey === movingHoldingKey)
+    : undefined;
+  const deletingFolder = deletingFolderId
+    ? draft.nodes.find((node) => node.id === deletingFolderId && node.nodeKind === "folder")
+    : undefined;
+  const untargetingAsset = untargetingAssetId
+    ? draft.nodes.find((node) => node.id === untargetingAssetId && node.nodeKind === "asset")
+    : undefined;
+  const canCommitMove =
+    moveDestinationId !== undefined &&
+    (movingHolding
+      ? Boolean(moveDestinationId)
+      : Boolean(movingNode && canMoveNodeUnder(draft.nodes, movingNode.id, moveDestinationId)));
+  const assignmentGroups = useMemo(
+    () => buildHoldingAssignmentGroups(viewHoldings, draft),
+    [draft, viewHoldings],
+  );
+  const untargetedGroups = useMemo(
+    () =>
+      assignmentGroups
+        .map((group) => ({
+          ...group,
+          holdings: group.holdings.filter((item) => item.assignment.isUnassigned),
+        }))
+        .filter((group) => group.holdings.length > 0),
+    [assignmentGroups],
+  );
+  const untargetedCount = untargetedGroups.reduce((sum, group) => sum + group.holdings.length, 0);
+  const untargetingAssetHoldings = untargetingAsset
+    ? assetNodeMatchingHoldings(untargetingAsset, viewHoldings, draft)
+    : [];
+  const untargetingAssetDefaultPath =
+    untargetingAssetHoldings
+      .map((holding) => holdingAccountDefaultPath(holding, draft))
+      .find(Boolean) ?? null;
+
+  useEffect(() => {
+    if (!editingNodeId) return;
+    const node = draft.nodes.find((candidate) => candidate.id === editingNodeId);
+    if (!node) {
+      setEditingNodeId(null);
+      return;
+    }
+    setNodeEditDraft(nodeEditDraftFromNode(node));
+  }, [draft.nodes, editingNodeId]);
+
+  useEffect(() => {
+    if (movingNodeId && !draft.nodes.some((node) => node.id === movingNodeId)) {
+      setMovingNodeId(null);
+      setMoveDestinationId(undefined);
+    }
+  }, [draft.nodes, movingNodeId]);
+
+  useEffect(() => {
+    if (movingHoldingKey && !viewHoldings.some((holding) => holding.subjectKey === movingHoldingKey)) {
+      setMovingHoldingKey(null);
+      setMoveDestinationId(undefined);
+    }
+  }, [movingHoldingKey, viewHoldings]);
 
   const updateNode = (nodeId: string, patch: Partial<TargetAllocationNode>) => {
     const descendantIds =
@@ -897,55 +1023,51 @@ function TargetAllocationEditor({ draft, setDraft, viewHoldings, dashboardRows }
       name: "New folder",
       targetPercent: null,
       assetRef: null,
-      color,
-      icon: "folder",
+      color: parentId ? null : color,
+      icon: parentId ? null : "folder",
       sortOrder: siblingCount,
     };
     setDraft({ ...draft, nodes: [...draft.nodes, newNode] });
   };
 
-  const addHoldingTarget = () => {
-    const holding = viewHoldings.find((candidate) => candidate.subjectKey === selectedHoldingKey);
-    if (!holding || !assetParentId) return;
-    const assetRef = assetRefFromHolding(holding);
-    const siblingCount = draft.nodes.filter((node) => node.parentId === assetParentId).length;
-    const newNode: TargetAllocationNode = {
-      id: makeId("asset"),
-      parentId: assetParentId,
-      nodeKind: "asset",
-      name: displayHoldingName(holding),
-      targetPercent: null,
-      assetRef,
-      color: null,
-      icon: null,
-      sortOrder: siblingCount,
-    };
-    const holdings = getHoldingsForAttribution(holding, assetParentId);
-    setDraft({
-      ...draft,
-      nodes: [...draft.nodes, newNode],
-      ...applyAttributions(holdings, assetParentId),
-    });
-    setSelectedHoldingKey("");
+  const openNodeEditDialog = (node: TargetAllocationNode) => {
+    setNodeEditDraft(nodeEditDraftFromNode(node));
+    setEditingNodeId(node.id);
   };
 
-  const deleteNode = (nodeId: string) => {
-    const deletedIds = new Set([
-      nodeId,
-      ...draft.nodes
-        .filter((node) => isDescendant(draft.nodes, node.id, nodeId))
-        .map((node) => node.id),
-    ]);
+  const saveNodeEditDialog = () => {
+    if (!editingNode) return;
+    const name = nodeEditDraft.name.trim();
+    if (!name) {
+      toast({ title: "Name is required.", variant: "destructive" });
+      return;
+    }
+
     setDraft({
       ...draft,
-      nodes: draft.nodes.filter((node) => !deletedIds.has(node.id)),
-      accountDefaults: draft.accountDefaults.filter(
-        (accountDefault) => !deletedIds.has(accountDefault.folderNodeId),
-      ),
-      attributions: draft.attributions.filter(
-        (attribution) => !deletedIds.has(attribution.folderNodeId),
+      nodes: draft.nodes.map((node) =>
+        node.id === editingNode.id ? applyNodeEditDraft(node, { ...nodeEditDraft, name }) : node,
       ),
     });
+    setEditingNodeId(null);
+  };
+
+  const openMoveDialog = (node: TargetAllocationNode) => {
+    setMovingNodeId(node.id);
+    setMovingHoldingKey(null);
+    setMoveDestinationId(undefined);
+  };
+
+  const openHoldingMoveDialog = (holding: TargetAllocationHoldingInput) => {
+    setMovingHoldingKey(holding.subjectKey);
+    setMovingNodeId(null);
+    setMoveDestinationId(undefined);
+  };
+
+  const closeMoveDialog = () => {
+    setMovingNodeId(null);
+    setMovingHoldingKey(null);
+    setMoveDestinationId(undefined);
   };
 
   const getSameAssetHoldings = (holding: TargetAllocationHoldingInput) => {
@@ -953,8 +1075,7 @@ function TargetAllocationEditor({ draft, setDraft, viewHoldings, dashboardRows }
     return viewHoldings.filter(
       (candidate) =>
         candidate.subjectKey !== holding.subjectKey &&
-        isSameAssetRef(assetRefFromHolding(candidate), assetRef) &&
-        !draft.exclusions.some((exclusion) => exclusion.subjectKey === candidate.subjectKey),
+        isSameAssetRef(assetRefFromHolding(candidate), assetRef),
     );
   };
 
@@ -984,83 +1105,276 @@ function TargetAllocationEditor({ draft, setDraft, viewHoldings, dashboardRows }
     return confirmed ? [holding, ...sameAssetHoldings] : [holding];
   };
 
-  const applyAttributions = (
+  const collectHoldingsForAttribution = (
     holdings: TargetAllocationHoldingInput[],
     folderNodeId: string,
-  ): Pick<TargetAllocationPlanData, "attributions" | "exclusions"> => {
+  ) => {
+    const next = new Map<string, TargetAllocationHoldingInput>();
+    for (const holding of holdings) {
+      for (const candidate of getHoldingsForAttribution(holding, folderNodeId)) {
+        next.set(candidate.subjectKey, candidate);
+      }
+    }
+    return Array.from(next.values());
+  };
+
+  const withMissingAssetTargets = (
+    nodes: TargetAllocationNode[],
+    holdings: TargetAllocationHoldingInput[],
+    folderNodeId: string,
+  ) => {
+    const nextNodes = [...nodes];
+    const siblingCount = nextNodes.filter((node) => node.parentId === folderNodeId).length;
+    let addedCount = 0;
+
+    for (const holding of holdings) {
+      const assetRef = assetRefFromHolding(holding);
+      const alreadyTargeted = nextNodes.some(
+        (node) =>
+          node.parentId === folderNodeId &&
+          node.nodeKind === "asset" &&
+          isSameAssetRef(node.assetRef, assetRef),
+      );
+      if (alreadyTargeted) continue;
+
+      nextNodes.push({
+        id: makeId("asset"),
+        parentId: folderNodeId,
+        nodeKind: "asset",
+        name: displayHoldingName(holding),
+        targetPercent: null,
+        assetRef,
+        color: null,
+        icon: null,
+        sortOrder: siblingCount + addedCount,
+      });
+      addedCount += 1;
+    }
+
+    return nextNodes;
+  };
+
+  const applyAttributionsToPlan = (
+    plan: TargetAllocationPlanData,
+    holdings: TargetAllocationHoldingInput[],
+    folderNodeId: string,
+  ): TargetAllocationPlanData => {
     const subjectKeys = new Set(holdings.map((holding) => holding.subjectKey));
     return {
+      ...plan,
       attributions: [
-        ...draft.attributions.filter((attribution) => !subjectKeys.has(attribution.subjectKey)),
+        ...plan.attributions.filter((attribution) => !subjectKeys.has(attribution.subjectKey)),
         ...holdings.map((holding) => ({
           subjectKey: holding.subjectKey,
           subjectType: holding.subjectType,
           folderNodeId,
         })),
       ],
-      exclusions: draft.exclusions.filter((exclusion) => !subjectKeys.has(exclusion.subjectKey)),
+      exclusions: plan.exclusions.filter((exclusion) => !subjectKeys.has(exclusion.subjectKey)),
     };
   };
 
-  const setAttribution = (holding: TargetAllocationHoldingInput, folderNodeId: string) => {
-    const next = draft.attributions.filter(
-      (attribution) => attribution.subjectKey !== holding.subjectKey,
-    );
-    if (folderNodeId) {
-      const holdings = getHoldingsForAttribution(holding, folderNodeId);
-      setDraft({ ...draft, ...applyAttributions(holdings, folderNodeId) });
+  const targetHoldingsToFolder = (
+    plan: TargetAllocationPlanData,
+    holdings: TargetAllocationHoldingInput[],
+    folderNodeId: string,
+  ) => {
+    const nodes = withMissingAssetTargets(plan.nodes, holdings, folderNodeId);
+    return applyAttributionsToPlan({ ...plan, nodes }, holdings, folderNodeId);
+  };
+
+  const saveMoveDialog = () => {
+    if (moveDestinationId === undefined || !canCommitMove) return;
+
+    if (movingHolding && moveDestinationId) {
+      const holdings = collectHoldingsForAttribution([movingHolding], moveDestinationId);
+      setDraft(targetHoldingsToFolder(draft, holdings, moveDestinationId));
+      closeMoveDialog();
       return;
     }
-    setDraft({ ...draft, attributions: next });
-  };
 
-  const toggleExclusion = (holding: TargetAllocationHoldingInput, excluded: boolean) => {
-    const next = draft.exclusions.filter(
-      (exclusion) => exclusion.subjectKey !== holding.subjectKey,
-    );
-    if (excluded) {
-      next.push({ subjectKey: holding.subjectKey, subjectType: holding.subjectType });
+    if (!movingNode) return;
+    const matchingHoldings =
+      movingNode.nodeKind === "asset"
+        ? assetNodeMatchingHoldings(movingNode, viewHoldings, draft)
+        : [];
+    const movedDraft = {
+      ...draft,
+      nodes: moveNodeUnder(draft.nodes, movingNode.id, moveDestinationId),
+    };
+
+    if (movingNode.nodeKind === "asset" && matchingHoldings.length > 0) {
+      setDraft(
+        moveDestinationId
+          ? applyAttributionsToPlan(movedDraft, matchingHoldings, moveDestinationId)
+          : explicitUntargetHoldings(movedDraft, matchingHoldings),
+      );
+    } else {
+      setDraft(movedDraft);
     }
-    setDraft({ ...draft, exclusions: next });
+    closeMoveDialog();
   };
 
-  const setAccountDefault = (accountId: string, folderNodeId: string) => {
-    const next = draft.accountDefaults.filter(
-      (accountDefault) => accountDefault.accountId !== accountId,
+  const deleteNode = (node: TargetAllocationNode) => {
+    if (node.nodeKind === "asset") {
+      const matchingHoldings = assetNodeMatchingHoldings(node, viewHoldings, draft);
+      if (matchingHoldings.length === 0) {
+        setDraft(deleteNodeDirectly(draft, node.id));
+        return;
+      }
+
+      const canUseAccountDefault = matchingHoldings.some(
+        (holding) =>
+          holdingAssignmentState(holding, draft).source === "explicit" &&
+          holdingAccountDefaultPath(holding, draft),
+      );
+      if (canUseAccountDefault) {
+        setUntargetingAssetId(node.id);
+        return;
+      }
+
+      setDraft(untargetAssetNode(draft, node.id, viewHoldings, "explicitUntargeted"));
+      return;
+    }
+
+    if (folderHasContents(draft, node.id, viewHoldings)) {
+      setDeletingFolderId(node.id);
+      return;
+    }
+
+    setDraft(deleteNodeDirectly(draft, node.id));
+  };
+
+  const resolveAssetUntarget = (mode: AssetUntargetMode) => {
+    if (!untargetingAsset) return;
+    setDraft(untargetAssetNode(draft, untargetingAsset.id, viewHoldings, mode));
+    setUntargetingAssetId(null);
+  };
+
+  const useAccountDefaultForUntargetingAsset = () => {
+    resolveAssetUntarget("accountDefault");
+  };
+
+  const explicitlyUntargetAsset = () => {
+    resolveAssetUntarget("explicitUntargeted");
+  };
+
+  const moveDeletingFolderContentsToParent = () => {
+    if (!deletingFolder) return;
+    setDraft(deleteFolderAndMoveContentsToParent(draft, deletingFolder.id, viewHoldings));
+    setDeletingFolderId(null);
+  };
+
+  const untargetDeletingFolderContents = () => {
+    if (!deletingFolder) return;
+    setDraft(deleteFolderAndUntargetContents(draft, deletingFolder.id, viewHoldings));
+    setDeletingFolderId(null);
+  };
+
+  const renderMoveDestination = (node: TargetAllocationNode, depth: number) => {
+    const children = buildNodeTree(draft.nodes, node.id);
+    const canChooseDestination = movingHolding
+      ? node.nodeKind === "folder"
+      : movingNode
+        ? canMoveNodeUnder(draft.nodes, movingNode.id, node.id)
+        : false;
+    const isSelectedDestination = moveDestinationId === node.id;
+    const folderStyle =
+      node.nodeKind === "folder" ? effectiveFolderStyle(draft.nodes, node.id) : null;
+
+    return (
+      <div key={node.id}>
+        <button
+          type="button"
+          disabled={!canChooseDestination}
+          onClick={() => setMoveDestinationId(node.id)}
+          className={cn(
+            "hover:bg-muted/60 flex min-h-9 w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-sm transition-colors disabled:cursor-not-allowed disabled:opacity-40",
+            isSelectedDestination && "bg-muted",
+          )}
+          style={{ paddingLeft: 8 + depth * 18 }}
+        >
+          {node.nodeKind === "folder" ? (
+            <IconBadge icon={folderStyle?.icon} color={folderStyle?.color} className="size-6" />
+          ) : (
+            <span className="bg-muted text-muted-foreground flex size-6 shrink-0 items-center justify-center rounded-md">
+              <Icons.File className="h-3.5 w-3.5" />
+            </span>
+          )}
+          <span className="truncate">{node.name}</span>
+        </button>
+        {children.map((child) => renderMoveDestination(child, depth + 1))}
+      </div>
     );
-    if (folderNodeId) next.push({ accountId, folderNodeId });
-    setDraft({ ...draft, accountDefaults: next });
   };
-
-  const { accounts } = useAccounts();
 
   const renderNodeEditor = (node: TargetAllocationNode, depth: number) => {
     const dashboardRow = dashboardRows.get(node.id);
     const children = buildNodeTree(draft.nodes, node.id);
-    const parentColor = draft.nodes.find((candidate) => candidate.id === node.parentId)?.color;
+    const folderStyle =
+      node.nodeKind === "folder" ? effectiveFolderStyle(draft.nodes, node.id) : null;
     return (
       <div key={node.id}>
-        <div className="grid grid-cols-[minmax(180px,1.5fr)_100px_110px_112px_auto] items-center gap-2 border-b px-3 py-2 max-lg:grid-cols-1">
-          <div className="flex min-w-0 items-center gap-2" style={{ paddingLeft: depth * 18 }}>
-            {node.nodeKind === "folder" ? (
-              <IconBadge
-                icon={node.icon}
-                color={node.color || parentColor || NODE_COLORS[0]}
-                className="size-6"
-              />
-            ) : (
-              <span className="bg-muted text-muted-foreground flex size-6 shrink-0 items-center justify-center rounded-md">
-                <Icons.File className="h-3.5 w-3.5" />
-              </span>
-            )}
-            <Input
-              value={node.name}
-              onChange={(event) => updateNode(node.id, { name: event.target.value })}
-              className="h-8 min-w-0"
-            />
-          </div>
-          <div className="text-muted-foreground text-xs tabular-nums">
-            {dashboardRow ? formatPercent(dashboardRow.currentPercent) : ""}
+        <div className="grid grid-cols-[minmax(220px,1fr)_110px] items-center gap-2 px-3 py-2 max-lg:grid-cols-1">
+          <div
+            className="group flex min-w-0 items-center gap-2"
+            style={{ paddingLeft: depth * 20 }}
+          >
+            <button
+              type="button"
+              onClick={() => openNodeEditDialog(node)}
+              className={cn(
+                "hover:bg-muted/60 focus-visible:ring-ring flex min-w-0 flex-none items-center gap-2 rounded-md py-1 pr-2 text-left transition-colors focus-visible:ring-2 focus-visible:outline-none",
+                node.nodeKind === "folder"
+                  ? "max-w-[calc(100%-7rem)]"
+                  : "max-w-[calc(100%-4.75rem)]",
+              )}
+            >
+              {node.nodeKind === "folder" ? (
+                <IconBadge icon={folderStyle?.icon} color={folderStyle?.color} className="size-6" />
+              ) : (
+                <span className="bg-muted text-muted-foreground flex size-6 shrink-0 items-center justify-center rounded-md">
+                  <Icons.File className="h-3.5 w-3.5" />
+                </span>
+              )}
+              <span className="min-w-0 flex-1 truncate text-sm font-medium">{node.name}</span>
+            </button>
+            <div className="pointer-events-none flex shrink-0 items-center gap-1 opacity-0 transition-opacity group-focus-within:pointer-events-auto group-focus-within:opacity-100 group-hover:pointer-events-auto group-hover:opacity-100">
+              <Button
+                type="button"
+                size="icon-xs"
+                variant="ghost"
+                onClick={() => openMoveDialog(node)}
+                aria-label="Move"
+                title="Move"
+              >
+                <Icons.ArrowRightLeft className="h-3.5 w-3.5" />
+              </Button>
+              {node.nodeKind === "folder" && (
+                <>
+                  <Button
+                    type="button"
+                    size="icon-xs"
+                    variant="ghost"
+                    onClick={() => addFolder(node.id)}
+                    aria-label="Add child folder"
+                    title="Add child folder"
+                  >
+                    <Icons.Plus className="h-3.5 w-3.5" />
+                  </Button>
+                </>
+              )}
+              <Button
+                type="button"
+                size="icon-xs"
+                variant="ghost"
+                onClick={() => deleteNode(node)}
+                aria-label={node.nodeKind === "asset" ? "Untarget" : "Delete folder"}
+                title={node.nodeKind === "asset" ? "Untarget" : "Delete folder"}
+              >
+                <Icons.Trash2 className="h-3.5 w-3.5" />
+              </Button>
+            </div>
           </div>
           <Input
             type="number"
@@ -1081,43 +1395,6 @@ function TargetAllocationEditor({ draft, setDraft, viewHoldings, dashboardRows }
             }
             className="h-8"
           />
-          {node.nodeKind === "folder" ? (
-            <div className="flex items-center gap-1">
-              <NodeColorPicker
-                value={node.color}
-                inheritedColor={parentColor}
-                onChange={(color) => updateNode(node.id, { color })}
-              />
-              <NodeIconPicker
-                value={node.icon}
-                onChange={(icon) => updateNode(node.id, { icon })}
-              />
-            </div>
-          ) : (
-            <span className="text-muted-foreground text-xs">inherits</span>
-          )}
-          <div className="flex justify-end gap-1">
-            {node.nodeKind === "folder" && (
-              <Button
-                type="button"
-                size="icon-xs"
-                variant="ghost"
-                onClick={() => addFolder(node.id)}
-                aria-label="Add child folder"
-              >
-                <Icons.Plus className="h-3.5 w-3.5" />
-              </Button>
-            )}
-            <Button
-              type="button"
-              size="icon-xs"
-              variant="ghost"
-              onClick={() => deleteNode(node.id)}
-              aria-label="Delete node"
-            >
-              <Icons.Trash2 className="h-3.5 w-3.5" />
-            </Button>
-          </div>
         </div>
         {children.map((child) => renderNodeEditor(child, depth + 1))}
       </div>
@@ -1125,138 +1402,247 @@ function TargetAllocationEditor({ draft, setDraft, viewHoldings, dashboardRows }
   };
 
   return (
-    <div className="space-y-5">
-      <div className="rounded-md border">
-        <div className="text-muted-foreground grid grid-cols-[minmax(180px,1.5fr)_100px_110px_112px_auto] gap-2 border-b px-3 py-2 text-xs font-medium max-lg:hidden">
-          <span>Name</span>
-          <span>Current</span>
-          <span>Plan</span>
-          <span>Style</span>
-          <span className="text-right">Actions</span>
+    <>
+      <div
+        className={cn(
+          "grid gap-4",
+          untargetedCount > 0 && "xl:grid-cols-[minmax(0,1fr)_360px]",
+        )}
+      >
+        <div className="min-w-0 rounded-md border">
+          <div className="text-muted-foreground grid grid-cols-[minmax(220px,1fr)_110px] gap-2 border-b px-3 py-2 text-xs font-medium max-lg:hidden">
+            <span>Name</span>
+            <span>Plan</span>
+          </div>
+          {buildNodeTree(draft.nodes).map((node) => renderNodeEditor(node, 0))}
+          <div className="flex gap-2 px-3 py-3">
+            <Button type="button" size="sm" variant="outline" onClick={() => addFolder(null)}>
+              <Icons.Folder className="h-4 w-4" />
+              Folder
+            </Button>
+          </div>
         </div>
-        {buildNodeTree(draft.nodes).map((node) => renderNodeEditor(node, 0))}
-        <div className="flex gap-2 px-3 py-3">
-          <Button type="button" size="sm" variant="outline" onClick={() => addFolder(null)}>
-            <Icons.Folder className="h-4 w-4" />
-            Folder
-          </Button>
-        </div>
-      </div>
 
-      <div className="grid gap-3 rounded-md border p-3 md:grid-cols-[minmax(0,1fr)_220px_auto]">
-        <select
-          value={selectedHoldingKey}
-          onChange={(event) => setSelectedHoldingKey(event.target.value)}
-          className="border-input bg-background h-9 rounded-md border px-3 text-sm"
-        >
-          <option value="">Holding</option>
-          {viewHoldings.map((holding) => (
-            <option key={holding.subjectKey} value={holding.subjectKey}>
-              {displayHoldingName(holding)} · {holding.accountName ?? "Standalone"}
-            </option>
-          ))}
-        </select>
-        <select
-          value={assetParentId}
-          onChange={(event) => setAssetParentId(event.target.value)}
-          className="border-input bg-background h-9 rounded-md border px-3 text-sm"
-        >
-          <option value="">Folder</option>
-          {folders.map((folder) => (
-            <option key={folder.id} value={folder.id}>
-              {folder.name}
-            </option>
-          ))}
-        </select>
-        <Button
-          type="button"
-          size="sm"
-          onClick={addHoldingTarget}
-          disabled={!selectedHoldingKey || !assetParentId}
-        >
-          <Icons.Plus className="h-4 w-4" />
-          Target
-        </Button>
-      </div>
-
-      <div className="rounded-md border">
-        <div className="border-b px-3 py-2 text-sm font-medium">Account Defaults</div>
-        <div className="divide-y">
-          {accounts.map((account) => (
-            <div
-              key={account.id}
-              className="grid grid-cols-[minmax(0,1fr)_220px] items-center gap-3 px-3 py-2 max-sm:grid-cols-1"
-            >
-              <span className="truncate text-sm">{account.name}</span>
-              <select
-                value={
-                  draft.accountDefaults.find(
-                    (accountDefault) => accountDefault.accountId === account.id,
-                  )?.folderNodeId ?? ""
-                }
-                onChange={(event) => setAccountDefault(account.id, event.target.value)}
-                className="border-input bg-background h-8 rounded-md border px-2 text-sm"
-              >
-                <option value="">Unassigned</option>
-                {folders.map((folder) => (
-                  <option key={folder.id} value={folder.id}>
-                    {folder.name}
-                  </option>
-                ))}
-              </select>
+        {untargetedCount > 0 && (
+          <div className="min-w-0 rounded-md border">
+            <div className="flex items-center justify-between gap-2 border-b px-3 py-2">
+              <div className="flex min-w-0 items-center gap-2">
+                <Icons.ListChecks className="text-muted-foreground h-4 w-4 shrink-0" />
+                <span className="truncate text-sm font-medium">Untargeted</span>
+                <span className="inline-flex items-center gap-1 rounded-full bg-amber-50 px-2 py-0.5 text-xs font-medium text-amber-700 ring-1 ring-amber-200 dark:bg-amber-950/40 dark:text-amber-300 dark:ring-amber-800">
+                  <span>!</span>
+                  {untargetedCount}
+                </span>
+              </div>
             </div>
-          ))}
-        </div>
-      </div>
 
-      <div className="rounded-md border">
-        <div className="border-b px-3 py-2 text-sm font-medium">Holdings</div>
-        <div className="divide-y">
-          {viewHoldings.map((holding) => {
-            const attribution = draft.attributions.find(
-              (candidate) => candidate.subjectKey === holding.subjectKey,
-            );
-            const excluded = draft.exclusions.some(
-              (candidate) => candidate.subjectKey === holding.subjectKey,
-            );
-            return (
-              <div
-                key={holding.subjectKey}
-                className="grid grid-cols-[minmax(0,1fr)_220px_90px] items-center gap-3 px-3 py-2 max-md:grid-cols-1"
-              >
-                <div className="min-w-0">
-                  <div className="truncate text-sm font-medium">{displayHoldingName(holding)}</div>
-                  <div className="text-muted-foreground truncate text-xs">
-                    {holding.accountName ?? "Standalone"} · {holding.currency}
+            <div className="max-h-[min(68vh,720px)] divide-y overflow-auto">
+              {untargetedGroups.map((group) => (
+                <div key={group.accountId ?? "standalone"}>
+                  <div className="flex items-center gap-2 bg-muted/30 px-3 py-2">
+                      <span className="bg-muted text-muted-foreground flex size-6 shrink-0 items-center justify-center rounded-md">
+                        <Icons.Wallet className="h-3.5 w-3.5" />
+                      </span>
+                      <div className="min-w-0 flex-1">
+                        <div className="flex min-w-0 items-center gap-1.5">
+                          <span className="truncate text-sm font-medium">{group.accountName}</span>
+                          <UnassignedMark title={`${group.holdings.length} untargeted holdings`} />
+                        </div>
+                      </div>
+                    </div>
+                  <div className="border-muted-foreground/20 ml-[22px] border-l-2">
+                    {group.holdings.map(({ holding, assignment }) => {
+                      const holdingLabel =
+                        holding.symbol && holding.name && holding.symbol !== holding.name
+                          ? `${holding.symbol} - ${holding.name}`
+                          : holding.name || holding.symbol || holding.subjectKey;
+                      return (
+                        <div
+                          key={holding.subjectKey}
+                          className="hover:bg-muted/60 flex items-center gap-2 px-3 py-2 transition-colors"
+                        >
+                          <div className="min-w-0 flex-1">
+                            <div className="flex min-w-0 items-center gap-1.5">
+                              <UnassignedMark />
+                              <span className="truncate text-sm font-medium">{holdingLabel}</span>
+                            </div>
+                            <div
+                              className="text-muted-foreground truncate text-xs"
+                              title={assignment.folderPath ?? undefined}
+                            >
+                              {compactFolderPath(assignment.folderPath)}
+                            </div>
+                          </div>
+                          <Button
+                            type="button"
+                            size="icon-xs"
+                            variant="ghost"
+                            onClick={() => openHoldingMoveDialog(holding)}
+                            aria-label={`Move ${holdingLabel}`}
+                            title="Move"
+                          >
+                            <Icons.ArrowRightLeft className="h-3.5 w-3.5" />
+                          </Button>
+                        </div>
+                      );
+                    })}
                   </div>
                 </div>
-                <select
-                  value={attribution?.folderNodeId ?? ""}
-                  disabled={excluded}
-                  onChange={(event) => setAttribution(holding, event.target.value)}
-                  className="border-input bg-background h-8 rounded-md border px-2 text-sm disabled:opacity-50"
-                >
-                  <option value="">Inherited</option>
-                  {folders.map((folder) => (
-                    <option key={folder.id} value={folder.id}>
-                      {folder.name}
-                    </option>
-                  ))}
-                </select>
-                <label className="text-muted-foreground flex items-center gap-2 text-xs">
-                  <input
-                    type="checkbox"
-                    checked={excluded}
-                    onChange={(event) => toggleExclusion(holding, event.target.checked)}
-                  />
-                  Exclude
-                </label>
-              </div>
-            );
-          })}
-        </div>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
-    </div>
+
+      <Dialog
+        open={Boolean(editingNode)}
+        onOpenChange={(open) => {
+          if (!open) setEditingNodeId(null);
+        }}
+      >
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Edit target</DialogTitle>
+            <DialogDescription className="sr-only">
+              Rename this target and choose its folder style.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="grid gap-4">
+            <div className="grid gap-2">
+              <label className="text-muted-foreground text-xs font-medium" htmlFor="target-name">
+                Name
+              </label>
+              <Input
+                id="target-name"
+                value={nodeEditDraft.name}
+                onChange={(event) =>
+                  setNodeEditDraft({ ...nodeEditDraft, name: event.target.value })
+                }
+                autoFocus
+              />
+            </div>
+
+            {editingNode?.nodeKind === "folder" && (
+              <FolderStyleChoices draft={nodeEditDraft} setDraft={setNodeEditDraft} />
+            )}
+          </div>
+
+          <DialogFooter>
+            <Button type="button" variant="outline" onClick={() => setEditingNodeId(null)}>
+              Cancel
+            </Button>
+            <Button type="button" onClick={saveNodeEditDialog}>
+              Save
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog
+        open={Boolean(movingNode || movingHolding)}
+        onOpenChange={(open) => {
+          if (!open) closeMoveDialog();
+        }}
+      >
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>{movingHolding ? "Move holding" : "Move target"}</DialogTitle>
+            <DialogDescription className="sr-only">
+              Choose where this item should move in the target tree.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="max-h-[min(62vh,520px)] overflow-auto rounded-md border p-2">
+            {movingNode && (
+              <button
+                type="button"
+                disabled={!canMoveNodeUnder(draft.nodes, movingNode.id, null)}
+                onClick={() => setMoveDestinationId(null)}
+                className={cn(
+                  "hover:bg-muted/60 flex min-h-9 w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-sm transition-colors disabled:cursor-not-allowed disabled:opacity-40",
+                  moveDestinationId === null && "bg-muted",
+                )}
+              >
+                <span className="bg-muted text-muted-foreground flex size-6 shrink-0 items-center justify-center rounded-md">
+                  <Icons.CircleGauge className="h-3.5 w-3.5" />
+                </span>
+                <span className="truncate">Top level</span>
+              </button>
+            )}
+            {buildNodeTree(draft.nodes).map((node) => renderMoveDestination(node, 0))}
+          </div>
+
+          <DialogFooter>
+            <Button type="button" variant="outline" onClick={closeMoveDialog}>
+              Cancel
+            </Button>
+            <Button type="button" onClick={saveMoveDialog} disabled={!canCommitMove}>
+              Move under
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog
+        open={Boolean(untargetingAsset)}
+        onOpenChange={(open) => {
+          if (!open) setUntargetingAssetId(null);
+        }}
+      >
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Untarget holding?</DialogTitle>
+            <DialogDescription>
+              This holding belongs to an account that defaults to{" "}
+              {untargetingAssetDefaultPath ?? "another target route"}. Should it use that route
+              instead?
+            </DialogDescription>
+          </DialogHeader>
+
+          <DialogFooter className="gap-2 sm:justify-end">
+            <Button type="button" variant="outline" onClick={() => setUntargetingAssetId(null)}>
+              Cancel
+            </Button>
+            <Button type="button" variant="outline" onClick={explicitlyUntargetAsset}>
+              Explicitly Untarget
+            </Button>
+            <Button type="button" onClick={useAccountDefaultForUntargetingAsset}>
+              Use Account Default
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog
+        open={Boolean(deletingFolder)}
+        onOpenChange={(open) => {
+          if (!open) setDeletingFolderId(null);
+        }}
+      >
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Delete folder?</DialogTitle>
+            <DialogDescription>
+              Choose what should happen to everything inside {deletingFolder?.name ?? "this folder"}.
+              This will not delete any real holdings from your portfolio.
+            </DialogDescription>
+          </DialogHeader>
+
+          <DialogFooter className="gap-2 sm:justify-end">
+            <Button type="button" variant="outline" onClick={() => setDeletingFolderId(null)}>
+              Cancel
+            </Button>
+            <Button type="button" variant="outline" onClick={untargetDeletingFolderContents}>
+              Untarget contents
+            </Button>
+            <Button type="button" onClick={moveDeletingFolderContentsToParent}>
+              Move contents to parent
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 }
 
