@@ -102,7 +102,8 @@ policy.
 - current-only dashboard
 - flexible folder/asset tree
 - all-assets denominator, excluding liabilities
-- user exclusions from the allocation plan
+- explicit untargeted holdings that override account defaults without leaving
+  Total Assets
 - local target percentages with one decimal place
 - blank-plan current-only nodes
 - automatic `Other`
@@ -161,15 +162,17 @@ V1 denominator rules:
 
 - include all assets by default
 - exclude liabilities entirely
-- allow users to exclude specific assets from the plan
-- compute all percentages from included assets only
-- show excluded assets separately with value
+- compute all percentages from included assets
+- model intentional non-target assets as a normal top-level pot named
+  `Excluded Assets`, with a 0% target by default
+- explicit untargeted holdings still count in `Total Assets`; they are simply
+  waiting outside the target tree
 
 Liabilities stay in net worth features, not target allocation.
 
-Exclusion has highest precedence. If an asset is excluded from the plan, it
-never contributes to target allocation current value, even if an account default
-or holding override would otherwise place it in the tree.
+V1 does not need a separate "exclude this holding" control in the attribution
+panel. If users want an asset out of the plan target, they can target or
+retarget it to `Excluded Assets` like any other pot.
 
 ### Flexible Tree
 
@@ -711,13 +714,15 @@ Current bar color comes from the folder color.
 Folder color/icon rules:
 
 - folders inherit color/icon from parent unless explicitly overridden
-- folder name, color, and icon are editable
+- folder name, color, and icon are editable through the pencil modal
 - provide about 7-8 restrained selectable colors
 - provide a small set of selectable folder symbols/icons
+- call inherited style `Automatic` in the UI
 
 Asset leaves:
 
 - inherit parent folder color
+- can be renamed through the pencil modal
 - no editable color in V1
 - no icon in V1
 - text-only
@@ -789,12 +794,15 @@ There is no explicit undo/redo in V1. Save/Cancel is the safety model.
 
 ### Editor Columns
 
-Edit mode should clearly separate:
+Edit mode is plan-first. The left target tree should show only:
 
-- Current %
+- Name
 - Plan %
 
 Blank Plan values must look different from user-set Plan values.
+
+Current values are hidden in the left edit tree. Normal/read-only mode remains
+the place where current and plan are compared visually.
 
 For blank-plan nodes that would appear under `Other` or `Untargeted` in
 dashboard, show a simple `Other` or `Untargeted` label in the Plan area.
@@ -804,6 +812,38 @@ When the user starts editing a blank Plan value:
 - asset target inputs prefill with current local percentage when available
 - folders start blank, because folder targets are policy choices
 
+### Editor Actions
+
+Global edit actions live beside the top-level `Edit` control:
+
+- `Normalize` scales draft sibling targets down to fit 100% and shows a toast
+- `Cancel` leaves the saved plan unchanged
+- `Save` validates and persists the draft
+
+Row tools sit immediately beside the row name, not in separate table columns:
+
+- clicking a row's icon/name edits the row name, and for folders also edits
+  color/symbol
+- move opens a compact current-tree modal and moves the row under the selected
+  destination; moving an asset leaf also retargets matching current holdings
+- plus adds a child folder under that folder
+- trash deletes empty folders, asks how to handle non-empty folders, and
+  untargets asset leaves
+
+Row tools are hidden by default and appear only while hovering/focusing the
+row's icon/name area.
+
+The edit modal lays out choices directly rather than hiding them in inline
+popovers. Folder style has an `Automatic` option for color and symbol, meaning
+inherit from the parent. Asset leaves can be renamed but do not have separate
+color/symbol controls in V1.
+
+The move modal shows a compressed version of the current draft tree. Users
+select a valid destination and choose `Move under`; invalid destinations include
+the node itself, descendants, asset leaves, and the current parent. Untargeted
+holdings use the same modal, but can only move under folders. The only modal
+action buttons are `Move under` and `Cancel`.
+
 ### Adding Nodes
 
 First-time setup offers:
@@ -811,7 +851,9 @@ First-time setup offers:
 1. Blank plan.
 2. Pot 1-4 starter template.
 
-The Pot 1-4 template creates folders only, with no target percentages.
+New plans include `Excluded Assets` as a default top-level pot with a 0% target.
+The Pot 1-4 template creates folders only, plus `Excluded Assets` as a 0%
+top-level pot.
 
 Asset target leaves can reference assets that are not currently held. If an
 asset target has no current holding, show `not held` while calculating current
@@ -823,16 +865,36 @@ record; it should not store target leaves as loose text labels.
 
 ### Attribution Editing
 
-Attribution/mapping is edited in the same tree.
+Attribution/mapping follows a folder/file mental model:
 
-V1 supports:
+- the left pane is the target tree and is the main editor
+- folders are target categories
+- asset leaves represent holdings/assets inside folders
+- moving an asset leaf to another folder retargets matching current holdings
+- untargeting an asset leaf removes the target leaf and clears or suppresses
+  its holding-level route
 
-- "Add holdings" picker with search and checkboxes
-- drag-and-drop holding assignment into folders
-- drag-and-drop tree node move/reorder
+The right panel is not a permanent assignment control surface. It appears only
+when at least one current holding is outside the target tree. This panel is an
+`Untargeted` inbox grouped by account, with a `!` mark and a move action for
+each holding.
 
-The picker is the reliable accessible path. Drag-and-drop is a convenience.
-Drag-and-drop must not be required to complete any V1 workflow.
+Holding attribution has three states:
+
+1. Explicit target: the holding has its own route to a target folder.
+2. Use account default: the holding has no holding-specific rule and follows
+   its account default, if one exists.
+3. Explicitly untargeted: the holding suppresses any account default and appears
+   in the right-side `Untargeted` inbox.
+
+When an explicitly targeted holding belongs to an account with a default, the
+`Untarget` action asks whether to `Use Account Default`, `Explicitly Untarget`,
+or `Cancel`. If the holding is already using the account default, `Untarget`
+means `Explicitly Untarget`.
+
+Account defaults remain persistent shortcuts configured from Account Edit. They
+apply to current and future holdings in that account unless a holding has an
+explicit target or is explicitly untargeted.
 
 ### Keyboard
 
@@ -847,12 +909,18 @@ Basic editing shortcuts:
 
 ### Deleting Folders
 
-Deleting a folder moves its attributed accounts/holdings to the deleted folder's
-parent.
+Deleting an empty folder deletes it directly.
 
-If a root-level folder is deleted, those attributions become unmatched at root.
-They display under root `Other` if root has leftover planned capacity; otherwise
-they display under root `Untargeted`.
+Deleting a folder with child folders, asset leaves, matching holdings, or
+account defaults opens a short choice dialog:
+
+1. `Move contents to parent`: remove the folder and move direct child nodes to
+   the deleted folder's parent. If the deleted folder and a moved child both
+   have Plan %, rebase the child's Plan % so the effective target weight is
+   preserved.
+2. `Untarget contents`: remove the folder subtree and mark affected current
+   holdings as explicitly untargeted.
+3. `Cancel`: leave the draft unchanged.
 
 ### Moving Folders
 
@@ -872,16 +940,20 @@ If the moved folder has a Plan %:
 
 ### Moving Asset Leaves
 
-Moving an asset target leaf preserves its Plan % if new siblings still total <=
-100%. Otherwise, clear its Plan % in draft.
+Moving an asset target leaf preserves its Plan % and retargets matching current
+holdings to the destination folder. Moving an asset leaf to top level makes
+matching current holdings explicitly untargeted so the leaf can represent them
+outside a folder.
 
 ### Deleting Asset Leaves
 
-Deleting an asset leaf removes only the target definition.
+Deleting an asset leaf means `Untarget`, not deleting the real asset.
 
-Matching holdings stay attributed to the parent folder. They fall into `Other`
-if the parent has leftover planned capacity; otherwise they fall into
-`Untargeted`.
+If matching explicitly targeted holdings have an account default, ask whether
+they should `Use Account Default`, become `Explicitly Untargeted`, or cancel.
+If matching holdings are already using an account default, untargeting makes
+them explicitly untargeted. Holdings without a usable account default become
+explicitly untargeted.
 
 ### Duplicates
 
@@ -925,8 +997,9 @@ current structure.
 
 ### Net Worth
 
-Target allocation uses included assets only. It excludes liabilities and any
-user-excluded assets.
+Target allocation uses all assets in the allocation universe. It excludes
+liabilities; intentional non-target assets are represented inside the allocation
+tree by the `Excluded Assets` pot.
 
 Net worth remains the broader balance sheet feature.
 
