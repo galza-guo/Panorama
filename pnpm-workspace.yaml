@@ -3,7 +3,9 @@ packages:
   - "packages/*"
   - "addons/*"
 
+allowBuilds:
+  esbuild: true
+  msw: true
+
 ignoredBuiltDependencies:
   - "@tailwindcss/oxide"
-  - esbuild
-  - msw
