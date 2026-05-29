@@ -34,15 +34,11 @@ impl TargetAllocationCalculator {
     pub fn calculate(input: TargetAllocationInput) -> Result<TargetAllocationDashboard> {
         validate_sibling_targets(&input.nodes)?;
 
-        let exclusion_keys: HashSet<&str> = input
+        let explicit_untargeted_keys: HashSet<&str> = input
             .exclusions
             .iter()
             .map(|exclusion| exclusion.subject_key.as_str())
             .collect();
-        let (included_holdings, excluded_holdings): (Vec<_>, Vec<_>) = input
-            .holdings
-            .into_iter()
-            .partition(|holding| !exclusion_keys.contains(holding.subject_key.as_str()));
 
         let nodes_by_id: HashMap<String, TargetAllocationNode> = input
             .nodes
@@ -92,19 +88,30 @@ impl TargetAllocationCalculator {
 
         let mut direct_holdings: HashMap<Option<String>, Vec<TargetAllocationHoldingInput>> =
             HashMap::new();
-        for holding in included_holdings {
-            let explicit_folder = attributions_by_subject
-                .get(holding.subject_key.as_str())
-                .copied()
-                .filter(|folder_id| folder_ids.contains(*folder_id));
+        let mut explicit_untargeted_holdings = Vec::new();
+        for holding in input.holdings {
+            let is_explicit_untargeted =
+                explicit_untargeted_keys.contains(holding.subject_key.as_str());
+            if is_explicit_untargeted {
+                explicit_untargeted_holdings.push(holding.clone());
+            }
 
-            let default_folder = holding
-                .account_id
-                .as_deref()
-                .and_then(|account_id| account_defaults.get(account_id).copied())
-                .filter(|folder_id| folder_ids.contains(*folder_id));
+            let folder_id = if is_explicit_untargeted {
+                None
+            } else {
+                let explicit_folder = attributions_by_subject
+                    .get(holding.subject_key.as_str())
+                    .copied()
+                    .filter(|folder_id| folder_ids.contains(*folder_id));
 
-            let folder_id = explicit_folder.or(default_folder).map(str::to_string);
+                let default_folder = holding
+                    .account_id
+                    .as_deref()
+                    .and_then(|account_id| account_defaults.get(account_id).copied())
+                    .filter(|folder_id| folder_ids.contains(*folder_id));
+
+                explicit_folder.or(default_folder).map(str::to_string)
+            };
             direct_holdings.entry(folder_id).or_default().push(holding);
         }
 
@@ -115,7 +122,7 @@ impl TargetAllocationCalculator {
             ordered_children,
             direct_holdings,
             folder_current_values: HashMap::new(),
-            excluded_holdings,
+            excluded_holdings: explicit_untargeted_holdings,
         };
 
         let folder_ids_to_compute: Vec<String> = context
@@ -654,4 +661,81 @@ fn sum_holdings<'a>(
     holdings: impl IntoIterator<Item = &'a TargetAllocationHoldingInput>,
 ) -> Decimal {
     holdings.into_iter().map(|holding| holding.value_base).sum()
+}
+
+#[cfg(test)]
+mod tests {
+    use rust_decimal_macros::dec;
+
+    use super::*;
+    use crate::portfolio::target_allocation::{
+        TargetAllocationAccountDefault, TargetAllocationExclusion, TargetAllocationSubjectType,
+    };
+
+    fn folder(id: &str, name: &str) -> TargetAllocationNode {
+        TargetAllocationNode {
+            id: id.to_string(),
+            parent_id: None,
+            node_kind: TargetAllocationNodeKind::Folder,
+            name: name.to_string(),
+            target_percent: None,
+            asset_ref: None,
+            color: None,
+            icon: None,
+            sort_order: 0,
+        }
+    }
+
+    fn holding(subject_key: &str, account_id: &str, value_base: Decimal) -> TargetAllocationHoldingInput {
+        TargetAllocationHoldingInput {
+            subject_key: subject_key.to_string(),
+            subject_type: TargetAllocationSubjectType::Position,
+            account_id: Some(account_id.to_string()),
+            account_name: Some("Account A".to_string()),
+            asset_id: Some("asset-2840".to_string()),
+            currency: "HKD".to_string(),
+            symbol: "2840".to_string(),
+            name: Some("SPDR Gold Trust".to_string()),
+            value_base,
+        }
+    }
+
+    #[test]
+    fn explicit_untargeted_holding_stays_in_total_and_overrides_account_default() {
+        let subject_key = "position:account-a:asset-2840";
+        let dashboard = TargetAllocationCalculator::calculate(TargetAllocationInput {
+            currency: "HKD".to_string(),
+            nodes: vec![folder("pot-3", "Pot 3")],
+            account_defaults: vec![TargetAllocationAccountDefault {
+                account_id: "account-a".to_string(),
+                folder_node_id: "pot-3".to_string(),
+            }],
+            attributions: Vec::new(),
+            exclusions: vec![TargetAllocationExclusion {
+                subject_key: subject_key.to_string(),
+                subject_type: TargetAllocationSubjectType::Position,
+            }],
+            holdings: vec![holding(subject_key, "account-a", dec!(100))],
+        })
+        .expect("calculation should succeed");
+
+        assert_eq!(dashboard.root.current_value, dec!(100));
+        assert_eq!(dashboard.root.breakdown.len(), 1);
+        assert_eq!(dashboard.root.children.len(), 2);
+        let untargeted = dashboard
+            .root
+            .children
+            .iter()
+            .find(|row| row.kind == TargetAllocationRowKind::Untargeted)
+            .expect("explicitly untargeted holding should appear in Untargeted");
+        let pot = dashboard
+            .root
+            .children
+            .iter()
+            .find(|row| row.name == "Pot 3")
+            .expect("account default folder should still render");
+
+        assert_eq!(untargeted.current_value, dec!(100));
+        assert_eq!(pot.current_value, dec!(0));
+    }
 }
