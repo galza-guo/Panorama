@@ -1,4 +1,5 @@
 import { useHealthStatus } from "@/hooks/use-health";
+import { usePortfolioSyncOptional } from "@/context/portfolio-sync-context";
 import { cn } from "@/lib/utils";
 import { Button } from "@wealthfolio/ui/components/ui/button";
 import { Icons } from "@wealthfolio/ui/components/ui/icons";
@@ -18,10 +19,12 @@ const SEVERITY_COLORS: Record<HealthSeverity, string> = {
  * Shows a warning icon when there are health issues, hidden when healthy.
  */
 export function HealthStatusIndicator() {
-  const { data: status, isLoading } = useHealthStatus();
+  const syncContext = usePortfolioSyncOptional();
+  const isPortfolioBusy = syncContext ? syncContext.status !== "idle" : false;
+  const { data: status, isLoading } = useHealthStatus({ enabled: !isPortfolioBusy });
 
-  // Don't render if loading or no issues
-  if (isLoading || !status) return null;
+  // Don't show stale health warnings while the app is already updating market/portfolio data.
+  if (isPortfolioBusy || isLoading || !status) return null;
 
   // Get counts with defaults for missing keys
   const counts = {

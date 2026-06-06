@@ -1,4 +1,7 @@
-import { getEffectiveTimeDepositCurrentValue, getTimeDepositDerivedMetrics } from "./time-deposit-calculations";
+import {
+  getEffectiveTimeDepositCurrentValue,
+  getTimeDepositDerivedMetrics,
+} from "./time-deposit-calculations";
 import type { AlternativeAssetHolding, JsonObject, JsonValue } from "./types";
 
 export interface PanoramaMpfSubfund {
@@ -189,9 +192,14 @@ export function parsePanoramaAssetAttributes(
 }
 
 export function isInsuranceAsset(holding: AlternativeAssetHolding): boolean {
+  if (holding.kind.toLowerCase() === "insurance") {
+    return true;
+  }
+
   const attrs = parsePanoramaAssetAttributes(holding.metadata);
   const hasMpfSignals = hasMpfMarker(attrs) || hasMpfSpecificAttributes(attrs);
-  const hasTimeDepositSignals = hasTimeDepositMarker(attrs) || hasTimeDepositSpecificAttributes(attrs);
+  const hasTimeDepositSignals =
+    hasTimeDepositMarker(attrs) || hasTimeDepositSpecificAttributes(attrs);
   const hasInsuranceSignals = hasInsuranceMarker(attrs) || hasInsuranceSpecificAttributes(attrs);
 
   if (hasMpfSignals || hasTimeDepositSignals) {
@@ -209,9 +217,14 @@ export function isInsuranceAsset(holding: AlternativeAssetHolding): boolean {
 }
 
 export function isMpfAsset(holding: AlternativeAssetHolding): boolean {
+  if (holding.kind.toLowerCase() === "mpf") {
+    return true;
+  }
+
   const attrs = parsePanoramaAssetAttributes(holding.metadata);
   const hasInsuranceSignals = hasInsuranceMarker(attrs) || hasInsuranceSpecificAttributes(attrs);
-  const hasTimeDepositSignals = hasTimeDepositMarker(attrs) || hasTimeDepositSpecificAttributes(attrs);
+  const hasTimeDepositSignals =
+    hasTimeDepositMarker(attrs) || hasTimeDepositSpecificAttributes(attrs);
   const hasMpfSignals = hasMpfMarker(attrs) || hasMpfSpecificAttributes(attrs);
 
   if (hasMpfSignals) {
@@ -226,10 +239,15 @@ export function isMpfAsset(holding: AlternativeAssetHolding): boolean {
 }
 
 export function isTimeDepositAsset(holding: AlternativeAssetHolding): boolean {
+  if (holding.kind.toLowerCase() === "time_deposit") {
+    return true;
+  }
+
   const attrs = parsePanoramaAssetAttributes(holding.metadata);
   const hasInsuranceSignals = hasInsuranceMarker(attrs) || hasInsuranceSpecificAttributes(attrs);
   const hasMpfSignals = hasMpfMarker(attrs) || hasMpfSpecificAttributes(attrs);
-  const hasTimeDepositSignals = hasTimeDepositMarker(attrs) || hasTimeDepositSpecificAttributes(attrs);
+  const hasTimeDepositSignals =
+    hasTimeDepositMarker(attrs) || hasTimeDepositSpecificAttributes(attrs);
 
   if (hasInsuranceSignals || hasMpfSignals) {
     return false;

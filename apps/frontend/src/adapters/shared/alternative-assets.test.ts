@@ -32,13 +32,20 @@ describe("alternative-assets adapter", () => {
       obsolete: null,
     };
 
-    await updateAlternativeAssetMetadata("ALT-123", metadata, "MPF Account", "Quarterly refresh");
+    await updateAlternativeAssetMetadata(
+      "ALT-123",
+      metadata,
+      "MPF Account",
+      "Quarterly refresh",
+      "HKD",
+    );
 
     expect(invokeMock).toHaveBeenCalledWith("update_alternative_asset_metadata", {
       assetId: "ALT-123",
       name: "MPF Account",
       metadata,
       notes: "Quarterly refresh",
+      currency: "HKD",
     });
   });
 });

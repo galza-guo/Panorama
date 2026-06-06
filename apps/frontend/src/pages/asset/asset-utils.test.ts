@@ -39,6 +39,15 @@ describe("asset utils", () => {
     expect(getPanoramaAssetCategory(buildAsset())).toBe("Time Deposit");
   });
 
+  it("detects first-class Panorama asset categories", () => {
+    expect(
+      getPanoramaAssetCategory(buildAsset({ kind: "TIME_DEPOSIT", metadata: undefined })),
+    ).toBe("Time Deposit");
+    expect(getPanoramaAssetCategory(buildAsset({ kind: "INSURANCE", metadata: undefined }))).toBe(
+      "Insurance",
+    );
+  });
+
   it("returns a specialized edit label for time deposits", () => {
     expect(getPanoramaAssetEditLabel(buildAsset())).toBe("Edit Time Deposit");
   });

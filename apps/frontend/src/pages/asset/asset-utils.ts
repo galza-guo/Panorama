@@ -17,7 +17,7 @@ export interface TimeDepositDisplayState {
   isEstimatedValue: boolean;
 }
 
-export type PanoramaAssetCategory = "MPF" | "Time Deposit";
+export type PanoramaAssetCategory = "MPF" | "Time Deposit" | "Insurance";
 export type DisplayAssetKind = Asset["kind"] | PanoramaAssetCategory;
 
 function getMetadataObject(metadata: Asset["metadata"]): Record<string, unknown> | null {
@@ -43,6 +43,14 @@ export function getPanoramaAssetCategory(
     return "MPF";
   }
 
+  if (asset.kind === "TIME_DEPOSIT") {
+    return "Time Deposit";
+  }
+
+  if (asset.kind === "INSURANCE") {
+    return "Insurance";
+  }
+
   if (asset.kind !== "OTHER") {
     return undefined;
   }
@@ -60,6 +68,11 @@ export function getPanoramaAssetCategory(
     typeof metadata.maturity_date === "string" &&
     metadata.principal !== undefined &&
     (metadata.quoted_annual_rate !== undefined || metadata.guaranteed_maturity_value !== undefined);
+  const hasInsuranceFields =
+    metadata.policy_type !== undefined ||
+    metadata.insurance_provider !== undefined ||
+    metadata.payment_status !== undefined ||
+    metadata.next_due_date !== undefined;
 
   if (panoramaCategory === "mpf" || subType === "mpf" || hasMpfSubfunds) {
     return "MPF";
@@ -69,12 +82,16 @@ export function getPanoramaAssetCategory(
     return "Time Deposit";
   }
 
+  if (panoramaCategory === "insurance" || subType === "insurance" || hasInsuranceFields) {
+    return "Insurance";
+  }
+
   return undefined;
 }
 
 export function getAssetKindForDisplay(asset: Pick<Asset, "kind" | "metadata">): DisplayAssetKind {
   const category = getPanoramaAssetCategory(asset);
-  if (category === "MPF" || category === "Time Deposit") {
+  if (category) {
     return category;
   }
 
@@ -90,6 +107,10 @@ export function getPanoramaAssetEditLabel(asset: Pick<Asset, "kind" | "metadata"
 
   if (category === "Time Deposit") {
     return "Edit Time Deposit";
+  }
+
+  if (category === "Insurance") {
+    return "Edit Insurance";
   }
 
   return "Edit";

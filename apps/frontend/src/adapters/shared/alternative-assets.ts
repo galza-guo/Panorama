@@ -86,12 +86,14 @@ export const updateAlternativeAssetMetadata = async (
   metadata: JsonObject,
   name?: string,
   notes?: string | null,
+  currency?: string,
 ): Promise<void> => {
   return invoke<void>("update_alternative_asset_metadata", {
     assetId,
     name,
     metadata,
     notes,
+    currency,
   });
 };
 

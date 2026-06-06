@@ -1091,6 +1091,8 @@ export type AlternativeAssetKindApi =
   | "collectible"
   | "precious"
   | "mpf"
+  | "time_deposit"
+  | "insurance"
   | "liability"
   | "other";
 
@@ -1761,7 +1763,7 @@ export interface NavigateAction {
 export interface FixAction {
   id: string;
   label: string;
-  payload: Record<string, unknown>;
+  payload: unknown;
 }
 
 /**

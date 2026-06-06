@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import type { FixAction, HealthConfig, HealthStatus } from "@/lib/types";
+import type { HealthConfig, HealthIssue, HealthStatus } from "@/lib/types";
 import {
   dismissHealthIssue,
   executeHealthFix,
@@ -12,17 +12,18 @@ import {
 import { QueryKeys } from "@/lib/query-keys";
 import { useAuth } from "@/context/auth-context";
 import { toast } from "@wealthfolio/ui/components/ui/use-toast";
+import { getHealthFixOutcome } from "./health-fix-outcome";
 
 /**
  * Hook for fetching health status.
  */
-export function useHealthStatus() {
+export function useHealthStatus(options?: { enabled?: boolean }) {
   const { isAuthenticated, statusLoading } = useAuth();
 
   return useQuery<HealthStatus, Error>({
     queryKey: [QueryKeys.HEALTH_STATUS],
     queryFn: getHealthStatus,
-    enabled: !statusLoading && isAuthenticated,
+    enabled: options?.enabled !== false && !statusLoading && isAuthenticated,
     staleTime: 1000 * 60 * 5, // 5 minutes
   });
 }
@@ -41,7 +42,14 @@ export function useRunHealthChecks(options?: { navigate?: (path: string) => void
       if (issueCount === 0) {
         toast.success("All checks passed", { description: "No issues found." });
       } else {
-        toast.error(`${issueCount} issue${issueCount > 1 ? "s" : ""} found`, {
+        const showIssueToast =
+          data.overallSeverity === "INFO"
+            ? toast.info
+            : data.overallSeverity === "WARNING"
+              ? toast.warning
+              : toast.error;
+
+        showIssueToast(`${issueCount} issue${issueCount > 1 ? "s" : ""} found`, {
           description: "Review the details in the Health Center.",
           action: options?.navigate
             ? { label: "View", onClick: () => options.navigate!("/health") }
@@ -99,19 +107,28 @@ export function useExecuteHealthFix() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (action: FixAction) => {
-      // Execute the fix
-      await executeHealthFix(action);
-      // Run health checks to get fresh status
-      return runHealthChecks();
+    mutationFn: async (issue: HealthIssue) => {
+      if (!issue.fixAction) {
+        throw new Error("This issue does not have an automatic fix.");
+      }
+
+      await executeHealthFix(issue.fixAction);
+      const status = await runHealthChecks();
+      return { issue, status };
     },
-    onSuccess: (data) => {
+    onSuccess: ({ issue, status }) => {
       // Update health status with fresh data from health checks
-      queryClient.setQueryData([QueryKeys.HEALTH_STATUS], data);
+      queryClient.setQueryData([QueryKeys.HEALTH_STATUS], status);
       // Invalidate holdings so related pages refresh
       queryClient.invalidateQueries({ queryKey: [QueryKeys.HOLDINGS] });
       queryClient.invalidateQueries({ queryKey: [QueryKeys.PORTFOLIO_ALLOCATIONS] });
-      toast.success("Fix applied successfully");
+
+      const outcome = getHealthFixOutcome(issue, status);
+      if (outcome.kind === "fixed") {
+        toast.success(outcome.title);
+      } else {
+        toast.warning(outcome.title, { description: outcome.description });
+      }
     },
     onError: (error: Error) => {
       toast.error("Fix failed", { description: error.message });

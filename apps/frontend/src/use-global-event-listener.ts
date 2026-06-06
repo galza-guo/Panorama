@@ -90,9 +90,8 @@ const useGlobalEventListener = () => {
     let cleanupFn: (() => void) | undefined;
 
     const handleMarketSyncStart = () => {
-      if (isMobileViewportRef.current && syncContextRef.current) {
-        syncContextRef.current.setMarketSyncing();
-      } else {
+      syncContextRef.current?.setMarketSyncing();
+      if (!isMobileViewportRef.current) {
         toast.loading("Syncing market data...", {
           id: TOAST_IDS.marketSyncStart,
           duration: 3000,
@@ -103,9 +102,8 @@ const useGlobalEventListener = () => {
     const handleMarketSyncComplete = (event: { payload: { failed_syncs: [string, string][] } }) => {
       const { failed_syncs } = event.payload || { failed_syncs: [] };
 
-      if (isMobileViewportRef.current && syncContextRef.current) {
-        syncContextRef.current.setIdle();
-      } else {
+      syncContextRef.current?.setIdle();
+      if (!isMobileViewportRef.current) {
         toast.dismiss(TOAST_IDS.marketSyncStart);
       }
 
@@ -133,9 +131,8 @@ const useGlobalEventListener = () => {
 
     const handleMarketSyncError = (event: { payload: string }) => {
       const errorMsg = event.payload || "Unknown error";
-      if (isMobileViewportRef.current && syncContextRef.current) {
-        syncContextRef.current.setIdle();
-      } else {
+      syncContextRef.current?.setIdle();
+      if (!isMobileViewportRef.current) {
         toast.dismiss(TOAST_IDS.marketSyncStart);
       }
       toast.error("Market Data Sync Failed", {
@@ -146,9 +143,8 @@ const useGlobalEventListener = () => {
     };
 
     const handlePortfolioUpdateStart = () => {
-      if (isMobileViewportRef.current && syncContextRef.current) {
-        syncContextRef.current.setPortfolioCalculating();
-      } else {
+      syncContextRef.current?.setPortfolioCalculating();
+      if (!isMobileViewportRef.current) {
         toast.loading("Calculating portfolio performance...", {
           id: TOAST_IDS.portfolioUpdateStart,
           duration: 2000,
@@ -157,9 +153,8 @@ const useGlobalEventListener = () => {
     };
 
     const handlePortfolioUpdateError = (error: string) => {
-      if (isMobileViewportRef.current && syncContextRef.current) {
-        syncContextRef.current.setIdle();
-      } else {
+      syncContextRef.current?.setIdle();
+      if (!isMobileViewportRef.current) {
         toast.dismiss(TOAST_IDS.portfolioUpdateStart);
       }
       toast.error("Portfolio Update Failed", {
@@ -172,9 +167,8 @@ const useGlobalEventListener = () => {
     };
 
     const handlePortfolioUpdateComplete = () => {
-      if (isMobileViewportRef.current && syncContextRef.current) {
-        syncContextRef.current.setIdle();
-      } else {
+      syncContextRef.current?.setIdle();
+      if (!isMobileViewportRef.current) {
         toast.dismiss(TOAST_IDS.portfolioUpdateStart);
       }
       queryClientRef.current.invalidateQueries({ predicate: shouldInvalidateNonAiQueries });
@@ -341,7 +335,9 @@ const useGlobalEventListener = () => {
         logger.debug("Triggering initial portfolio update from frontend");
 
         // Trigger portfolio update
+        syncContextRef.current?.setMarketSyncing();
         updatePortfolio().catch((error) => {
+          syncContextRef.current?.setIdle();
           logger.error("Failed to trigger initial portfolio update: " + String(error));
         });
         // Note: Update check is now handled by useCheckUpdateOnStartup query in UpdateDialog
