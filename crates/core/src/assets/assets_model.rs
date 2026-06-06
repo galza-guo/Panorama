@@ -39,6 +39,8 @@ pub enum AssetKind {
     Collectible,   // Art, wine, watches, jewelry, memorabilia
     PreciousMetal, // Physical gold/silver bars, coins (not ETFs)
     Mpf,           // Mandatory Provident Fund assets
+    TimeDeposit,   // Fixed-term bank deposits with maturity-based valuation
+    Insurance,     // Insurance policies with user-entered cash value
     PrivateEquity, // Private shares, startup equity
     Liability,     // Debts (mortgages, loans, credit cards)
     Other,         // Catch-all for uncategorized assets
@@ -177,6 +179,8 @@ impl AssetKind {
             AssetKind::Collectible => "COLLECTIBLE",
             AssetKind::PreciousMetal => "PRECIOUS_METAL",
             AssetKind::Mpf => "MPF",
+            AssetKind::TimeDeposit => "TIME_DEPOSIT",
+            AssetKind::Insurance => "INSURANCE",
             AssetKind::PrivateEquity => "PRIVATE_EQUITY",
             AssetKind::Liability => "LIABILITY",
             AssetKind::Other => "OTHER",
@@ -193,6 +197,8 @@ impl AssetKind {
             AssetKind::Collectible => "Collectible",
             AssetKind::PreciousMetal => "Precious Metal",
             AssetKind::Mpf => "MPF",
+            AssetKind::TimeDeposit => "Time Deposit",
+            AssetKind::Insurance => "Insurance",
             AssetKind::PrivateEquity => "Private Equity",
             AssetKind::Liability => "Liability",
             AssetKind::Other => "Other",
@@ -210,6 +216,8 @@ impl AssetKind {
                 | AssetKind::Collectible
                 | AssetKind::PreciousMetal
                 | AssetKind::Mpf
+                | AssetKind::TimeDeposit
+                | AssetKind::Insurance
                 | AssetKind::Liability
                 | AssetKind::Other
         )
@@ -234,6 +242,8 @@ impl AssetKind {
             "COLLECTIBLE" => Some(AssetKind::Collectible),
             "PRECIOUS_METAL" => Some(AssetKind::PreciousMetal),
             "MPF" => Some(AssetKind::Mpf),
+            "TIME_DEPOSIT" => Some(AssetKind::TimeDeposit),
+            "INSURANCE" => Some(AssetKind::Insurance),
             "PRIVATE_EQUITY" => Some(AssetKind::PrivateEquity),
             "LIABILITY" => Some(AssetKind::Liability),
             "OTHER" => Some(AssetKind::Other),

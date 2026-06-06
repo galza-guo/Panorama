@@ -452,6 +452,8 @@ impl ActivityService {
                 "COLLECTIBLE" | "COLL" => return (AssetKind::Collectible, None),
                 "PRECIOUS_METAL" | "PREC" => return (AssetKind::PreciousMetal, None),
                 "MPF" => return (AssetKind::Mpf, None),
+                "TIME_DEPOSIT" | "TIME DEPOSIT" | "TD" => return (AssetKind::TimeDeposit, None),
+                "INSURANCE" | "INSURANCE_POLICY" | "POLICY" => return (AssetKind::Insurance, None),
                 "PRIVATE_EQUITY" | "PEQ" => return (AssetKind::PrivateEquity, None),
                 "LIABILITY" | "LIAB" => return (AssetKind::Liability, None),
                 "OTHER" | "ALT" => return (AssetKind::Other, None),

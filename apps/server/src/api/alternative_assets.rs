@@ -38,13 +38,15 @@ use wealthfolio_core::{
 // ─────────────────────────────────────────────────────────────────────────────
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(rename_all = "lowercase")]
+#[serde(rename_all = "snake_case")]
 pub enum AlternativeAssetKind {
     Property,
     Vehicle,
     Collectible,
     Precious,
     Mpf,
+    TimeDeposit,
+    Insurance,
     Liability,
     Other,
 }
@@ -57,6 +59,8 @@ impl AlternativeAssetKind {
             AlternativeAssetKind::Collectible => AssetKind::Collectible,
             AlternativeAssetKind::Precious => AssetKind::PreciousMetal,
             AlternativeAssetKind::Mpf => AssetKind::Mpf,
+            AlternativeAssetKind::TimeDeposit => AssetKind::TimeDeposit,
+            AlternativeAssetKind::Insurance => AssetKind::Insurance,
             AlternativeAssetKind::Liability => AssetKind::Liability,
             AlternativeAssetKind::Other => AssetKind::Other,
         }
@@ -131,6 +135,7 @@ pub struct UpdateAssetDetailsRequest {
     pub name: Option<String>,
     pub metadata: std::collections::HashMap<String, Value>,
     pub notes: Option<String>,
+    pub currency: Option<String>,
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -266,6 +271,7 @@ async fn update_alternative_asset_metadata(
         asset_id,
         name: request.name,
         notes: request.notes,
+        currency: request.currency,
         metadata: Some(metadata_map),
     };
 
@@ -370,6 +376,8 @@ async fn get_alternative_holdings(
                 AssetKind::Collectible => "collectible",
                 AssetKind::PreciousMetal => "precious",
                 AssetKind::Mpf => "mpf",
+                AssetKind::TimeDeposit => "time_deposit",
+                AssetKind::Insurance => "insurance",
                 AssetKind::Liability => "liability",
                 AssetKind::Other => "other",
                 _ => "other",

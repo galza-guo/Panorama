@@ -95,11 +95,10 @@ impl ManualSnapshotService {
                 _ => Uuid::new_v4().to_string(),
             };
 
-            let kind = match holding.asset_kind.as_deref() {
-                Some("OTHER") => Some(AssetKind::Other),
-                Some("INVESTMENT") => Some(AssetKind::Investment),
-                _ => None,
-            };
+            let kind = holding
+                .asset_kind
+                .as_deref()
+                .and_then(AssetKind::from_db_str);
 
             let metadata = AssetMetadata {
                 instrument_symbol: Some(holding.symbol.clone()),

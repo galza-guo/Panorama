@@ -27,7 +27,9 @@ use super::alternative_assets_model::{
 use super::alternative_assets_traits::{
     AlternativeAssetRepositoryTrait, AlternativeAssetServiceTrait,
 };
-use super::{Asset, AssetKind, AssetRepositoryTrait, NewAsset, QuoteMode};
+use super::{
+    normalize_quote_ccy_code, Asset, AssetKind, AssetRepositoryTrait, NewAsset, QuoteMode,
+};
 use crate::errors::{Error, Result, ValidationError};
 use crate::events::{DomainEvent, DomainEventSink, NoOpDomainEventSink};
 use crate::quotes::{DataSource, Quote, QuoteServiceTrait};
@@ -94,6 +96,8 @@ impl AlternativeAssetService {
             | AssetKind::Collectible
             | AssetKind::PreciousMetal
             | AssetKind::Mpf
+            | AssetKind::TimeDeposit
+            | AssetKind::Insurance
             | AssetKind::PrivateEquity
             | AssetKind::Liability
             | AssetKind::Other => Ok(()),
@@ -260,6 +264,10 @@ impl AlternativeAssetService {
     }
 
     fn is_panorama_time_deposit_asset(asset: &Asset) -> bool {
+        if asset.kind == AssetKind::TimeDeposit {
+            return true;
+        }
+
         let Some(metadata) = asset.metadata.as_ref() else {
             return false;
         };
@@ -1049,6 +1057,10 @@ impl AlternativeAssetServiceTrait for AlternativeAssetService {
 
         // Recalculate display_code from updated metadata
         let display_code = Self::derive_display_code(&asset.kind, &updated_metadata);
+        let quote_ccy = request
+            .currency
+            .as_deref()
+            .and_then(|currency| normalize_quote_ccy_code(Some(currency)));
 
         // Persist asset details update
         self.alternative_asset_repository
@@ -1058,6 +1070,7 @@ impl AlternativeAssetServiceTrait for AlternativeAssetService {
                 Some(&display_code),
                 updated_metadata,
                 request.notes.as_deref(),
+                quote_ccy.as_deref(),
             )
             .await?;
 
@@ -1282,6 +1295,7 @@ mod tests {
             _display_code: Option<&str>,
             _metadata: Option<serde_json::Value>,
             _notes: Option<&str>,
+            _currency: Option<&str>,
         ) -> Result<()> {
             unimplemented!()
         }
@@ -1685,6 +1699,13 @@ mod tests {
             &AssetKind::PreciousMetal
         )
         .is_ok());
+        assert!(
+            AlternativeAssetService::validate_alternative_asset_kind(&AssetKind::TimeDeposit)
+                .is_ok()
+        );
+        assert!(
+            AlternativeAssetService::validate_alternative_asset_kind(&AssetKind::Insurance).is_ok()
+        );
         assert!(
             AlternativeAssetService::validate_alternative_asset_kind(&AssetKind::Liability).is_ok()
         );

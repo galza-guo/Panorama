@@ -155,6 +155,8 @@ pub struct UpdateAssetDetailsRequest {
     pub name: Option<String>,
     /// Optional notes for the asset (stored in asset.notes, not metadata)
     pub notes: Option<String>,
+    /// Optional quote currency for the asset valuation.
+    pub currency: Option<String>,
     /// Optional new metadata (merged with existing)
     /// Keys with null values are removed.
     pub metadata: Option<std::collections::HashMap<String, Value>>,

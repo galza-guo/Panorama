@@ -28,13 +28,15 @@ use wealthfolio_core::assets::{
 
 /// Alternative asset kinds supported by the API
 #[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(rename_all = "lowercase")]
+#[serde(rename_all = "snake_case")]
 pub enum AlternativeAssetKind {
     Property,
     Vehicle,
     Collectible,
     Precious,
     Mpf,
+    TimeDeposit,
+    Insurance,
     Liability,
     Other,
 }
@@ -47,6 +49,8 @@ impl AlternativeAssetKind {
             AlternativeAssetKind::Collectible => AssetKind::Collectible,
             AlternativeAssetKind::Precious => AssetKind::PreciousMetal,
             AlternativeAssetKind::Mpf => AssetKind::Mpf,
+            AlternativeAssetKind::TimeDeposit => AssetKind::TimeDeposit,
+            AlternativeAssetKind::Insurance => AssetKind::Insurance,
             AlternativeAssetKind::Liability => AssetKind::Liability,
             AlternativeAssetKind::Other => AssetKind::Other,
         }
@@ -284,6 +288,7 @@ pub async fn update_alternative_asset_metadata(
     name: Option<String>,
     metadata: std::collections::HashMap<String, serde_json::Value>,
     notes: Option<String>,
+    currency: Option<String>,
     state: State<'_, Arc<ServiceContext>>,
 ) -> Result<(), String> {
     // Preserve structured JSON metadata while keeping empty strings as delete markers.
@@ -303,6 +308,7 @@ pub async fn update_alternative_asset_metadata(
         asset_id,
         name,
         notes,
+        currency,
         metadata: Some(metadata_map),
     };
 
@@ -412,6 +418,8 @@ pub async fn get_alternative_holdings(
                 AssetKind::Collectible => "collectible",
                 AssetKind::PreciousMetal => "precious",
                 AssetKind::Mpf => "mpf",
+                AssetKind::TimeDeposit => "time_deposit",
+                AssetKind::Insurance => "insurance",
                 AssetKind::Liability => "liability",
                 AssetKind::Other => "other",
                 _ => "other",

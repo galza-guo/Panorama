@@ -947,6 +947,8 @@ mod tests {
             AssetKind::Vehicle,
             AssetKind::Collectible,
             AssetKind::PreciousMetal,
+            AssetKind::TimeDeposit,
+            AssetKind::Insurance,
             AssetKind::Liability,
             AssetKind::Other,
             AssetKind::PrivateEquity,

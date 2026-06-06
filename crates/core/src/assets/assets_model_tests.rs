@@ -42,6 +42,14 @@ mod tests {
             "\"PRECIOUS_METAL\""
         );
         assert_eq!(
+            serde_json::to_string(&AssetKind::TimeDeposit).unwrap(),
+            "\"TIME_DEPOSIT\""
+        );
+        assert_eq!(
+            serde_json::to_string(&AssetKind::Insurance).unwrap(),
+            "\"INSURANCE\""
+        );
+        assert_eq!(
             serde_json::to_string(&AssetKind::PrivateEquity).unwrap(),
             "\"PRIVATE_EQUITY\""
         );
@@ -85,6 +93,14 @@ mod tests {
             AssetKind::PreciousMetal
         );
         assert_eq!(
+            serde_json::from_str::<AssetKind>("\"TIME_DEPOSIT\"").unwrap(),
+            AssetKind::TimeDeposit
+        );
+        assert_eq!(
+            serde_json::from_str::<AssetKind>("\"INSURANCE\"").unwrap(),
+            AssetKind::Insurance
+        );
+        assert_eq!(
             serde_json::from_str::<AssetKind>("\"PRIVATE_EQUITY\"").unwrap(),
             AssetKind::PrivateEquity
         );
@@ -100,6 +116,15 @@ mod tests {
             serde_json::from_str::<AssetKind>("\"FX\"").unwrap(),
             AssetKind::Fx
         );
+    }
+
+    #[test]
+    fn test_specialized_alternative_kinds_parse_from_storage_strings() {
+        let time_deposit = AssetKind::from_db_str("TIME_DEPOSIT").expect("TIME_DEPOSIT parses");
+        let insurance = AssetKind::from_db_str("INSURANCE").expect("INSURANCE parses");
+
+        assert!(time_deposit.is_alternative());
+        assert!(insurance.is_alternative());
     }
 
     #[test]
@@ -154,6 +179,8 @@ mod tests {
         assert!(AssetKind::Vehicle.is_alternative());
         assert!(AssetKind::Collectible.is_alternative());
         assert!(AssetKind::PreciousMetal.is_alternative());
+        assert!(AssetKind::TimeDeposit.is_alternative());
+        assert!(AssetKind::Insurance.is_alternative());
         assert!(AssetKind::Liability.is_alternative());
         assert!(AssetKind::Other.is_alternative());
         assert!(!AssetKind::Investment.is_alternative());
@@ -357,6 +384,8 @@ mod tests {
             AssetKind::Vehicle,
             AssetKind::Collectible,
             AssetKind::PreciousMetal,
+            AssetKind::TimeDeposit,
+            AssetKind::Insurance,
             AssetKind::PrivateEquity,
             AssetKind::Liability,
             AssetKind::Other,

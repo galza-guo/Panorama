@@ -177,6 +177,7 @@ pub trait AlternativeAssetRepositoryTrait: Send + Sync {
     /// * `display_code` - Optional new display code for the asset
     /// * `metadata` - Optional new metadata JSON
     /// * `notes` - Optional notes for the asset
+    /// * `currency` - Optional quote currency for the asset
     ///
     /// # Returns
     /// Ok(()) on success
@@ -187,5 +188,6 @@ pub trait AlternativeAssetRepositoryTrait: Send + Sync {
         display_code: Option<&str>,
         metadata: Option<serde_json::Value>,
         notes: Option<&str>,
+        currency: Option<&str>,
     ) -> Result<()>;
 }

@@ -127,7 +127,7 @@ impl AlternativeAssetRepositoryTrait for AlternativeAssetRepository {
         asset_id: &str,
         metadata: Option<serde_json::Value>,
     ) -> Result<()> {
-        self.update_asset_details(asset_id, None, None, metadata, None)
+        self.update_asset_details(asset_id, None, None, metadata, None, None)
             .await
     }
 
@@ -159,12 +159,14 @@ impl AlternativeAssetRepositoryTrait for AlternativeAssetRepository {
         display_code: Option<&str>,
         metadata: Option<serde_json::Value>,
         notes: Option<&str>,
+        currency: Option<&str>,
     ) -> Result<()> {
         let asset_id_owned = asset_id.to_string();
         let name_owned = name.map(|n| n.to_string());
         let display_code_owned = display_code.map(|s| s.to_string());
         let metadata_str = metadata.and_then(|v| serde_json::to_string(&v).ok());
         let notes_owned = notes.map(|n| n.to_string());
+        let currency_owned = currency.map(|c| c.to_string());
 
         self.writer
             .exec_tx(move |tx| -> Result<()> {
@@ -172,7 +174,8 @@ impl AlternativeAssetRepositoryTrait for AlternativeAssetRepository {
                 let has_updates = name_owned.is_some()
                     || display_code_owned.is_some()
                     || metadata_str.is_some()
-                    || notes_owned.is_some();
+                    || notes_owned.is_some()
+                    || currency_owned.is_some();
 
                 if !has_updates {
                     return Ok(()); // Nothing to update
@@ -187,6 +190,7 @@ impl AlternativeAssetRepositoryTrait for AlternativeAssetRepository {
                             .map(|s| assets::display_code.eq(s)),
                         metadata_str.as_ref().map(|m| assets::metadata.eq(Some(m))),
                         notes_owned.as_ref().map(|n| assets::notes.eq(Some(n))),
+                        currency_owned.as_ref().map(|c| assets::quote_ccy.eq(c)),
                     ))
                     .execute(tx.conn())
                     .map_err(StorageError::from)?;
