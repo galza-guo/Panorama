@@ -2,7 +2,6 @@ import { ApplicationShell } from "@wealthfolio/ui";
 import { Icons } from "@wealthfolio/ui/components/ui/icons";
 import { Separator } from "@wealthfolio/ui/components/ui/separator";
 import { Outlet, useLocation, useNavigate } from "react-router-dom";
-import { useSettingsContext } from "@/lib/settings-provider";
 import { SidebarNav } from "./sidebar-nav";
 
 const settingsSections = [
@@ -79,12 +78,6 @@ const settingsSections = [
         icon: <Icons.Link className="size-5" />,
       },
       {
-        title: "Wealthfolio Connect",
-        href: "connect",
-        subtitle: "Broker and device linking",
-        icon: <Icons.CloudSync2 className="size-6 text-blue-400" />,
-      },
-      {
         title: "Market Data",
         href: "market-data",
         subtitle: "Providers, sync, and imports",
@@ -125,14 +118,6 @@ const settingsSections = [
 export default function SettingsLayout() {
   const location = useLocation();
   const navigate = useNavigate();
-  const { settings } = useSettingsContext();
-  const wealthfolioConnectVisible = settings?.wealthfolioConnectVisible === true;
-  const visibleSettingsSections = settingsSections
-    .map((section) => ({
-      ...section,
-      items: section.items.filter((item) => item.href !== "connect" || wealthfolioConnectVisible),
-    }))
-    .filter((section) => section.items.length > 0);
 
   // Check if we're on the main settings page (mobile) or a specific setting page
   const isMainSettingsPage =
@@ -152,7 +137,7 @@ export default function SettingsLayout() {
               </div>
             </div>
             <div className="space-y-6 p-3 pb-[calc(var(--mobile-nav-ui-height)+max(var(--mobile-nav-gap),env(safe-area-inset-bottom)))] lg:p-4 lg:pb-4">
-              {visibleSettingsSections.map((section) => (
+              {settingsSections.map((section) => (
                 <div key={section.title} className="space-y-3">
                   <div className="text-muted-foreground px-2 text-xs font-semibold tracking-widest uppercase">
                     {section.title}
@@ -207,7 +192,7 @@ export default function SettingsLayout() {
           <div className="flex gap-10">
             <aside className="hidden w-[240px] shrink-0 lg:sticky lg:top-24 lg:flex lg:flex-col lg:self-start">
               <div className="space-y-6">
-                {visibleSettingsSections.map((section) => (
+                {settingsSections.map((section) => (
                   <div key={section.title} className="space-y-2">
                     <div className="text-muted-foreground pl-2 text-sm font-light tracking-widest uppercase">
                       {section.title}

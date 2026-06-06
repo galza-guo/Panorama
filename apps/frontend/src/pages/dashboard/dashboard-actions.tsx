@@ -1,16 +1,9 @@
 import { ActionPalette, type ActionPaletteGroup } from "@/components/action-palette";
-import { syncService } from "@/features/devices-sync";
-import { useSyncStatus } from "@/features/devices-sync/hooks";
-import { SyncStates } from "@/features/devices-sync/types";
-import { useSyncBrokerData } from "@/features/wealthfolio-connect/hooks";
-import { hasBrokerSync } from "@/features/wealthfolio-connect";
-import { useWealthfolioConnect } from "@/features/wealthfolio-connect/providers/wealthfolio-connect-provider";
 import {
   useRecalculatePortfolioMutation,
   useUpdatePortfolioMutation,
 } from "@/hooks/use-calculate-portfolio";
 import { useRunHealthChecks } from "@/hooks/use-health";
-import { useSettingsContext } from "@/lib/settings-provider";
 import { Button } from "@wealthfolio/ui/components/ui/button";
 import { Icons } from "@wealthfolio/ui/components/ui/icons";
 import { useMemo, useState } from "react";
@@ -29,20 +22,6 @@ export function DashboardActions({ onAddAsset, onAddLiability }: DashboardAction
   const updatePortfolioMutation = useUpdatePortfolioMutation();
   const recalculatePortfolioMutation = useRecalculatePortfolioMutation();
   const runHealthChecksMutation = useRunHealthChecks({ navigate });
-
-  // Wealthfolio Connect sync
-  const { isEnabled, isConnected, userInfo } = useWealthfolioConnect();
-  const { settings } = useSettingsContext();
-  const { mutate: syncBrokerData } = useSyncBrokerData();
-  const showSyncAction =
-    settings?.wealthfolioConnectVisible === true &&
-    isEnabled &&
-    isConnected &&
-    hasBrokerSync(userInfo);
-
-  // Device sync
-  const { syncState } = useSyncStatus();
-  const showDeviceSyncAction = syncState === SyncStates.READY;
 
   const groups = useMemo((): ActionPaletteGroup[] => {
     const primaryActions =
@@ -71,24 +50,6 @@ export function DashboardActions({ onAddAsset, onAddLiability }: DashboardAction
       {
         items: [
           ...primaryActions,
-          ...(showSyncAction
-            ? [
-                {
-                  icon: Icons.Download,
-                  label: "Sync Broker Accounts",
-                  onClick: () => syncBrokerData(),
-                },
-              ]
-            : []),
-          ...(showDeviceSyncAction
-            ? [
-                {
-                  icon: Icons.CloudSync,
-                  label: "Sync Devices",
-                  onClick: () => void syncService.triggerSyncCycle(),
-                },
-              ]
-            : []),
           {
             icon: Icons.Refresh,
             label: "Update Prices",
@@ -111,9 +72,6 @@ export function DashboardActions({ onAddAsset, onAddLiability }: DashboardAction
     navigate,
     onAddAsset,
     onAddLiability,
-    showSyncAction,
-    showDeviceSyncAction,
-    syncBrokerData,
     updatePortfolioMutation,
     recalculatePortfolioMutation,
     runHealthChecksMutation,

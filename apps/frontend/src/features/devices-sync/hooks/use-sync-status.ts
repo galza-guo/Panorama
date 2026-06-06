@@ -3,20 +3,13 @@
 // Replaces: state detection useEffect, refreshState(), ENGINE_STATUS action.
 // ==========================================================================
 
-import { useWealthfolioConnect } from "@/features/wealthfolio-connect";
 import { useQuery } from "@tanstack/react-query";
 import { useCallback } from "react";
 import { syncService } from "../services/sync-service";
 import { SyncError, SyncStates } from "../types";
 
 export function useSyncStatus() {
-  const { isConnected, isEnabled, userInfo } = useWealthfolioConnect();
-
-  const hasSubscription =
-    userInfo?.team?.subscription_status === "active" ||
-    userInfo?.team?.subscription_status === "trialing";
-
-  const enabled = !!isEnabled && !!isConnected && !!hasSubscription;
+  const enabled = false;
 
   // Query 1: sync state (always active when authenticated)
   const statusQuery = useQuery({

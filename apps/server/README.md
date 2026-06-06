@@ -14,7 +14,8 @@ Docker image
 
 Key environment variables
 - `WF_LISTEN_ADDR`: Bind address, default `127.0.0.1:8080`.
-- `WF_DB_PATH`: Path to the SQLite database file (or a directory; if a directory is provided, `app.db` is used inside it). Example: `./db/app.db`.
+- `PANORAMA_DB_PATH`: Path to the SQLite database file (or a directory; if a directory is provided, `app.db` is used inside it). Example: `./db/app.db`.
+- `WF_DB_PATH`: Legacy fallback for existing deployments. Used only when `PANORAMA_DB_PATH` is not set.
 - `WF_CORS_ALLOW_ORIGINS`: Comma-separated list of allowed origins for CORS. Example: `http://localhost:1420`.
 - `WF_REQUEST_TIMEOUT_MS`: Request timeout in milliseconds. Default `30000`.
 - `WF_STATIC_DIR`: Directory to serve static assets from (the web build output). Default `dist`.
@@ -33,6 +34,6 @@ Key environment variables
 - `WF_SECRET_FILE`: Optional override for where encrypted secrets are stored. Defaults to `<data-root>/secrets.json`.
 
 Notes
-- The server also honors `DATABASE_URL`; when running in this workspace, `WF_DB_PATH` is preferred and propagated to `DATABASE_URL` internally so the core layer uses the expected path.
+- The server also honors `DATABASE_URL`; when running in this workspace, `PANORAMA_DB_PATH` is preferred, `WF_DB_PATH` remains a fallback, and the resolved path is propagated to `DATABASE_URL` internally so the core layer uses the expected path.
 - Database migrations are embedded and applied automatically on startup.
 - Secrets in web/server mode are stored in an encrypted JSON file derived from the database directory using `WF_SECRET_KEY`.

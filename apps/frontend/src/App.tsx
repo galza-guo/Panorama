@@ -1,6 +1,5 @@
 import { isWeb } from "@/adapters";
 import { AuthGate, AuthProvider } from "@/context/auth-context";
-import { WealthfolioConnectProvider } from "@/features/wealthfolio-connect";
 import { SettingsProvider } from "@/lib/settings-provider";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { TooltipProvider } from "@wealthfolio/ui";
@@ -39,13 +38,11 @@ function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
-        <WealthfolioConnectProvider>
-          <PrivacyProvider>
-            <SettingsProvider>
-              <TooltipProvider>{routedContent}</TooltipProvider>
-            </SettingsProvider>
-          </PrivacyProvider>
-        </WealthfolioConnectProvider>
+        <PrivacyProvider>
+          <SettingsProvider>
+            <TooltipProvider>{routedContent}</TooltipProvider>
+          </SettingsProvider>
+        </PrivacyProvider>
       </AuthProvider>
     </QueryClientProvider>
   );

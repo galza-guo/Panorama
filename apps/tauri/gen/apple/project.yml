@@ -1,6 +1,6 @@
-name: wealthfolio-app
+name: panorama-app
 options:
-  bundleIdPrefix: com.teymz.wealthfolio
+  bundleIdPrefix: com.gallantguo.panorama
   deploymentTarget:
     iOS: 14.0
 fileGroups: [../../src]
@@ -10,8 +10,8 @@ configs:
 settingGroups:
   app:
     base:
-      PRODUCT_NAME: Wealthfolio
-      PRODUCT_BUNDLE_IDENTIFIER: com.teymz.wealthfolio
+      PRODUCT_NAME: Panorama
+      PRODUCT_BUNDLE_IDENTIFIER: com.gallantguo.panorama
 targetTemplates:
   app:
     type: application

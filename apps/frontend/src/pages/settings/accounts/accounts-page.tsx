@@ -1,4 +1,4 @@
-import { getPlatforms } from "@/features/wealthfolio-connect";
+import { getPlatforms } from "@/adapters";
 import { useAccounts } from "@/hooks/use-accounts";
 import { QueryKeys } from "@/lib/query-keys";
 import type { Account, Platform } from "@/lib/types";

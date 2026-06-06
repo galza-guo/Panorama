@@ -6,9 +6,6 @@ import { OnboardingLayout } from "@/pages/layouts/onboarding-layout";
 import SettingsLayout from "@/pages/settings/settings-layout";
 
 import { getDynamicRoutes, subscribeToNavigationUpdates } from "@/addons/addons-runtime-context";
-import { ConnectVisibilityGate } from "@/features/wealthfolio-connect/components/connect-visibility-gate";
-import AuthCallbackPage from "@/features/wealthfolio-connect/pages/auth-callback-page";
-import ConnectPage from "@/features/wealthfolio-connect/pages/connect-page";
 import ActivityManagerPage from "@/pages/activity/activity-manager-page";
 import ActivityPage from "@/pages/activity/activity-page";
 import ActivityImportPage from "@/pages/activity/import/activity-import-page";
@@ -39,7 +36,6 @@ import MarketDataImportPage from "./pages/settings/market-data/market-data-impor
 import MarketDataSettingsPage from "./pages/settings/market-data/market-data-settings";
 import TaxonomiesPage from "./pages/settings/taxonomies/taxonomies-page";
 import WebullHkSettingsPage from "./pages/settings/webull-hk/webull-hk-settings-page";
-import ConnectSettingsPage from "./pages/settings/wealthfolio-connect/connect-settings-page";
 
 export function AppRoutes() {
   const [dynamicRoutes, setDynamicRoutes] = useState<
@@ -69,9 +65,6 @@ export function AppRoutes() {
         {/* QR Scanner - No layout for fullscreen camera access */}
         {/* <Route path="/qr-scanner" element={<QRScannerPage />} /> */}
 
-        {/* Auth callback - No layout needed */}
-        <Route path="/auth/callback" element={<AuthCallbackPage />} />
-
         {/* Onboarding with dedicated layout */}
         <Route path="/onboarding" element={<OnboardingLayout />}>
           <Route index element={<OnboardingPage />} />
@@ -95,14 +88,6 @@ export function AppRoutes() {
           <Route path="insights" element={<PortfolioInsightsPage />} />
           <Route path="health" element={<HealthPage />} />
           <Route path="assistant" element={<AiAssistantPage />} />
-          <Route
-            path="connect"
-            element={
-              <ConnectVisibilityGate redirectTo="/dashboard">
-                <ConnectPage />
-              </ConnectVisibilityGate>
-            }
-          />
           {/* Dynamic addon routes */}
           {dynamicRoutes.map(({ path, component: Component }) => (
             <Route
@@ -131,14 +116,6 @@ export function AppRoutes() {
             <Route path="webull-hk" element={<WebullHkSettingsPage />} />
             <Route path="securities" element={<AssetsPage />} />
             <Route path="taxonomies" element={<TaxonomiesPage />} />
-            <Route
-              path="connect"
-              element={
-                <ConnectVisibilityGate redirectTo="/settings/general">
-                  <ConnectSettingsPage />
-                </ConnectVisibilityGate>
-              }
-            />
             <Route path="ai-providers" element={<AiProvidersPage />} />
             <Route path="addons" element={<AddonSettingsPage />} />
           </Route>

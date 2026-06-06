@@ -20,7 +20,8 @@ impl Config {
             .unwrap_or_else(|_| "0.0.0.0:8088".to_string())
             .parse()
             .expect("Invalid WF_LISTEN_ADDR");
-        let db_path = std::env::var("WF_DB_PATH").unwrap_or_else(|_| "./db/app.db".into());
+        let db_path = env_with_legacy_fallback("PANORAMA_DB_PATH", "WF_DB_PATH")
+            .unwrap_or_else(|| "./db/app.db".into());
         let cors_allow = std::env::var("WF_CORS_ALLOW_ORIGINS")
             .unwrap_or_else(|_| "*".into())
             .split(',')
@@ -75,4 +76,15 @@ impl Config {
             auth,
         }
     }
+}
+
+fn env_with_legacy_fallback(primary: &str, legacy: &str) -> Option<String> {
+    std::env::var(primary)
+        .ok()
+        .filter(|value| !value.trim().is_empty())
+        .or_else(|| {
+            std::env::var(legacy)
+                .ok()
+                .filter(|value| !value.trim().is_empty())
+        })
 }

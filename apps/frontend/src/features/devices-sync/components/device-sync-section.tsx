@@ -61,8 +61,6 @@ import { E2EESetupCard } from "./e2ee-setup-card";
 import { PairingFlow, WaitingState } from "./pairing-flow";
 import { RecoveryDialog } from "./recovery-dialog";
 
-const PORTAL_DEVICES_URL = "https://connect.wealthfolio.app/settings/devices";
-
 const platformIcons: Record<string, typeof Icons.Monitor> = {
   macos: Icons.Monitor,
   mac: Icons.Monitor,
@@ -601,25 +599,6 @@ export function DeviceSyncSection() {
                 disabled={isRefreshing}
               >
                 <Icons.RefreshCw className={`h-4 w-4 ${isRefreshing ? "animate-spin" : ""}`} />
-              </Button>
-              {/* Mobile: icon only */}
-              <Button
-                variant="ghost"
-                size="icon"
-                className="text-muted-foreground hover:text-foreground sm:hidden"
-                onClick={() => window.open(PORTAL_DEVICES_URL, "_blank")}
-              >
-                <Icons.ExternalLink className="h-4 w-4" />
-              </Button>
-              {/* Desktop: full text */}
-              <Button
-                variant="ghost"
-                size="sm"
-                className="text-muted-foreground hover:text-foreground hidden sm:inline-flex"
-                onClick={() => window.open(PORTAL_DEVICES_URL, "_blank")}
-              >
-                Manage devices
-                <Icons.ArrowRight className="ml-1 h-3.5 w-3.5" />
               </Button>
             </div>
           </div>

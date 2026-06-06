@@ -5,13 +5,6 @@ ARG RUST_IMAGE=rust:1.91-alpine
 # Use --platform=$BUILDPLATFORM to run on the native runner (fast)
 FROM --platform=$BUILDPLATFORM node:20-alpine AS frontend
 
-# Wealthfolio Connect configuration (baked into JS bundle at build time)
-# Pass via --build-arg to enable; omit to build without Connect.
-ARG CONNECT_AUTH_URL=
-ARG CONNECT_AUTH_PUBLISHABLE_KEY=
-ENV CONNECT_AUTH_URL=${CONNECT_AUTH_URL}
-ENV CONNECT_AUTH_PUBLISHABLE_KEY=${CONNECT_AUTH_PUBLISHABLE_KEY}
-
 WORKDIR /app
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 COPY . .
@@ -69,10 +62,7 @@ WORKDIR /app
 # Copy from backend (which is now build platform, but binary is target platform)
 COPY --from=backend /wealthfolio-server /usr/local/bin/wealthfolio-server
 COPY --from=frontend /web-dist ./dist
-ENV WF_DB_PATH=/data/wealthfolio.db
-# Wealthfolio Connect API URL (can be overridden at runtime via -e or docker-compose)
-ARG CONNECT_API_URL=
-ENV CONNECT_API_URL=${CONNECT_API_URL}
+ENV PANORAMA_DB_PATH=/data/panorama.db
 VOLUME ["/data"]
 EXPOSE 8080
 CMD ["/usr/local/bin/wealthfolio-server"]

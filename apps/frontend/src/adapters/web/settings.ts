@@ -164,9 +164,9 @@ export const getPlatform = (): Promise<PlatformInfo> => {
     is_desktop: !is_mobile,
     is_tauri: false,
     capabilities: {
-      connect_sync: true,
-      device_sync: true,
-      cloud_sync: true,
+      connect_sync: false,
+      device_sync: false,
+      cloud_sync: false,
     },
   });
 };

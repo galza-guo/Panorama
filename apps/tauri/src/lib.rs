@@ -1,6 +1,7 @@
 // Prevents additional console window on Windows in release, DO NOT REMOVE!!
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
+mod app_data_migration;
 mod commands;
 mod context;
 mod domain_events;
@@ -21,10 +22,9 @@ use dotenvy::dotenv;
 use log::error;
 #[cfg(feature = "device-sync")]
 use log::warn;
-use tauri::{AppHandle, Emitter, Manager};
+use tauri::{AppHandle, Manager};
 
 use events::emit_app_ready;
-use tauri_plugin_deep_link::DeepLinkExt;
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Desktop-only setup
@@ -246,7 +246,6 @@ pub fn run() {
         .plugin(tauri_plugin_shell::init())
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_fs::init())
-        .plugin(tauri_plugin_deep_link::init())
         .setup(|app| {
             let handle = app.handle().clone();
 
@@ -259,19 +258,22 @@ pub fn run() {
 
             // Get app data directory
             let app_data_dir = get_app_data_dir(&handle)?;
+            match app_data_migration::migrate_from_known_legacy_app_data_dirs(&app_data_dir) {
+                Ok(app_data_migration::AppDataMigrationStatus::Migrated) => {
+                    log::info!(
+                        "Migrated legacy Wealthfolio app data into Panorama app data directory"
+                    );
+                }
+                Ok(app_data_migration::AppDataMigrationStatus::NotNeeded) => {}
+                Ok(app_data_migration::AppDataMigrationStatus::LegacyDataNotFound) => {}
+                Err(err) => {
+                    log::error!("Failed to migrate legacy app data: {}", err);
+                    return Err(Box::new(err));
+                }
+            }
 
             // Setup event listeners (platform-agnostic)
             listeners::setup_event_listeners(handle.clone());
-
-            // Setup deep link handler
-            let deep_link_handle = handle.clone();
-            app.deep_link().on_open_url(move |event| {
-                let urls = event.urls();
-                log::info!("Deep link received: {:?}", urls);
-                for url in urls {
-                    let _ = deep_link_handle.emit("deep-link-received", url.to_string());
-                }
-            });
 
             // Platform-specific setup
             #[cfg(desktop)]

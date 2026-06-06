@@ -35,6 +35,14 @@ fn read_connect_api_url_from_dotenv() -> Option<String> {
 }
 
 fn main() {
+    let cloud_sync_enabled = env::var_os("CARGO_FEATURE_CONNECT_SYNC").is_some()
+        || env::var_os("CARGO_FEATURE_DEVICE_SYNC").is_some();
+
+    if !cloud_sync_enabled {
+        tauri_build::build();
+        return;
+    }
+
     println!("cargo:rerun-if-env-changed=CONNECT_API_URL");
 
     let connect_api_url = env::var("CONNECT_API_URL")

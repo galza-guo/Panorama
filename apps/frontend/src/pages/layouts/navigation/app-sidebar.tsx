@@ -13,7 +13,6 @@ import { Separator } from "@wealthfolio/ui/components/ui/separator";
 import { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { type NavLink, type NavigationProps, isPathActive } from "./app-navigation";
-import { ConnectNavItem } from "./connect-nav-item";
 
 interface AppSidebarProps {
   navigation: NavigationProps;
@@ -126,7 +125,6 @@ export function AppSidebar({ navigation }: AppSidebarProps) {
               {navigation?.secondary?.map((item) => (
                 <NavItem key={item.title} item={item} collapsed={collapsed} />
               ))}
-              <ConnectNavItem collapsed={collapsed} />
               {isWeb && (
                 <Button
                   type="button"

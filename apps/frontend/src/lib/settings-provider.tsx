@@ -18,7 +18,6 @@ interface ExtendedSettingsContextType extends SettingsContextType {
         | "syncEnabled"
         | "insuranceVisible"
         | "mpfVisible"
-        | "wealthfolioConnectVisible"
       >
     >,
   ) => Promise<void>;
@@ -52,7 +51,6 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
         | "syncEnabled"
         | "insuranceVisible"
         | "mpfVisible"
-        | "wealthfolioConnectVisible"
       >
     >,
   ) => {

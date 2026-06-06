@@ -7,7 +7,6 @@ use std::sync::Arc;
 
 use wealthfolio_connect::{
     ensure_valid_access_token, ConnectApiClient, TokenLifecycleConfig, TokenLifecycleState,
-    DEFAULT_CLOUD_API_URL,
 };
 use wealthfolio_core::secrets::SecretStore;
 
@@ -32,10 +31,11 @@ pub fn cloud_api_base_url() -> Option<String> {
         return None;
     }
 
-    option_env!("CONNECT_API_URL")
+    std::env::var("CONNECT_API_URL")
+        .ok()
+        .or_else(|| option_env!("CONNECT_API_URL").map(String::from))
         .map(|v| v.trim().trim_end_matches('/').to_string())
         .filter(|v| !v.is_empty())
-        .or_else(|| Some(DEFAULT_CLOUD_API_URL.to_string()))
 }
 
 fn connect_auth_url() -> Option<String> {
@@ -44,7 +44,6 @@ fn connect_auth_url() -> Option<String> {
         .map(|v| v.trim().trim_end_matches('/').to_string())
         .filter(|v| !v.is_empty())
         .or_else(|| option_env!("CONNECT_AUTH_URL").map(|v| v.trim_end_matches('/').to_string()))
-        .or_else(|| Some("https://auth.wealthfolio.app".to_string()))
 }
 
 fn connect_auth_publishable_key() -> Option<String> {
@@ -53,7 +52,6 @@ fn connect_auth_publishable_key() -> Option<String> {
         .map(|v| v.trim().to_string())
         .filter(|v| !v.is_empty())
         .or_else(|| option_env!("CONNECT_AUTH_PUBLISHABLE_KEY").map(|v| v.trim().to_string()))
-        .or_else(|| Some("sb_publishable_ZSZbXNtWtnh9i2nqJ2UL4A_NV8ZVutd".to_string()))
 }
 
 fn token_lifecycle_config() -> Option<TokenLifecycleConfig> {
