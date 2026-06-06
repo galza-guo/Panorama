@@ -7,7 +7,7 @@ use axum::{
     Json, Router,
 };
 use chrono::Utc;
-use wealthfolio_core::portfolio::net_worth::{NetWorthHistoryPoint, NetWorthResponse};
+use panorama_core::portfolio::net_worth::{NetWorthHistoryPoint, NetWorthResponse};
 
 use super::shared::{parse_date, parse_date_optional};
 

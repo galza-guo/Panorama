@@ -2,10 +2,10 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
 
-import { Button } from "@wealthfolio/ui/components/ui/button";
-import { Switch } from "@wealthfolio/ui/components/ui/switch";
+import { Button } from "@panorama/ui/components/ui/button";
+import { Switch } from "@panorama/ui/components/ui/switch";
 
-import { Icons } from "@wealthfolio/ui/components/ui/icons";
+import { Icons } from "@panorama/ui/components/ui/icons";
 
 import {
   DialogDescription,
@@ -13,7 +13,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from "@wealthfolio/ui/components/ui/dialog";
+} from "@panorama/ui/components/ui/dialog";
 import {
   Form,
   FormControl,
@@ -21,12 +21,12 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-} from "@wealthfolio/ui/components/ui/form";
-import { Input } from "@wealthfolio/ui/components/ui/input";
+} from "@panorama/ui/components/ui/form";
+import { Input } from "@panorama/ui/components/ui/input";
 
 import { newGoalSchema } from "@/lib/schemas";
 import { useGoalMutations } from "@/pages/settings/goals/use-goal-mutations";
-import { MoneyInput } from "@wealthfolio/ui";
+import { MoneyInput } from "@panorama/ui";
 
 type NewGoal = z.infer<typeof newGoalSchema>;
 

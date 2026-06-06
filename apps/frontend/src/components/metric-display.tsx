@@ -1,14 +1,14 @@
-import { Button } from "@wealthfolio/ui/components/ui/button";
-import { Icons } from "@wealthfolio/ui/components/ui/icons";
-import { Popover, PopoverContent, PopoverTrigger } from "@wealthfolio/ui/components/ui/popover";
+import { Button } from "@panorama/ui/components/ui/button";
+import { Icons } from "@panorama/ui/components/ui/icons";
+import { Popover, PopoverContent, PopoverTrigger } from "@panorama/ui/components/ui/popover";
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
-} from "@wealthfolio/ui/components/ui/tooltip";
+} from "@panorama/ui/components/ui/tooltip";
 import { cn } from "@/lib/utils";
-import { GainPercent } from "@wealthfolio/ui";
+import { GainPercent } from "@panorama/ui";
 import React, { useState } from "react";
 
 // Explanatory texts for info popovers

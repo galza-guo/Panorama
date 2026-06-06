@@ -9,7 +9,7 @@ import { ACTIVITY_TYPE_PREFIX_LENGTH } from "@/lib/types";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { getAccountImportMapping, saveAccountImportMapping, logger } from "@/adapters";
 import { QueryKeys } from "@/lib/query-keys";
-import { toast } from "@wealthfolio/ui/components/ui/use-toast";
+import { toast } from "@panorama/ui/components/ui/use-toast";
 
 /**
  * Common column name aliases for each ImportFormat field.

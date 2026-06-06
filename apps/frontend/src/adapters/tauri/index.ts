@@ -36,16 +36,6 @@ export type {
   UpdateCheckPayload,
   PlatformCapabilities,
   PlatformInfo,
-  BackendSyncStateResult,
-  BackendEnableSyncResult,
-  BackendSyncEngineStatusResult,
-  BackendSyncBootstrapOverwriteCheckResult,
-  BackendSyncReconcileReadyResult,
-  BackendSyncBootstrapResult,
-  BackendSyncCycleResult,
-  BackendSyncBackgroundEngineResult,
-  BackendSyncSnapshotUploadResult,
-  EphemeralKeyPair,
 } from "../types";
 
 // Re-export AI types from features/ai-assistant
@@ -99,9 +89,6 @@ export * from "../shared/exchange-rates";
 
 // Secrets Commands
 export * from "../shared/secrets";
-
-// Connect Commands (Broker + Device Sync + Auth)
-export * from "../shared/connect";
 
 // Webull HK Local Connect Commands
 export * from "../shared/webull-hk";
@@ -182,9 +169,6 @@ export {
   listenMarketSyncComplete,
   listenMarketSyncStart,
   listenMarketSyncError,
-  listenBrokerSyncStart,
-  listenBrokerSyncComplete,
-  listenBrokerSyncError,
   listenNavigateToRoute,
   listenDeepLink,
 } from "./events";
@@ -197,19 +181,3 @@ export {
   openFileSaveDialog,
   openUrlInBrowser,
 } from "./files";
-
-// Crypto Commands (sync crypto operations)
-export {
-  syncGenerateRootKey,
-  syncDeriveDek,
-  syncGenerateKeypair,
-  syncComputeSharedSecret,
-  syncDeriveSessionKey,
-  syncEncrypt,
-  syncDecrypt,
-  syncGeneratePairingCode,
-  syncHashPairingCode,
-  syncHmacSha256,
-  syncComputeSas,
-  syncGenerateDeviceId,
-} from "./crypto";

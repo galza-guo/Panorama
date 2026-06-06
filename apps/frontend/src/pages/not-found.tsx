@@ -1,4 +1,4 @@
-import { Button } from "@wealthfolio/ui";
+import { Button } from "@panorama/ui";
 import { useNavigate } from "react-router-dom";
 
 export default function NotFoundPage() {
@@ -7,7 +7,7 @@ export default function NotFoundPage() {
   return (
     <div className="animate-in fade-in zoom-in flex h-full w-full flex-col items-center justify-center gap-6 p-8 text-center duration-500">
       <div className="space-y-2">
-        <h1 className="text-muted-foreground/10 select-none text-9xl font-black tracking-tighter">
+        <h1 className="text-muted-foreground/10 text-9xl font-black tracking-tighter select-none">
           404
         </h1>
         <h2 className="text-3xl font-bold tracking-tight">Page not found</h2>

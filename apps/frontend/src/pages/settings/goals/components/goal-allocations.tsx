@@ -1,8 +1,8 @@
-import { Button } from "@wealthfolio/ui/components/ui/button";
-import { Input } from "@wealthfolio/ui/components/ui/input";
-import { toast } from "@wealthfolio/ui/components/ui/use-toast";
+import { Button } from "@panorama/ui/components/ui/button";
+import { Input } from "@panorama/ui/components/ui/input";
+import { toast } from "@panorama/ui/components/ui/use-toast";
 import { Account, Goal, GoalAllocation } from "@/lib/types";
-import { formatAmount } from "@wealthfolio/ui";
+import { formatAmount } from "@panorama/ui";
 import { useSettingsContext } from "@/lib/settings-provider";
 import React, { useState, useEffect } from "react";
 
@@ -89,13 +89,13 @@ const GoalsAllocations: React.FC<GoalsAllocationsProps> = ({
               ))}
             </tr>
             <tr>
-              <td className="bg-muted text-muted-foreground sticky left-0 z-10 border-r border-t px-4 py-2 text-xs">
+              <td className="bg-muted text-muted-foreground sticky left-0 z-10 border-t border-r px-4 py-2 text-xs">
                 Total
               </td>
               {accounts.map((account) => (
                 <td
                   key={account.id}
-                  className={`text-muted-foreground border-l border-t px-4 py-2 text-right text-xs ${
+                  className={`text-muted-foreground border-t border-l px-4 py-2 text-right text-xs ${
                     totalAllocations[account.id] > 100 ? "text-destructive" : ""
                   }`}
                 >

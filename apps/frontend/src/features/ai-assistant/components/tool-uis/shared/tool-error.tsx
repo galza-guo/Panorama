@@ -1,5 +1,5 @@
-import { Button } from "@wealthfolio/ui";
-import { Icons } from "@wealthfolio/ui/components/ui/icons";
+import { Button } from "@panorama/ui";
+import { Icons } from "@panorama/ui/components/ui/icons";
 
 export interface ToolErrorProps {
   title?: string;

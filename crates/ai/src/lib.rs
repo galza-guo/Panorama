@@ -1,6 +1,6 @@
-//! Wealthfolio AI - LLM orchestration using rig-core.
+//! Panorama AI - LLM orchestration using rig-core.
 //!
-//! This crate provides the AI assistant functionality for Wealthfolio,
+//! This crate provides the AI assistant functionality for Panorama,
 //! handling the model ↔ tools ↔ model orchestration loop and streaming
 //! `AiStreamEvent` to Tauri/Axum consumers.
 //!
@@ -21,7 +21,7 @@
 //! # Example
 //!
 //! ```ignore
-//! use wealthfolio_ai::{ChatService, ChatConfig, AiEnvironment};
+//! use panorama_ai::{ChatService, ChatConfig, AiEnvironment};
 //!
 //! // Create environment (Tauri/Axum implements AiEnvironment)
 //! let env = create_runtime_environment(...);

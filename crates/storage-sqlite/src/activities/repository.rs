@@ -9,15 +9,15 @@ use std::str::FromStr;
 use std::sync::Arc;
 use uuid::Uuid;
 
-use wealthfolio_core::activities::ActivityError;
-use wealthfolio_core::activities::{
+use panorama_core::activities::ActivityError;
+use panorama_core::activities::{
     Activity, ActivityBulkIdentifierMapping, ActivityBulkMutationResult, ActivityDetails,
     ActivityRepositoryTrait, ActivitySearchResponse, ActivitySearchResponseMeta, ActivityUpdate,
     ActivityUpsert, BulkUpsertResult, ImportMapping, IncomeData, NewActivity, Sort,
     INCOME_ACTIVITY_TYPES, TRADING_ACTIVITY_TYPES,
 };
-use wealthfolio_core::limits::ContributionActivity;
-use wealthfolio_core::{Error, Result};
+use panorama_core::limits::ContributionActivity;
+use panorama_core::{Error, Result};
 
 use super::model::{ActivityDB, ActivityDetailsDB, ImportMappingDB};
 use crate::db::{get_connection, WriteHandle};

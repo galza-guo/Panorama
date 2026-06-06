@@ -1,7 +1,7 @@
 import { useNavigate } from "react-router-dom";
 import { motion } from "motion/react";
-import { Button } from "@wealthfolio/ui/components/ui/button";
-import { Icons } from "@wealthfolio/ui/components/ui/icons";
+import { Button } from "@panorama/ui/components/ui/button";
+import { Icons } from "@panorama/ui/components/ui/icons";
 import { useQuery } from "@tanstack/react-query";
 import { getAccounts } from "@/adapters";
 import { QueryKeys } from "@/lib/query-keys";

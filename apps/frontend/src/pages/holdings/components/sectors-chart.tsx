@@ -1,15 +1,15 @@
-import { Card, CardContent, CardHeader, CardTitle } from "@wealthfolio/ui/components/ui/card";
-import { EmptyPlaceholder } from "@wealthfolio/ui/components/ui/empty-placeholder";
-import { Icons } from "@wealthfolio/ui/components/ui/icons";
-import { Skeleton } from "@wealthfolio/ui/components/ui/skeleton";
+import { Card, CardContent, CardHeader, CardTitle } from "@panorama/ui/components/ui/card";
+import { EmptyPlaceholder } from "@panorama/ui/components/ui/empty-placeholder";
+import { Icons } from "@panorama/ui/components/ui/icons";
+import { Skeleton } from "@panorama/ui/components/ui/skeleton";
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
-} from "@wealthfolio/ui/components/ui/tooltip";
+} from "@panorama/ui/components/ui/tooltip";
 import { TaxonomyAllocation } from "@/lib/types";
-import { formatPercent, PrivacyAmount } from "@wealthfolio/ui";
+import { formatPercent, PrivacyAmount } from "@panorama/ui";
 import { useMemo } from "react";
 
 interface SectorsChartProps {
@@ -36,7 +36,7 @@ export function SectorsChart({
     <Card>
       <CardHeader className="pb-2">
         <div className="flex items-center justify-between">
-          <CardTitle className="text-muted-foreground text-sm font-medium uppercase tracking-wider">
+          <CardTitle className="text-muted-foreground text-sm font-medium tracking-wider uppercase">
             Sectors
           </CardTitle>
         </div>
@@ -84,7 +84,7 @@ export function SectorsChart({
                         <div className="bg-secondary relative h-5 flex-1 overflow-hidden rounded">
                           {/* Actual Progress Fill */}
                           <div
-                            className="absolute left-0 top-0 h-full rounded"
+                            className="absolute top-0 left-0 h-full rounded"
                             style={{
                               width: `${percent * 100}%`,
                               backgroundColor: `var(--chart-${(sectors.indexOf(sector) % 9) + 1})`,
@@ -95,14 +95,14 @@ export function SectorsChart({
                             <>
                               {/* Percentage INSIDE the fill, right-aligned, white text */}
                               <div
-                                className="text-background absolute left-0 top-0 flex h-full items-center justify-end pr-1 text-xs font-medium"
+                                className="text-background absolute top-0 left-0 flex h-full items-center justify-end pr-1 text-xs font-medium"
                                 style={{ width: `${percent * 100}%` }}
                               >
                                 <span className="whitespace-nowrap">{formatPercent(percent)}</span>
                               </div>
                               {/* Name OUTSIDE the fill, right-aligned, standard text color */}
                               <div
-                                className="text-foreground absolute top-0 flex h-full items-center justify-end pl-1 pr-1 text-xs font-medium"
+                                className="text-foreground absolute top-0 flex h-full items-center justify-end pr-1 pl-1 text-xs font-medium"
                                 style={{
                                   left: `${percent * 100}%`,
                                   right: "0",
@@ -122,10 +122,10 @@ export function SectorsChart({
                                 right: "0",
                               }}
                             >
-                              <span className="whitespace-nowrap pl-1">
+                              <span className="pl-1 whitespace-nowrap">
                                 {formatPercent(percent)}
                               </span>
-                              <span className="truncate pl-1 pr-1" title={sector.categoryName}>
+                              <span className="truncate pr-1 pl-1" title={sector.categoryName}>
                                 {sector.categoryName}
                               </span>
                             </div>

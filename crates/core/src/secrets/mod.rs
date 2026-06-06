@@ -2,12 +2,17 @@ use crate::errors::Result;
 
 /// Prefix applied to all secret identifiers to avoid collisions with other
 /// applications that may share the same underlying credential store.
-pub const SERVICE_PREFIX: &str = "wealthfolio_";
+pub const SERVICE_PREFIX: &str = "panorama_";
+pub const LEGACY_SERVICE_PREFIX: &str = "wealthfolio_";
 
 /// Format a service identifier into the canonical form expected by the
 /// platform-specific secret stores.
 pub fn format_service_id(service: &str) -> String {
     format!("{}{}", SERVICE_PREFIX, service.to_lowercase())
+}
+
+pub fn format_legacy_service_id(service: &str) -> String {
+    format!("{}{}", LEGACY_SERVICE_PREFIX, service.to_lowercase())
 }
 
 /// Platform-agnostic contract for storing provider secrets. Concrete

@@ -7,10 +7,10 @@ import {
   TIME_WEIGHTED_RETURN_INFO,
   VOLATILITY_INFO,
 } from "@/components/metric-display";
-import { Card, CardContent } from "@wealthfolio/ui/components/ui/card";
-import { Skeleton } from "@wealthfolio/ui/components/ui/skeleton";
-import { Icons } from "@wealthfolio/ui";
-import { Alert, AlertDescription } from "@wealthfolio/ui/components/ui/alert";
+import { Card, CardContent } from "@panorama/ui/components/ui/card";
+import { Skeleton } from "@panorama/ui/components/ui/skeleton";
+import { Icons } from "@panorama/ui";
+import { Alert, AlertDescription } from "@panorama/ui/components/ui/alert";
 import { PerformanceMetrics } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import React from "react";
@@ -36,7 +36,7 @@ export const PerformanceGrid: React.FC<PerformanceGridProps> = ({
       <div className={cn("w-full", className)}>
         <Alert
           variant="warning"
-          className="flex flex-col items-center gap-2 text-center [&>svg+div]:translate-y-0 [&>svg]:static [&>svg~*]:pl-0"
+          className="flex flex-col items-center gap-2 text-center [&>svg]:static [&>svg+div]:translate-y-0 [&>svg~*]:pl-0"
         >
           <Icons.AlertTriangle className="size-5" />
           <AlertDescription className="text-xs">{performanceError}</AlertDescription>

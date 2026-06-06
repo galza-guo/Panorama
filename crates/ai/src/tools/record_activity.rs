@@ -260,7 +260,7 @@ impl<E: AiEnvironment> RecordActivityTool<E> {
     pub(crate) async fn build_output_with_accounts(
         &self,
         args: RecordActivityArgs,
-        accounts: &[wealthfolio_core::accounts::Account],
+        accounts: &[panorama_core::accounts::Account],
     ) -> Result<RecordActivityOutput, AiError> {
         debug!(
             "record_activity called: type={}, symbol={:?}, account={:?}, date={}",
@@ -413,7 +413,7 @@ impl<E: AiEnvironment> RecordActivityTool<E> {
     fn resolve_account(
         &self,
         account_hint: Option<&str>,
-        accounts: &[wealthfolio_core::accounts::Account],
+        accounts: &[panorama_core::accounts::Account],
     ) -> (Option<String>, Option<String>) {
         // If no hint provided, auto-select if there's only one account
         let Some(hint) = account_hint else {

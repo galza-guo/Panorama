@@ -26,7 +26,7 @@ pub struct HealthIssueDismissalDB {
 }
 
 // Conversion to domain model
-impl From<HealthIssueDismissalDB> for wealthfolio_core::health::IssueDismissal {
+impl From<HealthIssueDismissalDB> for panorama_core::health::IssueDismissal {
     fn from(db: HealthIssueDismissalDB) -> Self {
         Self {
             issue_id: db.issue_id,
@@ -38,8 +38,8 @@ impl From<HealthIssueDismissalDB> for wealthfolio_core::health::IssueDismissal {
     }
 }
 
-impl From<wealthfolio_core::health::IssueDismissal> for HealthIssueDismissalDB {
-    fn from(domain: wealthfolio_core::health::IssueDismissal) -> Self {
+impl From<panorama_core::health::IssueDismissal> for HealthIssueDismissalDB {
+    fn from(domain: panorama_core::health::IssueDismissal) -> Self {
         Self {
             issue_id: domain.issue_id,
             dismissed_at: domain.dismissed_at.to_rfc3339(),

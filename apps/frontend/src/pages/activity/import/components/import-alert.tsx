@@ -1,5 +1,5 @@
-import { Alert, AlertDescription, AlertTitle } from "@wealthfolio/ui/components/ui/alert";
-import { Icons, type Icon } from "@wealthfolio/ui/components/ui/icons";
+import { Alert, AlertDescription, AlertTitle } from "@panorama/ui/components/ui/alert";
+import { Icons, type Icon } from "@panorama/ui/components/ui/icons";
 import { cn } from "@/lib/utils";
 import { AnimatePresence, motion } from "motion/react";
 import type React from "react";
@@ -256,7 +256,7 @@ export function ImportAlert({
           <motion.div className="pointer-events-none absolute inset-0" variants={glowVariants}>
             <div
               className={cn(
-                "absolute -right-10 -top-10 h-32 w-32 rounded-full opacity-20 blur-2xl",
+                "absolute -top-10 -right-10 h-32 w-32 rounded-full opacity-20 blur-2xl",
                 styles.iconBg,
               )}
             />

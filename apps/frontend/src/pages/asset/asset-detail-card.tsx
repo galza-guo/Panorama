@@ -1,10 +1,10 @@
 import React from "react";
 
-import { Card, CardContent, CardHeader, CardTitle } from "@wealthfolio/ui/components/ui/card";
-import { Separator } from "@wealthfolio/ui/components/ui/separator";
-import { formatPercent } from "@wealthfolio/ui";
-import { AmountDisplay } from "@wealthfolio/ui";
-import { QuantityDisplay } from "@wealthfolio/ui";
+import { Card, CardContent, CardHeader, CardTitle } from "@panorama/ui/components/ui/card";
+import { Separator } from "@panorama/ui/components/ui/separator";
+import { formatPercent } from "@panorama/ui";
+import { AmountDisplay } from "@panorama/ui";
+import { QuantityDisplay } from "@panorama/ui";
 import { useBalancePrivacy } from "@/hooks/use-balance-privacy";
 
 interface AssetDetail {

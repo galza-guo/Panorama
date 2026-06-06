@@ -3,7 +3,7 @@ import { useGoals } from "./use-goals";
 import { useGoalAllocations } from "./use-goal-allocations";
 import { useAccounts } from "./use-accounts";
 import { useLatestValuations } from "./use-latest-valuations";
-import { type AddonContext, calculateGoalProgress } from "@wealthfolio/addon-sdk";
+import { type AddonContext, calculateGoalProgress } from "@panorama/addon-sdk";
 
 interface UseGoalProgressOptions {
   ctx: AddonContext;

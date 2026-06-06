@@ -1,6 +1,6 @@
-import { Alert, AlertDescription, AlertTitle } from "@wealthfolio/ui/components/ui/alert";
-import { Button } from "@wealthfolio/ui/components/ui/button";
-import { Icons } from "@wealthfolio/ui/components/ui/icons";
+import { Alert, AlertDescription, AlertTitle } from "@panorama/ui/components/ui/alert";
+import { Button } from "@panorama/ui/components/ui/button";
+import { Icons } from "@panorama/ui/components/ui/icons";
 import {
   Sheet,
   SheetContent,
@@ -8,7 +8,7 @@ import {
   SheetFooter,
   SheetHeader,
   SheetTitle,
-} from "@wealthfolio/ui/components/ui/sheet";
+} from "@panorama/ui/components/ui/sheet";
 import type { ActivityDetails } from "@/lib/types";
 import { restrictionAllowsType } from "@/lib/activity-restrictions";
 import { useState, useCallback, useMemo } from "react";

@@ -3,19 +3,19 @@ import { getExchangeDisplayName } from "@/lib/constants";
 import { SymbolSearchResult } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { useQuery } from "@tanstack/react-query";
-import { Badge } from "@wealthfolio/ui";
-import { Button } from "@wealthfolio/ui/components/ui/button";
+import { Badge } from "@panorama/ui";
+import { Button } from "@panorama/ui/components/ui/button";
 import {
   Command,
   CommandInput,
   CommandItem,
   CommandList,
   CommandSeparator,
-} from "@wealthfolio/ui/components/ui/command";
-import { Icons } from "@wealthfolio/ui/components/ui/icons";
-import { Popover, PopoverContent, PopoverTrigger } from "@wealthfolio/ui/components/ui/popover";
-import { Skeleton } from "@wealthfolio/ui/components/ui/skeleton";
-import { useComposedRefs } from "@wealthfolio/ui/hooks";
+} from "@panorama/ui/components/ui/command";
+import { Icons } from "@panorama/ui/components/ui/icons";
+import { Popover, PopoverContent, PopoverTrigger } from "@panorama/ui/components/ui/popover";
+import { Skeleton } from "@panorama/ui/components/ui/skeleton";
+import { useComposedRefs } from "@panorama/ui/hooks";
 import { Command as CommandPrimitive } from "cmdk";
 import { debounce } from "lodash";
 import { forwardRef, memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -514,7 +514,7 @@ const TickerSearchInput = forwardRef<HTMLButtonElement, SearchProps>(
           <PopoverContent
             side="bottom"
             align="start"
-            className="w-(--radix-popover-trigger-width) h-auto min-w-[280px] p-0"
+            className="h-auto w-(--radix-popover-trigger-width) min-w-[280px] p-0"
             onOpenAutoFocus={handleOpenAutoFocus}
             onCloseAutoFocus={handleCloseAutoFocus}
           >

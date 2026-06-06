@@ -1,9 +1,9 @@
 import React, { useMemo, useState, useCallback } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { Card, CardContent, CardHeader } from "@wealthfolio/ui/components/ui/card";
-import { Button } from "@wealthfolio/ui/components/ui/button";
-import { Icons } from "@wealthfolio/ui/components/ui/icons";
-import { AlertFeedback, Page, PageContent, PageHeader } from "@wealthfolio/ui";
+import { Card, CardContent, CardHeader } from "@panorama/ui/components/ui/card";
+import { Button } from "@panorama/ui/components/ui/button";
+import { Icons } from "@panorama/ui/components/ui/icons";
+import { AlertFeedback, Page, PageContent, PageHeader } from "@panorama/ui";
 import { AnimatePresence, motion } from "motion/react";
 import { logger, getAccounts } from "@/adapters";
 import { usePlatform } from "@/hooks/use-platform";
@@ -346,7 +346,7 @@ function ImportWizardContent() {
 
       <PageContent withPadding={false}>
         <ErrorBoundary>
-          <div className="px-2 pb-6 pt-2 sm:px-4 sm:pt-4 md:px-6 md:pt-6">
+          <div className="px-2 pt-2 pb-6 sm:px-4 sm:pt-4 md:px-6 md:pt-6">
             <Card className="w-full">
               {/* Step indicator — hidden on result step */}
               {state.step !== "result" && (

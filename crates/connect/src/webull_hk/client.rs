@@ -3,10 +3,10 @@
 use std::time::Duration;
 
 use chrono::Utc;
+use panorama_core::{Error, Result};
 use reqwest::header::{HeaderMap, HeaderValue, CONTENT_TYPE};
 use serde::de::DeserializeOwned;
 use uuid::Uuid;
-use wealthfolio_core::{Error, Result};
 
 use super::auth::{
     generate_signature, SigningHeader, SigningRequest, WEBULL_API_VERSION,

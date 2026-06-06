@@ -10,10 +10,10 @@ import {
 } from "@/lib/panorama-asset-attributes";
 import type { AlternativeAssetHolding } from "@/lib/types";
 import { ALTERNATIVE_ASSET_KIND_DISPLAY_NAMES } from "@/lib/types";
-import { AmountDisplay, GainPercent, Separator, Badge } from "@wealthfolio/ui";
-import { Card } from "@wealthfolio/ui/components/ui/card";
-import { Icons } from "@wealthfolio/ui/components/ui/icons";
-import { Skeleton } from "@wealthfolio/ui/components/ui/skeleton";
+import { AmountDisplay, GainPercent, Separator, Badge } from "@panorama/ui";
+import { Card } from "@panorama/ui/components/ui/card";
+import { Icons } from "@panorama/ui/components/ui/icons";
+import { Skeleton } from "@panorama/ui/components/ui/skeleton";
 import { useMemo } from "react";
 
 interface AlternativeHoldingsListMobileProps {
@@ -71,7 +71,8 @@ export function AlternativeHoldingsListMobile({
           holding.kind;
 
         const gain =
-          timeDepositDisplay?.gain ?? (holding.unrealizedGain ? parseFloat(holding.unrealizedGain) : null);
+          timeDepositDisplay?.gain ??
+          (holding.unrealizedGain ? parseFloat(holding.unrealizedGain) : null);
         const gainPct =
           timeDepositDisplay?.gainPct ??
           (holding.unrealizedGainPct ? parseFloat(holding.unrealizedGainPct) : null);
@@ -150,7 +151,13 @@ export function AlternativeHoldingsListMobile({
   );
 }
 
-function AssetKindIcon({ holding, size = 20 }: { holding: AlternativeAssetHolding; size?: number }) {
+function AssetKindIcon({
+  holding,
+  size = 20,
+}: {
+  holding: AlternativeAssetHolding;
+  size?: number;
+}) {
   if (isTimeDepositAsset(holding)) {
     return <Icons.BadgeDollarSign size={size} />;
   }

@@ -1,6 +1,6 @@
+use panorama_core::quotes::MarketSyncMode;
 use serde::{Deserialize, Serialize};
 use tauri::Emitter;
-use wealthfolio_core::quotes::MarketSyncMode;
 
 pub const PORTFOLIO_TOTAL_ACCOUNT_ID: &str = "TOTAL";
 
@@ -37,15 +37,6 @@ pub struct MarketSyncResult {
 
 /// Event emitted when the market data sync process encounters an error.
 pub const MARKET_SYNC_ERROR: &str = "market:sync-error";
-
-/// Event emitted when the broker sync process starts.
-pub const BROKER_SYNC_START: &str = "broker:sync-start";
-
-/// Event emitted when the broker sync process completes successfully.
-pub const BROKER_SYNC_COMPLETE: &str = "broker:sync-complete";
-
-/// Event emitted when the broker sync process fails.
-pub const BROKER_SYNC_ERROR: &str = "broker:sync-error";
 
 #[derive(Clone, Serialize, Deserialize, Debug, Default)]
 pub struct PortfolioRequestPayload {
@@ -137,7 +128,3 @@ pub fn emit_app_ready(handle: &tauri::AppHandle) {
         log::error!("Failed to emit {} event: {}", APP_READY, e);
     });
 }
-
-// Note: Broker sync events (start/complete/error) are emitted by the orchestrator
-// via TauriProgressReporter in commands/brokers_sync.rs, not by helper functions here.
-// The payload format is SyncResult from wealthfolio_connect.

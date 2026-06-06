@@ -1,5 +1,5 @@
+use panorama_core::quotes::service::ProviderInfo;
 use tauri::State;
-use wealthfolio_core::quotes::service::ProviderInfo;
 
 use crate::context::ServiceContext;
 use std::sync::Arc;

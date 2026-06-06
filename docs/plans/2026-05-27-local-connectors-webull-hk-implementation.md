@@ -1,12 +1,18 @@
 # Local Connectors And Webull HK Implementation Plan
 
-> **For Claude:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task.
+> **For Claude:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to
+> implement this plan task-by-task.
 
-**Goal:** Build a local connector layer and implement Webull HK account linking with prospective takeover from the link date onward.
+**Goal:** Build a local connector layer and implement Webull HK account linking
+with prospective takeover from the link date onward.
 
-**Architecture:** Add provider-neutral connection/link models in core and SQLite, then implement Webull HK as the first local connector. Feed synced balances and positions into existing Panorama account and holdings snapshot flows so insights continue to read normal app data.
+**Architecture:** Add provider-neutral connection/link models in core and
+SQLite, then implement Webull HK as the first local connector. Feed synced
+balances and positions into existing Panorama account and holdings snapshot
+flows so insights continue to read normal app data.
 
-**Tech Stack:** Rust core crates, SQLite/Diesel storage, Tauri commands, React frontend, OS keyring secrets, Webull HK HTTP APIs.
+**Tech Stack:** Rust core crates, SQLite/Diesel storage, Tauri commands, React
+frontend, OS keyring secrets, Webull HK HTTP APIs.
 
 ---
 
@@ -27,7 +33,7 @@ Add tests for provider/capability serialization and default link behavior.
 Run:
 
 ```bash
-cargo test -p wealthfolio-core connectors_model_tests -- --nocapture
+cargo test -p panorama-core connectors_model_tests -- --nocapture
 ```
 
 Expected: fail because the module does not exist.
@@ -52,7 +58,7 @@ Use `SCREAMING_SNAKE_CASE` serde values to match existing API style.
 Run:
 
 ```bash
-cargo test -p wealthfolio-core connectors_model_tests -- --nocapture
+cargo test -p panorama-core connectors_model_tests -- --nocapture
 ```
 
 Expected: pass.
@@ -68,8 +74,10 @@ git commit -m "feat: add local connector domain models"
 
 **Files:**
 
-- Create: `crates/storage-sqlite/migrations/2026-05-27-000003_local_connectors/up.sql`
-- Create: `crates/storage-sqlite/migrations/2026-05-27-000003_local_connectors/down.sql`
+- Create:
+  `crates/storage-sqlite/migrations/2026-05-27-000003_local_connectors/up.sql`
+- Create:
+  `crates/storage-sqlite/migrations/2026-05-27-000003_local_connectors/down.sql`
 - Create: `crates/storage-sqlite/src/connectors/mod.rs`
 - Create: `crates/storage-sqlite/src/connectors/model.rs`
 - Create: `crates/storage-sqlite/src/connectors/repository.rs`
@@ -89,7 +97,7 @@ Cover:
 Run:
 
 ```bash
-cargo test -p wealthfolio-storage-sqlite connectors::repository -- --nocapture
+cargo test -p panorama-storage-sqlite connectors::repository -- --nocapture
 ```
 
 Expected: fail because storage does not exist.
@@ -105,14 +113,15 @@ Do not store secrets in either table.
 
 **Step 3: Implement repository**
 
-Implement the connector repository traits from core. Keep conversion code in `model.rs`, following the existing storage module pattern.
+Implement the connector repository traits from core. Keep conversion code in
+`model.rs`, following the existing storage module pattern.
 
 **Step 4: Run tests**
 
 Run:
 
 ```bash
-cargo test -p wealthfolio-storage-sqlite connectors::repository -- --nocapture
+cargo test -p panorama-storage-sqlite connectors::repository -- --nocapture
 ```
 
 Expected: pass.
@@ -142,7 +151,7 @@ Use Webull's documented signature example to verify HMAC-SHA1 signing.
 Run:
 
 ```bash
-cargo test -p wealthfolio-connect webull_hk::auth -- --nocapture
+cargo test -p panorama-local-connectors webull_hk::auth -- --nocapture
 ```
 
 Expected: fail because signer does not exist.
@@ -160,15 +169,16 @@ Implement:
 
 **Step 3: Implement token endpoints**
 
-Add create-token and check-token calls. Store only returned status/expiry in normal models; token secret storage is handled by Tauri service later.
+Add create-token and check-token calls. Store only returned status/expiry in
+normal models; token secret storage is handled by Tauri service later.
 
 **Step 4: Run tests**
 
 Run:
 
 ```bash
-cargo test -p wealthfolio-connect webull_hk::auth -- --nocapture
-cargo check -p wealthfolio-connect
+cargo test -p panorama-local-connectors webull_hk::auth -- --nocapture
+cargo check -p panorama-local-connectors
 ```
 
 Expected: pass.
@@ -201,7 +211,7 @@ Cover:
 Run:
 
 ```bash
-cargo test -p wealthfolio-connect webull_hk::sync -- --nocapture
+cargo test -p panorama-local-connectors webull_hk::sync -- --nocapture
 ```
 
 Expected: fail because mapping does not exist.
@@ -217,15 +227,16 @@ Add:
 
 **Step 3: Implement holdings mapper**
 
-Return provider-neutral balances/positions that the app can save as a holdings snapshot.
+Return provider-neutral balances/positions that the app can save as a holdings
+snapshot.
 
 **Step 4: Run tests**
 
 Run:
 
 ```bash
-cargo test -p wealthfolio-connect webull_hk::sync -- --nocapture
-cargo check -p wealthfolio-connect
+cargo test -p panorama-local-connectors webull_hk::sync -- --nocapture
+cargo check -p panorama-local-connectors
 ```
 
 Expected: pass.
@@ -272,7 +283,8 @@ Add commands for:
 
 **Step 3: Use existing account/snapshot services**
 
-Set linked accounts to `TrackingMode::Holdings`. Save snapshots through existing holdings snapshot service rather than Webull-specific tables.
+Set linked accounts to `TrackingMode::Holdings`. Save snapshots through existing
+holdings snapshot service rather than Webull-specific tables.
 
 **Step 4: Run checks**
 
@@ -297,11 +309,14 @@ git commit -m "feat: expose Webull HK local connector commands"
 **Files:**
 
 - Create: `apps/frontend/src/features/local-connectors/webull-hk/`
-- Create: `apps/frontend/src/features/local-connectors/webull-hk/webull-hk-connect-page.tsx`
-- Create: `apps/frontend/src/features/local-connectors/webull-hk/webull-hk-service.ts`
+- Create:
+  `apps/frontend/src/features/local-connectors/webull-hk/webull-hk-connect-page.tsx`
+- Create:
+  `apps/frontend/src/features/local-connectors/webull-hk/webull-hk-service.ts`
 - Create: `apps/frontend/src/features/local-connectors/webull-hk/types.ts`
 - Modify: `apps/frontend/src/pages/settings/settings-layout.tsx`
-- Test: `apps/frontend/src/features/local-connectors/webull-hk/webull-hk-connect-page.test.tsx`
+- Test:
+  `apps/frontend/src/features/local-connectors/webull-hk/webull-hk-connect-page.test.tsx`
 
 **Step 1: Write failing UI tests**
 
@@ -328,7 +343,8 @@ Follow the existing adapter/command pattern for Tauri commands.
 
 **Step 3: Implement setup UI**
 
-Keep the first screen functional: connection list, add connection, verify token, list accounts, link accounts.
+Keep the first screen functional: connection list, add connection, verify token,
+list accounts, link accounts.
 
 **Step 4: Run frontend checks**
 
@@ -371,7 +387,7 @@ Cover:
 Run:
 
 ```bash
-cargo test -p wealthfolio-connect webull_hk::order_import -- --nocapture
+cargo test -p panorama-local-connectors webull_hk::order_import -- --nocapture
 ```
 
 Expected: fail because order import does not exist.
@@ -387,15 +403,16 @@ Only query from `source_from_date` onward.
 
 **Step 3: Implement mapper**
 
-Create reviewable activities with idempotency keys based on connection id, remote account id, and Webull order ids.
+Create reviewable activities with idempotency keys based on connection id,
+remote account id, and Webull order ids.
 
 **Step 4: Run tests**
 
 Run:
 
 ```bash
-cargo test -p wealthfolio-connect webull_hk::order_import -- --nocapture
-cargo check -p wealthfolio-connect
+cargo test -p panorama-local-connectors webull_hk::order_import -- --nocapture
+cargo check -p panorama-local-connectors
 ```
 
 Expected: pass.
@@ -424,7 +441,7 @@ Cover category mapping and quote response parsing.
 Run:
 
 ```bash
-cargo test -p wealthfolio-market-data webull_hk -- --nocapture
+cargo test -p panorama-market-data webull_hk -- --nocapture
 ```
 
 Expected: fail because provider does not exist.
@@ -435,14 +452,15 @@ Start with snapshot and historical bars. Leave streaming for a later phase.
 
 **Step 3: Wire provider settings**
 
-Enable Webull HK market data only when a valid connection is configured as the market-data credential source.
+Enable Webull HK market data only when a valid connection is configured as the
+market-data credential source.
 
 **Step 4: Run checks**
 
 Run:
 
 ```bash
-cargo test -p wealthfolio-market-data webull_hk -- --nocapture
+cargo test -p panorama-market-data webull_hk -- --nocapture
 cargo check -p wealthfolio-app
 ```
 
@@ -464,10 +482,10 @@ git commit -m "feat: add Webull HK market data provider"
 **Step 1: Run targeted tests**
 
 ```bash
-cargo test -p wealthfolio-core connectors
-cargo test -p wealthfolio-storage-sqlite connectors
-cargo test -p wealthfolio-connect webull_hk
-cargo test -p wealthfolio-market-data webull_hk
+cargo test -p panorama-core connectors
+cargo test -p panorama-storage-sqlite connectors
+cargo test -p panorama-local-connectors webull_hk
+cargo test -p panorama-market-data webull_hk
 pnpm --filter frontend test src/features/local-connectors/webull-hk -- --run
 ```
 
@@ -477,12 +495,13 @@ Expected: all pass.
 
 ```bash
 cargo check -p wealthfolio-app
-cargo check -p wealthfolio-server
+cargo check -p panorama-server
 pnpm --filter frontend type-check
 pnpm --filter frontend build
 ```
 
-Expected: all pass. Existing Vite sourcemap/chunk warnings are acceptable if unchanged.
+Expected: all pass. Existing Vite sourcemap/chunk warnings are acceptable if
+unchanged.
 
 **Step 3: Manual sandbox smoke test**
 

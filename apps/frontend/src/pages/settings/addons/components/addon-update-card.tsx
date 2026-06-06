@@ -1,7 +1,7 @@
 import { reloadAllAddons } from "@/addons/addons-core";
 import { updateAddon } from "@/adapters";
-import { Badge } from "@wealthfolio/ui/components/ui/badge";
-import { Button } from "@wealthfolio/ui/components/ui/button";
+import { Badge } from "@panorama/ui/components/ui/badge";
+import { Button } from "@panorama/ui/components/ui/button";
 import {
   Dialog,
   DialogContent,
@@ -9,12 +9,12 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from "@wealthfolio/ui/components/ui/dialog";
-import { Icons } from "@wealthfolio/ui/components/ui/icons";
-import { ScrollArea } from "@wealthfolio/ui/components/ui/scroll-area";
-import { Separator } from "@wealthfolio/ui/components/ui/separator";
-import { useToast } from "@wealthfolio/ui/components/ui/use-toast";
-import type { AddonUpdateInfo } from "@wealthfolio/addon-sdk";
+} from "@panorama/ui/components/ui/dialog";
+import { Icons } from "@panorama/ui/components/ui/icons";
+import { ScrollArea } from "@panorama/ui/components/ui/scroll-area";
+import { Separator } from "@panorama/ui/components/ui/separator";
+import { useToast } from "@panorama/ui/components/ui/use-toast";
+import type { AddonUpdateInfo } from "@panorama/addon-sdk";
 import { useState } from "react";
 
 interface AddonUpdateCardProps {
@@ -142,7 +142,7 @@ export function AddonUpdateCard({
                     {updateInfo.releaseNotes && (
                       <div className="space-y-2">
                         <h4 className="font-medium">Release Notes</h4>
-                        <div className="text-muted-foreground whitespace-pre-wrap text-sm">
+                        <div className="text-muted-foreground text-sm whitespace-pre-wrap">
                           {updateInfo.releaseNotes}
                         </div>
                       </div>
@@ -226,11 +226,12 @@ export function AddonUpdateCard({
         </div>
       </div>
 
-      {updateInfo.minWealthfolioVersion && (
+      {(updateInfo.minPanoramaVersion || updateInfo.minWealthfolioVersion) && (
         <div className="mt-3 rounded-md bg-amber-100 p-2 dark:bg-amber-900/20">
           <p className="text-xs text-amber-800 dark:text-amber-200">
             <Icons.Info className="mr-1 inline h-3 w-3" />
-            Requires Panorama {updateInfo.minWealthfolioVersion} or later
+            Requires Panorama {updateInfo.minPanoramaVersion || updateInfo.minWealthfolioVersion} or
+            later
           </p>
         </div>
       )}

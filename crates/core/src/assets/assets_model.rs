@@ -19,10 +19,10 @@ use crate::quotes::constants::{
     DATA_SOURCE_EASTMONEY_CN, DATA_SOURCE_TIANTIAN_FUND, DATA_SOURCE_YAHOO,
 };
 use crate::Error;
-use wealthfolio_market_data::mic_to_currency;
+use panorama_market_data::mic_to_currency;
 
 // Re-export InstrumentId from market-data crate for convenience
-pub use wealthfolio_market_data::InstrumentId;
+pub use panorama_market_data::InstrumentId;
 
 /// Asset behavior classification.
 ///
@@ -260,7 +260,7 @@ impl Asset {
         self.exchange_name = self
             .instrument_exchange_mic
             .as_ref()
-            .and_then(|mic| wealthfolio_market_data::mic_to_exchange_name(mic))
+            .and_then(|mic| panorama_market_data::mic_to_exchange_name(mic))
             .map(String::from);
         self
     }

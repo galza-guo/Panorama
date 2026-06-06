@@ -4,8 +4,8 @@ import {
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@wealthfolio/ui/components/ui/dropdown-menu";
-import { Icons } from "@wealthfolio/ui/components/ui/icons";
+} from "@panorama/ui/components/ui/dropdown-menu";
+import { Icons } from "@panorama/ui/components/ui/icons";
 
 import type { Activity, ActivityDetails } from "@/lib/types";
 import { Row } from "@tanstack/react-table";

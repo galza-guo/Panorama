@@ -1,7 +1,7 @@
 import { useMutation } from "@tanstack/react-query";
 import { createActivity } from "@/adapters";
 import { ActivityCreate, AccountValuation } from "@/lib/types";
-import { toast } from "@wealthfolio/ui/components/ui/use-toast";
+import { toast } from "@panorama/ui/components/ui/use-toast";
 
 export const useBalanceUpdate = (account?: AccountValuation | null) => {
   const mutation = useMutation({

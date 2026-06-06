@@ -3,10 +3,10 @@ use std::sync::Arc;
 use crate::context::ServiceContext;
 use crate::events::{emit_portfolio_trigger_recalculate, PortfolioRequestPayload};
 use log::debug;
+use panorama_core::fx::{ExchangeRate, NewExchangeRate};
+use panorama_core::quotes::MarketSyncMode;
+use panorama_core::settings::{Settings, SettingsUpdate};
 use tauri::{AppHandle, State};
-use wealthfolio_core::fx::{ExchangeRate, NewExchangeRate};
-use wealthfolio_core::quotes::MarketSyncMode;
-use wealthfolio_core::settings::{Settings, SettingsUpdate};
 
 #[tauri::command]
 pub async fn get_settings(state: State<'_, Arc<ServiceContext>>) -> Result<Settings, String> {
@@ -108,7 +108,7 @@ pub async fn update_settings(
                     .account_ids(None) // Base currency change affects all accounts
                     .market_sync_mode(MarketSyncMode::BackfillHistory {
                         asset_ids: None,
-                        days: wealthfolio_core::quotes::DEFAULT_HISTORY_DAYS,
+                        days: panorama_core::quotes::DEFAULT_HISTORY_DAYS,
                     })
                     .build();
                 emit_portfolio_trigger_recalculate(&handle, payload);

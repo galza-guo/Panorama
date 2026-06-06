@@ -1,12 +1,12 @@
-import { DataTable } from "@wealthfolio/ui/components/ui/data-table";
-import { DataTableColumnHeader } from "@wealthfolio/ui/components/ui/data-table/data-table-column-header";
+import { DataTable } from "@panorama/ui/components/ui/data-table";
+import { DataTableColumnHeader } from "@panorama/ui/components/ui/data-table/data-table-column-header";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@wealthfolio/ui/components/ui/dropdown-menu";
+} from "@panorama/ui/components/ui/dropdown-menu";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -16,10 +16,10 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from "@wealthfolio/ui/components/ui/alert-dialog";
-import { Icons } from "@wealthfolio/ui/components/ui/icons";
-import { Skeleton } from "@wealthfolio/ui/components/ui/skeleton";
-import { EmptyPlaceholder, GainPercent, AmountDisplay, Badge } from "@wealthfolio/ui";
+} from "@panorama/ui/components/ui/alert-dialog";
+import { Icons } from "@panorama/ui/components/ui/icons";
+import { Skeleton } from "@panorama/ui/components/ui/skeleton";
+import { EmptyPlaceholder, GainPercent, AmountDisplay, Badge } from "@panorama/ui";
 import type { ColumnDef } from "@tanstack/react-table";
 import { useMemo, useState } from "react";
 import { useBalancePrivacy } from "@/hooks/use-balance-privacy";
@@ -198,7 +198,9 @@ export function AlternativeHoldingsTable({
         cell: ({ row }) => {
           const holding = row.original;
           const timeDepositDisplay = getTimeDepositDisplaySnapshot(holding, asOfDate);
-          const gain = timeDepositDisplay?.gain ?? (holding.unrealizedGain ? parseFloat(holding.unrealizedGain) : null);
+          const gain =
+            timeDepositDisplay?.gain ??
+            (holding.unrealizedGain ? parseFloat(holding.unrealizedGain) : null);
           const gainPct =
             timeDepositDisplay?.gainPct ??
             (holding.unrealizedGainPct ? parseFloat(holding.unrealizedGainPct) : null);
@@ -233,7 +235,8 @@ export function AlternativeHoldingsTable({
       },
       {
         id: "valuationDate",
-        accessorFn: (row) => getTimeDepositDisplaySnapshot(row, asOfDate)?.valuationDate ?? row.valuationDate,
+        accessorFn: (row) =>
+          getTimeDepositDisplaySnapshot(row, asOfDate)?.valuationDate ?? row.valuationDate,
         header: ({ column }) => (
           <DataTableColumnHeader column={column} title="Last Valued" className="justify-end" />
         ),
@@ -381,7 +384,13 @@ export function AlternativeHoldingsTable({
 /**
  * Icon component for alternative asset kinds (duotone style)
  */
-function AssetKindIcon({ holding, size = 20 }: { holding: AlternativeAssetHolding; size?: number }) {
+function AssetKindIcon({
+  holding,
+  size = 20,
+}: {
+  holding: AlternativeAssetHolding;
+  size?: number;
+}) {
   if (isTimeDepositAsset(holding)) {
     return <Icons.BadgeDollarSign size={size} />;
   }

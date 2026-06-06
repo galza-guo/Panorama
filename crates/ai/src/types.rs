@@ -140,7 +140,7 @@ impl Default for ChatThreadConfig {
             schema_version: CHAT_CONFIG_SCHEMA_VERSION,
             provider_id: String::new(),
             model_id: String::new(),
-            prompt_template_id: "wealthfolio-assistant-v1".to_string(),
+            prompt_template_id: crate::prompt_template::DEFAULT_PROMPT_TEMPLATE_ID.to_string(),
             prompt_version: "1.0.0".to_string(),
             locale: None,
             detail_level: None,
@@ -1015,10 +1015,10 @@ mod tests {
 
     #[test]
     fn test_thread_config_creation() {
-        let config = ChatThreadConfig::new("openai", "gpt-4o", "wealthfolio-assistant-v1", "1.0.0");
+        let config = ChatThreadConfig::new("openai", "gpt-4o", "panorama-assistant-v1", "1.0.0");
         assert_eq!(config.provider_id, "openai");
         assert_eq!(config.model_id, "gpt-4o");
-        assert_eq!(config.prompt_template_id, "wealthfolio-assistant-v1");
+        assert_eq!(config.prompt_template_id, "panorama-assistant-v1");
         assert_eq!(config.prompt_version, "1.0.0");
         assert!(config.tools_allowlist.is_none());
     }

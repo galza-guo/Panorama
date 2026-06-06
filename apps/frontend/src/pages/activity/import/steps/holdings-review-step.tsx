@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Icons } from "@wealthfolio/ui/components/ui/icons";
+import { Icons } from "@panorama/ui/components/ui/icons";
 import { parse, parseISO, isValid, format as formatDate } from "date-fns";
-import type { SymbolSearchResult as GridSymbolSearchResult } from "@wealthfolio/ui";
-import { Skeleton } from "@wealthfolio/ui/components/ui/skeleton";
+import type { SymbolSearchResult as GridSymbolSearchResult } from "@panorama/ui";
+import { Skeleton } from "@panorama/ui/components/ui/skeleton";
 
 import { checkHoldingsImport } from "@/adapters";
 import { useImportContext } from "../context";

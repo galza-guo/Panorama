@@ -1,6 +1,6 @@
 import { AccountSelector } from "@/components/account-selector";
 import TickerSearchInput from "@/components/ticker-search";
-import { Button } from "@wealthfolio/ui/components/ui/button";
+import { Button } from "@panorama/ui/components/ui/button";
 import { IMPORT_REQUIRED_FIELDS } from "@/lib/constants";
 import {
   Account,
@@ -22,7 +22,7 @@ import {
   SelectSeparator,
   SelectTrigger,
   SelectValue,
-} from "@wealthfolio/ui";
+} from "@panorama/ui";
 import { useState } from "react";
 import { findMappedActivityType } from "../utils/activity-type-mapping";
 
@@ -54,7 +54,7 @@ export function MappingHeaderCell({
 
   return (
     <div>
-      <div className="flex items-center gap-2 pb-0 pt-2">
+      <div className="flex items-center gap-2 pt-2 pb-0">
         <span className="font-bold">
           {field}
           {isRequired && !isMapped && (

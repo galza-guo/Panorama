@@ -1,4 +1,4 @@
-import { AmountDisplay } from "@wealthfolio/ui";
+import { AmountDisplay } from "@panorama/ui";
 import { useBalancePrivacy } from "@/hooks/use-balance-privacy";
 import { cn } from "@/lib/utils";
 
@@ -79,7 +79,7 @@ function SummaryItem({
 }: SummaryItemProps) {
   return (
     <div className="flex flex-col items-center sm:items-start">
-      <span className="text-muted-foreground text-xs font-medium uppercase tracking-wider">
+      <span className="text-muted-foreground text-xs font-medium tracking-wider uppercase">
         {label}
       </span>
       <AmountDisplay

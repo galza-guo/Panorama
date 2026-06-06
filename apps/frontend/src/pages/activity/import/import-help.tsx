@@ -1,8 +1,8 @@
-import { Icons } from "@wealthfolio/ui/components/ui/icons";
+import { Icons } from "@panorama/ui/components/ui/icons";
 
-import { Button } from "@wealthfolio/ui/components/ui/button";
-import { Popover, PopoverContent, PopoverTrigger } from "@wealthfolio/ui/components/ui/popover";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@wealthfolio/ui/components/ui/tabs";
+import { Button } from "@panorama/ui/components/ui/button";
+import { Popover, PopoverContent, PopoverTrigger } from "@panorama/ui/components/ui/popover";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@panorama/ui/components/ui/tabs";
 import { usePlatform } from "@/hooks/use-platform";
 import {
   ScrollArea,
@@ -11,7 +11,7 @@ import {
   SheetHeader,
   SheetTitle,
   SheetTrigger,
-} from "@wealthfolio/ui";
+} from "@panorama/ui";
 import { downloadSampleCsv, downloadSampleHoldingsCsv } from "./utils/sample-csv";
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -91,7 +91,7 @@ function ActivitiesHelpContent() {
       <div className="space-y-4">
         <div>
           <p className="font-semibold">Example CSV format:</p>
-          <pre className="bg-muted mt-2 select-all overflow-x-auto p-3 text-xs leading-relaxed">
+          <pre className="bg-muted mt-2 overflow-x-auto p-3 text-xs leading-relaxed select-all">
             <span className="text-muted-foreground"># Standard format:</span>
             <br />
             date,symbol,quantity,activityType,unitPrice,currency,fee,amount,fxRate,subtype
@@ -233,7 +233,7 @@ function HoldingsHelpContent() {
       <div className="space-y-4">
         <div>
           <p className="font-semibold">Example CSV format:</p>
-          <pre className="bg-muted mt-2 select-all overflow-x-auto p-3 text-xs leading-relaxed">
+          <pre className="bg-muted mt-2 overflow-x-auto p-3 text-xs leading-relaxed select-all">
             <span className="text-muted-foreground"># Holdings snapshot:</span>
             <br />
             date,symbol,quantity,avgCost,currency
@@ -320,7 +320,7 @@ export function ImportHelpPopover({ defaultTab = "activities" }: ImportHelpPopov
             <Icons.HelpCircle className="h-6 w-6" />
           </Button>
         </SheetTrigger>
-        <SheetContent side="bottom" className="rounded-t-4xl mx-1 h-[85vh]">
+        <SheetContent side="bottom" className="mx-1 h-[85vh] rounded-t-4xl">
           <SheetHeader>
             <SheetTitle>How to Import CSV</SheetTitle>
           </SheetHeader>

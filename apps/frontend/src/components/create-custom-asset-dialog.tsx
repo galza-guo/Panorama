@@ -10,7 +10,7 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "@wealthfolio/ui/components/ui/dialog";
+} from "@panorama/ui/components/ui/dialog";
 import {
   Form,
   FormControl,
@@ -18,17 +18,17 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-} from "@wealthfolio/ui/components/ui/form";
-import { Input } from "@wealthfolio/ui/components/ui/input";
-import { Button } from "@wealthfolio/ui/components/ui/button";
+} from "@panorama/ui/components/ui/form";
+import { Input } from "@panorama/ui/components/ui/input";
+import { Button } from "@panorama/ui/components/ui/button";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@wealthfolio/ui/components/ui/select";
-import { CurrencyInput } from "@wealthfolio/ui";
+} from "@panorama/ui/components/ui/select";
+import { CurrencyInput } from "@panorama/ui";
 import type { SymbolSearchResult } from "@/lib/types";
 
 // Simplified asset types for the form (values are InstrumentType)

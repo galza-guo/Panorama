@@ -2,7 +2,7 @@ import { isWeb } from "@/adapters";
 import { AuthGate, AuthProvider } from "@/context/auth-context";
 import { SettingsProvider } from "@/lib/settings-provider";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { TooltipProvider } from "@wealthfolio/ui";
+import { TooltipProvider } from "@panorama/ui";
 import { useState } from "react";
 import { PrivacyProvider } from "./context/privacy-context";
 import { LoginPage } from "./pages/auth/login-page";
@@ -25,6 +25,7 @@ function App() {
   const isWebEnv = isWeb;
 
   // Make QueryClient available globally for addons
+  window.__panorama_query_client__ = queryClient;
   window.__wealthfolio_query_client__ = queryClient;
 
   const routedContent = isWebEnv ? (

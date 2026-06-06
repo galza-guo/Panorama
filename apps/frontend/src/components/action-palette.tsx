@@ -1,8 +1,8 @@
 import { useHapticFeedback } from "@/hooks";
-import { Button } from "@wealthfolio/ui/components/ui/button";
-import { Icons } from "@wealthfolio/ui/components/ui/icons";
-import { Popover, PopoverContent, PopoverTrigger } from "@wealthfolio/ui/components/ui/popover";
-import { cn } from "@wealthfolio/ui/lib/utils";
+import { Button } from "@panorama/ui/components/ui/button";
+import { Icons } from "@panorama/ui/components/ui/icons";
+import { Popover, PopoverContent, PopoverTrigger } from "@panorama/ui/components/ui/popover";
+import { cn } from "@panorama/ui/lib/utils";
 import * as React from "react";
 
 export interface ActionPaletteItem {
@@ -65,7 +65,7 @@ export function ActionPalette({
         side={side}
         sideOffset={8}
         className={cn(
-          "w-auto min-w-[260px] max-w-[320px] p-0",
+          "w-auto max-w-[320px] min-w-[260px] p-0",
           "rounded-2xl",
           "border-border/50 border dark:border-white/10",
           "bg-card backdrop-blur-xl",
@@ -74,7 +74,7 @@ export function ActionPalette({
       >
         {/* Header - only show if title provided */}
         {title && (
-          <div className="flex items-center justify-between px-5 pb-3 pt-5">
+          <div className="flex items-center justify-between px-5 pt-5 pb-3">
             <h3 className="text-foreground text-lg font-bold">{title}</h3>
             <button
               onClick={handleClose}
@@ -97,7 +97,7 @@ export function ActionPalette({
           {groups.map((group, groupIndex) => (
             <div key={groupIndex}>
               {group.title && (
-                <div className="text-muted-foreground px-2 py-1.5 text-xs font-medium uppercase tracking-wider">
+                <div className="text-muted-foreground px-2 py-1.5 text-xs font-medium tracking-wider uppercase">
                   {group.title}
                 </div>
               )}

@@ -1,11 +1,11 @@
 import { TickerAvatar } from "@/components/ticker-avatar";
-import { Card, CardContent, CardHeader, CardTitle } from "@wealthfolio/ui/components/ui/card";
-import { Skeleton } from "@wealthfolio/ui/components/ui/skeleton";
+import { Card, CardContent, CardHeader, CardTitle } from "@panorama/ui/components/ui/card";
+import { Skeleton } from "@panorama/ui/components/ui/skeleton";
 import { HoldingType, isAlternativeAssetKind, type AssetKind } from "@/lib/constants";
 import { getDisplaySymbol } from "@/lib/symbol-display";
 import { Holding } from "@/lib/types";
 import { cn } from "@/lib/utils";
-import { AmountDisplay, Button, GainAmount, GainPercent, Icons } from "@wealthfolio/ui";
+import { AmountDisplay, Button, GainAmount, GainPercent, Icons } from "@panorama/ui";
 import { useMemo } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useBalancePrivacy } from "@/hooks/use-balance-privacy";
@@ -129,8 +129,8 @@ function TopHoldingsSkeleton() {
         <CardTitle className="text-md">Top Holdings</CardTitle>
       </CardHeader>
       <CardContent>
-        <Card className="shadow-xs w-full">
-          <CardContent className="px-4 pb-2 pt-4">
+        <Card className="w-full shadow-xs">
+          <CardContent className="px-4 pt-4 pb-2">
             {Array.from({ length: 5 }).map((_, i) => (
               <div key={i} className="border-border border-b py-3 last:border-0">
                 <div className="flex items-center justify-between">
@@ -165,7 +165,7 @@ function TopHoldingsEmptyState() {
         <CardTitle className="text-md">Top Holdings</CardTitle>
       </CardHeader>
       <CardContent className="p-0">
-        <Card className="border-border/50 bg-success/10 shadow-xs w-full">
+        <Card className="border-border/50 bg-success/10 w-full shadow-xs">
           <CardContent className="px-4 py-6">
             <div className="text-center">
               <p className="text-sm">No holdings yet.</p>
@@ -234,8 +234,8 @@ export function TopHoldings({ holdings, isLoading, baseCurrency }: TopHoldingsPr
         </Button>
       </CardHeader>
       <CardContent className="p-0">
-        <Card className="shadow-xs w-full">
-          <CardContent className="px-4 pb-2 pt-4">
+        <Card className="w-full shadow-xs">
+          <CardContent className="px-4 pt-4 pb-2">
             {topHoldings.map((holding) => {
               const assetId = holding.instrument?.id ?? holding.id;
               return (

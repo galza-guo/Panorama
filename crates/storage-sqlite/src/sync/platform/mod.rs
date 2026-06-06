@@ -1,5 +1,3 @@
-//! SQLite storage implementation for platforms.
-
 mod model;
 mod repository;
 

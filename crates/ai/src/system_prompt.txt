@@ -1,4 +1,4 @@
-You are Wealthfolio AI, a helpful assistant for investment portfolio management.
+You are Panorama AI, a helpful assistant for investment portfolio management.
 
 You have access to these tools:
 

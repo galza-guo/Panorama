@@ -7,9 +7,9 @@ use keyring::Entry;
 #[cfg(debug_assertions)]
 use serde::{Deserialize, Serialize};
 
-use wealthfolio_core::{
+use panorama_core::{
     errors::Error,
-    secrets::{format_service_id, SecretStore},
+    secrets::{format_legacy_service_id, format_service_id, SecretStore},
     Result,
 };
 
@@ -33,7 +33,14 @@ impl SecretStore for KeyringSecretStore {
         let entry = entry_for(service)?;
         match entry.get_password() {
             Ok(value) => Ok(Some(value)),
-            Err(keyring::Error::NoEntry) => Ok(None),
+            Err(keyring::Error::NoEntry) => {
+                let legacy_entry = legacy_entry_for(service)?;
+                match legacy_entry.get_password() {
+                    Ok(value) => Ok(Some(value)),
+                    Err(keyring::Error::NoEntry) => Ok(None),
+                    Err(err) => Err(Error::Secret(err.to_string())),
+                }
+            }
             Err(err) => Err(Error::Secret(err.to_string())),
         }
     }
@@ -43,6 +50,11 @@ impl SecretStore for KeyringSecretStore {
         match entry.delete_password() {
             Ok(_) | Err(keyring::Error::NoEntry) => Ok(()),
             Err(err) => Err(Error::Secret(err.to_string())),
+        }?;
+        let legacy_entry = legacy_entry_for(service)?;
+        match legacy_entry.delete_password() {
+            Ok(_) | Err(keyring::Error::NoEntry) => Ok(()),
+            Err(err) => Err(Error::Secret(err.to_string())),
         }
     }
 }
@@ -50,6 +62,12 @@ impl SecretStore for KeyringSecretStore {
 #[cfg(not(debug_assertions))]
 fn entry_for(service: &str) -> Result<Entry> {
     let service_id = format_service_id(service);
+    Entry::new(&service_id, USERNAME).map_err(|err| Error::Secret(err.to_string()))
+}
+
+#[cfg(not(debug_assertions))]
+fn legacy_entry_for(service: &str) -> Result<Entry> {
+    let service_id = format_legacy_service_id(service);
     Entry::new(&service_id, USERNAME).map_err(|err| Error::Secret(err.to_string()))
 }
 
@@ -135,14 +153,17 @@ impl SecretStore for DevFileSecretStore {
 
     fn get_secret(&self, service: &str) -> Result<Option<String>> {
         let key = format_service_id(service);
+        let legacy_key = format_legacy_service_id(service);
         let store = self.read_store()?;
-        Ok(store.get(&key).cloned())
+        Ok(store.get(&key).or_else(|| store.get(&legacy_key)).cloned())
     }
 
     fn delete_secret(&self, service: &str) -> Result<()> {
         let key = format_service_id(service);
+        let legacy_key = format_legacy_service_id(service);
         self.with_store(|store| {
             store.remove(&key);
+            store.remove(&legacy_key);
             Ok(())
         })
     }
@@ -204,10 +225,26 @@ mod tests {
         assert_eq!(store.get_secret("alpha").unwrap().as_deref(), Some("value"));
 
         let raw = std::fs::read_to_string(&file).unwrap();
-        assert!(raw.contains("wealthfolio_alpha"));
+        assert!(raw.contains("panorama_alpha"));
         assert!(!raw.contains("\"Alpha\""));
 
         store.delete_secret("ALPHA").unwrap();
+        assert!(store.get_secret("alpha").unwrap().is_none());
+    }
+
+    #[test]
+    fn dev_file_secret_store_reads_legacy_formatted_service_ids() {
+        let dir = tempdir().unwrap();
+        let file = dir.path().join("dev-secrets.json");
+        std::fs::write(&file, r#"{"secrets":{"wealthfolio_alpha":"legacy-value"}}"#).unwrap();
+        let store = DevFileSecretStore::new(file);
+
+        assert_eq!(
+            store.get_secret("alpha").unwrap().as_deref(),
+            Some("legacy-value")
+        );
+
+        store.delete_secret("alpha").unwrap();
         assert!(store.get_secret("alpha").unwrap().is_none());
     }
 }

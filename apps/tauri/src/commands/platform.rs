@@ -19,9 +19,6 @@ pub struct PlatformInfo {
 
 #[tauri::command]
 pub fn get_platform() -> PlatformInfo {
-    let connect_sync = cfg!(feature = "connect-sync");
-    let device_sync = cfg!(feature = "device-sync");
-
     PlatformInfo {
         os: std::env::consts::OS,
         arch: std::env::consts::ARCH,
@@ -29,9 +26,9 @@ pub fn get_platform() -> PlatformInfo {
         is_desktop: cfg!(not(any(target_os = "ios", target_os = "android"))),
         is_tauri: true,
         capabilities: PlatformCapabilities {
-            connect_sync,
-            device_sync,
-            cloud_sync: connect_sync || device_sync,
+            connect_sync: false,
+            device_sync: false,
+            cloud_sync: false,
         },
     }
 }

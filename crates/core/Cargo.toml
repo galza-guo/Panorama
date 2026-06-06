@@ -1,11 +1,11 @@
 [package]
-name = "wealthfolio-core"
+name = "panorama-core"
 version.workspace = true
 edition.workspace = true
-description = "An Open Source Desktop Portfolio tracker"
+description = "An open-source desktop portfolio tracker"
 authors = ["Aziz Fadil"]
 license = "AGPL-3.0"
-repository = "https://github.com/afadil/wealthfolio"
+repository = "https://github.com/galza-guo/Panorama"
 
 [features]
 default = []
@@ -32,7 +32,7 @@ log = { workspace = true }
 reqwest = { workspace = true, features = ["cookies"] }
 
 # Sibling crates
-wealthfolio-market-data = { path = "../market-data" }
+panorama-market-data = { path = "../market-data" }
 
 # Additional dependencies not in workspace
 yahoo_finance_api = "4.1"

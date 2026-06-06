@@ -1,6 +1,6 @@
 import { useMemo } from "react";
 import { useHoldings } from "./use-holdings";
-import { type AddonContext } from "@wealthfolio/addon-sdk";
+import { type AddonContext } from "@panorama/addon-sdk";
 
 interface UseInvestmentMetricsOptions {
   accountId: string;

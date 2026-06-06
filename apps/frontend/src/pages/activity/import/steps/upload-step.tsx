@@ -7,25 +7,25 @@ import type { Account } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { QueryKeys } from "@/lib/query-keys";
-import { Card, CardContent, CardHeader, CardTitle } from "@wealthfolio/ui/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@wealthfolio/ui/components/ui/tabs";
-import { Checkbox } from "@wealthfolio/ui/components/ui/checkbox";
+import { Card, CardContent, CardHeader, CardTitle } from "@panorama/ui/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@panorama/ui/components/ui/tabs";
+import { Checkbox } from "@panorama/ui/components/ui/checkbox";
 import {
   Collapsible,
   CollapsibleContent,
   CollapsibleTrigger,
-} from "@wealthfolio/ui/components/ui/collapsible";
-import { Icons } from "@wealthfolio/ui/components/ui/icons";
-import { Input } from "@wealthfolio/ui/components/ui/input";
-import { Label } from "@wealthfolio/ui/components/ui/label";
+} from "@panorama/ui/components/ui/collapsible";
+import { Icons } from "@panorama/ui/components/ui/icons";
+import { Input } from "@panorama/ui/components/ui/input";
+import { Label } from "@panorama/ui/components/ui/label";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@wealthfolio/ui/components/ui/select";
-import { SearchableSelect } from "@wealthfolio/ui";
+} from "@panorama/ui/components/ui/select";
+import { SearchableSelect } from "@panorama/ui";
 import { DATE_FORMAT_OPTIONS, isPresetFormat } from "../utils/date-format-options";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { CSVFileViewer, type CSVLine } from "../components/csv-file-viewer";

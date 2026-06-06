@@ -1,4 +1,4 @@
-import { Button } from "@wealthfolio/ui/components/ui/button";
+import { Button } from "@panorama/ui/components/ui/button";
 import {
   Sheet,
   SheetClose,
@@ -6,9 +6,9 @@ import {
   SheetFooter,
   SheetHeader,
   SheetTitle,
-} from "@wealthfolio/ui/components/ui/sheet";
-import { AmountDisplay, Skeleton } from "@wealthfolio/ui";
-import { Icons } from "@wealthfolio/ui/components/ui/icons";
+} from "@panorama/ui/components/ui/sheet";
+import { AmountDisplay, Skeleton } from "@panorama/ui";
+import { Icons } from "@panorama/ui/components/ui/icons";
 import { useState, useCallback, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
@@ -258,7 +258,7 @@ export function AllocationDetailSheet({
                               return (
                                 <div
                                   key={child.categoryId}
-                                  className={`flex cursor-pointer items-center gap-3 py-2.5 pl-11 pr-4 transition-colors ${
+                                  className={`flex cursor-pointer items-center gap-3 py-2.5 pr-4 pl-11 transition-colors ${
                                     isChildSelected ? "bg-muted" : "hover:bg-muted/50"
                                   } ${childIdx > 0 ? "border-t border-dashed" : ""}`}
                                   onClick={(e) => {

@@ -25,7 +25,7 @@ vi.mock("@/hooks/use-target-allocation", () => ({
   useSetTargetAllocationAccountDefault: () => ({ mutateAsync: vi.fn() }),
 }));
 
-vi.mock("@wealthfolio/ui/components/ui/dialog", () => ({
+vi.mock("@panorama/ui/components/ui/dialog", () => ({
   Dialog: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
   DialogContent: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
   DialogDescription: ({ children }: { children: React.ReactNode }) => <p>{children}</p>,
@@ -39,7 +39,7 @@ vi.mock("@wealthfolio/ui/components/ui/dialog", () => ({
   DialogTrigger: ({ children }: { children: React.ReactNode }) => <>{children}</>,
 }));
 
-vi.mock("@wealthfolio/ui/components/ui/alert-dialog", () => ({
+vi.mock("@panorama/ui/components/ui/alert-dialog", () => ({
   AlertDialog: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
   AlertDialogCancel: ({ children }: { children: React.ReactNode }) => <button>{children}</button>,
   AlertDialogContent: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
@@ -55,8 +55,8 @@ vi.mock("@wealthfolio/ui/components/ui/alert-dialog", () => ({
   }) => <h2 className={className}>{children}</h2>,
 }));
 
-vi.mock("@wealthfolio/ui", async () => {
-  const actual = await vi.importActual<typeof import("@wealthfolio/ui")>("@wealthfolio/ui");
+vi.mock("@panorama/ui", async () => {
+  const actual = await vi.importActual<typeof import("@panorama/ui")>("@panorama/ui");
 
   return {
     ...actual,

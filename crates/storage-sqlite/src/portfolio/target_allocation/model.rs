@@ -5,8 +5,8 @@ use rust_decimal::Decimal;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
-use wealthfolio_core::errors::{Result, ValidationError};
-use wealthfolio_core::portfolio::target_allocation::{
+use panorama_core::errors::{Result, ValidationError};
+use panorama_core::portfolio::target_allocation::{
     TargetAllocationAccountDefault, TargetAllocationAssetRef, TargetAllocationAttribution,
     TargetAllocationExclusion, TargetAllocationNode, TargetAllocationNodeKind,
     TargetAllocationSubjectType,

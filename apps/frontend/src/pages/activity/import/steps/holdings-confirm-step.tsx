@@ -1,8 +1,8 @@
 import { useMutation } from "@tanstack/react-query";
-import { Card, CardContent, CardHeader, CardTitle } from "@wealthfolio/ui/components/ui/card";
-import { Button } from "@wealthfolio/ui/components/ui/button";
-import { Icons } from "@wealthfolio/ui/components/ui/icons";
-import { Alert, AlertDescription, AlertTitle } from "@wealthfolio/ui/components/ui/alert";
+import { Card, CardContent, CardHeader, CardTitle } from "@panorama/ui/components/ui/card";
+import { Button } from "@panorama/ui/components/ui/button";
+import { Icons } from "@panorama/ui/components/ui/icons";
+import { Alert, AlertDescription, AlertTitle } from "@panorama/ui/components/ui/alert";
 
 import { useMemo, useCallback } from "react";
 import { useNavigate } from "react-router-dom";

@@ -5,7 +5,7 @@ import {
   FormLabel,
   FormMessage,
   QuantityInput as BaseQuantityInput,
-} from "@wealthfolio/ui";
+} from "@panorama/ui";
 import { useFormContext, type FieldPath, type FieldValues } from "react-hook-form";
 
 interface QuantityInputProps<TFieldValues extends FieldValues = FieldValues> {

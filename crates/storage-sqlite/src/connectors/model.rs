@@ -2,13 +2,13 @@
 
 use chrono::{NaiveDate, NaiveDateTime};
 use diesel::prelude::*;
-use serde::{Deserialize, Serialize};
-use wealthfolio_core::connectors::{
+use panorama_core::connectors::{
     ConnectorCapability, ConnectorEnvironment, ConnectorProvider, ExternalAccountLink,
     ExternalAccountLinkStatus, ExternalAccountSyncMode, ExternalConnection,
     ExternalConnectionStatus,
 };
-use wealthfolio_core::Result;
+use panorama_core::Result;
+use serde::{Deserialize, Serialize};
 
 use crate::errors::StorageError;
 
@@ -80,7 +80,7 @@ fn deserialize_capabilities(value: &str) -> Result<Vec<ConnectorCapability>> {
 }
 
 impl TryFrom<ExternalConnectionDB> for ExternalConnection {
-    type Error = wealthfolio_core::Error;
+    type Error = panorama_core::Error;
 
     fn try_from(db: ExternalConnectionDB) -> Result<Self> {
         Ok(Self {
@@ -102,7 +102,7 @@ impl TryFrom<ExternalConnectionDB> for ExternalConnection {
 }
 
 impl TryFrom<ExternalConnection> for ExternalConnectionDB {
-    type Error = wealthfolio_core::Error;
+    type Error = panorama_core::Error;
 
     fn try_from(connection: ExternalConnection) -> Result<Self> {
         Ok(Self {
@@ -121,7 +121,7 @@ impl TryFrom<ExternalConnection> for ExternalConnectionDB {
 }
 
 impl TryFrom<ExternalAccountLinkDB> for ExternalAccountLink {
-    type Error = wealthfolio_core::Error;
+    type Error = panorama_core::Error;
 
     fn try_from(db: ExternalAccountLinkDB) -> Result<Self> {
         Ok(Self {
@@ -147,7 +147,7 @@ impl TryFrom<ExternalAccountLinkDB> for ExternalAccountLink {
 }
 
 impl TryFrom<ExternalAccountLink> for ExternalAccountLinkDB {
-    type Error = wealthfolio_core::Error;
+    type Error = panorama_core::Error;
 
     fn try_from(link: ExternalAccountLink) -> Result<Self> {
         Ok(Self {

@@ -1,7 +1,7 @@
-//! Wealthfolio Market Data Crate
+//! Panorama Market Data Crate
 //!
 //! This crate provides provider-agnostic market data fetching capabilities
-//! for the Wealthfolio application.
+//! for the Panorama application.
 //!
 //! # Overview
 //!

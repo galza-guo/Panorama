@@ -1,9 +1,9 @@
 import { useEffect, useMemo, useState } from "react";
 
-import { DatePickerInput } from "@wealthfolio/ui";
-import { Button } from "@wealthfolio/ui/components/ui/button";
-import { Input } from "@wealthfolio/ui/components/ui/input";
-import { Label } from "@wealthfolio/ui/components/ui/label";
+import { DatePickerInput } from "@panorama/ui";
+import { Button } from "@panorama/ui/components/ui/button";
+import { Input } from "@panorama/ui/components/ui/input";
+import { Label } from "@panorama/ui/components/ui/label";
 import {
   Sheet,
   SheetContent,
@@ -11,13 +11,16 @@ import {
   SheetFooter,
   SheetHeader,
   SheetTitle,
-} from "@wealthfolio/ui/components/ui/sheet";
-import { Textarea } from "@wealthfolio/ui/components/ui/textarea";
-import { Icons } from "@wealthfolio/ui/components/ui/icons";
+} from "@panorama/ui/components/ui/sheet";
+import { Textarea } from "@panorama/ui/components/ui/textarea";
+import { Icons } from "@panorama/ui/components/ui/icons";
 
 import { useSettingsContext } from "@/lib/settings-provider";
 import type { AlternativeAssetHolding } from "@/lib/types";
-import { normalizeMpfSubfunds, parsePanoramaAssetAttributes } from "@/lib/panorama-asset-attributes";
+import {
+  normalizeMpfSubfunds,
+  parsePanoramaAssetAttributes,
+} from "@/lib/panorama-asset-attributes";
 
 export interface MpfSubfundFormValue {
   name: string;
@@ -98,7 +101,10 @@ export function MpfAssetEditorSheet({
 }: MpfAssetEditorSheetProps) {
   const { settings } = useSettingsContext();
   const baseCurrency = settings?.baseCurrency ?? "HKD";
-  const defaults = useMemo(() => buildDefaultValues(holding, baseCurrency), [holding, baseCurrency]);
+  const defaults = useMemo(
+    () => buildDefaultValues(holding, baseCurrency),
+    [holding, baseCurrency],
+  );
   const [values, setValues] = useState<MpfAssetFormValues>(defaults);
   const [error, setError] = useState<string | null>(null);
 
@@ -109,7 +115,10 @@ export function MpfAssetEditorSheet({
     }
   }, [defaults, open]);
 
-  const updateValue = <T extends keyof MpfAssetFormValues>(field: T, value: MpfAssetFormValues[T]) => {
+  const updateValue = <T extends keyof MpfAssetFormValues>(
+    field: T,
+    value: MpfAssetFormValues[T],
+  ) => {
     setValues((current) => ({
       ...current,
       [field]: value,
@@ -279,7 +288,8 @@ export function MpfAssetEditorSheet({
               <div>
                 <h3 className="text-sm font-semibold">Subfunds</h3>
                 <p className="text-muted-foreground text-xs">
-                  Maintain subfund names and units. Existing NAV and market values are preserved when available.
+                  Maintain subfund names and units. Existing NAV and market values are preserved
+                  when available.
                 </p>
               </div>
 
@@ -334,7 +344,12 @@ export function MpfAssetEditorSheet({
         </div>
 
         <SheetFooter>
-          <Button type="button" variant="ghost" onClick={() => onOpenChange(false)} disabled={isSubmitting}>
+          <Button
+            type="button"
+            variant="ghost"
+            onClick={() => onOpenChange(false)}
+            disabled={isSubmitting}
+          >
             Cancel
           </Button>
           <Button type="button" onClick={handleSubmit} disabled={isSubmitting}>

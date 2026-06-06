@@ -3,12 +3,22 @@
 use async_trait::async_trait;
 use log::{info, warn};
 
-use wealthfolio_core::errors::Result;
+use panorama_core::errors::Result;
 
 use crate::prompt_template::{
-    ChatRunConfig, DetailLevel, PromptTemplate, PromptTemplateCatalog,
+    ChatRunConfig, DetailLevel, PromptTemplate, PromptTemplateCatalog, DEFAULT_PROMPT_TEMPLATE_ID,
     PROMPT_TEMPLATE_SCHEMA_VERSION,
 };
+
+const LEGACY_WEALTHFOLIO_ASSISTANT_TEMPLATE_ID: &str = "wealthfolio-assistant-v1";
+
+fn resolve_template_id(template_id: &str) -> &str {
+    if template_id == LEGACY_WEALTHFOLIO_ASSISTANT_TEMPLATE_ID {
+        DEFAULT_PROMPT_TEMPLATE_ID
+    } else {
+        template_id
+    }
+}
 
 /// Service trait for prompt template operations.
 #[async_trait]
@@ -84,11 +94,12 @@ impl PromptTemplateServiceTrait for PromptTemplateService {
     }
 
     fn get_template(&self, template_id: &str) -> Option<&PromptTemplate> {
-        self.catalog.get_template(template_id)
+        self.catalog.get_template(resolve_template_id(template_id))
     }
 
     fn get_template_by_version(&self, template_id: &str, version: &str) -> Option<&PromptTemplate> {
-        self.catalog.get_template_by_version(template_id, version)
+        self.catalog
+            .get_template_by_version(resolve_template_id(template_id), version)
     }
 
     fn get_default_template(&self) -> Option<&PromptTemplate> {
@@ -102,8 +113,8 @@ impl PromptTemplateServiceTrait for PromptTemplateService {
             .or_else(|| self.get_template(&config.template_id))
             .or_else(|| self.get_default_template())
             .ok_or_else(|| {
-                wealthfolio_core::errors::Error::Validation(
-                    wealthfolio_core::errors::ValidationError::InvalidInput(format!(
+                panorama_core::errors::Error::Validation(
+                    panorama_core::errors::ValidationError::InvalidInput(format!(
                         "Template not found: {}@{}",
                         config.template_id, config.template_version
                     )),
@@ -131,7 +142,7 @@ pub fn build_run_config_from_context(
     detail_level: Option<&str>,
 ) -> ChatRunConfig {
     ChatRunConfig {
-        template_id: "wealthfolio-assistant-v1".to_string(),
+        template_id: DEFAULT_PROMPT_TEMPLATE_ID.to_string(),
         template_version: "1.0.0".to_string(),
         locale: locale.map(|s| s.to_string()),
         detail_level: detail_level
@@ -147,14 +158,14 @@ mod tests {
     const TEST_CATALOG_JSON: &str = r#"{
         "schemaVersion": 1,
         "templates": {
-            "wealthfolio-assistant-v1": {
-                "id": "wealthfolio-assistant-v1",
+            "panorama-assistant-v1": {
+                "id": "panorama-assistant-v1",
                 "version": "1.0.0",
-                "name": "Wealthfolio Assistant",
+                "name": "Panorama Assistant",
                 "description": "Default assistant",
                 "isDefault": true,
                 "sections": {
-                    "system": { "content": "You are Wealthfolio Assistant." },
+                    "system": { "content": "You are Panorama Assistant." },
                     "portfolioDomain": { "content": "Portfolio data access." },
                     "toolUsage": { "content": "Use tools wisely." },
                     "adviceGuardrails": { "content": "Not financial advice." }
@@ -183,7 +194,7 @@ mod tests {
     fn test_get_default_template() {
         let service = PromptTemplateService::new(TEST_CATALOG_JSON).unwrap();
         let template = service.get_default_template().unwrap();
-        assert_eq!(template.id, "wealthfolio-assistant-v1");
+        assert_eq!(template.id, "panorama-assistant-v1");
     }
 
     #[test]
@@ -192,7 +203,7 @@ mod tests {
         let config = ChatRunConfig::default();
         let prompt = service.build_system_prompt(&config).unwrap();
 
-        assert!(prompt.contains("Wealthfolio Assistant"));
+        assert!(prompt.contains("Panorama Assistant"));
         assert!(prompt.contains("Portfolio data access"));
         assert!(prompt.contains("Use tools wisely"));
         assert!(prompt.contains("Not financial advice"));
@@ -203,6 +214,14 @@ mod tests {
         let config = build_run_config_from_context(Some("es-ES"), Some("detailed"));
         assert_eq!(config.locale, Some("es-ES".to_string()));
         assert_eq!(config.detail_level, DetailLevel::Detailed);
+        assert_eq!(config.template_id, "panorama-assistant-v1");
+    }
+
+    #[test]
+    fn test_legacy_template_id_resolves_to_panorama_default() {
+        let service = PromptTemplateService::new(TEST_CATALOG_JSON).unwrap();
+        let template = service.get_template("wealthfolio-assistant-v1").unwrap();
+        assert_eq!(template.id, "panorama-assistant-v1");
     }
 
     #[test]
@@ -216,6 +235,6 @@ mod tests {
 
         // Should fall back to default template
         let prompt = service.build_system_prompt(&config).unwrap();
-        assert!(prompt.contains("Wealthfolio Assistant"));
+        assert!(prompt.contains("Panorama Assistant"));
     }
 }

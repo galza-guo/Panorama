@@ -4,9 +4,9 @@ use async_trait::async_trait;
 use std::collections::HashSet;
 use std::sync::Arc;
 
-use wealthfolio_core::errors::{Result, ValidationError};
-use wealthfolio_core::secrets::SecretStore;
-use wealthfolio_core::settings::SettingsRepositoryTrait;
+use panorama_core::errors::{Result, ValidationError};
+use panorama_core::secrets::SecretStore;
+use panorama_core::settings::SettingsRepositoryTrait;
 
 use crate::provider_model::{
     default_priority, AiProviderCatalog, AiProviderSettings, AiProvidersResponse, FetchedModel,
@@ -349,7 +349,7 @@ impl AiProviderServiceTrait for AiProviderService {
     async fn update_provider_settings(&self, request: UpdateProviderSettingsRequest) -> Result<()> {
         // Verify provider exists in catalog
         if !self.catalog.providers.contains_key(&request.provider_id) {
-            return Err(wealthfolio_core::errors::Error::Validation(
+            return Err(panorama_core::errors::Error::Validation(
                 ValidationError::InvalidInput(format!("Unknown provider: {}", request.provider_id)),
             ));
         }
@@ -415,7 +415,7 @@ impl AiProviderServiceTrait for AiProviderService {
         // Verify provider exists if setting a default
         if let Some(ref provider_id) = request.provider_id {
             if !self.catalog.providers.contains_key(provider_id) {
-                return Err(wealthfolio_core::errors::Error::Validation(
+                return Err(panorama_core::errors::Error::Validation(
                     ValidationError::InvalidInput(format!("Unknown provider: {}", provider_id)),
                 ));
             }
@@ -697,11 +697,11 @@ fn openai_compatible_models_url(base_url: &str) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use panorama_core::errors::Result as CoreResult;
+    use panorama_core::secrets::SecretStore;
+    use panorama_core::settings::{Settings, SettingsRepositoryTrait, SettingsUpdate};
     use std::collections::HashMap;
     use std::sync::RwLock;
-    use wealthfolio_core::errors::Result as CoreResult;
-    use wealthfolio_core::secrets::SecretStore;
-    use wealthfolio_core::settings::{Settings, SettingsRepositoryTrait, SettingsUpdate};
 
     #[derive(Default)]
     struct MockSettingsRepository {
@@ -725,8 +725,8 @@ mod tests {
                 .get(setting_key)
                 .cloned()
                 .ok_or_else(|| {
-                    wealthfolio_core::errors::Error::Validation(
-                        wealthfolio_core::errors::ValidationError::InvalidInput(format!(
+                    panorama_core::errors::Error::Validation(
+                        panorama_core::errors::ValidationError::InvalidInput(format!(
                             "missing setting: {}",
                             setting_key
                         )),
@@ -905,7 +905,10 @@ mod tests {
         }
 
         assert_eq!(
-            response.providers.last().map(|provider| provider.id.as_str()),
+            response
+                .providers
+                .last()
+                .map(|provider| provider.id.as_str()),
             Some("openai-compatible")
         );
     }

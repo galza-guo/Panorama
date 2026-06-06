@@ -67,7 +67,7 @@ pub struct GoalsAllocationDB {
 }
 
 // Conversion to domain models
-impl From<GoalDB> for wealthfolio_core::goals::Goal {
+impl From<GoalDB> for panorama_core::goals::Goal {
     fn from(db: GoalDB) -> Self {
         Self {
             id: db.id,
@@ -79,7 +79,7 @@ impl From<GoalDB> for wealthfolio_core::goals::Goal {
     }
 }
 
-impl From<GoalsAllocationDB> for wealthfolio_core::goals::GoalsAllocation {
+impl From<GoalsAllocationDB> for panorama_core::goals::GoalsAllocation {
     fn from(db: GoalsAllocationDB) -> Self {
         Self {
             id: db.id,
@@ -90,8 +90,8 @@ impl From<GoalsAllocationDB> for wealthfolio_core::goals::GoalsAllocation {
     }
 }
 
-impl From<wealthfolio_core::goals::NewGoal> for NewGoalDB {
-    fn from(domain: wealthfolio_core::goals::NewGoal) -> Self {
+impl From<panorama_core::goals::NewGoal> for NewGoalDB {
+    fn from(domain: panorama_core::goals::NewGoal) -> Self {
         Self {
             id: domain.id,
             title: domain.title,
@@ -102,8 +102,8 @@ impl From<wealthfolio_core::goals::NewGoal> for NewGoalDB {
     }
 }
 
-impl From<wealthfolio_core::goals::GoalsAllocation> for GoalsAllocationDB {
-    fn from(domain: wealthfolio_core::goals::GoalsAllocation) -> Self {
+impl From<panorama_core::goals::GoalsAllocation> for GoalsAllocationDB {
+    fn from(domain: panorama_core::goals::GoalsAllocation) -> Self {
         Self {
             id: domain.id,
             goal_id: domain.goal_id,

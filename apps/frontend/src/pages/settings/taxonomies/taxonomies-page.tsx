@@ -1,10 +1,6 @@
 import { useState, useMemo } from "react";
-import { Icons, ScrollArea, Card, Button, Tabs, TabsList, TabsTrigger } from "@wealthfolio/ui";
-import {
-  TreeView,
-  buildCategoryTree,
-  type TreeNode,
-} from "@wealthfolio/ui/components/ui/tree-view";
+import { Icons, ScrollArea, Card, Button, Tabs, TabsList, TabsTrigger } from "@panorama/ui";
+import { TreeView, buildCategoryTree, type TreeNode } from "@panorama/ui/components/ui/tree-view";
 import { useTaxonomies, useTaxonomy, useExportTaxonomy } from "@/hooks/use-taxonomies";
 import { SettingsHeader } from "../settings-header";
 import { CategoryForm } from "./components/category-form";
@@ -147,7 +143,7 @@ export default function TaxonomiesPage() {
           {/* Categories and details */}
           <div className="flex min-h-[500px] flex-col lg:flex-row">
             {/* Category tree */}
-            <div className="w-full border-b lg:w-80 lg:border-b-0 lg:border-r">
+            <div className="w-full border-b lg:w-80 lg:border-r lg:border-b-0">
               <ScrollArea className="h-[300px] lg:h-[500px]">
                 {isLoadingCategories ? (
                   <div className="text-muted-foreground p-4 text-center text-sm">Loading...</div>

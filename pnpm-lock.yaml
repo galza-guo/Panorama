@@ -56,15 +56,15 @@ importers:
 
   addons/goal-progress-tracker:
     dependencies:
+      '@panorama/addon-sdk':
+        specifier: workspace:*
+        version: link:../../packages/addon-sdk
+      '@panorama/ui':
+        specifier: workspace:*
+        version: link:../../packages/ui
       '@tanstack/react-query':
         specifier: ^5.90.20
         version: 5.90.20(react@19.2.4)
-      '@wealthfolio/addon-sdk':
-        specifier: workspace:*
-        version: link:../../packages/addon-sdk
-      '@wealthfolio/ui':
-        specifier: workspace:*
-        version: link:../../packages/ui
       react:
         specifier: ^19.2.4
         version: 19.2.4
@@ -72,6 +72,9 @@ importers:
         specifier: ^19.2.4
         version: 19.2.4(react@19.2.4)
     devDependencies:
+      '@panorama/addon-dev-tools':
+        specifier: workspace:*
+        version: link:../../packages/addon-dev-tools
       '@tailwindcss/vite':
         specifier: ^4.1.18
         version: 4.1.18(vite@7.3.1(@types/node@20.19.33)(jiti@2.6.1)(lightningcss@1.30.2))
@@ -87,9 +90,6 @@ importers:
       '@vitejs/plugin-react':
         specifier: ^4.3.4
         version: 4.7.0(vite@7.3.1(@types/node@20.19.33)(jiti@2.6.1)(lightningcss@1.30.2))
-      '@wealthfolio/addon-dev-tools':
-        specifier: workspace:*
-        version: link:../../packages/addon-dev-tools
       clsx:
         specifier: ^2.1.1
         version: 2.1.1
@@ -111,15 +111,15 @@ importers:
 
   addons/investment-fees-tracker:
     dependencies:
+      '@panorama/addon-sdk':
+        specifier: workspace:*
+        version: link:../../packages/addon-sdk
+      '@panorama/ui':
+        specifier: workspace:*
+        version: link:../../packages/ui
       '@tanstack/react-query':
         specifier: ^5.90.20
         version: 5.90.20(react@19.2.4)
-      '@wealthfolio/addon-sdk':
-        specifier: workspace:*
-        version: link:../../packages/addon-sdk
-      '@wealthfolio/ui':
-        specifier: workspace:*
-        version: link:../../packages/ui
       react:
         specifier: ^19.2.4
         version: 19.2.4
@@ -127,6 +127,9 @@ importers:
         specifier: ^19.2.4
         version: 19.2.4(react@19.2.4)
     devDependencies:
+      '@panorama/addon-dev-tools':
+        specifier: workspace:*
+        version: link:../../packages/addon-dev-tools
       '@tailwindcss/vite':
         specifier: ^4.1.18
         version: 4.1.18(vite@7.3.1(@types/node@20.19.33)(jiti@2.6.1)(lightningcss@1.30.2))
@@ -142,9 +145,6 @@ importers:
       '@vitejs/plugin-react':
         specifier: ^4.3.4
         version: 4.7.0(vite@7.3.1(@types/node@20.19.33)(jiti@2.6.1)(lightningcss@1.30.2))
-      '@wealthfolio/addon-dev-tools':
-        specifier: workspace:*
-        version: link:../../packages/addon-dev-tools
       clsx:
         specifier: ^2.1.1
         version: 2.1.1
@@ -172,15 +172,15 @@ importers:
 
   addons/swingfolio-addon:
     dependencies:
+      '@panorama/addon-sdk':
+        specifier: workspace:*
+        version: link:../../packages/addon-sdk
+      '@panorama/ui':
+        specifier: workspace:*
+        version: link:../../packages/ui
       '@tanstack/react-query':
         specifier: ^5.90.20
         version: 5.90.20(react@19.2.4)
-      '@wealthfolio/addon-sdk':
-        specifier: workspace:*
-        version: link:../../packages/addon-sdk
-      '@wealthfolio/ui':
-        specifier: workspace:*
-        version: link:../../packages/ui
       date-fns:
         specifier: ^4.1.0
         version: 4.1.0
@@ -191,6 +191,9 @@ importers:
         specifier: ^19.2.4
         version: 19.2.4(react@19.2.4)
     devDependencies:
+      '@panorama/addon-dev-tools':
+        specifier: workspace:*
+        version: link:../../packages/addon-dev-tools
       '@tailwindcss/vite':
         specifier: ^4.1.18
         version: 4.1.18(vite@7.3.1(@types/node@20.19.33)(jiti@2.6.1)(lightningcss@1.30.2))
@@ -206,9 +209,6 @@ importers:
       '@vitejs/plugin-react':
         specifier: ^5.1.4
         version: 5.1.4(vite@7.3.1(@types/node@20.19.33)(jiti@2.6.1)(lightningcss@1.30.2))
-      '@wealthfolio/addon-dev-tools':
-        specifier: workspace:*
-        version: link:../../packages/addon-dev-tools
       clsx:
         specifier: ^2.1.1
         version: 2.1.1
@@ -254,6 +254,12 @@ importers:
       '@number-flow/react':
         specifier: ^0.5.11
         version: 0.5.11(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
+      '@panorama/addon-sdk':
+        specifier: workspace:*
+        version: link:../../packages/addon-sdk
+      '@panorama/ui':
+        specifier: workspace:*
+        version: link:../../packages/ui
       '@radix-ui/react-slot':
         specifier: ^1.2.4
         version: 1.2.4(@types/react@19.2.13)(react@19.2.4)
@@ -302,12 +308,6 @@ importers:
       '@tauri-apps/plugin-window-state':
         specifier: ~2.4.1
         version: 2.4.1
-      '@wealthfolio/addon-sdk':
-        specifier: workspace:*
-        version: link:../../packages/addon-sdk
-      '@wealthfolio/ui':
-        specifier: workspace:*
-        version: link:../../packages/ui
       clsx:
         specifier: ^2.1.1
         version: 2.1.1

@@ -21,8 +21,8 @@ Requirements:
 
 ## Start Panorama (Recommended)
 
-For the best development experience with live reload and testing, start
-Panorama in addon development mode:
+For the best development experience with live reload and testing, start Panorama
+in addon development mode:
 
 ```bash
 # Clone Panorama repository (if not already done)
@@ -53,7 +53,7 @@ This enables:
 cd ~/Documents/PanoramaAddons
 
 # Create addon using CLI
-npx @wealthfolio/addon-dev-tools create hello-world-addon
+npx @panorama/addon-dev-tools create hello-world-addon
 
 # Navigate and install
 cd hello-world-addon
@@ -104,8 +104,8 @@ hello-world-addon/
 
 ```typescript
 import React from 'react';
-import type { AddonContext } from '@wealthfolio/addon-sdk';
-import { Icons } from '@wealthfolio/ui';
+import type { AddonContext } from '@panorama/addon-sdk';
+import { Icons } from '@panorama/ui';
 
 function HelloWorldPage() {
   return (
@@ -209,7 +209,7 @@ Update `src/addon.tsx` to access portfolio data using TanStack Query:
 ```typescript
 import React from 'react';
 import { useQuery } from '@tanstack/react-query';
-import type { AddonContext, Account } from '@wealthfolio/addon-sdk';
+import type { AddonContext, Account } from '@panorama/addon-sdk';
 
 function HelloWorldPage({ ctx }: { ctx: AddonContext }) {
   const {
@@ -451,7 +451,7 @@ pnpm format
 ```json
 {
   "scripts": {
-    "dev:server": "wealthfolio dev",
+    "dev:server": "panorama dev",
     "build": "vite build",
     "type-check": "tsc --noEmit",
     "lint": "eslint src --ext .ts,.tsx",

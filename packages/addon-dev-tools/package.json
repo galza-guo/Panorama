@@ -1,13 +1,13 @@
 {
-  "name": "@wealthfolio/addon-dev-tools",
+  "name": "@panorama/addon-dev-tools",
   "version": "3.3.0",
   "description": "Development tools for Panorama addons - hot reload server and CLI",
   "main": "index.js",
   "bin": {
-    "wealthfolio": "cli.js"
+    "panorama": "cli.js"
   },
   "keywords": [
-    "wealthfolio",
+    "panorama",
     "addon",
     "development",
     "cli",

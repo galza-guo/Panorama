@@ -12,7 +12,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
   formatPercent,
-} from "@wealthfolio/ui";
+} from "@panorama/ui";
 import { useMemo } from "react";
 import { useBalancePrivacy } from "@/hooks/use-balance-privacy";
 import { useSettingsContext } from "@/lib/settings-provider";

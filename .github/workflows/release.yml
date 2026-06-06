@@ -81,11 +81,6 @@ jobs:
         uses: tauri-apps/tauri-action@v0
 
         env:
-          # Wealthfolio Connect (set variables to enable; omit to build without Connect)
-          CONNECT_AUTH_URL: ${{ vars.CONNECT_AUTH_URL }}
-          CONNECT_AUTH_PUBLISHABLE_KEY: ${{ vars.CONNECT_AUTH_PUBLISHABLE_KEY }}
-          CONNECT_API_URL: ${{ vars.CONNECT_API_URL }}
-          CONNECT_OAUTH_CALLBACK_URL: ${{ vars.CONNECT_OAUTH_CALLBACK_URL }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
           APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}

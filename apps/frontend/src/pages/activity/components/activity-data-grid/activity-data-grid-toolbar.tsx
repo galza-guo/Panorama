@@ -7,7 +7,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
   Icons,
-} from "@wealthfolio/ui";
+} from "@panorama/ui";
 import type { Table } from "@tanstack/react-table";
 import type { ChangesSummary, LocalTransaction } from "./types";
 

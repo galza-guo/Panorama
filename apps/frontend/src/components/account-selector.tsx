@@ -1,4 +1,4 @@
-import { Button } from "@wealthfolio/ui/components/ui/button";
+import { Button } from "@panorama/ui/components/ui/button";
 import {
   Command,
   CommandEmpty,
@@ -6,14 +6,14 @@ import {
   CommandInput,
   CommandItem,
   CommandList,
-} from "@wealthfolio/ui/components/ui/command";
-import { Popover, PopoverContent, PopoverTrigger } from "@wealthfolio/ui/components/ui/popover";
+} from "@panorama/ui/components/ui/command";
+import { Popover, PopoverContent, PopoverTrigger } from "@panorama/ui/components/ui/popover";
 import { Account, TrackingMode } from "@/lib/types";
 import { cn } from "@/lib/utils";
-import { Icons, type Icon } from "@wealthfolio/ui";
+import { Icons, type Icon } from "@panorama/ui";
 import { forwardRef, useState } from "react";
 
-import { Skeleton } from "@wealthfolio/ui/components/ui/skeleton";
+import { Skeleton } from "@panorama/ui/components/ui/skeleton";
 import { useAccounts } from "@/hooks/use-accounts";
 import { useSettings } from "@/hooks/use-settings";
 import { AccountType, PORTFOLIO_ACCOUNT_ID } from "@/lib/constants";
@@ -351,7 +351,7 @@ export const AccountSelector = forwardRef<HTMLButtonElement, AccountSelectorProp
               role="combobox"
               aria-expanded={open}
               className={cn(
-                "border-input bg-background ring-offset-background placeholder:text-muted-foreground focus:ring-ring flex h-10 w-full items-center justify-between rounded-md border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50",
+                "border-input bg-background ring-offset-background placeholder:text-muted-foreground focus:ring-ring flex h-10 w-full items-center justify-between rounded-md border px-3 py-2 text-sm focus:ring-2 focus:ring-offset-2 focus:outline-none disabled:cursor-not-allowed disabled:opacity-50",
                 className,
               )}
             >

@@ -1,10 +1,10 @@
-import { Icons } from "@wealthfolio/ui/components/ui/icons";
+import { Icons } from "@panorama/ui/components/ui/icons";
 import {
   Tooltip,
   TooltipContent,
   TooltipTrigger,
   TooltipProvider,
-} from "@wealthfolio/ui/components/ui/tooltip";
+} from "@panorama/ui/components/ui/tooltip";
 
 interface HelpTooltipProps {
   content: React.ReactNode;

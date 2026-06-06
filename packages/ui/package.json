@@ -1,5 +1,5 @@
 {
-  "name": "@wealthfolio/ui",
+  "name": "@panorama/ui",
   "version": "3.3.0",
   "type": "module",
   "description": "Panorama UI components based on shadcn/ui and Tailwind CSS",
@@ -23,7 +23,7 @@
     "README.md"
   ],
   "keywords": [
-    "wealthfolio",
+    "panorama",
     "ui",
     "components",
     "shadcn",

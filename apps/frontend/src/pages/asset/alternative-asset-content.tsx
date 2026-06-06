@@ -1,8 +1,8 @@
 import React, { useMemo, useState } from "react";
 import { format } from "date-fns";
-import { Card, CardContent, CardHeader, CardTitle } from "@wealthfolio/ui/components/ui/card";
-import { Separator } from "@wealthfolio/ui/components/ui/separator";
-import { Badge } from "@wealthfolio/ui/components/ui/badge";
+import { Card, CardContent, CardHeader, CardTitle } from "@panorama/ui/components/ui/card";
+import { Separator } from "@panorama/ui/components/ui/separator";
+import { Badge } from "@panorama/ui/components/ui/badge";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -12,14 +12,14 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from "@wealthfolio/ui/components/ui/alert-dialog";
+} from "@panorama/ui/components/ui/alert-dialog";
 import {
   Icons,
   IntervalSelector,
   EmptyPlaceholder,
   AmountDisplay,
   formatPercent,
-} from "@wealthfolio/ui";
+} from "@panorama/ui";
 import HistoryChart from "@/components/history-chart-symbol";
 import { ValueHistoryDataGrid } from "./alternative-assets";
 import {

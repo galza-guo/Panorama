@@ -12,15 +12,15 @@ import { useSettingsContext } from "@/lib/settings-provider";
 import { DateRange, TimePeriod } from "@/lib/types";
 import { calculatePerformanceMetrics } from "@/lib/utils";
 import { PortfolioUpdateTrigger } from "@/pages/dashboard/portfolio-update-trigger";
-import type { TimePeriod as UITimePeriod } from "@wealthfolio/ui";
+import type { TimePeriod as UITimePeriod } from "@panorama/ui";
 import {
   GainAmount,
   GainPercent,
   getInitialIntervalData,
   IntervalSelector,
   usePersistentState,
-} from "@wealthfolio/ui";
-import { Skeleton } from "@wealthfolio/ui/components/ui/skeleton";
+} from "@panorama/ui";
+import { Skeleton } from "@panorama/ui/components/ui/skeleton";
 import { useMemo, useState } from "react";
 import { AccountsSummary } from "./accounts-summary";
 import Balance from "./balance";
@@ -108,7 +108,7 @@ export function DashboardContent() {
 
   return (
     <div className="flex min-h-screen flex-col">
-      <div className="px-4 pb-1 pt-2 md:px-6 md:pb-2 lg:px-8">
+      <div className="px-4 pt-2 pb-1 md:px-6 md:pb-2 lg:px-8">
         <PortfolioUpdateTrigger lastCalculatedAt={currentValuation?.calculatedAt}>
           <div className="flex items-start gap-2">
             <div>
@@ -168,7 +168,7 @@ export function DashboardContent() {
         )}
       </div>
 
-      <div className="from-success/30 via-success/15 to-success/10 bg-linear-to-t grow px-4 pb-[calc(var(--mobile-nav-ui-height)+max(var(--mobile-nav-gap),env(safe-area-inset-bottom)))] pt-12 md:px-6 md:pb-6 md:pt-6 lg:px-10 lg:pb-8 lg:pt-8">
+      <div className="from-success/30 via-success/15 to-success/10 grow bg-linear-to-t px-4 pt-12 pb-[calc(var(--mobile-nav-ui-height)+max(var(--mobile-nav-gap),env(safe-area-inset-bottom)))] md:px-6 md:pt-6 md:pb-6 lg:px-10 lg:pt-8 lg:pb-8">
         <div className="grid grid-cols-1 gap-8 lg:grid-cols-3 lg:gap-20">
           <div className="lg:col-span-2">
             <AccountsSummary />

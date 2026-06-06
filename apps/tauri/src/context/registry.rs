@@ -1,23 +1,21 @@
-use std::sync::{Arc, RwLock};
-use wealthfolio_ai::{AiProviderServiceTrait, ChatService};
-use wealthfolio_connect::BrokerSyncServiceTrait;
-use wealthfolio_core::{
+use panorama_ai::{AiProviderServiceTrait, ChatService};
+use panorama_core::{
     self, accounts, activities,
     assets::{self, AlternativeAssetServiceTrait},
     events::DomainEventSink,
     fx, goals, health, limits, portfolio, quotes, settings, taxonomies,
 };
-use wealthfolio_device_sync::{engine::DeviceSyncRuntimeState, DeviceEnrollService};
-use wealthfolio_storage_sqlite::{
+use panorama_storage_sqlite::{
     activities::ActivityRepository,
     connectors::ConnectorRepository,
     portfolio::snapshot::SnapshotRepository,
     settings::SettingsRepository,
     sync::{AppSyncRepository, FolderSyncRepository},
 };
+use std::sync::{Arc, RwLock};
 
 use super::TauriAiEnvironment;
-use crate::services::{folder_sync_runtime::FolderSyncRuntime, ConnectService};
+use crate::services::folder_sync_runtime::FolderSyncRuntime;
 
 pub struct ServiceContext {
     pub app_data_dir: Arc<String>,
@@ -58,14 +56,10 @@ pub struct ServiceContext {
         Arc<dyn portfolio::target_allocation::TargetAllocationServiceTrait>,
     pub valuation_service: Arc<dyn portfolio::valuation::ValuationServiceTrait>,
     pub net_worth_service: Arc<dyn portfolio::net_worth::NetWorthServiceTrait>,
-    pub sync_service: Arc<dyn BrokerSyncServiceTrait>,
     pub alternative_asset_service: Arc<dyn AlternativeAssetServiceTrait>,
     pub taxonomy_service: Arc<dyn taxonomies::TaxonomyServiceTrait>,
-    pub connect_service: Arc<ConnectService>,
     pub ai_provider_service: Arc<dyn AiProviderServiceTrait>,
     pub ai_chat_service: Arc<ChatService<TauriAiEnvironment>>,
-    pub device_enroll_service: Arc<DeviceEnrollService>,
-    pub device_sync_runtime: Arc<DeviceSyncRuntimeState>,
     pub health_service: Arc<health::HealthService>,
 }
 
@@ -173,10 +167,6 @@ impl ServiceContext {
         Arc::clone(&self.valuation_service)
     }
 
-    pub fn sync_service(&self) -> Arc<dyn BrokerSyncServiceTrait> {
-        Arc::clone(&self.sync_service)
-    }
-
     pub fn net_worth_service(&self) -> Arc<dyn portfolio::net_worth::NetWorthServiceTrait> {
         Arc::clone(&self.net_worth_service)
     }
@@ -189,24 +179,12 @@ impl ServiceContext {
         Arc::clone(&self.taxonomy_service)
     }
 
-    pub fn connect_service(&self) -> Arc<ConnectService> {
-        Arc::clone(&self.connect_service)
-    }
-
     pub fn ai_provider_service(&self) -> Arc<dyn AiProviderServiceTrait> {
         Arc::clone(&self.ai_provider_service)
     }
 
     pub fn ai_chat_service(&self) -> Arc<ChatService<TauriAiEnvironment>> {
         Arc::clone(&self.ai_chat_service)
-    }
-
-    pub fn device_enroll_service(&self) -> Arc<DeviceEnrollService> {
-        Arc::clone(&self.device_enroll_service)
-    }
-
-    pub fn device_sync_runtime(&self) -> Arc<DeviceSyncRuntimeState> {
-        Arc::clone(&self.device_sync_runtime)
     }
 
     pub fn health_service(&self) -> Arc<health::HealthService> {

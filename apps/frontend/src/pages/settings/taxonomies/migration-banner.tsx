@@ -1,4 +1,4 @@
-import { Alert, AlertDescription, AlertTitle, Button, Icons } from "@wealthfolio/ui";
+import { Alert, AlertDescription, AlertTitle, Button, Icons } from "@panorama/ui";
 import { useMigrationStatus, useMigrateLegacyClassifications } from "@/hooks/use-taxonomies";
 import { toast } from "sonner";
 

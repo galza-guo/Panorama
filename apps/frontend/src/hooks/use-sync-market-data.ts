@@ -1,6 +1,6 @@
 import { useMutation } from "@tanstack/react-query";
 import { syncMarketData } from "@/adapters";
-import { useToast } from "@wealthfolio/ui/components/ui/use-toast";
+import { useToast } from "@panorama/ui/components/ui/use-toast";
 
 export function useSyncMarketDataMutation(refetchAll = false, refetchRecentDays?: number) {
   const { toast } = useToast();

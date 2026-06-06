@@ -15,7 +15,7 @@ pub const ACTIVITY_TYPE_DIVIDEND: &str = "DIVIDEND";
 /// Interest earned on cash or fixed-income positions. Increases cash.
 pub const ACTIVITY_TYPE_INTEREST: &str = "INTEREST";
 
-/// Incoming funds from outside Wealthfolio. Increases cash.
+/// Incoming funds from outside Panorama. Increases cash.
 pub const ACTIVITY_TYPE_DEPOSIT: &str = "DEPOSIT";
 
 /// Outgoing funds to an external account. Decreases cash.

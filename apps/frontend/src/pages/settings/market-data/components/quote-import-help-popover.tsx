@@ -1,6 +1,6 @@
-import { Button } from "@wealthfolio/ui/components/ui/button";
-import { Icons } from "@wealthfolio/ui/components/ui/icons";
-import { Popover, PopoverContent, PopoverTrigger } from "@wealthfolio/ui/components/ui/popover";
+import { Button } from "@panorama/ui/components/ui/button";
+import { Icons } from "@panorama/ui/components/ui/icons";
+import { Popover, PopoverContent, PopoverTrigger } from "@panorama/ui/components/ui/popover";
 
 export function QuoteImportHelpPopover() {
   return (
@@ -62,7 +62,7 @@ export function QuoteImportHelpPopover() {
             <div className="space-y-4">
               <div>
                 <p className="font-semibold">Required CSV Format:</p>
-                <pre className="bg-muted mt-2 select-all overflow-x-auto rounded-md p-3 text-xs leading-relaxed">
+                <pre className="bg-muted mt-2 overflow-x-auto rounded-md p-3 text-xs leading-relaxed select-all">
                   <span className="text-muted-foreground">
                     # Required columns: symbol, date, close
                   </span>

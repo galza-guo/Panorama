@@ -1,12 +1,12 @@
 import { ThreadListPrimitive } from "@assistant-ui/react";
 import { type FC, useCallback, useEffect, useMemo, useRef, useState } from "react";
 
-import { Icons } from "@wealthfolio/ui/components/ui/icons";
+import { Icons } from "@panorama/ui/components/ui/icons";
 
-import { ActionConfirm } from "@wealthfolio/ui/components/common";
-import { Button } from "@wealthfolio/ui/components/ui/button";
-import { Input } from "@wealthfolio/ui/components/ui/input";
-import { Skeleton } from "@wealthfolio/ui/components/ui/skeleton";
+import { ActionConfirm } from "@panorama/ui/components/common";
+import { Button } from "@panorama/ui/components/ui/button";
+import { Input } from "@panorama/ui/components/ui/input";
+import { Skeleton } from "@panorama/ui/components/ui/skeleton";
 import { useRuntimeContext } from "../hooks/use-runtime-context";
 import {
   flattenThreadPages,
@@ -125,19 +125,19 @@ interface ThreadSearchInputProps {
 const ThreadSearchInput: FC<ThreadSearchInputProps> = ({ value, onChange }) => {
   return (
     <div className="relative px-1">
-      <Icons.Search className="text-muted-foreground absolute left-3 top-1/2 size-4 -translate-y-1/2" />
+      <Icons.Search className="text-muted-foreground absolute top-1/2 left-3 size-4 -translate-y-1/2" />
       <Input
         type="text"
         placeholder="Search threads..."
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className="h-8 pl-8 pr-8 text-sm"
+        className="h-8 pr-8 pl-8 text-sm"
       />
       {value && (
         <button
           type="button"
           onClick={() => onChange("")}
-          className="text-muted-foreground hover:text-foreground absolute right-3 top-1/2 -translate-y-1/2"
+          className="text-muted-foreground hover:text-foreground absolute top-1/2 right-3 -translate-y-1/2"
           aria-label="Clear search"
         >
           <Icons.Close className="size-4" />
@@ -353,7 +353,7 @@ const ThreadListItemCustom: FC<ThreadListItemCustomProps> = ({
 }) => {
   return (
     <div
-      className={`aui-thread-list-item hover:bg-muted focus-visible:bg-muted focus-visible:ring-ring group relative rounded-lg transition-all focus-visible:outline-none focus-visible:ring-2 ${
+      className={`aui-thread-list-item hover:bg-muted focus-visible:bg-muted focus-visible:ring-ring group relative rounded-lg transition-all focus-visible:ring-2 focus-visible:outline-none ${
         isActive ? "bg-muted" : ""
       }`}
       data-active={isActive || undefined}

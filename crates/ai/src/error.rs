@@ -1,7 +1,7 @@
 //! AI assistant error types.
 
+use panorama_core::Error as CoreError;
 use thiserror::Error;
-use wealthfolio_core::Error as CoreError;
 
 /// AI assistant errors.
 #[derive(Debug, Error)]
@@ -38,7 +38,7 @@ pub enum AiError {
     #[error("Invalid cursor: {0}")]
     InvalidCursor(String),
 
-    /// Core error from wealthfolio-core.
+    /// Core error from panorama-core.
     #[error("Core error: {0}")]
     Core(#[from] CoreError),
 

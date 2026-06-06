@@ -146,7 +146,9 @@ describe("alternative holdings specialized display", () => {
   });
 
   it("shows insurance subtype labels and cash value badges in the mobile assets list", () => {
-    render(<AlternativeHoldingsListMobile holdings={[buildInsuranceHolding()]} isLoading={false} />);
+    render(
+      <AlternativeHoldingsListMobile holdings={[buildInsuranceHolding()]} isLoading={false} />,
+    );
 
     expect(screen.getByText("Insurance")).toBeInTheDocument();
     expect(screen.getByText("Next payment in 9d")).toBeInTheDocument();

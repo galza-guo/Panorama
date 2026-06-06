@@ -451,7 +451,7 @@ import type {
   PerformanceHistory,
   PerformanceSummary,
   // ... and many more
-} from "@wealthfolio/addon-sdk";
+} from "@panorama/addon-sdk";
 
 // Type-safe API usage
 const accounts: Account[] = await ctx.api.accounts.getAll();

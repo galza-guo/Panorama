@@ -1,10 +1,10 @@
 import { useState, useMemo, useCallback, useEffect, useLayoutEffect, useRef } from "react";
-import { Button } from "@wealthfolio/ui/components/ui/button";
-import { Card, CardContent } from "@wealthfolio/ui/components/ui/card";
-import { Icons } from "@wealthfolio/ui/components/ui/icons";
-import { Label } from "@wealthfolio/ui/components/ui/label";
-import { Skeleton } from "@wealthfolio/ui/components/ui/skeleton";
-import { CurrencyInput, DatePickerInput, QuantityInput, MoneyInput } from "@wealthfolio/ui";
+import { Button } from "@panorama/ui/components/ui/button";
+import { Card, CardContent } from "@panorama/ui/components/ui/card";
+import { Icons } from "@panorama/ui/components/ui/icons";
+import { Label } from "@panorama/ui/components/ui/label";
+import { Skeleton } from "@panorama/ui/components/ui/skeleton";
+import { CurrencyInput, DatePickerInput, QuantityInput, MoneyInput } from "@panorama/ui";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -14,8 +14,8 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from "@wealthfolio/ui/components/ui/alert-dialog";
-import { ScrollArea } from "@wealthfolio/ui/components/ui/scroll-area";
+} from "@panorama/ui/components/ui/alert-dialog";
+import { ScrollArea } from "@panorama/ui/components/ui/scroll-area";
 import { toast } from "sonner";
 import { format, parseISO } from "date-fns";
 

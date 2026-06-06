@@ -1,5 +1,5 @@
-import { Button } from "@wealthfolio/ui/components/ui/button";
-import { ScrollArea } from "@wealthfolio/ui/components/ui/scroll-area";
+import { Button } from "@panorama/ui/components/ui/button";
+import { ScrollArea } from "@panorama/ui/components/ui/scroll-area";
 import {
   Sheet,
   SheetContent,
@@ -7,14 +7,14 @@ import {
   SheetHeader,
   SheetTitle,
   SheetTrigger,
-} from "@wealthfolio/ui/components/ui/sheet";
-import { Skeleton } from "@wealthfolio/ui/components/ui/skeleton";
+} from "@panorama/ui/components/ui/sheet";
+import { Skeleton } from "@panorama/ui/components/ui/skeleton";
 import { useAccounts } from "@/hooks/use-accounts";
 import { useSettings } from "@/hooks/use-settings";
 import { AccountType, PORTFOLIO_ACCOUNT_ID } from "@/lib/constants";
 import { Account } from "@/lib/types";
 import { cn } from "@/lib/utils";
-import { Icons, type Icon } from "@wealthfolio/ui";
+import { Icons, type Icon } from "@panorama/ui";
 import { forwardRef, useState } from "react";
 
 // Custom type for UI purposes that extends the standard AccountType
@@ -148,7 +148,7 @@ export const AccountSelectorMobile = forwardRef<HTMLButtonElement, AccountSelect
             {!iconOnly && "Add account"}
           </Button>
         </SheetTrigger>
-        <SheetContent side="bottom" className="rounded-t-4xl mx-1 h-[80vh] p-0">
+        <SheetContent side="bottom" className="mx-1 h-[80vh] rounded-t-4xl p-0">
           <SheetHeader className="border-border border-b px-6 py-4">
             <SheetTitle>Select Account</SheetTitle>
             <SheetDescription>Choose an account to add to the comparison</SheetDescription>

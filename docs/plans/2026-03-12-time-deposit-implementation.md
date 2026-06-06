@@ -1,18 +1,28 @@
 # Time Deposit Implementation Plan
 
-> **For Claude:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task.
+> **For Claude:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to
+> implement this plan task-by-task.
 
-**Goal:** Add a specialized `Time Deposit` asset workflow with a dedicated page, editor sheet, and automatic current-value derivation while keeping the underlying storage model as Panorama metadata on top of alternative assets.
+**Goal:** Add a specialized `Time Deposit` asset workflow with a dedicated page,
+editor sheet, and automatic current-value derivation while keeping the
+underlying storage model as Panorama metadata on top of alternative assets.
 
-**Architecture:** Reuse the existing alternative-asset create/update APIs with `kind: "other"` and Panorama metadata markers for `time_deposit`. Add a dedicated front-end workflow similar to `Insurance`, and derive effective holding values in the alternative-asset service so portfolio views stay consistent.
+**Architecture:** Reuse the existing alternative-asset create/update APIs with
+`kind: "other"` and Panorama metadata markers for `time_deposit`. Add a
+dedicated front-end workflow similar to `Insurance`, and derive effective
+holding values in the alternative-asset service so portfolio views stay
+consistent.
 
-**Tech Stack:** React, TypeScript, Vitest, existing alternative asset hooks/mutations, Rust `wealthfolio-core` alternative asset service, Panorama metadata helpers.
+**Tech Stack:** React, TypeScript, Vitest, existing alternative asset
+hooks/mutations, Rust `panorama-core` alternative asset service, Panorama
+metadata helpers.
 
 ---
 
 ### Task 1: Define Time Deposit metadata contract and frontend math helpers
 
 **Files:**
+
 - Modify: `apps/frontend/src/lib/panorama-asset-attributes.ts`
 - Modify: `apps/frontend/src/lib/panorama-asset-attributes.test.ts`
 - Create: `apps/frontend/src/lib/time-deposit-calculations.ts`
@@ -31,8 +41,10 @@ Add tests that cover:
 
 **Step 2: Run test to verify it fails**
 
-Run: `pnpm --filter frontend test -- --run apps/frontend/src/lib/panorama-asset-attributes.test.ts apps/frontend/src/lib/time-deposit-calculations.test.ts`
-Expected: FAIL because time-deposit metadata helpers and math utilities do not exist.
+Run:
+`pnpm --filter frontend test -- --run apps/frontend/src/lib/panorama-asset-attributes.test.ts apps/frontend/src/lib/time-deposit-calculations.test.ts`
+Expected: FAIL because time-deposit metadata helpers and math utilities do not
+exist.
 
 **Step 3: Write minimal implementation**
 
@@ -47,7 +59,8 @@ Keep derived metrics pure and side-effect free.
 
 **Step 4: Run test to verify it passes**
 
-Run: `pnpm --filter frontend test -- --run apps/frontend/src/lib/panorama-asset-attributes.test.ts apps/frontend/src/lib/time-deposit-calculations.test.ts`
+Run:
+`pnpm --filter frontend test -- --run apps/frontend/src/lib/panorama-asset-attributes.test.ts apps/frontend/src/lib/time-deposit-calculations.test.ts`
 Expected: PASS
 
 **Step 5: Commit**
@@ -60,6 +73,7 @@ git commit -m "feat: add time deposit metadata helpers"
 ### Task 2: Derive effective current value in backend alternative holdings
 
 **Files:**
+
 - Modify: `crates/core/src/assets/alternative_assets_service.rs`
 - Test: `crates/core/src/assets/alternative_assets_service.rs`
 
@@ -75,8 +89,9 @@ Add service tests that expect:
 
 **Step 2: Run test to verify it fails**
 
-Run: `cargo test -p wealthfolio-core panorama time_deposit -- --nocapture`
-Expected: FAIL because time-deposit derivation is not implemented in the alternative asset service.
+Run: `cargo test -p panorama-core panorama time_deposit -- --nocapture`
+Expected: FAIL because time-deposit derivation is not implemented in the
+alternative asset service.
 
 **Step 3: Write minimal implementation**
 
@@ -91,7 +106,7 @@ Do not add synthetic quote-history writes in this task.
 
 **Step 4: Run test to verify it passes**
 
-Run: `cargo test -p wealthfolio-core panorama time_deposit -- --nocapture`
+Run: `cargo test -p panorama-core panorama time_deposit -- --nocapture`
 Expected: PASS
 
 **Step 5: Commit**
@@ -104,8 +119,11 @@ git commit -m "feat: derive time deposit values in alternative holdings"
 ### Task 3: Build the Time Deposit editor sheet
 
 **Files:**
-- Create: `apps/frontend/src/pages/time-deposits/components/time-deposit-editor-sheet.tsx`
-- Test: `apps/frontend/src/pages/time-deposits/components/time-deposit-editor-sheet.test.tsx`
+
+- Create:
+  `apps/frontend/src/pages/time-deposits/components/time-deposit-editor-sheet.tsx`
+- Test:
+  `apps/frontend/src/pages/time-deposits/components/time-deposit-editor-sheet.test.tsx`
 
 **Step 1: Write the failing tests**
 
@@ -120,12 +138,14 @@ Add editor tests that cover:
 
 **Step 2: Run test to verify it fails**
 
-Run: `pnpm --filter frontend test -- --run apps/frontend/src/pages/time-deposits/components/time-deposit-editor-sheet.test.tsx`
+Run:
+`pnpm --filter frontend test -- --run apps/frontend/src/pages/time-deposits/components/time-deposit-editor-sheet.test.tsx`
 Expected: FAIL because the editor sheet does not exist.
 
 **Step 3: Write minimal implementation**
 
-Create a dedicated editor sheet styled like the existing insurance / MPF editors.
+Create a dedicated editor sheet styled like the existing insurance / MPF
+editors.
 
 Include:
 
@@ -138,7 +158,8 @@ Include:
 
 **Step 4: Run test to verify it passes**
 
-Run: `pnpm --filter frontend test -- --run apps/frontend/src/pages/time-deposits/components/time-deposit-editor-sheet.test.tsx`
+Run:
+`pnpm --filter frontend test -- --run apps/frontend/src/pages/time-deposits/components/time-deposit-editor-sheet.test.tsx`
 Expected: PASS
 
 **Step 5: Commit**
@@ -151,8 +172,10 @@ git commit -m "feat: add time deposit editor sheet"
 ### Task 4: Add the Time Deposits dashboard page
 
 **Files:**
+
 - Create: `apps/frontend/src/pages/time-deposits/time-deposits-dashboard.tsx`
-- Create: `apps/frontend/src/pages/time-deposits/time-deposits-dashboard.test.tsx`
+- Create:
+  `apps/frontend/src/pages/time-deposits/time-deposits-dashboard.test.tsx`
 - Modify: `apps/frontend/src/routes.tsx`
 
 **Step 1: Write the failing tests**
@@ -167,7 +190,8 @@ Add dashboard tests that cover:
 
 **Step 2: Run test to verify it fails**
 
-Run: `pnpm --filter frontend test -- --run apps/frontend/src/pages/time-deposits/time-deposits-dashboard.test.tsx`
+Run:
+`pnpm --filter frontend test -- --run apps/frontend/src/pages/time-deposits/time-deposits-dashboard.test.tsx`
 Expected: FAIL because the dashboard page does not exist.
 
 **Step 3: Write minimal implementation**
@@ -182,7 +206,8 @@ Build a dedicated page that:
 
 **Step 4: Run test to verify it passes**
 
-Run: `pnpm --filter frontend test -- --run apps/frontend/src/pages/time-deposits/time-deposits-dashboard.test.tsx`
+Run:
+`pnpm --filter frontend test -- --run apps/frontend/src/pages/time-deposits/time-deposits-dashboard.test.tsx`
 Expected: PASS
 
 **Step 5: Commit**
@@ -195,6 +220,7 @@ git commit -m "feat: add time deposit dashboard page"
 ### Task 5: Integrate Time Deposit display and editing into shared asset views
 
 **Files:**
+
 - Modify: `apps/frontend/src/pages/asset/alternative-asset-content.tsx`
 - Modify: `apps/frontend/src/pages/asset/asset-profile-page.tsx`
 - Modify: `apps/frontend/src/pages/asset/asset-utils.ts`
@@ -209,7 +235,8 @@ Add or extend tests to verify:
 - time deposits get a specialized badge / label
 - detail rows show principal, rate, maturity value, and days left
 - shared asset tables use `Edit Time Deposit`
-- assets page offers a specialized create / edit path consistent with Panorama flows
+- assets page offers a specialized create / edit path consistent with Panorama
+  flows
 
 **Step 2: Run test to verify it fails**
 
@@ -218,7 +245,9 @@ Expected: FAIL because shared asset views do not recognize time deposits.
 
 **Step 3: Write minimal implementation**
 
-Integrate the new subtype into shared UI so it behaves like an existing Panorama-specialized asset without disturbing unrelated alternative-asset behavior.
+Integrate the new subtype into shared UI so it behaves like an existing
+Panorama-specialized asset without disturbing unrelated alternative-asset
+behavior.
 
 **Step 4: Run test to verify it passes**
 
@@ -235,29 +264,31 @@ git commit -m "feat: integrate time deposits into shared asset views"
 ### Task 6: Verify full Time Deposit flow
 
 **Files:**
-- Modify: `README.md` (only if the specialized asset list should mention Time Deposits)
+
+- Modify: `README.md` (only if the specialized asset list should mention Time
+  Deposits)
 
 **Step 1: Run focused frontend tests**
 
-Run: `pnpm --filter frontend test -- --run apps/frontend/src/lib/time-deposit-calculations.test.ts apps/frontend/src/pages/time-deposits/time-deposits-dashboard.test.tsx apps/frontend/src/pages/time-deposits/components/time-deposit-editor-sheet.test.tsx`
+Run:
+`pnpm --filter frontend test -- --run apps/frontend/src/lib/time-deposit-calculations.test.ts apps/frontend/src/pages/time-deposits/time-deposits-dashboard.test.tsx apps/frontend/src/pages/time-deposits/components/time-deposit-editor-sheet.test.tsx`
 Expected: PASS
 
 **Step 2: Run focused Rust tests**
 
-Run: `cargo test -p wealthfolio-core panorama time_deposit -- --nocapture`
+Run: `cargo test -p panorama-core panorama time_deposit -- --nocapture`
 Expected: PASS
 
 **Step 3: Run compile / type checks**
 
-Run: `pnpm type-check`
-Expected: PASS
+Run: `pnpm type-check` Expected: PASS
 
-Run: `cargo check`
-Expected: PASS
+Run: `cargo check` Expected: PASS
 
 **Step 4: Update docs if needed**
 
-If the product surface now clearly includes Time Deposits, update the specialized-assets wording in `README.md`.
+If the product surface now clearly includes Time Deposits, update the
+specialized-assets wording in `README.md`.
 
 **Step 5: Commit**
 

@@ -9,7 +9,7 @@ import {
   FacetedFilter,
   FacetedSearchInput,
   Icons,
-} from "@wealthfolio/ui";
+} from "@panorama/ui";
 import type { ActivityStatusFilter } from "../hooks/use-activity-search";
 
 export type ActivityViewMode = "table" | "datagrid";

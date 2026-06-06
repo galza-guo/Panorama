@@ -2,9 +2,9 @@ import { useMemo } from "react";
 import { useForm, FormProvider, type Resolver } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Button } from "@wealthfolio/ui/components/ui/button";
-import { Card, CardContent } from "@wealthfolio/ui/components/ui/card";
-import { Icons } from "@wealthfolio/ui/components/ui/icons";
+import { Button } from "@panorama/ui/components/ui/button";
+import { Card, CardContent } from "@panorama/ui/components/ui/card";
+import { Icons } from "@panorama/ui/components/ui/icons";
 import { ActivityType } from "@/lib/constants";
 import { useSettings } from "@/hooks/use-settings";
 import {

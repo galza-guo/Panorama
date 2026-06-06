@@ -36,7 +36,7 @@ use crate::quotes::model::{DataSource, SymbolSearchResult};
 use crate::quotes::Quote;
 use crate::secrets::SecretStore;
 
-use wealthfolio_market_data::{
+use panorama_market_data::{
     mic_to_currency, mic_to_exchange_name, yahoo_exchange_to_mic, yahoo_suffix_to_mic,
     AlphaVantageProvider, AssetProfile as MarketAssetProfile, EastmoneyCnProvider, FinnhubProvider,
     MarketDataAppProvider, MetalPriceApiProvider, ProviderId, ProviderRegistry,
@@ -50,7 +50,7 @@ pub enum MarketDataClientError {
     /// A market data operation failed.
     /// Preserves the full error semantics from the market-data crate.
     #[error("{0}")]
-    MarketData(#[from] wealthfolio_market_data::errors::MarketDataError),
+    MarketData(#[from] panorama_market_data::errors::MarketDataError),
 
     #[error("Invalid data: {0}")]
     InvalidData(String),
@@ -109,7 +109,7 @@ impl MarketDataClient {
     ) -> Result<Self> {
         use std::collections::HashMap;
 
-        let mut providers: Vec<Arc<dyn wealthfolio_market_data::MarketDataProvider>> = Vec::new();
+        let mut providers: Vec<Arc<dyn panorama_market_data::MarketDataProvider>> = Vec::new();
         let mut init_errors: Vec<String> = Vec::new();
         let mut custom_priorities: HashMap<String, i32> = HashMap::new();
 
@@ -160,7 +160,7 @@ impl MarketDataClient {
     async fn create_provider(
         provider_id: &str,
         secret_store: &Arc<dyn SecretStore>,
-    ) -> Result<Option<Arc<dyn wealthfolio_market_data::MarketDataProvider>>> {
+    ) -> Result<Option<Arc<dyn panorama_market_data::MarketDataProvider>>> {
         match provider_id {
             DATA_SOURCE_YAHOO => {
                 // Yahoo doesn't need an API key
@@ -289,7 +289,7 @@ impl MarketDataClient {
         // Build provider overrides from asset.provider_config JSON
         let overrides = asset
             .provider_overrides()
-            .and_then(|json| wealthfolio_market_data::ProviderOverrides::from_json(json).ok());
+            .and_then(|json| panorama_market_data::ProviderOverrides::from_json(json).ok());
 
         // Currency hint: prefer asset.quote_ccy, fall back to MIC-derived currency
         let currency_hint: Option<Cow<'static, str>> = if !asset.quote_ccy.is_empty() {
@@ -304,7 +304,7 @@ impl MarketDataClient {
 
         // Heal legacy bare CN codes that were previously defaulted to YAHOO.
         let inferred_exchange_mic = match &instrument {
-            wealthfolio_market_data::InstrumentId::Equity { mic, .. } => mic.as_deref(),
+            panorama_market_data::InstrumentId::Equity { mic, .. } => mic.as_deref(),
             _ => None,
         };
         let inferred_provider = default_market_data_provider_id(
@@ -896,7 +896,7 @@ mod tests {
         assert!(instrument.is_some());
 
         match instrument.unwrap() {
-            wealthfolio_market_data::InstrumentId::Equity { ticker, mic } => {
+            panorama_market_data::InstrumentId::Equity { ticker, mic } => {
                 assert_eq!(ticker.as_ref(), "AAPL");
                 assert_eq!(mic.as_deref(), Some("XNAS"));
             }
@@ -914,7 +914,7 @@ mod tests {
         assert!(instrument.is_some());
 
         match instrument.unwrap() {
-            wealthfolio_market_data::InstrumentId::Crypto { base, quote } => {
+            panorama_market_data::InstrumentId::Crypto { base, quote } => {
                 assert_eq!(base.as_ref(), "BTC");
                 assert_eq!(quote.as_ref(), "USD");
             }
@@ -932,7 +932,7 @@ mod tests {
         assert!(instrument.is_some());
 
         match instrument.unwrap() {
-            wealthfolio_market_data::InstrumentId::Fx { base, quote } => {
+            panorama_market_data::InstrumentId::Fx { base, quote } => {
                 assert_eq!(base.as_ref(), "EUR");
                 assert_eq!(quote.as_ref(), "USD");
             }
@@ -1000,7 +1000,7 @@ mod tests {
         let context = client.build_quote_context(&asset).unwrap();
 
         match context.instrument {
-            wealthfolio_market_data::InstrumentId::Equity { ticker, mic } => {
+            panorama_market_data::InstrumentId::Equity { ticker, mic } => {
                 assert_eq!(ticker.as_ref(), "513050");
                 assert_eq!(mic.as_deref(), Some("XSHG"));
             }

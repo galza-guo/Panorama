@@ -24,28 +24,22 @@
 
 /* Begin PBXFileReference section */
 		00DAAADA0677741AA4F67598 /* asset.rs */ = {isa = PBXFileReference; path = asset.rs; sourceTree = "<group>"; };
-		053DCA4A499036C3B5E49505 /* wealthfolio-app_iOS.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = "wealthfolio-app_iOS.app"; sourceTree = BUILT_PRODUCTS_DIR; };
+		053DCA4A499036C3B5E49505 /* panorama-app_iOS.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = "panorama-app_iOS.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		065A739A84F1CD4D2E49AFD3 /* lib.rs */ = {isa = PBXFileReference; path = lib.rs; sourceTree = "<group>"; };
 		07CB9DEAA7F957332ABCD395 /* providers_settings.rs */ = {isa = PBXFileReference; path = providers_settings.rs; sourceTree = "<group>"; };
 		08D57B3EDF6DF4B78A16C449 /* limits.rs */ = {isa = PBXFileReference; path = limits.rs; sourceTree = "<group>"; };
 		09977832959AA8303D91E5AE /* assets */ = {isa = PBXFileReference; lastKnownFileType = folder; path = assets; sourceTree = SOURCE_ROOT; };
-		0C0834BAAC9433BC91B25C7D /* wealthfolio-app_iOS.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = "wealthfolio-app_iOS.entitlements"; sourceTree = "<group>"; };
+		0C0834BAAC9433BC91B25C7D /* panorama-app_iOS.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = "panorama-app_iOS.entitlements"; sourceTree = "<group>"; };
 		131369A2D8203C5A6DF6B93B /* listeners.rs */ = {isa = PBXFileReference; path = listeners.rs; sourceTree = "<group>"; };
 		18C261B6F8C0CA08DB5DEAFC /* ai_environment.rs */ = {isa = PBXFileReference; path = ai_environment.rs; sourceTree = "<group>"; };
-		1B7DD46327BE7C44B416A343 /* scheduler.rs */ = {isa = PBXFileReference; path = scheduler.rs; sourceTree = "<group>"; };
 		1DF3BD13C1F6A27337CA81EA /* mod.rs */ = {isa = PBXFileReference; path = mod.rs; sourceTree = "<group>"; };
-		2BB1545FEB33DE002315AD91 /* connect_service.rs */ = {isa = PBXFileReference; path = connect_service.rs; sourceTree = "<group>"; };
-		2F10C6936C8FFE1A41EF8C2B /* snapshot.rs */ = {isa = PBXFileReference; path = snapshot.rs; sourceTree = "<group>"; };
 		34D6F0F66577621761735308 /* main.mm */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.objcpp; path = main.mm; sourceTree = "<group>"; };
-		372A659E33EE984F7E484A42 /* sync_crypto.rs */ = {isa = PBXFileReference; path = sync_crypto.rs; sourceTree = "<group>"; };
 		4B76727B7CDC898953550445 /* ai_providers.rs */ = {isa = PBXFileReference; path = ai_providers.rs; sourceTree = "<group>"; };
 		4E84394A175F80C164B7A005 /* alternative_assets.rs */ = {isa = PBXFileReference; path = alternative_assets.rs; sourceTree = "<group>"; };
 		5B0778423025288BA358523F /* health.rs */ = {isa = PBXFileReference; path = health.rs; sourceTree = "<group>"; };
-		5C172234CFE0FB57611B67C3 /* device_enroll_service.rs */ = {isa = PBXFileReference; path = device_enroll_service.rs; sourceTree = "<group>"; };
 		5DD901D6813EA3A56701A1AC /* activity.rs */ = {isa = PBXFileReference; path = activity.rs; sourceTree = "<group>"; };
 		6067DFB5B9BFB0F3EF135427 /* secret_store.rs */ = {isa = PBXFileReference; path = secret_store.rs; sourceTree = "<group>"; };
 		65F737C8C10DDA3D6F05F89C /* error.rs */ = {isa = PBXFileReference; path = error.rs; sourceTree = "<group>"; };
-		6A09836EB6B6A66CA4EA1A73 /* brokers_sync.rs */ = {isa = PBXFileReference; path = brokers_sync.rs; sourceTree = "<group>"; };
 		72F89ED2B10BF30A25B62A42 /* addon.rs */ = {isa = PBXFileReference; path = addon.rs; sourceTree = "<group>"; };
 		73957C79584865E93BB46861 /* account.rs */ = {isa = PBXFileReference; path = account.rs; sourceTree = "<group>"; };
 		8167741C3A93FCA609430547 /* settings.rs */ = {isa = PBXFileReference; path = settings.rs; sourceTree = "<group>"; };
@@ -62,7 +56,6 @@
 		A23835D8F6C9598050516AE2 /* utilities.rs */ = {isa = PBXFileReference; path = utilities.rs; sourceTree = "<group>"; };
 		A808D0809909572A63FD6981 /* taxonomy.rs */ = {isa = PBXFileReference; path = taxonomy.rs; sourceTree = "<group>"; };
 		AA52E54D44ACD9583AFF8A0B /* sink.rs */ = {isa = PBXFileReference; path = sink.rs; sourceTree = "<group>"; };
-		AA9348949D6731A3CC9869C6 /* mod.rs */ = {isa = PBXFileReference; path = mod.rs; sourceTree = "<group>"; };
 		ADB02ECA825523C54BAE6C51 /* secrets.rs */ = {isa = PBXFileReference; path = secrets.rs; sourceTree = "<group>"; };
 		AE6FA26C0929E5E603524B08 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		AFC7346F7035420DB11DE772 /* MetalKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = MetalKit.framework; path = System/Library/Frameworks/MetalKit.framework; sourceTree = SDKROOT; };
@@ -78,12 +71,11 @@
 		CCCD4C76AFC9679E4F218D1C /* UIKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = UIKit.framework; path = System/Library/Frameworks/UIKit.framework; sourceTree = SDKROOT; };
 		CE7F85300ADE4A44E81B303B /* ai_chat.rs */ = {isa = PBXFileReference; path = ai_chat.rs; sourceTree = "<group>"; };
 		D7E4E6AC45A219ADA3F79F2B /* market_data.rs */ = {isa = PBXFileReference; path = market_data.rs; sourceTree = "<group>"; };
-		DDA0A9869F65B1AD2EC63C47 /* engine.rs */ = {isa = PBXFileReference; path = engine.rs; sourceTree = "<group>"; };
 		E2C37B76435A645CA417F486 /* CoreGraphics.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreGraphics.framework; path = System/Library/Frameworks/CoreGraphics.framework; sourceTree = SDKROOT; };
 		E3D9E93C6CBD1AFEEF5E0337 /* registry.rs */ = {isa = PBXFileReference; path = registry.rs; sourceTree = "<group>"; };
 		E8D27541EADE400FAF9666B2 /* goal.rs */ = {isa = PBXFileReference; path = goal.rs; sourceTree = "<group>"; };
 		F19D13CA6DC2B579249721F2 /* bindings.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = bindings.h; sourceTree = "<group>"; };
-		F78C9F28C93DBD86DA139B8A /* wealthfolio_connect.rs */ = {isa = PBXFileReference; path = wealthfolio_connect.rs; sourceTree = "<group>"; };
+		F78C9F28C93DBD86DA139B8A /* webull_hk.rs */ = {isa = PBXFileReference; path = webull_hk.rs; sourceTree = "<group>"; };
 		FBB7D0A948D1A3473181C27F /* main.rs */ = {isa = PBXFileReference; path = main.rs; sourceTree = "<group>"; };
 		FBD4DFEFB9F8DD68984795E0 /* menu.rs */ = {isa = PBXFileReference; path = menu.rs; sourceTree = "<group>"; };
 /* End PBXFileReference section */
@@ -110,7 +102,7 @@
 		03C7D315EBF6F91E47A9AC32 /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				053DCA4A499036C3B5E49505 /* wealthfolio-app_iOS.app */,
+				053DCA4A499036C3B5E49505 /* panorama-app_iOS.app */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -123,41 +115,30 @@
 			path = bindings;
 			sourceTree = "<group>";
 		};
-		5CEC39D5EFFE44FDCD2CA446 /* wealthfolio-app */ = {
+		5CEC39D5EFFE44FDCD2CA446 /* panorama-app */ = {
 			isa = PBXGroup;
 			children = (
 				34D6F0F66577621761735308 /* main.mm */,
 				4E2461CDABA92AA50518BC8E /* bindings */,
 			);
-			path = "wealthfolio-app";
+			path = "panorama-app";
 			sourceTree = "<group>";
 		};
 		7A5A513E910CB9852196B3B9 /* services */ = {
 			isa = PBXGroup;
 			children = (
-				2BB1545FEB33DE002315AD91 /* connect_service.rs */,
 				BE5C5E4A3C29625EE936B56E /* mod.rs */,
 			);
 			path = services;
 			sourceTree = "<group>";
 		};
-		849DBD7440AC8B69979A0351 /* device_sync */ = {
-			isa = PBXGroup;
-			children = (
-				DDA0A9869F65B1AD2EC63C47 /* engine.rs */,
-				AA9348949D6731A3CC9869C6 /* mod.rs */,
-				2F10C6936C8FFE1A41EF8C2B /* snapshot.rs */,
-			);
-			path = device_sync;
-			sourceTree = "<group>";
-		};
-		8ED0337378087918CD725562 /* wealthfolio-app_iOS */ = {
+		8ED0337378087918CD725562 /* panorama-app_iOS */ = {
 			isa = PBXGroup;
 			children = (
 				AE6FA26C0929E5E603524B08 /* Info.plist */,
-				0C0834BAAC9433BC91B25C7D /* wealthfolio-app_iOS.entitlements */,
+				0C0834BAAC9433BC91B25C7D /* panorama-app_iOS.entitlements */,
 			);
-			path = "wealthfolio-app_iOS";
+			path = "panorama-app_iOS";
 			sourceTree = "<group>";
 		};
 		9A6C2E21447C7454ADEA38BC = {
@@ -169,7 +150,7 @@
 				9FE2BEDCC259D9EB1FC5F8B4 /* LaunchScreen.storyboard */,
 				B5AD4D7ABF96EB381F1D1A3A /* Sources */,
 				CD445CCE0070C491906BC82E /* src */,
-				8ED0337378087918CD725562 /* wealthfolio-app_iOS */,
+				8ED0337378087918CD725562 /* panorama-app_iOS */,
 				9C3FA7595796B9D7249E62F2 /* Frameworks */,
 				03C7D315EBF6F91E47A9AC32 /* Products */,
 			);
@@ -193,7 +174,7 @@
 		B5AD4D7ABF96EB381F1D1A3A /* Sources */ = {
 			isa = PBXGroup;
 			children = (
-				5CEC39D5EFFE44FDCD2CA446 /* wealthfolio-app */,
+				5CEC39D5EFFE44FDCD2CA446 /* panorama-app */,
 			);
 			path = Sources;
 			sourceTree = "<group>";
@@ -218,7 +199,6 @@
 				131369A2D8203C5A6DF6B93B /* listeners.rs */,
 				FBB7D0A948D1A3473181C27F /* main.rs */,
 				FBD4DFEFB9F8DD68984795E0 /* menu.rs */,
-				1B7DD46327BE7C44B416A343 /* scheduler.rs */,
 				6067DFB5B9BFB0F3EF135427 /* secret_store.rs */,
 				9BF465D90BBF87E1B04B6CA3 /* updater.rs */,
 				DFADFC4DEF735CA7F8B1BC88 /* commands */,
@@ -240,8 +220,6 @@
 				4B76727B7CDC898953550445 /* ai_providers.rs */,
 				4E84394A175F80C164B7A005 /* alternative_assets.rs */,
 				00DAAADA0677741AA4F67598 /* asset.rs */,
-				6A09836EB6B6A66CA4EA1A73 /* brokers_sync.rs */,
-				5C172234CFE0FB57611B67C3 /* device_enroll_service.rs */,
 				65F737C8C10DDA3D6F05F89C /* error.rs */,
 				E8D27541EADE400FAF9666B2 /* goal.rs */,
 				5B0778423025288BA358523F /* health.rs */,
@@ -253,11 +231,9 @@
 				07CB9DEAA7F957332ABCD395 /* providers_settings.rs */,
 				ADB02ECA825523C54BAE6C51 /* secrets.rs */,
 				8167741C3A93FCA609430547 /* settings.rs */,
-				372A659E33EE984F7E484A42 /* sync_crypto.rs */,
 				A808D0809909572A63FD6981 /* taxonomy.rs */,
 				A23835D8F6C9598050516AE2 /* utilities.rs */,
-				F78C9F28C93DBD86DA139B8A /* wealthfolio_connect.rs */,
-				849DBD7440AC8B69979A0351 /* device_sync */,
+				F78C9F28C93DBD86DA139B8A /* webull_hk.rs */,
 			);
 			path = commands;
 			sourceTree = "<group>";
@@ -276,9 +252,9 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
-		0611B7A201FCFBBF724846B3 /* wealthfolio-app_iOS */ = {
+		0611B7A201FCFBBF724846B3 /* panorama-app_iOS */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = E13D00C4E5C5E314ACD8792C /* Build configuration list for PBXNativeTarget "wealthfolio-app_iOS" */;
+			buildConfigurationList = E13D00C4E5C5E314ACD8792C /* Build configuration list for PBXNativeTarget "panorama-app_iOS" */;
 			buildPhases = (
 				20D1BA7BA390E08D024F70A5 /* Build Rust Code */,
 				DC6A4DE99CBE43CB171EFD9C /* Sources */,
@@ -289,11 +265,11 @@
 			);
 			dependencies = (
 			);
-			name = "wealthfolio-app_iOS";
+			name = "panorama-app_iOS";
 			packageProductDependencies = (
 			);
-			productName = "wealthfolio-app_iOS";
-			productReference = 053DCA4A499036C3B5E49505 /* wealthfolio-app_iOS.app */;
+			productName = "panorama-app_iOS";
+			productReference = 053DCA4A499036C3B5E49505 /* panorama-app_iOS.app */;
 			productType = "com.apple.product-type.application";
 		};
 /* End PBXNativeTarget section */
@@ -305,7 +281,7 @@
 				BuildIndependentTargetsInParallel = YES;
 				LastUpgradeCheck = 1430;
 			};
-			buildConfigurationList = E81B54BA86E92A8854E169B5 /* Build configuration list for PBXProject "wealthfolio-app" */;
+			buildConfigurationList = E81B54BA86E92A8854E169B5 /* Build configuration list for PBXProject "panorama-app" */;
 			compatibilityVersion = "Xcode 14.0";
 			developmentRegion = en;
 			hasScannedForEncodings = 0;
@@ -319,7 +295,7 @@
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
-				0611B7A201FCFBBF724846B3 /* wealthfolio-app_iOS */,
+				0611B7A201FCFBBF724846B3 /* panorama-app_iOS */,
 			);
 		};
 /* End PBXProject section */
@@ -358,7 +334,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "cp \"${SRCROOT}/wealthfolio-app_iOS/wealthfolio-app_iOS.entitlements\" \"${TARGET_TEMP_DIR}/wealthfolio-app_iOS.entitlements\" && pnpm tauri ios xcode-script -v --platform ${PLATFORM_DISPLAY_NAME:?} --sdk-root ${SDKROOT:?} --framework-search-paths \"${FRAMEWORK_SEARCH_PATHS:?}\" --header-search-paths \"${HEADER_SEARCH_PATHS:?}\" --gcc-preprocessor-definitions \"${GCC_PREPROCESSOR_DEFINITIONS:-}\" --configuration ${CONFIGURATION:?} ${ARCHS:?}";
+			shellScript = "cp \"${SRCROOT}/panorama-app_iOS/panorama-app_iOS.entitlements\" \"${TARGET_TEMP_DIR}/panorama-app_iOS.entitlements\" && pnpm tauri ios xcode-script -v --platform ${PLATFORM_DISPLAY_NAME:?} --sdk-root ${SDKROOT:?} --framework-search-paths \"${FRAMEWORK_SEARCH_PATHS:?}\" --header-search-paths \"${HEADER_SEARCH_PATHS:?}\" --gcc-preprocessor-definitions \"${GCC_PREPROCESSOR_DEFINITIONS:-}\" --configuration ${CONFIGURATION:?} ${ARCHS:?}";
 		};
 /* End PBXShellScriptBuildPhase section */
 
@@ -383,7 +359,7 @@
 				);
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_ALLOW_ENTITLEMENTS_MODIFICATION = YES;
-				CODE_SIGN_ENTITLEMENTS = "wealthfolio-app_iOS/wealthfolio-app_iOS.entitlements";
+				CODE_SIGN_ENTITLEMENTS = "panorama-app_iOS/panorama-app_iOS.entitlements";
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				ENABLE_BITCODE = NO;
 				"EXCLUDED_ARCHS[sdk=iphoneos*]" = x86_64;
@@ -391,7 +367,7 @@
 					"$(inherited)",
 					"\".\"",
 				);
-				INFOPLIST_FILE = "wealthfolio-app_iOS/Info.plist";
+				INFOPLIST_FILE = "panorama-app_iOS/Info.plist";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -399,7 +375,7 @@
 				"LIBRARY_SEARCH_PATHS[arch=arm64]" = "$(inherited) $(PROJECT_DIR)/Externals/arm64/$(CONFIGURATION) $(SDKROOT)/usr/lib/swift $(TOOLCHAIN_DIR)/usr/lib/swift/$(PLATFORM_NAME) $(TOOLCHAIN_DIR)/usr/lib/swift-5.0/$(PLATFORM_NAME)";
 				"LIBRARY_SEARCH_PATHS[arch=x86_64]" = "$(inherited) $(PROJECT_DIR)/Externals/x86_64/$(CONFIGURATION) $(SDKROOT)/usr/lib/swift $(TOOLCHAIN_DIR)/usr/lib/swift/$(PLATFORM_NAME) $(TOOLCHAIN_DIR)/usr/lib/swift-5.0/$(PLATFORM_NAME)";
 				PRODUCT_BUNDLE_IDENTIFIER = com.gallantguo.panorama;
-				PRODUCT_NAME = "Wealthfolio";
+				PRODUCT_NAME = "Panorama";
 				SDKROOT = iphoneos;
 				TARGETED_DEVICE_FAMILY = "1,2";
 				VALID_ARCHS = arm64;
@@ -479,7 +455,7 @@
 				);
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_ALLOW_ENTITLEMENTS_MODIFICATION = YES;
-				CODE_SIGN_ENTITLEMENTS = "wealthfolio-app_iOS/wealthfolio-app_iOS.entitlements";
+				CODE_SIGN_ENTITLEMENTS = "panorama-app_iOS/panorama-app_iOS.entitlements";
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				ENABLE_BITCODE = NO;
 				"EXCLUDED_ARCHS[sdk=iphoneos*]" = x86_64;
@@ -487,7 +463,7 @@
 					"$(inherited)",
 					"\".\"",
 				);
-				INFOPLIST_FILE = "wealthfolio-app_iOS/Info.plist";
+				INFOPLIST_FILE = "panorama-app_iOS/Info.plist";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -495,7 +471,7 @@
 				"LIBRARY_SEARCH_PATHS[arch=arm64]" = "$(inherited) $(PROJECT_DIR)/Externals/arm64/$(CONFIGURATION) $(SDKROOT)/usr/lib/swift $(TOOLCHAIN_DIR)/usr/lib/swift/$(PLATFORM_NAME) $(TOOLCHAIN_DIR)/usr/lib/swift-5.0/$(PLATFORM_NAME)";
 				"LIBRARY_SEARCH_PATHS[arch=x86_64]" = "$(inherited) $(PROJECT_DIR)/Externals/x86_64/$(CONFIGURATION) $(SDKROOT)/usr/lib/swift $(TOOLCHAIN_DIR)/usr/lib/swift/$(PLATFORM_NAME) $(TOOLCHAIN_DIR)/usr/lib/swift-5.0/$(PLATFORM_NAME)";
 				PRODUCT_BUNDLE_IDENTIFIER = com.gallantguo.panorama;
-				PRODUCT_NAME = "Wealthfolio";
+				PRODUCT_NAME = "Panorama";
 				SDKROOT = iphoneos;
 				TARGETED_DEVICE_FAMILY = "1,2";
 				VALID_ARCHS = arm64;
@@ -562,7 +538,7 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
-		E13D00C4E5C5E314ACD8792C /* Build configuration list for PBXNativeTarget "wealthfolio-app_iOS" */ = {
+		E13D00C4E5C5E314ACD8792C /* Build configuration list for PBXNativeTarget "panorama-app_iOS" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				1FD5B14873418471133E6433 /* debug */,
@@ -571,7 +547,7 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = debug;
 		};
-		E81B54BA86E92A8854E169B5 /* Build configuration list for PBXProject "wealthfolio-app" */ = {
+		E81B54BA86E92A8854E169B5 /* Build configuration list for PBXProject "panorama-app" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				AB1F590993452DD5CF379EDE /* debug */,

@@ -2,8 +2,8 @@ use std::sync::Arc;
 
 use crate::context::ServiceContext;
 use log::debug;
+use panorama_core::limits::{ContributionLimit, DepositsCalculation, NewContributionLimit};
 use tauri::State;
-use wealthfolio_core::limits::{ContributionLimit, DepositsCalculation, NewContributionLimit};
 
 #[tauri::command]
 pub async fn get_contribution_limits(

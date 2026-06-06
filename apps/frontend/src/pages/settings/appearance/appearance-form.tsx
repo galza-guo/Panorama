@@ -12,8 +12,8 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-} from "@wealthfolio/ui/components/ui/form";
-import { Switch } from "@wealthfolio/ui/components/ui/switch";
+} from "@panorama/ui/components/ui/form";
+import { Switch } from "@panorama/ui/components/ui/switch";
 import { usePlatform } from "@/hooks/use-platform";
 import { useSettingsContext } from "@/lib/settings-provider";
 

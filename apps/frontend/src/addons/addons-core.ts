@@ -5,8 +5,8 @@ import {
   getDynamicRoutes,
   triggerAllDisableCallbacks,
 } from "@/addons/addons-runtime-context";
-import type { AddonContext, AddonManifest } from "@wealthfolio/addon-sdk";
-import { ReactVersion, SDK_VERSION } from "@wealthfolio/addon-sdk";
+import type { AddonContext, AddonManifest } from "@panorama/addon-sdk";
+import { ReactVersion, SDK_VERSION } from "@panorama/addon-sdk";
 
 interface AddonFile {
   path: string;

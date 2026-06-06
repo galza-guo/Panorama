@@ -1,10 +1,10 @@
 import React from "react";
 import { useNavigate } from "react-router-dom";
-import { Card, CardContent, CardHeader, CardTitle } from "@wealthfolio/ui/components/ui/card";
-import { Button } from "@wealthfolio/ui/components/ui/button";
-import { Separator } from "@wealthfolio/ui/components/ui/separator";
-import { Icons } from "@wealthfolio/ui/components/ui/icons";
-import { AmountDisplay } from "@wealthfolio/ui";
+import { Card, CardContent, CardHeader, CardTitle } from "@panorama/ui/components/ui/card";
+import { Button } from "@panorama/ui/components/ui/button";
+import { Separator } from "@panorama/ui/components/ui/separator";
+import { Icons } from "@panorama/ui/components/ui/icons";
+import { AmountDisplay } from "@panorama/ui";
 import { useBalancePrivacy } from "@/hooks/use-balance-privacy";
 import type { AlternativeAssetHolding } from "@/lib/types";
 

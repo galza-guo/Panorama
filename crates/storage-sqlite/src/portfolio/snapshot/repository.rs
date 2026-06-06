@@ -13,9 +13,9 @@ use std::sync::Arc;
 use super::model::AccountStateSnapshotDB;
 use crate::db::{get_connection, WriteHandle};
 use crate::errors::StorageError;
-use wealthfolio_core::constants::PORTFOLIO_TOTAL_ACCOUNT_ID;
-use wealthfolio_core::errors::{Error, Result};
-use wealthfolio_core::portfolio::snapshot::{AccountStateSnapshot, SnapshotRepositoryTrait};
+use panorama_core::constants::PORTFOLIO_TOTAL_ACCOUNT_ID;
+use panorama_core::errors::{Error, Result};
+use panorama_core::portfolio::snapshot::{AccountStateSnapshot, SnapshotRepositoryTrait};
 
 pub struct SnapshotRepository {
     pool: Arc<Pool<ConnectionManager<SqliteConnection>>>,
@@ -908,10 +908,10 @@ mod tests {
     use chrono::NaiveDate;
     use diesel::dsl::count_star;
     use diesel::RunQueryDsl;
+    use panorama_core::portfolio::snapshot::SnapshotSource;
     use rust_decimal::Decimal;
     use std::collections::HashMap;
     use tempfile::tempdir;
-    use wealthfolio_core::portfolio::snapshot::SnapshotSource;
 
     /// Creates a test repository with an in-memory-like temp database
     /// Returns the repository, pool (for creating test accounts), and temp dir (to keep it alive)
@@ -920,8 +920,6 @@ mod tests {
         Arc<Pool<ConnectionManager<SqliteConnection>>>,
         tempfile::TempDir,
     ) {
-        std::env::set_var("CONNECT_API_URL", "http://test.local");
-
         let temp_dir = tempdir().expect("Failed to create temp directory");
         let db_path = temp_dir.path().join("test.db");
         let db_path_str = db_path.to_string_lossy().to_string();

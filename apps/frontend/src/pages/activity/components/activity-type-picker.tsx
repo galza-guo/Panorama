@@ -6,8 +6,8 @@ import {
   CarouselNext,
   CarouselPrevious,
   type CarouselApi,
-} from "@wealthfolio/ui/components/ui/carousel";
-import { Icons, type IconName } from "@wealthfolio/ui/components/ui/icons";
+} from "@panorama/ui/components/ui/carousel";
+import { Icons, type IconName } from "@panorama/ui/components/ui/icons";
 import { cn } from "@/lib/utils";
 
 export type PrimaryActivityType =
@@ -79,7 +79,7 @@ function ActivityTypeButton({
       aria-pressed={isSelected}
       className={cn(
         "flex flex-col items-center justify-center gap-1.5 rounded-lg border-2 transition-all",
-        "hover:bg-muted/50 focus-visible:ring-ring focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-1",
+        "hover:bg-muted/50 focus-visible:ring-ring focus-visible:ring-2 focus-visible:ring-offset-1 focus-visible:outline-none",
         "cursor-pointer",
         compact ? "min-h-[72px] min-w-[80px] p-3" : "min-h-[80px] p-4",
         isSelected && "border-foreground bg-primary/5",
@@ -94,7 +94,7 @@ function ActivityTypeButton({
       />
       <span
         className={cn(
-          "whitespace-nowrap text-sm font-medium transition-colors",
+          "text-sm font-medium whitespace-nowrap transition-colors",
           isSelected ? "text-primary" : "text-foreground",
         )}
       >

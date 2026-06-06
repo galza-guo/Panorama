@@ -51,7 +51,7 @@ struct MetalPriceResponse {
 /// # Example
 ///
 /// ```ignore
-/// use wealthfolio_market_data::provider::metal_price_api::MetalPriceApiProvider;
+/// use panorama_market_data::provider::metal_price_api::MetalPriceApiProvider;
 ///
 /// let provider = MetalPriceApiProvider::new("your_api_key".to_string());
 /// ```

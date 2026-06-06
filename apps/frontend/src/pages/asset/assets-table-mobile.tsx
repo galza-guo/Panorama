@@ -1,18 +1,18 @@
 import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
-import { Badge, Card, FacetedSearchInput } from "@wealthfolio/ui";
+import { Badge, Card, FacetedSearchInput } from "@panorama/ui";
 
 import { TickerAvatar } from "@/components/ticker-avatar";
-import { Button } from "@wealthfolio/ui/components/ui/button";
+import { Button } from "@panorama/ui/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@wealthfolio/ui/components/ui/dropdown-menu";
-import { Icons } from "@wealthfolio/ui/components/ui/icons";
+} from "@panorama/ui/components/ui/dropdown-menu";
+import { Icons } from "@panorama/ui/components/ui/icons";
 import {
   Sheet,
   SheetClose,
@@ -20,14 +20,14 @@ import {
   SheetFooter,
   SheetHeader,
   SheetTitle,
-} from "@wealthfolio/ui/components/ui/sheet";
-import { Skeleton } from "@wealthfolio/ui/components/ui/skeleton";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@wealthfolio/ui/components/ui/tooltip";
+} from "@panorama/ui/components/ui/sheet";
+import { Skeleton } from "@panorama/ui/components/ui/skeleton";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@panorama/ui/components/ui/tooltip";
 import { ASSET_KIND_DISPLAY_NAMES, LatestQuoteSnapshot } from "@/lib/types";
 import { cn, formatAmount, formatDate } from "@/lib/utils";
 import { useSettingsContext } from "@/lib/settings-provider";
 import { getDisplaySymbol } from "@/lib/symbol-display";
-import { ScrollArea, Separator } from "@wealthfolio/ui";
+import { ScrollArea, Separator } from "@panorama/ui";
 import {
   getAssetKindForDisplay,
   getPanoramaAssetEditLabel,

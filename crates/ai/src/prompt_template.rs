@@ -8,6 +8,7 @@ use std::collections::HashMap;
 
 /// Current schema version for prompt templates.
 pub const PROMPT_TEMPLATE_SCHEMA_VERSION: u32 = 1;
+pub const DEFAULT_PROMPT_TEMPLATE_ID: &str = "panorama-assistant-v1";
 
 // ============================================================================
 // Template Knob Types
@@ -257,7 +258,7 @@ pub struct ChatRunConfig {
 impl Default for ChatRunConfig {
     fn default() -> Self {
         Self {
-            template_id: "wealthfolio-assistant-v1".to_string(),
+            template_id: DEFAULT_PROMPT_TEMPLATE_ID.to_string(),
             template_version: "1.0.0".to_string(),
             locale: None,
             detail_level: DetailLevel::Standard,

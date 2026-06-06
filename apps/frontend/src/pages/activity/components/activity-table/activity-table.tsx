@@ -1,14 +1,14 @@
 import React from "react";
 
 import { TickerAvatar } from "@/components/ticker-avatar";
-import { DataTableColumnHeader } from "@wealthfolio/ui/components/ui/data-table/data-table-column-header";
+import { DataTableColumnHeader } from "@panorama/ui/components/ui/data-table/data-table-column-header";
 import {
   DropdownMenu,
   DropdownMenuCheckboxItem,
   DropdownMenuContent,
   DropdownMenuTrigger,
-} from "@wealthfolio/ui/components/ui/dropdown-menu";
-import { Icons } from "@wealthfolio/ui/components/ui/icons";
+} from "@panorama/ui/components/ui/dropdown-menu";
+import { Icons } from "@panorama/ui/components/ui/icons";
 import {
   Table,
   TableBody,
@@ -16,7 +16,7 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@wealthfolio/ui/components/ui/table";
+} from "@panorama/ui/components/ui/table";
 import {
   calculateActivityValue,
   isCashActivity,
@@ -39,7 +39,7 @@ import {
   getSortedRowModel,
   useReactTable,
 } from "@tanstack/react-table";
-import { Button, formatAmount } from "@wealthfolio/ui";
+import { Button, formatAmount } from "@panorama/ui";
 import { Link } from "react-router-dom";
 import { useActivityMutations } from "../../hooks/use-activity-mutations";
 import { ActivityOperations } from "../activity-operations";
@@ -109,7 +109,7 @@ export const ActivityTable = ({
             <div className="flex items-center text-sm">
               <ActivityTypeBadge
                 type={activityType as ActivityType}
-                className="whitespace-nowrap text-xs font-normal"
+                className="text-xs font-normal whitespace-nowrap"
               />
             </div>
           );

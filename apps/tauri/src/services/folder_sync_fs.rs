@@ -3,11 +3,11 @@
 use std::fs;
 use std::path::{Path, PathBuf};
 
-use uuid::Uuid;
-use wealthfolio_core::sync::{
+use panorama_core::sync::{
     event_file_name, snapshot_file_name, FolderSyncEventFileV1, FolderSyncMetadataV1,
     FolderSyncSnapshotManifestV1, FOLDER_SYNC_METADATA_FILE,
 };
+use uuid::Uuid;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct FolderSyncEventFileRef {
@@ -251,14 +251,14 @@ fn write_new_file_atomic(target: &Path, bytes: &[u8]) -> Result<(), String> {
 mod tests {
     use std::fs;
 
-    use tempfile::tempdir;
-    use wealthfolio_core::sync::{
+    use panorama_core::sync::{
         event_file_name, snapshot_file_name, FolderSyncEventFileV1, FolderSyncMetadataV1,
         FolderSyncSnapshotManifestV1, FOLDER_SYNC_VERSION_V1,
     };
+    use tempfile::tempdir;
 
     use super::{FolderSyncEventFileRef, FolderSyncFsService};
-    use wealthfolio_core::sync::{SyncEntity, SyncOperation};
+    use panorama_core::sync::{SyncEntity, SyncOperation};
 
     fn metadata() -> FolderSyncMetadataV1 {
         FolderSyncMetadataV1 {

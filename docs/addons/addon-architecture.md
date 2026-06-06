@@ -4,10 +4,9 @@ A straightforward explanation of Panorama's addon system.
 
 ## What Are Panorama Addons?
 
-Addons are TypeScript modules that extend Panorama's functionality. Each
-addon is a JavaScript function that receives an `AddonContext` object and can
-register UI components, add navigation items, and access financial data through
-APIs.
+Addons are TypeScript modules that extend Panorama's functionality. Each addon
+is a JavaScript function that receives an `AddonContext` object and can register
+UI components, add navigation items, and access financial data through APIs.
 
 ## Basic Structure
 

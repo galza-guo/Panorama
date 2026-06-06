@@ -10,8 +10,8 @@ import { tryParseDate } from "@/lib/utils";
 import { parse, parseISO, isValid } from "date-fns";
 import { getDateFnsPattern } from "../utils/date-format-options";
 import { findMappedActivityType } from "../utils/activity-type-mapping";
-import { Badge } from "@wealthfolio/ui/components/ui/badge";
-import { ProgressIndicator } from "@wealthfolio/ui/components/ui/progress-indicator";
+import { Badge } from "@panorama/ui/components/ui/badge";
+import { ProgressIndicator } from "@panorama/ui/components/ui/progress-indicator";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ImportAlert } from "../components/import-alert";
 import { ImportReviewGrid, type ImportReviewFilter } from "../components/import-review-grid";
@@ -210,7 +210,7 @@ function parseDateValue(value: string | undefined, dateFormat: string): string {
 }
 
 /**
- * Map a CSV activity type value to a Wealthfolio activity type.
+ * Map a CSV activity type value to a Panorama activity type.
  * Uses findMappedActivityType which checks explicit mappings + smart defaults.
  */
 function mapActivityType(

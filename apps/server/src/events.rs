@@ -8,9 +8,6 @@ pub const MARKET_SYNC_ERROR: &str = "market:sync-error";
 pub const PORTFOLIO_UPDATE_START: &str = "portfolio:update-start";
 pub const PORTFOLIO_UPDATE_COMPLETE: &str = "portfolio:update-complete";
 pub const PORTFOLIO_UPDATE_ERROR: &str = "portfolio:update-error";
-pub const BROKER_SYNC_START: &str = "broker:sync-start";
-pub const BROKER_SYNC_COMPLETE: &str = "broker:sync-complete";
-pub const BROKER_SYNC_ERROR: &str = "broker:sync-error";
 
 /// Serializable envelope that carries event names and optional payloads.
 #[derive(Clone, Debug)]

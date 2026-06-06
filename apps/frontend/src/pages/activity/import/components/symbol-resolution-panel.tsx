@@ -1,6 +1,6 @@
 import { useState } from "react";
-import { Button } from "@wealthfolio/ui/components/ui/button";
-import { Icons } from "@wealthfolio/ui/components/ui/icons";
+import { Button } from "@panorama/ui/components/ui/button";
+import { Icons } from "@panorama/ui/components/ui/icons";
 import TickerSearchInput from "@/components/ticker-search";
 import type { SymbolSearchResult } from "@/lib/types";
 

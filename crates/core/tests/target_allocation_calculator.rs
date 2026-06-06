@@ -1,11 +1,11 @@
-use rust_decimal::Decimal;
-use rust_decimal_macros::dec;
-use wealthfolio_core::portfolio::target_allocation::{
+use panorama_core::portfolio::target_allocation::{
     TargetAllocationAccountDefault, TargetAllocationAssetRef, TargetAllocationAttribution,
     TargetAllocationCalculator, TargetAllocationDisplayRow, TargetAllocationHoldingInput,
     TargetAllocationInput, TargetAllocationNode, TargetAllocationNodeKind, TargetAllocationRowKind,
     TargetAllocationSubjectType,
 };
+use rust_decimal::Decimal;
+use rust_decimal_macros::dec;
 
 fn folder(
     id: &str,

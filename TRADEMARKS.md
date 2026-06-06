@@ -38,12 +38,12 @@ Link upstream references to the official repository:
 Panorama should keep `Panorama` as its primary product name in user-facing UI,
 downloads, releases, and website copy.
 
-At the same time, Panorama does not need to remove every internal
-`Wealthfolio` identifier. Some names may remain for compatibility and easier
-upstream sync, including examples such as:
+At the same time, Panorama does not need to remove every internal `Wealthfolio`
+identifier. Some names may remain for compatibility and easier upstream sync,
+including examples such as:
 
 - crate and package names like `wealthfolio-*`
-- addon SDK package names such as `@wealthfolio/*`
+- addon SDK package names such as `@panorama/*`
 - protocol, deep link, or service identifiers such as `Wealthfolio Connect`
 
 The maintenance rule is:

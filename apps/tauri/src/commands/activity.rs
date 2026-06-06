@@ -3,12 +3,12 @@ use std::sync::Arc;
 
 use crate::context::ServiceContext;
 use log::debug;
-use tauri::State;
-use wealthfolio_core::activities::{
+use panorama_core::activities::{
     Activity, ActivityBulkMutationRequest, ActivityBulkMutationResult, ActivityImport,
     ActivitySearchResponse, ActivityUpdate, ImportActivitiesResult, ImportMappingData, NewActivity,
     ParseConfig, ParsedCsvResult, Sort,
 };
+use tauri::State;
 
 #[allow(clippy::too_many_arguments)]
 #[tauri::command]

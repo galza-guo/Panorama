@@ -5,8 +5,7 @@
 
 use std::collections::HashSet;
 
-use wealthfolio_core::accounts::TrackingMode;
-use wealthfolio_core::events::DomainEvent;
+use panorama_core::events::DomainEvent;
 
 use crate::events::PortfolioRequestPayload;
 
@@ -57,9 +56,6 @@ pub fn plan_portfolio_job(events: &[DomainEvent]) -> Option<PortfolioRequestPayl
                 has_recalc_events = true;
                 account_ids.insert(account_id.clone());
             }
-            DomainEvent::DeviceSyncPullComplete => {
-                has_recalc_events = true;
-            }
             DomainEvent::AssetsUpdated { asset_ids: ids } => {
                 has_recalc_events = true;
                 for id in ids {
@@ -94,57 +90,15 @@ pub fn plan_portfolio_job(events: &[DomainEvent]) -> Option<PortfolioRequestPayl
 
     // Use incremental sync with the collected asset IDs
     let sync_mode = if asset_ids.is_empty() {
-        wealthfolio_core::quotes::MarketSyncMode::Incremental { asset_ids: None }
+        panorama_core::quotes::MarketSyncMode::Incremental { asset_ids: None }
     } else {
-        wealthfolio_core::quotes::MarketSyncMode::Incremental {
+        panorama_core::quotes::MarketSyncMode::Incremental {
             asset_ids: Some(asset_ids.into_iter().collect()),
         }
     };
     builder = builder.market_sync_mode(sync_mode);
 
     Some(builder.build())
-}
-
-/// Plans broker sync for eligible tracking mode changes.
-///
-/// Returns account IDs that need broker sync when:
-/// - is_connected == true
-/// - old_mode != new_mode
-/// - Transition is: NOT_SET -> TRANSACTIONS/HOLDINGS or HOLDINGS -> TRANSACTIONS
-pub fn plan_broker_sync(events: &[DomainEvent]) -> Vec<String> {
-    let mut account_ids = Vec::new();
-
-    for event in events {
-        if let DomainEvent::TrackingModeChanged {
-            account_id,
-            old_mode,
-            new_mode,
-            is_connected,
-        } = event
-        {
-            // Skip if not connected or mode didn't change
-            if !is_connected || old_mode == new_mode {
-                continue;
-            }
-
-            // Check for eligible transitions:
-            // - NOT_SET -> TRANSACTIONS
-            // - NOT_SET -> HOLDINGS
-            // - HOLDINGS -> TRANSACTIONS
-            let eligible = matches!(
-                (old_mode, new_mode),
-                (TrackingMode::NotSet, TrackingMode::Transactions)
-                    | (TrackingMode::NotSet, TrackingMode::Holdings)
-                    | (TrackingMode::Holdings, TrackingMode::Transactions)
-            );
-
-            if eligible {
-                account_ids.push(account_id.clone());
-            }
-        }
-    }
-
-    account_ids
 }
 
 /// Plans asset enrichment for newly created assets.
@@ -168,7 +122,7 @@ pub fn plan_asset_enrichment(events: &[DomainEvent]) -> Vec<String> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use wealthfolio_core::events::CurrencyChange;
+    use panorama_core::events::CurrencyChange;
 
     #[test]
     fn test_plan_portfolio_job_empty_events() {
@@ -210,7 +164,7 @@ mod tests {
 
         let payload = result.unwrap();
         // FX assets are synced via AssetsCreated events, not constructed from currencies
-        if let wealthfolio_core::quotes::MarketSyncMode::Incremental { asset_ids } =
+        if let panorama_core::quotes::MarketSyncMode::Incremental { asset_ids } =
             payload.market_sync_mode
         {
             assert!(asset_ids.is_none());
@@ -233,7 +187,7 @@ mod tests {
         ];
 
         let result = plan_portfolio_job(&events).unwrap();
-        if let wealthfolio_core::quotes::MarketSyncMode::Incremental { asset_ids } =
+        if let panorama_core::quotes::MarketSyncMode::Incremental { asset_ids } =
             result.market_sync_mode
         {
             let ids = asset_ids.unwrap();
@@ -263,53 +217,13 @@ mod tests {
         let result = plan_portfolio_job(&events).unwrap();
         assert!(result.account_ids.is_none());
 
-        if let wealthfolio_core::quotes::MarketSyncMode::Incremental { asset_ids } =
+        if let panorama_core::quotes::MarketSyncMode::Incremental { asset_ids } =
             result.market_sync_mode
         {
             assert_eq!(asset_ids, Some(vec!["asset-1".to_string()]));
         } else {
             panic!("Expected Incremental sync mode");
         }
-    }
-
-    #[test]
-    fn test_plan_broker_sync_not_connected() {
-        let events = vec![DomainEvent::TrackingModeChanged {
-            account_id: "acc1".to_string(),
-            old_mode: TrackingMode::NotSet,
-            new_mode: TrackingMode::Transactions,
-            is_connected: false, // Not connected
-        }];
-
-        let result = plan_broker_sync(&events);
-        assert!(result.is_empty());
-    }
-
-    #[test]
-    fn test_plan_broker_sync_eligible_transition() {
-        let events = vec![DomainEvent::TrackingModeChanged {
-            account_id: "acc1".to_string(),
-            old_mode: TrackingMode::NotSet,
-            new_mode: TrackingMode::Transactions,
-            is_connected: true,
-        }];
-
-        let result = plan_broker_sync(&events);
-        assert_eq!(result, vec!["acc1".to_string()]);
-    }
-
-    #[test]
-    fn test_plan_broker_sync_ineligible_transition() {
-        // TRANSACTIONS -> HOLDINGS is not an eligible transition
-        let events = vec![DomainEvent::TrackingModeChanged {
-            account_id: "acc1".to_string(),
-            old_mode: TrackingMode::Transactions,
-            new_mode: TrackingMode::Holdings,
-            is_connected: true,
-        }];
-
-        let result = plan_broker_sync(&events);
-        assert!(result.is_empty());
     }
 
     #[test]
@@ -343,33 +257,5 @@ mod tests {
 
         let result = plan_asset_enrichment(&events);
         assert_eq!(result.len(), 1);
-    }
-
-    #[test]
-    fn test_plan_portfolio_job_device_sync_pull_complete() {
-        let events = vec![DomainEvent::device_sync_pull_complete()];
-
-        let result = plan_portfolio_job(&events);
-        assert!(result.is_some());
-
-        let payload = result.unwrap();
-        // DeviceSyncPullComplete should trigger recalculation for all accounts
-        assert!(payload.account_ids.is_none());
-    }
-
-    #[test]
-    fn test_plan_portfolio_job_device_sync_pull_complete_triggers_incremental_sync() {
-        let events = vec![DomainEvent::device_sync_pull_complete()];
-
-        let result = plan_portfolio_job(&events).unwrap();
-
-        // Should use incremental sync mode
-        if let wealthfolio_core::quotes::MarketSyncMode::Incremental { asset_ids } =
-            result.market_sync_mode
-        {
-            assert!(asset_ids.is_none());
-        } else {
-            panic!("Expected Incremental sync mode");
-        }
     }
 }

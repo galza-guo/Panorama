@@ -1,10 +1,10 @@
-import { toast } from "@wealthfolio/ui/components/ui/use-toast";
+import { toast } from "@panorama/ui/components/ui/use-toast";
 import { usePersistentState } from "@/hooks/use-persistent-state";
 import { useSettingsContext } from "@/lib/settings-provider";
 import type { Account, ActivityDetails } from "@/lib/types";
 import { useAssets } from "@/pages/asset/hooks/use-assets";
 import type { SortingState, Updater, VisibilityState } from "@tanstack/react-table";
-import { DataGrid, useDataGrid, type SymbolSearchResult } from "@wealthfolio/ui";
+import { DataGrid, useDataGrid, type SymbolSearchResult } from "@panorama/ui";
 import { useCallback, useMemo, useRef, useState } from "react";
 import { resolveSymbolQuote } from "@/adapters";
 import { CreateCustomAssetDialog } from "@/components/create-custom-asset-dialog";

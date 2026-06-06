@@ -4,8 +4,8 @@ import {
   useUpdatePortfolioMutation,
 } from "@/hooks/use-calculate-portfolio";
 import { useRunHealthChecks } from "@/hooks/use-health";
-import { Button } from "@wealthfolio/ui/components/ui/button";
-import { Icons } from "@wealthfolio/ui/components/ui/icons";
+import { Button } from "@panorama/ui/components/ui/button";
+import { Icons } from "@panorama/ui/components/ui/icons";
 import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 

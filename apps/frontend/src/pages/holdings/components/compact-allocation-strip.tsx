@@ -1,12 +1,12 @@
 import type { TaxonomyAllocation } from "@/lib/types";
-import { formatPercent, PrivacyAmount } from "@wealthfolio/ui";
-import { Card } from "@wealthfolio/ui/components/ui/card";
+import { formatPercent, PrivacyAmount } from "@panorama/ui";
+import { Card } from "@panorama/ui/components/ui/card";
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
-} from "@wealthfolio/ui/components/ui/tooltip";
+} from "@panorama/ui/components/ui/tooltip";
 import { useMemo } from "react";
 
 type VariantType = "security-types" | "risk-composition";
@@ -148,7 +148,7 @@ export function CompactAllocationStrip({
   if (processedCategories.length === 0) {
     return (
       <Card className="p-3">
-        <p className="text-muted-foreground text-sm font-medium uppercase tracking-wider">
+        <p className="text-muted-foreground text-sm font-medium tracking-wider uppercase">
           {title}
         </p>
         <p className="text-muted-foreground mt-2 text-xs">No data</p>
@@ -160,7 +160,7 @@ export function CompactAllocationStrip({
     <Card className="p-3">
       <TooltipProvider>
         {/* Title */}
-        <p className="text-muted-foreground mb-2 text-sm font-medium uppercase tracking-wider">
+        <p className="text-muted-foreground mb-2 text-sm font-medium tracking-wider uppercase">
           {title}
         </p>
 

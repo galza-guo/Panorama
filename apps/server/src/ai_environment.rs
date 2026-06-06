@@ -1,12 +1,12 @@
 //! Server-side implementation of AiEnvironment.
 //!
-//! Provides the wealthfolio-ai crate with access to server services
+//! Provides the panorama-ai crate with access to server services
 //! for tool execution and settings management.
 
 use std::sync::{Arc, RwLock};
 
-use wealthfolio_ai::{AiEnvironment, ChatRepositoryTrait};
-use wealthfolio_core::{
+use panorama_ai::{AiEnvironment, ChatRepositoryTrait};
+use panorama_core::{
     accounts::AccountServiceTrait, activities::ActivityServiceTrait,
     allocation::AllocationServiceTrait, goals::GoalServiceTrait, holdings::HoldingsServiceTrait,
     income::IncomeServiceTrait, performance::PerformanceServiceTrait, quotes::QuoteServiceTrait,

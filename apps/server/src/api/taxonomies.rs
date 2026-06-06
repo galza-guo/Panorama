@@ -7,13 +7,13 @@ use axum::{
     routing::{delete, get, post},
     Json, Router,
 };
-use serde::Deserialize;
-use tracing::debug;
-use wealthfolio_core::health::{MigrationResult, MigrationStatus};
-use wealthfolio_core::taxonomies::{
+use panorama_core::health::{MigrationResult, MigrationStatus};
+use panorama_core::taxonomies::{
     AssetTaxonomyAssignment, Category, NewAssetTaxonomyAssignment, NewCategory, NewTaxonomy,
     Taxonomy, TaxonomyWithCategories,
 };
+use serde::Deserialize;
+use tracing::debug;
 
 /// Request body for move_category endpoint
 #[derive(Debug, Clone, Deserialize)]
@@ -202,7 +202,7 @@ async fn get_migration_status(
     State(state): State<Arc<AppState>>,
 ) -> ApiResult<Json<MigrationStatus>> {
     debug!("Checking migration status...");
-    let status = wealthfolio_core::health::get_migration_status(
+    let status = panorama_core::health::get_migration_status(
         state.asset_service.as_ref(),
         state.taxonomy_service.as_ref(),
     )?;
@@ -213,7 +213,7 @@ async fn migrate_legacy_classifications(
     State(state): State<Arc<AppState>>,
 ) -> ApiResult<Json<MigrationResult>> {
     debug!("Starting legacy classification migration...");
-    let result = wealthfolio_core::health::migrate_legacy_classifications(
+    let result = panorama_core::health::migrate_legacy_classifications(
         state.asset_service.as_ref(),
         state.taxonomy_service.as_ref(),
     )

@@ -1,5 +1,5 @@
-import { Button } from "@wealthfolio/ui/components/ui/button";
-import { Icons } from "@wealthfolio/ui/components/ui/icons";
+import { Button } from "@panorama/ui/components/ui/button";
+import { Icons } from "@panorama/ui/components/ui/icons";
 import {
   Sheet,
   SheetClose,
@@ -7,7 +7,7 @@ import {
   SheetFooter,
   SheetHeader,
   SheetTitle,
-} from "@wealthfolio/ui/components/ui/sheet";
+} from "@panorama/ui/components/ui/sheet";
 import {
   INSTRUMENT_TYPE_OPTIONS,
   HOLDING_CATEGORY_FILTERS,
@@ -16,7 +16,7 @@ import {
 import { Account, HoldingCategoryFilterId } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { useSettingsContext } from "@/lib/settings-provider";
-import { AnimatedToggleGroup, ScrollArea, Separator } from "@wealthfolio/ui";
+import { AnimatedToggleGroup, ScrollArea, Separator } from "@panorama/ui";
 
 interface HoldingsMobileFilterSheetProps {
   open: boolean;
@@ -68,7 +68,7 @@ export const HoldingsMobileFilterSheet = ({
             {/* View Settings */}
             <div className="grid grid-cols-1 gap-6">
               <div className="space-y-3">
-                <h4 className="text-muted-foreground text-xs font-medium uppercase tracking-wider">
+                <h4 className="text-muted-foreground text-xs font-medium tracking-wider uppercase">
                   Sort By
                 </h4>
                 <AnimatedToggleGroup<"symbol" | "marketValue">
@@ -84,7 +84,7 @@ export const HoldingsMobileFilterSheet = ({
               </div>
 
               <div className="space-y-3">
-                <h4 className="text-muted-foreground text-xs font-medium uppercase tracking-wider">
+                <h4 className="text-muted-foreground text-xs font-medium tracking-wider uppercase">
                   Return View
                 </h4>
                 <AnimatedToggleGroup
@@ -105,7 +105,7 @@ export const HoldingsMobileFilterSheet = ({
             {/* Category Filter Section */}
             {setCategoryFilter && (
               <div className="space-y-3">
-                <h4 className="text-muted-foreground text-xs font-medium uppercase tracking-wider">
+                <h4 className="text-muted-foreground text-xs font-medium tracking-wider uppercase">
                   Category
                 </h4>
                 <div className="overflow-hidden rounded-lg border">
@@ -138,7 +138,7 @@ export const HoldingsMobileFilterSheet = ({
             {/* Account Filter Section */}
             {showAccountFilter && (
               <div className="space-y-3">
-                <h4 className="text-muted-foreground text-xs font-medium uppercase tracking-wider">
+                <h4 className="text-muted-foreground text-xs font-medium tracking-wider uppercase">
                   Account
                 </h4>
                 <div className="overflow-hidden rounded-lg border">
@@ -201,7 +201,7 @@ export const HoldingsMobileFilterSheet = ({
 
             {/* Asset Type Filter Section */}
             <div className="space-y-3">
-              <h4 className="text-muted-foreground text-xs font-medium uppercase tracking-wider">
+              <h4 className="text-muted-foreground text-xs font-medium tracking-wider uppercase">
                 Asset Type
               </h4>
               <div className="overflow-hidden rounded-lg border">

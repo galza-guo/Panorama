@@ -1,6 +1,6 @@
 import type { DrillDownPath } from "@/hooks/use-drill-down-state";
 import { cn } from "@/lib/utils";
-import { Icons } from "@wealthfolio/ui/components/ui/icons";
+import { Icons } from "@panorama/ui/components/ui/icons";
 import type React from "react";
 
 interface AllocationBreadcrumbProps {
@@ -28,7 +28,7 @@ export const AllocationBreadcrumb: React.FC<AllocationBreadcrumbProps> = ({
     <nav className={cn("flex items-center gap-1 text-sm", className)}>
       <button
         onClick={() => onNavigate(0)}
-        className="text-muted-foreground hover:text-foreground font-medium uppercase tracking-wider transition-colors"
+        className="text-muted-foreground hover:text-foreground font-medium tracking-wider uppercase transition-colors"
       >
         {rootLabel}
       </button>

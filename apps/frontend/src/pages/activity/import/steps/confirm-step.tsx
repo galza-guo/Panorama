@@ -1,8 +1,8 @@
 import { useMemo, useState } from "react";
 import { motion } from "motion/react";
-import { Button } from "@wealthfolio/ui/components/ui/button";
-import { Icons, type Icon } from "@wealthfolio/ui/components/ui/icons";
-import { ProgressIndicator } from "@wealthfolio/ui/components/ui/progress-indicator";
+import { Button } from "@panorama/ui/components/ui/button";
+import { Icons, type Icon } from "@panorama/ui/components/ui/icons";
+import { ProgressIndicator } from "@panorama/ui/components/ui/progress-indicator";
 import {
   useImportContext,
   nextStep,
@@ -317,7 +317,7 @@ export function ConfirmStep() {
         {/* Activity type breakdown */}
         {Object.keys(summary.byType).length > 0 && (
           <div className="space-y-3">
-            <h4 className="text-muted-foreground text-xs font-medium uppercase tracking-wider">
+            <h4 className="text-muted-foreground text-xs font-medium tracking-wider uppercase">
               By Activity Type
             </h4>
             <div className="flex flex-wrap gap-2">
@@ -346,7 +346,7 @@ export function ConfirmStep() {
         {/* Skipped breakdown */}
         {Object.keys(summary.bySkipReason).length > 0 && (
           <div className="space-y-3">
-            <h4 className="text-muted-foreground text-xs font-medium uppercase tracking-wider">
+            <h4 className="text-muted-foreground text-xs font-medium tracking-wider uppercase">
               Skipped Breakdown
             </h4>
             <div className="flex flex-wrap gap-2">

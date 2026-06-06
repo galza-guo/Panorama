@@ -1,11 +1,11 @@
 //! Event planning functions for domain events.
 //!
 //! These functions analyze batches of domain events and determine what actions
-//! to take (portfolio recalculation, broker sync, asset enrichment).
+//! to take (portfolio recalculation and asset enrichment).
 
 use std::collections::HashSet;
 
-use wealthfolio_core::{accounts::TrackingMode, events::DomainEvent, quotes::MarketSyncMode};
+use panorama_core::{events::DomainEvent, quotes::MarketSyncMode};
 
 use crate::api::shared::PortfolioJobConfig;
 
@@ -73,9 +73,6 @@ pub fn plan_portfolio_job(events: &[DomainEvent]) -> Option<PortfolioJobConfig> 
                     account_ids.insert(account_id.clone());
                 }
             }
-            DomainEvent::DeviceSyncPullComplete => {
-                has_recalc_event = true;
-            }
             DomainEvent::AssetsUpdated { asset_ids: ids } => {
                 has_recalc_event = true;
                 for id in ids {
@@ -115,50 +112,6 @@ pub fn plan_portfolio_job(events: &[DomainEvent]) -> Option<PortfolioJobConfig> 
         },
         force_full_recalculation: true,
     })
-}
-
-/// Plans broker sync for TrackingModeChanged events.
-///
-/// Returns account_ids that need broker sync. An account needs sync when:
-/// - is_connected == true
-/// - old_mode != new_mode
-/// - Transition is: NOT_SET -> TRANSACTIONS/HOLDINGS or HOLDINGS -> TRANSACTIONS
-pub fn plan_broker_sync(events: &[DomainEvent]) -> Vec<String> {
-    let mut account_ids: Vec<String> = Vec::new();
-
-    for event in events {
-        if let DomainEvent::TrackingModeChanged {
-            account_id,
-            old_mode,
-            new_mode,
-            is_connected,
-        } = event
-        {
-            if !is_connected {
-                continue;
-            }
-
-            if old_mode == new_mode {
-                continue;
-            }
-
-            // Check for eligible transitions:
-            // NOT_SET -> TRANSACTIONS or HOLDINGS (initial sync)
-            // HOLDINGS -> TRANSACTIONS (need transaction history)
-            let needs_sync = matches!(
-                (old_mode, new_mode),
-                (TrackingMode::NotSet, TrackingMode::Transactions)
-                    | (TrackingMode::NotSet, TrackingMode::Holdings)
-                    | (TrackingMode::Holdings, TrackingMode::Transactions)
-            );
-
-            if needs_sync {
-                account_ids.push(account_id.clone());
-            }
-        }
-    }
-
-    account_ids
 }
 
 /// Plans asset enrichment for AssetsCreated events.
@@ -217,7 +170,7 @@ mod tests {
     fn test_plan_portfolio_job_accounts_changed_no_fake_fx_ids() {
         let events = vec![DomainEvent::AccountsChanged {
             account_ids: vec!["acc1".to_string()],
-            currency_changes: vec![wealthfolio_core::events::CurrencyChange {
+            currency_changes: vec![panorama_core::events::CurrencyChange {
                 account_id: "acc1".to_string(),
                 old_currency: None,
                 new_currency: "EUR".to_string(),
@@ -285,52 +238,6 @@ mod tests {
         } else {
             panic!("Expected Incremental mode");
         }
-    }
-
-    #[test]
-    fn test_plan_broker_sync_filters_correctly() {
-        let events = vec![
-            // Should sync: NOT_SET -> TRANSACTIONS, connected
-            DomainEvent::TrackingModeChanged {
-                account_id: "acc1".to_string(),
-                old_mode: TrackingMode::NotSet,
-                new_mode: TrackingMode::Transactions,
-                is_connected: true,
-            },
-            // Should NOT sync: same mode
-            DomainEvent::TrackingModeChanged {
-                account_id: "acc2".to_string(),
-                old_mode: TrackingMode::Holdings,
-                new_mode: TrackingMode::Holdings,
-                is_connected: true,
-            },
-            // Should NOT sync: not connected
-            DomainEvent::TrackingModeChanged {
-                account_id: "acc3".to_string(),
-                old_mode: TrackingMode::NotSet,
-                new_mode: TrackingMode::Transactions,
-                is_connected: false,
-            },
-            // Should sync: HOLDINGS -> TRANSACTIONS, connected
-            DomainEvent::TrackingModeChanged {
-                account_id: "acc4".to_string(),
-                old_mode: TrackingMode::Holdings,
-                new_mode: TrackingMode::Transactions,
-                is_connected: true,
-            },
-            // Should NOT sync: TRANSACTIONS -> HOLDINGS (downgrade)
-            DomainEvent::TrackingModeChanged {
-                account_id: "acc5".to_string(),
-                old_mode: TrackingMode::Transactions,
-                new_mode: TrackingMode::Holdings,
-                is_connected: true,
-            },
-        ];
-
-        let accounts = plan_broker_sync(&events);
-        assert_eq!(accounts.len(), 2);
-        assert!(accounts.contains(&"acc1".to_string()));
-        assert!(accounts.contains(&"acc4".to_string()));
     }
 
     #[test]

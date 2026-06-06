@@ -1,5 +1,5 @@
 import { ReactNode } from "react";
-import { Icons } from "@wealthfolio/ui/components/ui/icons";
+import { Icons } from "@panorama/ui/components/ui/icons";
 import { cn } from "@/lib/utils";
 
 // Status Card Component

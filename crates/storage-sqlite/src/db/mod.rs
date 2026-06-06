@@ -13,7 +13,7 @@ use diesel::r2d2::{ConnectionManager, Pool, PooledConnection};
 use diesel::sqlite::SqliteConnection;
 use diesel_migrations::{embed_migrations, EmbeddedMigrations, MigrationHarness};
 
-use wealthfolio_core::errors::{DatabaseError, Error, Result};
+use panorama_core::errors::{DatabaseError, Error, Result};
 
 use crate::errors::StorageError;
 
@@ -160,7 +160,7 @@ pub fn create_backup_path(app_data_dir: &str) -> Result<String> {
     })?;
 
     let timestamp = Local::now().format("%Y%m%d_%H%M%S");
-    let backup_file = format!("wealthfolio_backup_{}.db", timestamp);
+    let backup_file = format!("panorama_backup_{}.db", timestamp);
     let backup_path = backup_dir.join(backup_file);
 
     Ok(backup_path.to_str().unwrap().to_string())

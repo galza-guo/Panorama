@@ -12,9 +12,9 @@ use diesel::r2d2::{self, Pool};
 use diesel::sqlite::SqliteConnection;
 use std::sync::Arc;
 
-use wealthfolio_core::assets::AlternativeAssetRepositoryTrait;
-use wealthfolio_core::errors::DatabaseError;
-use wealthfolio_core::{Error, Result};
+use panorama_core::assets::AlternativeAssetRepositoryTrait;
+use panorama_core::errors::DatabaseError;
+use panorama_core::{Error, Result};
 
 use crate::db::{get_connection, WriteHandle};
 use crate::errors::StorageError;

@@ -1,15 +1,15 @@
-import { Card, CardContent, CardHeader, CardTitle } from "@wealthfolio/ui/components/ui/card";
-import { EmptyPlaceholder } from "@wealthfolio/ui/components/ui/empty-placeholder";
-import { Icons } from "@wealthfolio/ui/components/ui/icons";
-import { Skeleton } from "@wealthfolio/ui/components/ui/skeleton";
+import { Card, CardContent, CardHeader, CardTitle } from "@panorama/ui/components/ui/card";
+import { EmptyPlaceholder } from "@panorama/ui/components/ui/empty-placeholder";
+import { Icons } from "@panorama/ui/components/ui/icons";
+import { Skeleton } from "@panorama/ui/components/ui/skeleton";
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
-} from "@wealthfolio/ui/components/ui/tooltip";
+} from "@panorama/ui/components/ui/tooltip";
 import { TaxonomyAllocation } from "@/lib/types";
-import { formatPercent, PrivacyAmount } from "@wealthfolio/ui";
+import { formatPercent, PrivacyAmount } from "@panorama/ui";
 import { useMemo } from "react";
 
 interface SegmentedAllocationBarProps {
@@ -65,7 +65,7 @@ export function SegmentedAllocationBar({
       return (
         <Card className="p-3 sm:p-3.5">
           <div className="flex items-center justify-between gap-3">
-            <p className="text-muted-foreground text-sm font-medium uppercase tracking-wider">
+            <p className="text-muted-foreground text-sm font-medium tracking-wider uppercase">
               {displayTitle}
             </p>
             <span className="text-muted-foreground text-xs">No data</span>
@@ -76,7 +76,7 @@ export function SegmentedAllocationBar({
     return (
       <Card>
         <CardHeader className="pb-2">
-          <CardTitle className="text-muted-foreground text-sm font-medium uppercase tracking-wider">
+          <CardTitle className="text-muted-foreground text-sm font-medium tracking-wider uppercase">
             {displayTitle}
           </CardTitle>
         </CardHeader>
@@ -104,7 +104,7 @@ export function SegmentedAllocationBar({
         <TooltipProvider>
           <div className="space-y-2">
             {/* Title */}
-            <p className="text-muted-foreground text-sm font-medium uppercase tracking-wider">
+            <p className="text-muted-foreground text-sm font-medium tracking-wider uppercase">
               {displayTitle}
             </p>
 
@@ -164,7 +164,7 @@ export function SegmentedAllocationBar({
   return (
     <Card>
       <CardHeader className="pb-2">
-        <CardTitle className="text-muted-foreground text-sm font-medium uppercase tracking-wider">
+        <CardTitle className="text-muted-foreground text-sm font-medium tracking-wider uppercase">
           {displayTitle}
         </CardTitle>
       </CardHeader>

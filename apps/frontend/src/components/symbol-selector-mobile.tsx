@@ -4,18 +4,18 @@ import { useSettingsContext } from "@/lib/settings-provider";
 import { SymbolSearchResult } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { useQuery } from "@tanstack/react-query";
-import { Button } from "@wealthfolio/ui/components/ui/button";
-import { Icons } from "@wealthfolio/ui/components/ui/icons";
-import { Input } from "@wealthfolio/ui/components/ui/input";
-import { ScrollArea } from "@wealthfolio/ui/components/ui/scroll-area";
+import { Button } from "@panorama/ui/components/ui/button";
+import { Icons } from "@panorama/ui/components/ui/icons";
+import { Input } from "@panorama/ui/components/ui/input";
+import { ScrollArea } from "@panorama/ui/components/ui/scroll-area";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@wealthfolio/ui/components/ui/select";
-import { Separator } from "@wealthfolio/ui/components/ui/separator";
+} from "@panorama/ui/components/ui/select";
+import { Separator } from "@panorama/ui/components/ui/separator";
 import {
   Sheet,
   SheetContent,
@@ -23,9 +23,9 @@ import {
   SheetHeader,
   SheetTitle,
   SheetTrigger,
-} from "@wealthfolio/ui/components/ui/sheet";
-import { Skeleton } from "@wealthfolio/ui/components/ui/skeleton";
-import { CurrencyInput } from "@wealthfolio/ui/components/financial";
+} from "@panorama/ui/components/ui/sheet";
+import { Skeleton } from "@panorama/ui/components/ui/skeleton";
+import { CurrencyInput } from "@panorama/ui/components/financial";
 import { forwardRef, useState } from "react";
 
 interface SymbolSelectorMobileProps {
@@ -183,7 +183,7 @@ export const SymbolSelectorMobile = forwardRef<HTMLButtonElement, SymbolSelector
               <Icons.Search className="ml-2 h-4 w-4 shrink-0 opacity-50" />
             </Button>
           </SheetTrigger>
-          <SheetContent side="bottom" className="rounded-t-4xl mx-1 h-[85vh] p-0">
+          <SheetContent side="bottom" className="mx-1 h-[85vh] rounded-t-4xl p-0">
             {showCustomAssetForm ? (
               <>
                 {/* Custom Asset Form Header */}
@@ -297,13 +297,13 @@ export const SymbolSelectorMobile = forwardRef<HTMLButtonElement, SymbolSelector
                   {/* Search Input */}
                   <div className="border-border border-b px-6 py-4">
                     <div className="relative">
-                      <Icons.Search className="text-muted-foreground absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2" />
+                      <Icons.Search className="text-muted-foreground absolute top-1/2 left-4 h-5 w-5 -translate-y-1/2" />
                       <input
                         type="text"
                         placeholder="Search symbols..."
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
-                        className="bg-background border-input ring-offset-background placeholder:text-muted-foreground focus-visible:ring-ring h-14 w-full rounded-md border px-4 py-3 pl-12 text-base focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2"
+                        className="bg-background border-input ring-offset-background placeholder:text-muted-foreground focus-visible:ring-ring h-14 w-full rounded-md border px-4 py-3 pl-12 text-base focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none"
                         autoFocus
                       />
                     </div>

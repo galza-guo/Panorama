@@ -1,5 +1,5 @@
-import { Separator } from "@wealthfolio/ui/components/ui/separator";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@wealthfolio/ui/components/ui/tabs";
+import { Separator } from "@panorama/ui/components/ui/separator";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@panorama/ui/components/ui/tabs";
 import { FolderSyncCard } from "@/features/folder-sync/components/folder-sync-card";
 import { SettingsHeader } from "../settings-header";
 import { BackupRestoreForm } from "./backup-restore-form";

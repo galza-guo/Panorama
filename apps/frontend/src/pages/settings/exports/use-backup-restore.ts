@@ -10,7 +10,7 @@ import {
 } from "@/adapters";
 import { getPlatform as getRuntimePlatform, usePlatform } from "@/hooks/use-platform";
 import { useMutation } from "@tanstack/react-query";
-import { toast } from "@wealthfolio/ui/components/ui/use-toast";
+import { toast } from "@panorama/ui/components/ui/use-toast";
 
 export function useBackupRestore() {
   const { platform } = usePlatform();

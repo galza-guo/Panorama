@@ -1,9 +1,9 @@
 import { useEffect, useMemo, useState } from "react";
 
-import { CurrencyInput, DatePickerInput } from "@wealthfolio/ui";
-import { Button } from "@wealthfolio/ui/components/ui/button";
-import { Input } from "@wealthfolio/ui/components/ui/input";
-import { Label } from "@wealthfolio/ui/components/ui/label";
+import { CurrencyInput, DatePickerInput } from "@panorama/ui";
+import { Button } from "@panorama/ui/components/ui/button";
+import { Input } from "@panorama/ui/components/ui/input";
+import { Label } from "@panorama/ui/components/ui/label";
 import {
   Sheet,
   SheetContent,
@@ -11,8 +11,8 @@ import {
   SheetFooter,
   SheetHeader,
   SheetTitle,
-} from "@wealthfolio/ui/components/ui/sheet";
-import { Textarea } from "@wealthfolio/ui/components/ui/textarea";
+} from "@panorama/ui/components/ui/sheet";
+import { Textarea } from "@panorama/ui/components/ui/textarea";
 
 import { useSettingsContext } from "@/lib/settings-provider";
 import type { AlternativeAssetHolding } from "@/lib/types";
@@ -91,7 +91,10 @@ export function InsurancePolicyEditorSheet({
 }: InsurancePolicyEditorSheetProps) {
   const { settings } = useSettingsContext();
   const baseCurrency = settings?.baseCurrency ?? "HKD";
-  const defaults = useMemo(() => buildDefaultValues(holding, baseCurrency), [holding, baseCurrency]);
+  const defaults = useMemo(
+    () => buildDefaultValues(holding, baseCurrency),
+    [holding, baseCurrency],
+  );
   const [values, setValues] = useState<InsurancePolicyFormValues>(defaults);
   const [error, setError] = useState<string | null>(null);
 
@@ -153,7 +156,9 @@ export function InsurancePolicyEditorSheet({
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent side="right" className="w-full overflow-y-auto sm:max-w-xl">
         <SheetHeader>
-          <SheetTitle>{mode === "create" ? "Add Insurance Policy" : "Edit Insurance Policy"}</SheetTitle>
+          <SheetTitle>
+            {mode === "create" ? "Add Insurance Policy" : "Edit Insurance Policy"}
+          </SheetTitle>
           <SheetDescription>
             Track current cash value, total premiums paid, and simple payment reminders on top of
             Panorama&apos;s alternative asset model.
@@ -290,7 +295,12 @@ export function InsurancePolicyEditorSheet({
         </div>
 
         <SheetFooter>
-          <Button type="button" variant="ghost" onClick={() => onOpenChange(false)} disabled={isSubmitting}>
+          <Button
+            type="button"
+            variant="ghost"
+            onClick={() => onOpenChange(false)}
+            disabled={isSubmitting}
+          >
             Cancel
           </Button>
           <Button type="button" onClick={handleSubmit} disabled={isSubmitting}>

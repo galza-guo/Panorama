@@ -11,7 +11,7 @@ import {
 } from "@/adapters";
 import { QueryKeys } from "@/lib/query-keys";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { toast } from "@wealthfolio/ui/components/ui/use-toast";
+import { toast } from "@panorama/ui/components/ui/use-toast";
 
 export const webullHkQueryKeys = {
   connections: ["webull-hk", "connections"] as const,

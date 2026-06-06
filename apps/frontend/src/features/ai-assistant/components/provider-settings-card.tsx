@@ -1,18 +1,18 @@
 import { ExternalLink } from "@/components/external-link";
 import { useState, useMemo, useEffect, useRef } from "react";
-import { Badge } from "@wealthfolio/ui/components/ui/badge";
-import { Button } from "@wealthfolio/ui/components/ui/button";
-import { Icons } from "@wealthfolio/ui/components/ui/icons";
-import { Input } from "@wealthfolio/ui/components/ui/input";
-import { Label } from "@wealthfolio/ui/components/ui/label";
-import { Switch } from "@wealthfolio/ui/components/ui/switch";
-import { Checkbox } from "@wealthfolio/ui/components/ui/checkbox";
+import { Badge } from "@panorama/ui/components/ui/badge";
+import { Button } from "@panorama/ui/components/ui/button";
+import { Icons } from "@panorama/ui/components/ui/icons";
+import { Input } from "@panorama/ui/components/ui/input";
+import { Label } from "@panorama/ui/components/ui/label";
+import { Switch } from "@panorama/ui/components/ui/switch";
+import { Checkbox } from "@panorama/ui/components/ui/checkbox";
 import {
   Collapsible,
   CollapsibleContent,
   CollapsibleTrigger,
-} from "@wealthfolio/ui/components/ui/collapsible";
-import { Popover, PopoverContent, PopoverTrigger } from "@wealthfolio/ui/components/ui/popover";
+} from "@panorama/ui/components/ui/collapsible";
+import { Popover, PopoverContent, PopoverTrigger } from "@panorama/ui/components/ui/popover";
 import {
   Command,
   CommandEmpty,
@@ -20,7 +20,7 @@ import {
   CommandInput,
   CommandItem,
   CommandList,
-} from "@wealthfolio/ui/components/ui/command";
+} from "@panorama/ui/components/ui/command";
 import { cn } from "@/lib/utils";
 import type { MergedProvider, MergedModel, FetchedModel, ModelCapabilityOverrides } from "../types";
 import { ProviderIcon } from "./provider-icons";

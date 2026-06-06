@@ -18,8 +18,8 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@wealthfolio/ui";
-import { Icons } from "@wealthfolio/ui/components/ui/icons";
+} from "@panorama/ui";
+import { Icons } from "@panorama/ui/components/ui/icons";
 import { useMemo, useState } from "react";
 import { useRuntimeContext } from "../../hooks/use-runtime-context";
 import type {

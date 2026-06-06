@@ -1,5 +1,5 @@
 import { cn } from "@/lib/utils";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@wealthfolio/ui/components/ui/tooltip";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@panorama/ui/components/ui/tooltip";
 
 type RiskLevel = "UNKNOWN" | "LOW" | "MEDIUM" | "HIGH";
 

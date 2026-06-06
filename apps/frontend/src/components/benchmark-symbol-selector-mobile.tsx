@@ -1,7 +1,7 @@
 import { searchTicker } from "@/adapters";
-import { Button } from "@wealthfolio/ui/components/ui/button";
-import { Icons } from "@wealthfolio/ui/components/ui/icons";
-import { ScrollArea } from "@wealthfolio/ui/components/ui/scroll-area";
+import { Button } from "@panorama/ui/components/ui/button";
+import { Icons } from "@panorama/ui/components/ui/icons";
+import { ScrollArea } from "@panorama/ui/components/ui/scroll-area";
 import {
   Sheet,
   SheetContent,
@@ -9,8 +9,8 @@ import {
   SheetHeader,
   SheetTitle,
   SheetTrigger,
-} from "@wealthfolio/ui/components/ui/sheet";
-import { Skeleton } from "@wealthfolio/ui/components/ui/skeleton";
+} from "@panorama/ui/components/ui/sheet";
+import { Skeleton } from "@panorama/ui/components/ui/skeleton";
 import { SymbolSearchResult } from "@/lib/types";
 import { getExchangeDisplayName } from "@/lib/constants";
 
@@ -187,7 +187,7 @@ export function BenchmarkSymbolSelectorMobile({
           {!iconOnly && "Add Benchmark"}
         </Button>
       </SheetTrigger>
-      <SheetContent side="bottom" className="rounded-t-4xl mx-1 h-[85vh] p-0">
+      <SheetContent side="bottom" className="mx-1 h-[85vh] rounded-t-4xl p-0">
         <SheetHeader className="border-border border-b px-6 py-4">
           <SheetTitle>Select Benchmark</SheetTitle>
           <SheetDescription>Choose a benchmark or search for any symbol</SheetDescription>
@@ -197,13 +197,13 @@ export function BenchmarkSymbolSelectorMobile({
           {/* Search Input */}
           <div className="border-border border-b px-6 py-3">
             <div className="relative">
-              <Icons.Search className="text-muted-foreground absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2" />
+              <Icons.Search className="text-muted-foreground absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2" />
               <input
                 type="text"
                 placeholder="Search benchmarks or any symbol..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="bg-background border-input ring-offset-background placeholder:text-muted-foreground focus-visible:ring-ring h-10 w-full rounded-md border px-3 py-2 pl-9 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2"
+                className="bg-background border-input ring-offset-background placeholder:text-muted-foreground focus-visible:ring-ring h-10 w-full rounded-md border px-3 py-2 pl-9 text-sm focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none"
               />
             </div>
           </div>

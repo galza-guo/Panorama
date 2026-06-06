@@ -1,6 +1,6 @@
 import React from 'react';
-import type { AddonContext } from '@wealthfolio/addon-sdk';
-import { Card, CardContent, Icons } from '@wealthfolio/ui';
+import type { AddonContext } from '@panorama/addon-sdk';
+import { Card, CardContent, Icons } from '@panorama/ui';
 
 function AddonExample({ ctx }: { ctx: AddonContext }) {
   return (

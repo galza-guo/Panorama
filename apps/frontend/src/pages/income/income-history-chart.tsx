@@ -1,21 +1,21 @@
 import { cn } from "@/lib/utils";
-import { formatAmount } from "@wealthfolio/ui";
+import { formatAmount } from "@panorama/ui";
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from "@wealthfolio/ui/components/ui/card";
+} from "@panorama/ui/components/ui/card";
 import {
   ChartContainer,
   ChartLegend,
   ChartLegendContent,
   ChartTooltip,
   ChartTooltipContent,
-} from "@wealthfolio/ui/components/ui/chart";
-import { EmptyPlaceholder } from "@wealthfolio/ui/components/ui/empty-placeholder";
-import { Icons } from "@wealthfolio/ui/components/ui/icons";
+} from "@panorama/ui/components/ui/chart";
+import { EmptyPlaceholder } from "@panorama/ui/components/ui/empty-placeholder";
+import { Icons } from "@panorama/ui/components/ui/icons";
 import { format, parseISO } from "date-fns";
 import React from "react";
 import { Bar, CartesianGrid, ComposedChart, Line, XAxis, YAxis } from "recharts";
@@ -149,7 +149,7 @@ export const IncomeHistoryChart: React.FC<IncomeHistoryChartProps> = ({
                       return (
                         <>
                           <div
-                            className="border-border bg-(--color-bg) h-2.5 w-2.5 shrink-0 rounded-[2px]"
+                            className="border-border h-2.5 w-2.5 shrink-0 rounded-[2px] bg-(--color-bg)"
                             style={
                               {
                                 "--color-bg": entry.color,

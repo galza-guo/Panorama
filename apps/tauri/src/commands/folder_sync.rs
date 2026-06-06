@@ -4,14 +4,14 @@ use std::path::PathBuf;
 use std::sync::Arc;
 
 use chrono::Utc;
-use tauri::State;
-use uuid::Uuid;
-use wealthfolio_core::sync::{FolderSyncMetadataV1, FOLDER_SYNC_VERSION_V1};
-use wealthfolio_storage_sqlite::settings::SettingsRepository;
-use wealthfolio_storage_sqlite::sync::{
+use panorama_core::sync::{FolderSyncMetadataV1, FOLDER_SYNC_VERSION_V1};
+use panorama_storage_sqlite::settings::SettingsRepository;
+use panorama_storage_sqlite::sync::{
     AppSyncRepository, FolderSyncHistoryEntryRecord, FolderSyncRepository, FolderSyncStatusRecord,
     FolderSyncStatusUpdate,
 };
+use tauri::State;
+use uuid::Uuid;
 
 use crate::context::ServiceContext;
 use crate::services::folder_sync_exporter::FolderSyncExporter;
@@ -72,7 +72,7 @@ pub struct FolderSyncCommandResult {
 }
 
 fn map_config(
-    config: wealthfolio_storage_sqlite::sync::FolderSyncConfigRecord,
+    config: panorama_storage_sqlite::sync::FolderSyncConfigRecord,
 ) -> FolderSyncConfigResult {
     FolderSyncConfigResult {
         shared_folder_path: config.shared_folder_path,
@@ -376,15 +376,15 @@ mod tests {
     use std::sync::Arc;
 
     use diesel::prelude::*;
-    use tempfile::tempdir;
-    use wealthfolio_core::settings::SettingsRepositoryTrait;
-    use wealthfolio_core::sync::{
+    use panorama_core::settings::SettingsRepositoryTrait;
+    use panorama_core::sync::{
         FolderSyncEventFileV1, SyncEntity, SyncOperation, FOLDER_SYNC_VERSION_V1,
     };
-    use wealthfolio_storage_sqlite::db::{self, write_actor};
-    use wealthfolio_storage_sqlite::schema::platforms;
-    use wealthfolio_storage_sqlite::settings::SettingsRepository;
-    use wealthfolio_storage_sqlite::sync::{AppSyncRepository, FolderSyncRepository};
+    use panorama_storage_sqlite::db::{self, write_actor};
+    use panorama_storage_sqlite::schema::platforms;
+    use panorama_storage_sqlite::settings::SettingsRepository;
+    use panorama_storage_sqlite::sync::{AppSyncRepository, FolderSyncRepository};
+    use tempfile::tempdir;
 
     use crate::commands::folder_sync::{
         disable_folder_sync_internal, get_folder_sync_state_internal,
@@ -395,7 +395,7 @@ mod tests {
 
     struct CommandTestDevice {
         app_data_dir: PathBuf,
-        pool: Arc<wealthfolio_storage_sqlite::DbPool>,
+        pool: Arc<panorama_storage_sqlite::DbPool>,
         app_sync_repository: Arc<AppSyncRepository>,
         folder_sync_repository: Arc<FolderSyncRepository>,
         settings_repository: Arc<SettingsRepository>,
@@ -432,10 +432,10 @@ mod tests {
     }
 
     fn load_platform_name(
-        pool: &Arc<wealthfolio_storage_sqlite::DbPool>,
+        pool: &Arc<panorama_storage_sqlite::DbPool>,
         platform_id: &str,
     ) -> Option<String> {
-        let mut conn = wealthfolio_storage_sqlite::get_connection(pool).expect("conn");
+        let mut conn = panorama_storage_sqlite::get_connection(pool).expect("conn");
         platforms::table
             .filter(platforms::id.eq(platform_id))
             .select(platforms::name)

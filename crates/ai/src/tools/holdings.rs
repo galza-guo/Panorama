@@ -153,7 +153,7 @@ impl<E: AiEnvironment + 'static> Tool for GetHoldingsTool<E> {
         // Convert to DTOs, filtering out cash positions, and apply limit
         let holdings_dto: Vec<HoldingDto> = holdings
             .into_iter()
-            .filter(|h| h.holding_type != wealthfolio_core::holdings::HoldingType::Cash)
+            .filter(|h| h.holding_type != panorama_core::holdings::HoldingType::Cash)
             .take(MAX_HOLDINGS)
             .map(|h| {
                 // Extract symbol and name from instrument
@@ -165,9 +165,9 @@ impl<E: AiEnvironment + 'static> Tool for GetHoldingsTool<E> {
 
                 // Convert HoldingType enum to string
                 let holding_type = match h.holding_type {
-                    wealthfolio_core::holdings::HoldingType::Cash => "Cash",
-                    wealthfolio_core::holdings::HoldingType::Security => "Security",
-                    wealthfolio_core::holdings::HoldingType::AlternativeAsset => "AlternativeAsset",
+                    panorama_core::holdings::HoldingType::Cash => "Cash",
+                    panorama_core::holdings::HoldingType::Security => "Security",
+                    panorama_core::holdings::HoldingType::AlternativeAsset => "AlternativeAsset",
                 };
 
                 let account = account_names

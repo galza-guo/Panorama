@@ -15,12 +15,12 @@ use crate::errors::{IntoCore, StorageError};
 use crate::schema::market_data_providers::dsl as market_data_providers_dsl;
 use crate::schema::quotes::dsl as quotes_dsl;
 use crate::utils::chunk_for_sqlite;
-use wealthfolio_core::quotes::store::{ProviderSettingsStore, QuoteStore};
-use wealthfolio_core::quotes::types::{AssetId, Day, QuoteSource};
-use wealthfolio_core::quotes::{
+use panorama_core::quotes::store::{ProviderSettingsStore, QuoteStore};
+use panorama_core::quotes::types::{AssetId, Day, QuoteSource};
+use panorama_core::quotes::{
     LatestQuotePair, MarketDataProviderSetting, Quote, UpdateMarketDataProviderSetting,
 };
-use wealthfolio_core::Result;
+use panorama_core::Result;
 
 pub struct MarketDataRepository {
     pool: Arc<Pool<ConnectionManager<SqliteConnection>>>,
@@ -464,8 +464,8 @@ impl QuoteStore for MarketDataRepository {
 
         match query_result {
             Some(quote_db) => Ok(Quote::from(quote_db)),
-            None => Err(wealthfolio_core::errors::Error::Database(
-                wealthfolio_core::errors::DatabaseError::NotFound(format!(
+            None => Err(panorama_core::errors::Error::Database(
+                panorama_core::errors::DatabaseError::NotFound(format!(
                     "No quote found in database for symbol: {}",
                     symbol
                 )),

@@ -2,16 +2,11 @@ use super::ai_environment::TauriAiEnvironment;
 use super::registry::ServiceContext;
 use crate::domain_events::TauriDomainEventSink;
 use crate::secret_store::shared_secret_store;
-use crate::services::{folder_sync_runtime::FolderSyncRuntime, ConnectService};
-use std::sync::{Arc, RwLock};
-use tokio::sync::mpsc;
-use wealthfolio_ai::{AiProviderService, ChatConfig, ChatService};
-use wealthfolio_connect::{
-    BrokerSyncService, CoreImportRunRepositoryAdapter, ImportRunRepositoryTrait,
-};
-use wealthfolio_core::{
+use crate::services::folder_sync_runtime::FolderSyncRuntime;
+use panorama_ai::{AiProviderService, ChatConfig, ChatService};
+use panorama_core::{
     accounts::AccountService,
-    activities::ActivityService,
+    activities::{ActivityService, ImportRunRepositoryTrait},
     assets::{AlternativeAssetService, AssetClassificationService, AssetService},
     events::DomainEvent,
     fx::{FxService, FxServiceTrait},
@@ -32,8 +27,7 @@ use wealthfolio_core::{
     settings::{SettingsRepositoryTrait, SettingsService, SettingsServiceTrait},
     taxonomies::TaxonomyService,
 };
-use wealthfolio_device_sync::{engine::DeviceSyncRuntimeState, DeviceEnrollService};
-use wealthfolio_storage_sqlite::{
+use panorama_storage_sqlite::{
     accounts::AccountRepository,
     activities::ActivityRepository,
     ai_chat::AiChatRepository,
@@ -50,12 +44,11 @@ use wealthfolio_storage_sqlite::{
         valuation::ValuationRepository,
     },
     settings::SettingsRepository,
-    sync::{
-        AppSyncRepository, BrokerSyncStateRepository, FolderSyncRepository, ImportRunRepository,
-        PlatformRepository,
-    },
+    sync::{AppSyncRepository, FolderSyncRepository, ImportRunRepository},
     taxonomies::TaxonomyRepository,
 };
+use std::sync::{Arc, RwLock};
+use tokio::sync::mpsc;
 
 /// Result of context initialization, including the receiver for domain events.
 pub struct ContextInitResult {
@@ -93,15 +86,11 @@ pub async fn initialize_context(
         pool.clone(),
         writer.clone(),
     ));
-    let platform_repository = Arc::new(PlatformRepository::new(pool.clone(), writer.clone()));
-    let broker_sync_state_repository =
-        Arc::new(BrokerSyncStateRepository::new(pool.clone(), writer.clone()));
-
     // Domain event sink - TauriDomainEventSink sends events to a channel
     // The worker will be started by the caller after the context is managed
     // Must be created before services that emit events
     let (domain_event_sink, event_receiver) = TauriDomainEventSink::new();
-    let domain_event_sink: Arc<dyn wealthfolio_core::events::DomainEventSink> =
+    let domain_event_sink: Arc<dyn panorama_core::events::DomainEventSink> =
         Arc::new(domain_event_sink);
 
     let fx_service =
@@ -161,9 +150,6 @@ pub async fn initialize_context(
     // Import run repository for tracking CSV imports
     let import_run_repository: Arc<dyn ImportRunRepositoryTrait> =
         Arc::new(ImportRunRepository::new(pool.clone(), writer.clone()));
-    let core_import_run_repository = Arc::new(CoreImportRunRepositoryAdapter::new(
-        import_run_repository.clone(),
-    ));
 
     let activity_service = Arc::new(
         ActivityService::with_import_run_repository(
@@ -172,7 +158,7 @@ pub async fn initialize_context(
             asset_service.clone(),
             fx_service.clone(),
             quote_service.clone(),
-            core_import_run_repository,
+            import_run_repository,
         )
         .with_event_sink(domain_event_sink.clone()),
     );
@@ -265,24 +251,6 @@ pub async fn initialize_context(
         fx_service.clone(),
     ));
 
-    let sync_service = Arc::new(
-        BrokerSyncService::new(
-            account_service.clone(),
-            asset_service.clone(),
-            activity_service.clone(),
-            activity_repository.clone(),
-            platform_repository.clone(),
-            broker_sync_state_repository.clone(),
-            import_run_repository.clone(),
-            snapshot_repository.clone(),
-            quote_service.clone(),
-        )
-        .with_event_sink(domain_event_sink.clone())
-        .with_snapshot_service(snapshot_service.clone()),
-    );
-
-    let connect_service = Arc::new(ConnectService::new(secret_store.clone()));
-
     // AI provider service - catalog is embedded at compile time
     let ai_catalog_json = include_str!("../../../../crates/ai/src/ai_providers.json");
     let ai_provider_service = Arc::new(AiProviderService::new(
@@ -311,18 +279,6 @@ pub async fn initialize_context(
         income_service.clone(),
     ));
     let ai_chat_service = Arc::new(ChatService::new(ai_environment, ChatConfig::default()));
-
-    // Device enroll service for E2EE sync
-    let cloud_api_url = crate::services::cloud_api_base_url().unwrap_or_default();
-    let device_display_name = get_device_display_name();
-    let app_version = Some(env!("CARGO_PKG_VERSION").to_string());
-    let device_enroll_service = Arc::new(DeviceEnrollService::new(
-        secret_store.clone(),
-        &cloud_api_url,
-        device_display_name,
-        app_version,
-    ));
-    let device_sync_runtime = Arc::new(DeviceSyncRuntimeState::new());
 
     // Health service for portfolio health diagnostics
     let health_dismissal_repository =
@@ -363,28 +319,12 @@ pub async fn initialize_context(
             target_allocation_service,
             valuation_service,
             net_worth_service,
-            sync_service,
             alternative_asset_service,
             taxonomy_service,
-            connect_service,
             ai_provider_service,
             ai_chat_service,
-            device_enroll_service,
-            device_sync_runtime,
             health_service,
         },
         event_receiver,
     })
-}
-
-/// Get a friendly display name for this device based on platform.
-fn get_device_display_name() -> String {
-    #[cfg(target_os = "macos")]
-    return "My Mac".to_string();
-    #[cfg(target_os = "windows")]
-    return "My Windows PC".to_string();
-    #[cfg(target_os = "linux")]
-    return "My Linux".to_string();
-    #[cfg(not(any(target_os = "macos", target_os = "windows", target_os = "linux")))]
-    return "My Device".to_string();
 }

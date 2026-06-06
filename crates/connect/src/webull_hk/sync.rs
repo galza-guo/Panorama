@@ -2,9 +2,9 @@
 
 use std::str::FromStr;
 
+use panorama_core::assets::{AssetKind, AssetSpec, InstrumentType};
+use panorama_core::{Error, Result};
 use rust_decimal::Decimal;
-use wealthfolio_core::assets::{AssetKind, AssetSpec, InstrumentType};
-use wealthfolio_core::{Error, Result};
 
 pub use super::models::{
     WebullAccountBalanceResponse, WebullAccountListResponse, WebullAccountPositionsResponse,

@@ -6,8 +6,8 @@ use diesel::prelude::*;
 use diesel::r2d2::{self, Pool};
 use diesel::sqlite::SqliteConnection;
 
-use wealthfolio_core::errors::{Result, ValidationError};
-use wealthfolio_core::portfolio::target_allocation::{
+use panorama_core::errors::{Result, ValidationError};
+use panorama_core::portfolio::target_allocation::{
     TargetAllocationPlanData, TargetAllocationRepositoryTrait,
 };
 

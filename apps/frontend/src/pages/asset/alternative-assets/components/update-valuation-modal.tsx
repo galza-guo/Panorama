@@ -8,7 +8,7 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "@wealthfolio/ui/components/ui/dialog";
+} from "@panorama/ui/components/ui/dialog";
 import {
   Form,
   FormControl,
@@ -16,11 +16,11 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-} from "@wealthfolio/ui/components/ui/form";
-import { Button } from "@wealthfolio/ui/components/ui/button";
-import { Textarea } from "@wealthfolio/ui/components/ui/textarea";
-import { Icons } from "@wealthfolio/ui/components/ui/icons";
-import { MoneyInput, DatePickerInput } from "@wealthfolio/ui";
+} from "@panorama/ui/components/ui/form";
+import { Button } from "@panorama/ui/components/ui/button";
+import { Textarea } from "@panorama/ui/components/ui/textarea";
+import { Icons } from "@panorama/ui/components/ui/icons";
+import { MoneyInput, DatePickerInput } from "@panorama/ui";
 
 import {
   updateValuationSchema,

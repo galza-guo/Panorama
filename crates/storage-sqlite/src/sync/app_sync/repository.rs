@@ -8,8 +8,8 @@ use std::collections::{HashMap, HashSet};
 use std::sync::{Arc, Mutex, OnceLock};
 use uuid::Uuid;
 
-use wealthfolio_core::errors::{DatabaseError, Error, Result};
-use wealthfolio_core::sync::{
+use panorama_core::errors::{DatabaseError, Error, Result};
+use panorama_core::sync::{
     should_apply_lww, SyncEngineStatus, SyncEntity, SyncEntityMetadata, SyncOperation,
     SyncOutboxEvent, SyncOutboxStatus, APP_SYNC_TABLES,
 };
@@ -1858,9 +1858,6 @@ mod tests {
         Arc<Pool<r2d2::ConnectionManager<SqliteConnection>>>,
         WriteHandle,
     ) {
-        // Ensure connect is "configured" so outbox writes work in tests
-        std::env::set_var("CONNECT_API_URL", "http://test.local");
-
         let app_data = tempdir()
             .expect("tempdir")
             .keep()

@@ -1,6 +1,6 @@
-import { Button } from "@wealthfolio/ui/components/ui/button";
-import { Icons, AmountDisplay, EmptyPlaceholder } from "@wealthfolio/ui";
-import { Input } from "@wealthfolio/ui/components/ui/input";
+import { Button } from "@panorama/ui/components/ui/button";
+import { Icons, AmountDisplay, EmptyPlaceholder } from "@panorama/ui";
+import { Input } from "@panorama/ui/components/ui/input";
 import {
   Dialog,
   DialogContent,
@@ -8,10 +8,10 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "@wealthfolio/ui/components/ui/dialog";
-import { Popover, PopoverAnchor, PopoverContent } from "@wealthfolio/ui/components/ui/popover";
-import { Skeleton } from "@wealthfolio/ui/components/ui/skeleton";
-import { toast } from "@wealthfolio/ui/components/ui/use-toast";
+} from "@panorama/ui/components/ui/dialog";
+import { Popover, PopoverAnchor, PopoverContent } from "@panorama/ui/components/ui/popover";
+import { Skeleton } from "@panorama/ui/components/ui/skeleton";
+import { toast } from "@panorama/ui/components/ui/use-toast";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
@@ -986,7 +986,10 @@ function TargetAllocationEditor({ draft, setDraft, viewHoldings, dashboardRows }
   }, [draft.nodes, movingNodeId]);
 
   useEffect(() => {
-    if (movingHoldingKey && !viewHoldings.some((holding) => holding.subjectKey === movingHoldingKey)) {
+    if (
+      movingHoldingKey &&
+      !viewHoldings.some((holding) => holding.subjectKey === movingHoldingKey)
+    ) {
       setMovingHoldingKey(null);
       setMoveDestinationId(undefined);
     }
@@ -1404,10 +1407,7 @@ function TargetAllocationEditor({ draft, setDraft, viewHoldings, dashboardRows }
   return (
     <>
       <div
-        className={cn(
-          "grid gap-4",
-          untargetedCount > 0 && "xl:grid-cols-[minmax(0,1fr)_360px]",
-        )}
+        className={cn("grid gap-4", untargetedCount > 0 && "xl:grid-cols-[minmax(0,1fr)_360px]")}
       >
         <div className="min-w-0 rounded-md border">
           <div className="text-muted-foreground grid grid-cols-[minmax(220px,1fr)_110px] gap-2 border-b px-3 py-2 text-xs font-medium max-lg:hidden">
@@ -1439,17 +1439,17 @@ function TargetAllocationEditor({ draft, setDraft, viewHoldings, dashboardRows }
             <div className="max-h-[min(68vh,720px)] divide-y overflow-auto">
               {untargetedGroups.map((group) => (
                 <div key={group.accountId ?? "standalone"}>
-                  <div className="flex items-center gap-2 bg-muted/30 px-3 py-2">
-                      <span className="bg-muted text-muted-foreground flex size-6 shrink-0 items-center justify-center rounded-md">
-                        <Icons.Wallet className="h-3.5 w-3.5" />
-                      </span>
-                      <div className="min-w-0 flex-1">
-                        <div className="flex min-w-0 items-center gap-1.5">
-                          <span className="truncate text-sm font-medium">{group.accountName}</span>
-                          <UnassignedMark title={`${group.holdings.length} untargeted holdings`} />
-                        </div>
+                  <div className="bg-muted/30 flex items-center gap-2 px-3 py-2">
+                    <span className="bg-muted text-muted-foreground flex size-6 shrink-0 items-center justify-center rounded-md">
+                      <Icons.Wallet className="h-3.5 w-3.5" />
+                    </span>
+                    <div className="min-w-0 flex-1">
+                      <div className="flex min-w-0 items-center gap-1.5">
+                        <span className="truncate text-sm font-medium">{group.accountName}</span>
+                        <UnassignedMark title={`${group.holdings.length} untargeted holdings`} />
                       </div>
                     </div>
+                  </div>
                   <div className="border-muted-foreground/20 ml-[22px] border-l-2">
                     {group.holdings.map(({ holding, assignment }) => {
                       const holdingLabel =
@@ -1624,8 +1624,8 @@ function TargetAllocationEditor({ draft, setDraft, viewHoldings, dashboardRows }
           <DialogHeader>
             <DialogTitle>Delete folder?</DialogTitle>
             <DialogDescription>
-              Choose what should happen to everything inside {deletingFolder?.name ?? "this folder"}.
-              This will not delete any real holdings from your portfolio.
+              Choose what should happen to everything inside {deletingFolder?.name ?? "this folder"}
+              . This will not delete any real holdings from your portfolio.
             </DialogDescription>
           </DialogHeader>
 

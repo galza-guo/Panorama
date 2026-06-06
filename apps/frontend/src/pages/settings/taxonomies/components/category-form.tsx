@@ -22,7 +22,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
   AlertDialogTrigger,
-} from "@wealthfolio/ui";
+} from "@panorama/ui";
 import type { TaxonomyCategory } from "@/lib/types";
 import { useCreateCategory, useUpdateCategory, useDeleteCategory } from "@/hooks/use-taxonomies";
 import { toast } from "sonner";

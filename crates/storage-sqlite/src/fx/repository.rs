@@ -1,8 +1,8 @@
-use wealthfolio_core::assets::{AssetKind, NewAsset};
-use wealthfolio_core::errors::{DatabaseError, ValidationError};
-use wealthfolio_core::fx::{ExchangeRate, FxRepositoryTrait};
-use wealthfolio_core::quotes::{DataSource, Quote};
-use wealthfolio_core::{Error, Result};
+use panorama_core::assets::{AssetKind, NewAsset};
+use panorama_core::errors::{DatabaseError, ValidationError};
+use panorama_core::fx::{ExchangeRate, FxRepositoryTrait};
+use panorama_core::quotes::{DataSource, Quote};
+use panorama_core::{Error, Result};
 
 use crate::assets::{AssetDB, InsertableAssetDB};
 use crate::db::get_connection;

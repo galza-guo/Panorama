@@ -5,12 +5,12 @@ import type { CSSProperties } from "react";
 import { memo, useEffect, useMemo, useRef, useState } from "react";
 import { motion } from "motion/react";
 
-import { Icons } from "@wealthfolio/ui/components/ui/icons";
+import { Icons } from "@panorama/ui/components/ui/icons";
 import {
   Collapsible,
   CollapsibleContent,
   CollapsibleTrigger,
-} from "@wealthfolio/ui/components/ui/collapsible";
+} from "@panorama/ui/components/ui/collapsible";
 
 import { cn } from "@/lib/utils";
 import {
@@ -32,7 +32,7 @@ const Shimmer = memo(({ children, duration = 2 }: { children: string; duration?:
       animate={{ backgroundPosition: "0% center" }}
       initial={{ backgroundPosition: "100% center" }}
       transition={{ duration, ease: "linear", repeat: Infinity }}
-      className="relative inline-block bg-[length:250%_100%,auto] bg-clip-text text-transparent [background-repeat:no-repeat,padding-box]"
+      className="relative inline-block bg-[length:250%_100%,auto] bg-clip-text [background-repeat:no-repeat,padding-box] text-transparent"
       style={
         {
           "--spread": `${spread}px`,

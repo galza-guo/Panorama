@@ -16,8 +16,8 @@ import {
   TabsContent,
   TabsList,
   TabsTrigger,
-} from "@wealthfolio/ui";
-import { useToast } from "@wealthfolio/ui/components/ui/use-toast";
+} from "@panorama/ui";
+import { useToast } from "@panorama/ui/components/ui/use-toast";
 import { useState } from "react";
 import { SettingsHeader } from "../settings-header";
 import { useAddonActions } from "./hooks/use-addon-actions";
@@ -199,7 +199,7 @@ export default function AddonSettingsPage() {
                           <Icons.Refresh className="h-4 w-4" />
                         )}
                         {hasUpdates() && (
-                          <div className="bg-destructive absolute -right-1 -top-1 h-2 w-2 rounded-full" />
+                          <div className="bg-destructive absolute -top-1 -right-1 h-2 w-2 rounded-full" />
                         )}
                       </Button>
                     </div>

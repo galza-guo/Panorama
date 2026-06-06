@@ -1,16 +1,16 @@
-import { Button } from "@wealthfolio/ui/components/ui/button";
-import { Icons } from "@wealthfolio/ui/components/ui/icons";
+import { Button } from "@panorama/ui/components/ui/button";
+import { Icons } from "@panorama/ui/components/ui/icons";
 import {
   Sheet,
   SheetContent,
   SheetFooter,
   SheetHeader,
   SheetTitle,
-} from "@wealthfolio/ui/components/ui/sheet";
+} from "@panorama/ui/components/ui/sheet";
 import { ActivityType, ActivityTypeNames } from "@/lib/constants";
 import { Account } from "@/lib/types";
 import { cn } from "@/lib/utils";
-import { ScrollArea } from "@wealthfolio/ui";
+import { ScrollArea } from "@panorama/ui";
 import { useEffect, useState } from "react";
 
 interface ActivityMobileFilterSheetProps {
@@ -58,7 +58,7 @@ export const ActivityMobileFilterSheet = ({
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent side="bottom" className="rounded-t-4xl mx-1 flex h-[80vh] flex-col">
+      <SheetContent side="bottom" className="mx-1 flex h-[80vh] flex-col rounded-t-4xl">
         <SheetHeader className="text-left">
           <SheetTitle>Filter Activities</SheetTitle>
         </SheetHeader>

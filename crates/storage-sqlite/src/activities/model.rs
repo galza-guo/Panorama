@@ -6,7 +6,7 @@ use rust_decimal::Decimal;
 use serde::{Deserialize, Serialize};
 use std::str::FromStr;
 
-use wealthfolio_core::activities::{
+use panorama_core::activities::{
     Activity, ActivityStatus, ActivityUpdate, ActivityUpsert, NewActivity,
 };
 
@@ -235,9 +235,9 @@ impl IncomeDataDB {
     }
 }
 
-impl From<ActivityDetailsDB> for wealthfolio_core::activities::ActivityDetails {
+impl From<ActivityDetailsDB> for panorama_core::activities::ActivityDetails {
     fn from(db: ActivityDetailsDB) -> Self {
-        use wealthfolio_core::activities::ActivityStatus;
+        use panorama_core::activities::ActivityStatus;
 
         // Parse status string to ActivityStatus enum
         let status = match db.status.as_str() {
@@ -284,7 +284,7 @@ impl From<ActivityDetailsDB> for wealthfolio_core::activities::ActivityDetails {
     }
 }
 
-impl From<ImportMappingDB> for wealthfolio_core::activities::ImportMapping {
+impl From<ImportMappingDB> for panorama_core::activities::ImportMapping {
     fn from(db: ImportMappingDB) -> Self {
         Self {
             account_id: db.account_id,
@@ -296,8 +296,8 @@ impl From<ImportMappingDB> for wealthfolio_core::activities::ImportMapping {
     }
 }
 
-impl From<wealthfolio_core::activities::ImportMapping> for ImportMappingDB {
-    fn from(domain: wealthfolio_core::activities::ImportMapping) -> Self {
+impl From<panorama_core::activities::ImportMapping> for ImportMappingDB {
+    fn from(domain: panorama_core::activities::ImportMapping) -> Self {
         Self {
             account_id: domain.account_id,
             name: domain.name,

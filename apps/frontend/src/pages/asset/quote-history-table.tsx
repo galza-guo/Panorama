@@ -50,7 +50,7 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@wealthfolio/ui";
+} from "@panorama/ui";
 
 interface QuoteHistoryTableProps {
   data: Quote[];

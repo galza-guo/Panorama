@@ -6,8 +6,8 @@ functionality. This guide covers how to build, test, and distribute addons.
 
 ## What are Panorama Addons?
 
-Addons are TypeScript/React-based extensions that provide access to
-Panorama's financial data and UI system.
+Addons are TypeScript/React-based extensions that provide access to Panorama's
+financial data and UI system.
 
 **Technical Foundation** Each addon is a JavaScript function that receives an
 `AddonContext` object with access to APIs, UI components, and event system.
@@ -49,8 +49,8 @@ Includes hot-reload development server and comprehensive type definitions.
 Every addon exports an enable function that receives a context object:
 
 ```typescript
-import type { AddonContext } from '@wealthfolio/addon-sdk';
-import { Icons } from '@wealthfolio/ui';
+import type { AddonContext } from '@panorama/addon-sdk';
+import { Icons } from '@panorama/ui';
 
 export default function enable(ctx: AddonContext) {
   // Access financial data
@@ -154,15 +154,15 @@ interface AddonContext {
 ### Required Packages
 
 ```bash
-npm install @wealthfolio/addon-sdk @wealthfolio/ui react react-dom
-npm install -D @wealthfolio/addon-dev-tools typescript vite
+npm install @panorama/addon-sdk @panorama/ui react react-dom
+npm install -D @panorama/addon-dev-tools typescript vite
 ```
 
 ### Core Dependencies
 
-- **@wealthfolio/addon-sdk**: TypeScript types and API definitions
-- **@wealthfolio/ui**: UI components based on shadcn/ui and Tailwind CSS
-- **@wealthfolio/addon-dev-tools**: CLI and development server
+- **@panorama/addon-sdk**: TypeScript types and API definitions
+- **@panorama/ui**: UI components based on shadcn/ui and Tailwind CSS
+- **@panorama/addon-dev-tools**: CLI and development server
 
 ### Development Server
 
@@ -259,8 +259,8 @@ await ctx.api.secrets.set("api-key", "value");
 Addons have access to Panorama's UI component library:
 
 ```typescript
-import { Button, Card, Dialog, Input, Table } from '@wealthfolio/ui';
-import { AmountDisplay, GainAmount, CurrencyInput } from '@wealthfolio/ui/financial';
+import { Button, Card, Dialog, Input, Table } from '@panorama/ui';
+import { AmountDisplay, GainAmount, CurrencyInput } from '@panorama/ui/financial';
 import { TrendingUp, DollarSign } from 'lucide-react';
 
 function MyComponent() {
@@ -327,7 +327,7 @@ export default defineConfig({
   "scripts": {
     "build": "vite build",
     "dev": "vite build --watch",
-    "dev:server": "wealthfolio dev",
+    "dev:server": "panorama dev",
     "clean": "rm -rf dist",
     "package": "mkdir -p dist && zip -r dist/$npm_package_name-$npm_package_version.zip manifest.json dist/ assets/ README.md",
     "bundle": "pnpm clean && pnpm build && pnpm package",

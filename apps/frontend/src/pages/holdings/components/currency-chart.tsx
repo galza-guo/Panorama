@@ -1,8 +1,8 @@
-import { Card, CardContent } from "@wealthfolio/ui/components/ui/card";
-import { Skeleton } from "@wealthfolio/ui/components/ui/skeleton";
+import { Card, CardContent } from "@panorama/ui/components/ui/card";
+import { Skeleton } from "@panorama/ui/components/ui/skeleton";
 import { useBalancePrivacy } from "@/hooks/use-balance-privacy";
 import type { Holding } from "@/lib/types";
-import { AmountDisplay, formatPercent } from "@wealthfolio/ui";
+import { AmountDisplay, formatPercent } from "@panorama/ui";
 import { motion } from "motion/react";
 import { useMemo } from "react";
 
@@ -98,7 +98,7 @@ export function HoldingCurrencyChart({
         <div className="space-y-6">
           {/* Title */}
           <div className="flex items-center justify-between">
-            <h3 className="text-muted-foreground text-sm font-medium uppercase tracking-wider">
+            <h3 className="text-muted-foreground text-sm font-medium tracking-wider uppercase">
               Currency
             </h3>
           </div>

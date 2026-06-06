@@ -1,12 +1,12 @@
-import { Separator } from "@wealthfolio/ui/components/ui/separator";
+import { Separator } from "@panorama/ui/components/ui/separator";
 import { useQuoteImport } from "@/hooks/use-quote-import";
 import type { QuoteImportActions, QuoteImportState } from "@/lib/types/quote-import";
 import { cn } from "@/lib/utils";
 import { StepIndicator } from "@/pages/activity/import/components/step-indicator";
-import { Alert, AlertDescription } from "@wealthfolio/ui/components/ui/alert";
-import { Button } from "@wealthfolio/ui/components/ui/button";
-import { Card, CardContent, CardHeader } from "@wealthfolio/ui/components/ui/card";
-import { Icons } from "@wealthfolio/ui/components/ui/icons";
+import { Alert, AlertDescription } from "@panorama/ui/components/ui/alert";
+import { Button } from "@panorama/ui/components/ui/button";
+import { Card, CardContent, CardHeader } from "@panorama/ui/components/ui/card";
+import { Icons } from "@panorama/ui/components/ui/icons";
 import { AnimatePresence, motion } from "motion/react";
 import { useEffect, useState } from "react";
 import { QuoteImportForm } from "./quote-import-form";

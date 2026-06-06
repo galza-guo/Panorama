@@ -11,7 +11,7 @@ import type { ExtractedAddon } from "@/adapters";
 import { QueryKeys } from "@/lib/query-keys";
 import type { AddonStoreListing } from "@/lib/types";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useToast } from "@wealthfolio/ui/components/ui/use-toast";
+import { useToast } from "@panorama/ui/components/ui/use-toast";
 import { useCallback, useEffect, useState } from "react";
 
 export function useAddonStore() {

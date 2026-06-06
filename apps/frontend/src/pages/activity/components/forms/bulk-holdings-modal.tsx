@@ -1,4 +1,4 @@
-import { toast } from "@wealthfolio/ui/components/ui/use-toast";
+import { toast } from "@panorama/ui/components/ui/use-toast";
 import { ActivityType, QuoteMode } from "@/lib/constants";
 import { Account, ActivityBulkMutationRequest, ActivityCreate } from "@/lib/types";
 import { useSettingsContext } from "@/lib/settings-provider";
@@ -12,7 +12,7 @@ import {
   DialogHeader,
   DialogTitle,
   Form,
-} from "@wealthfolio/ui";
+} from "@panorama/ui";
 import { useCallback, useEffect, useState } from "react";
 import { FormProvider, useForm, type Resolver, type SubmitHandler } from "react-hook-form";
 import { z } from "zod";

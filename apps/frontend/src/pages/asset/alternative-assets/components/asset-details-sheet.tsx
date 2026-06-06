@@ -8,7 +8,7 @@ import {
   SheetFooter,
   SheetHeader,
   SheetTitle,
-} from "@wealthfolio/ui/components/ui/sheet";
+} from "@panorama/ui/components/ui/sheet";
 import {
   Form,
   FormControl,
@@ -16,21 +16,21 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-} from "@wealthfolio/ui/components/ui/form";
-import { Button } from "@wealthfolio/ui/components/ui/button";
-import { Input } from "@wealthfolio/ui/components/ui/input";
-import { Textarea } from "@wealthfolio/ui/components/ui/textarea";
-import { Separator } from "@wealthfolio/ui/components/ui/separator";
-import { Badge } from "@wealthfolio/ui/components/ui/badge";
-import { Icons } from "@wealthfolio/ui/components/ui/icons";
+} from "@panorama/ui/components/ui/form";
+import { Button } from "@panorama/ui/components/ui/button";
+import { Input } from "@panorama/ui/components/ui/input";
+import { Textarea } from "@panorama/ui/components/ui/textarea";
+import { Separator } from "@panorama/ui/components/ui/separator";
+import { Badge } from "@panorama/ui/components/ui/badge";
+import { Icons } from "@panorama/ui/components/ui/icons";
 import {
   MoneyInput,
   QuantityInput,
   DatePickerInput,
   ResponsiveSelect,
   type ResponsiveSelectOption,
-} from "@wealthfolio/ui";
-import { toast } from "@wealthfolio/ui/components/ui/use-toast";
+} from "@panorama/ui";
+import { toast } from "@panorama/ui/components/ui/use-toast";
 
 import {
   assetDetailsSchema,

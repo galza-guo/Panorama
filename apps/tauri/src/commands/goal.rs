@@ -2,8 +2,8 @@ use std::sync::Arc;
 
 use crate::context::ServiceContext;
 use log::debug;
+use panorama_core::goals::{Goal, GoalsAllocation, NewGoal};
 use tauri::State;
-use wealthfolio_core::goals::{Goal, GoalsAllocation, NewGoal};
 
 #[tauri::command]
 pub async fn get_goals(state: State<'_, Arc<ServiceContext>>) -> Result<Vec<Goal>, String> {

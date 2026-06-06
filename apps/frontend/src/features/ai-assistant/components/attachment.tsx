@@ -7,17 +7,17 @@ import {
 } from "@assistant-ui/react";
 import { PropsWithChildren, useEffect, useState, type FC } from "react";
 
-import { Icons } from "@wealthfolio/ui/components/ui/icons";
+import { Icons } from "@panorama/ui/components/ui/icons";
 import { useShallow } from "zustand/shallow";
 import { cn } from "@/lib/utils";
-import { Avatar, AvatarFallback, AvatarImage } from "@wealthfolio/ui/components/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@panorama/ui/components/ui/avatar";
 import {
   Dialog,
   DialogContent,
   DialogTitle,
   DialogTrigger,
-} from "@wealthfolio/ui/components/ui/dialog";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@wealthfolio/ui/components/ui/tooltip";
+} from "@panorama/ui/components/ui/dialog";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@panorama/ui/components/ui/tooltip";
 import { TooltipIconButton } from "./tooltip-icon-button";
 
 const useFileSrc = (file: File | undefined) => {
@@ -87,7 +87,7 @@ const AttachmentPreviewDialog: FC<PropsWithChildren> = ({ children }) => {
       >
         {children}
       </DialogTrigger>
-      <DialogContent className="aui-attachment-preview-dialog-content [&>button]:bg-foreground/60 [&_svg]:text-background [&>button]:hover:[&_svg]:text-destructive [&>button]:ring-0! p-2 sm:max-w-3xl [&>button]:rounded-full [&>button]:p-1 [&>button]:opacity-100">
+      <DialogContent className="aui-attachment-preview-dialog-content [&>button]:bg-foreground/60 [&_svg]:text-background [&>button]:hover:[&_svg]:text-destructive p-2 sm:max-w-3xl [&>button]:rounded-full [&>button]:p-1 [&>button]:opacity-100 [&>button]:ring-0!">
         <DialogTitle className="aui-sr-only sr-only">Image Attachment Preview</DialogTitle>
         <div className="aui-attachment-preview bg-background relative mx-auto flex max-h-[80dvh] w-full items-center justify-center overflow-hidden">
           <AttachmentPreview src={src} />
@@ -172,7 +172,7 @@ const AttachmentRemove: FC = () => {
     <AttachmentPrimitive.Remove asChild>
       <TooltipIconButton
         tooltip="Remove file"
-        className="aui-attachment-tile-remove text-muted-foreground hover:[&_svg]:text-destructive hover:bg-white! absolute right-1.5 top-1.5 size-3.5 rounded-full bg-white opacity-100 shadow-sm [&_svg]:text-black"
+        className="aui-attachment-tile-remove text-muted-foreground hover:[&_svg]:text-destructive absolute top-1.5 right-1.5 size-3.5 rounded-full bg-white opacity-100 shadow-sm hover:bg-white! [&_svg]:text-black"
         side="top"
       >
         <Icons.Close className="aui-attachment-remove-icon size-3 dark:stroke-[2.5px]" />
@@ -191,7 +191,7 @@ export const UserMessageAttachments: FC = () => {
 
 export const ComposerAttachments: FC = () => {
   return (
-    <div className="aui-composer-attachments mb-2 flex w-full flex-row items-center gap-2 overflow-x-auto px-1.5 pb-1 pt-0.5 empty:hidden">
+    <div className="aui-composer-attachments mb-2 flex w-full flex-row items-center gap-2 overflow-x-auto px-1.5 pt-0.5 pb-1 empty:hidden">
       <ComposerPrimitive.Attachments components={{ Attachment: AttachmentUI }} />
     </div>
   );

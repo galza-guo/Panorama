@@ -394,9 +394,7 @@ export function assetNodeMatchingHoldings(
   const parentId = node.parentId ?? null;
   return holdings.filter((holding) => {
     const assignment = holdingAssignmentState(holding, plan);
-    return (
-      assignment.folderNodeId === parentId && holdingMatchesAssetRef(holding, node.assetRef)
-    );
+    return assignment.folderNodeId === parentId && holdingMatchesAssetRef(holding, node.assetRef);
   });
 }
 

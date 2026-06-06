@@ -28,8 +28,8 @@ use crate::fx::FxServiceTrait;
 use crate::quotes::{DataSource, Quote, QuoteServiceTrait};
 use crate::Result;
 use log::warn;
+use panorama_market_data::mic_to_currency;
 use uuid::Uuid;
-use wealthfolio_market_data::mic_to_currency;
 
 /// Service for managing activities
 pub struct ActivityService {

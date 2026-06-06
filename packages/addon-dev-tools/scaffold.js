@@ -53,7 +53,7 @@ class AddonScaffold {
    */
   generateReplacements(config) {
     const addonId = config.name.toLowerCase().replace(/[^a-z0-9]/g, "-");
-    const packageName = `wealthfolio-${addonId}-addon`;
+    const packageName = `panorama-${addonId}-addon`;
     const componentName = config.name.replace(/[^a-zA-Z0-9]/g, "");
 
     return {

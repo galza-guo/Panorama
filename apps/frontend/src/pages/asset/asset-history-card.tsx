@@ -16,7 +16,7 @@ import {
   Icons,
   IntervalSelector,
   formatPercent,
-} from "@wealthfolio/ui";
+} from "@panorama/ui";
 import { format, subMonths } from "date-fns";
 import React, { useCallback, useMemo, useState } from "react";
 import { RefreshQuotesConfirmDialog } from "./refresh-quotes-confirm-dialog";

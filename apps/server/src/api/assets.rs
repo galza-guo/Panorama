@@ -7,9 +7,7 @@ use axum::{
     routing::{delete, get, post, put},
     Json, Router,
 };
-use wealthfolio_core::assets::{
-    Asset as CoreAsset, AssetProfileEnrichmentStats, UpdateAssetProfile,
-};
+use panorama_core::assets::{Asset as CoreAsset, AssetProfileEnrichmentStats, UpdateAssetProfile};
 
 #[derive(serde::Deserialize)]
 struct AssetQuery {

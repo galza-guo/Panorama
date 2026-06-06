@@ -7,7 +7,7 @@ use axum::{
     routing::{delete, get, post},
     Json, Router,
 };
-use wealthfolio_core::activities::{
+use panorama_core::activities::{
     Activity, ActivityBulkMutationRequest, ActivityBulkMutationResult, ActivityImport,
     ActivitySearchResponse, ActivityUpdate, ImportActivitiesResult, ImportMappingData, NewActivity,
     ParseConfig, ParsedCsvResult,
@@ -18,8 +18,8 @@ use super::shared::parse_date_optional;
 #[derive(serde::Deserialize)]
 #[serde(untagged)]
 enum SortWrapper {
-    One(wealthfolio_core::activities::Sort),
-    Many(Vec<wealthfolio_core::activities::Sort>),
+    One(panorama_core::activities::Sort),
+    Many(Vec<panorama_core::activities::Sort>),
 }
 
 #[derive(serde::Deserialize)]
@@ -55,7 +55,7 @@ async fn search_activities(
     Json(body): Json<ActivitySearchBody>,
 ) -> ApiResult<Json<ActivitySearchResponse>> {
     // Normalize sort to a single value if provided
-    let sort_normalized: Option<wealthfolio_core::activities::Sort> = match body.sort {
+    let sort_normalized: Option<panorama_core::activities::Sort> = match body.sort {
         Some(SortWrapper::One(s)) => Some(s),
         Some(SortWrapper::Many(v)) => v.into_iter().next(),
         None => None,
@@ -258,7 +258,7 @@ async fn parse_csv_endpoint(
         crate::error::ApiError::BadRequest("Missing file in multipart request".to_string())
     })?;
 
-    let result = wealthfolio_core::activities::parse_csv(&content, &config)?;
+    let result = panorama_core::activities::parse_csv(&content, &config)?;
     Ok(Json(result))
 }
 

@@ -4,8 +4,8 @@ use std::collections::BTreeMap;
 
 use base64::{engine::general_purpose, Engine as _};
 use hmac::{Hmac, Mac};
+use panorama_core::{Error, Result};
 use sha1::Sha1;
-use wealthfolio_core::{Error, Result};
 
 type HmacSha1 = Hmac<Sha1>;
 

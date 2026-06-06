@@ -5,10 +5,10 @@ import {
   ChartLegendContent,
   ChartTooltip,
   ChartTooltipContent,
-} from "@wealthfolio/ui/components/ui/chart";
+} from "@panorama/ui/components/ui/chart";
 import { PERFORMANCE_CHART_COLORS } from "@/components/performance-chart-colors";
 import { ReturnData } from "@/lib/types";
-import { formatPercent } from "@wealthfolio/ui";
+import { formatPercent } from "@panorama/ui";
 import { differenceInDays, differenceInMonths, format, parseISO } from "date-fns";
 import { CartesianGrid, Line, LineChart, ResponsiveContainer, XAxis, YAxis } from "recharts";
 import { NameType, ValueType } from "recharts/types/component/DefaultTooltipContent";

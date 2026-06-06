@@ -89,7 +89,7 @@ export function DataGrid<TData>({
         data-slot="grid"
         tabIndex={0}
         ref={dataGridRef}
-        className={cn("relative grid select-none overflow-auto rounded-md border focus:outline-none", className)}
+        className={cn("relative grid overflow-auto rounded-md border select-none focus:outline-none", className)}
         style={{
           ...columnSizeVars,
           ...(height !== undefined && {

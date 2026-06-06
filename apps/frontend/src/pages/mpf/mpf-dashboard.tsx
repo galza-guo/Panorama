@@ -1,11 +1,11 @@
 import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
-import { AmountDisplay, Page } from "@wealthfolio/ui";
-import { Button } from "@wealthfolio/ui/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@wealthfolio/ui/components/ui/card";
-import { Icons } from "@wealthfolio/ui/components/ui/icons";
-import { Skeleton } from "@wealthfolio/ui/components/ui/skeleton";
+import { AmountDisplay, Page } from "@panorama/ui";
+import { Button } from "@panorama/ui/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@panorama/ui/components/ui/card";
+import { Icons } from "@panorama/ui/components/ui/icons";
+import { Skeleton } from "@panorama/ui/components/ui/skeleton";
 
 import { useAlternativeHoldings } from "@/hooks/use-alternative-assets";
 import {

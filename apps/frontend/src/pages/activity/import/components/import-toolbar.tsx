@@ -11,7 +11,7 @@ import {
   DropdownMenuTrigger,
   Icons,
   worldCurrencies,
-} from "@wealthfolio/ui";
+} from "@panorama/ui";
 import { useAccounts } from "@/hooks/use-accounts";
 
 // ─────────────────────────────────────────────────────────────────────────────

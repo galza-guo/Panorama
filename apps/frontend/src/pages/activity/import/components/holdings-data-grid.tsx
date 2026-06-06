@@ -1,6 +1,6 @@
 import { useCallback, useMemo, useState } from "react";
 import type { ColumnDef } from "@tanstack/react-table";
-import { DataGrid, useDataGrid, type SymbolSearchResult } from "@wealthfolio/ui";
+import { DataGrid, useDataGrid, type SymbolSearchResult } from "@panorama/ui";
 import { searchTicker } from "@/adapters";
 import { CreateCustomAssetDialog } from "@/components/create-custom-asset-dialog";
 import { useSettingsContext } from "@/lib/settings-provider";

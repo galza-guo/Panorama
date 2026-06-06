@@ -7,9 +7,9 @@ use crate::db::{get_connection, DbPool, WriteHandle};
 use crate::errors::StorageError;
 use crate::schema::app_settings::dsl::*;
 use crate::schema::{accounts, assets};
-use wealthfolio_core::assets::AssetKind;
-use wealthfolio_core::errors::Result;
-use wealthfolio_core::settings::{Settings, SettingsRepositoryTrait, SettingsUpdate};
+use panorama_core::assets::AssetKind;
+use panorama_core::errors::Result;
+use panorama_core::settings::{Settings, SettingsRepositoryTrait, SettingsUpdate};
 
 pub struct SettingsRepository {
     pool: Arc<DbPool>,
@@ -53,7 +53,7 @@ impl SettingsRepositoryTrait for SettingsRepository {
                     settings.sync_enabled = value.parse().unwrap_or(true);
                 }
                 "wealthfolio_connect_visible" => {
-                    settings.wealthfolio_connect_visible = value.parse().unwrap_or(false);
+                    settings.legacy_connect_visible = value.parse().unwrap_or(false);
                 }
                 _ => {} // Ignore unknown settings
             }
@@ -136,11 +136,11 @@ impl SettingsRepositoryTrait for SettingsRepository {
                         .map_err(StorageError::from)?;
                 }
 
-                if let Some(wealthfolio_connect_visible) = settings.wealthfolio_connect_visible {
+                if let Some(legacy_connect_visible) = settings.legacy_connect_visible {
                     diesel::replace_into(app_settings)
                         .values(&AppSettingDB {
                             setting_key: "wealthfolio_connect_visible".to_string(),
-                            setting_value: wealthfolio_connect_visible.to_string(),
+                            setting_value: legacy_connect_visible.to_string(),
                         })
                         .execute(conn)
                         .map_err(StorageError::from)?;

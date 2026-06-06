@@ -1,10 +1,10 @@
 import { useEffect, useMemo, useState } from "react";
 
-import { CurrencyInput, DatePickerInput } from "@wealthfolio/ui";
-import { Button } from "@wealthfolio/ui/components/ui/button";
-import { Checkbox } from "@wealthfolio/ui/components/ui/checkbox";
-import { Input } from "@wealthfolio/ui/components/ui/input";
-import { Label } from "@wealthfolio/ui/components/ui/label";
+import { CurrencyInput, DatePickerInput } from "@panorama/ui";
+import { Button } from "@panorama/ui/components/ui/button";
+import { Checkbox } from "@panorama/ui/components/ui/checkbox";
+import { Input } from "@panorama/ui/components/ui/input";
+import { Label } from "@panorama/ui/components/ui/label";
 import {
   Sheet,
   SheetContent,
@@ -12,8 +12,8 @@ import {
   SheetFooter,
   SheetHeader,
   SheetTitle,
-} from "@wealthfolio/ui/components/ui/sheet";
-import { Textarea } from "@wealthfolio/ui/components/ui/textarea";
+} from "@panorama/ui/components/ui/sheet";
+import { Textarea } from "@panorama/ui/components/ui/textarea";
 
 import { asFiniteNumber, parsePanoramaAssetAttributes } from "@/lib/panorama-asset-attributes";
 import { useSettingsContext } from "@/lib/settings-provider";
@@ -487,7 +487,7 @@ export function TimeDepositEditorSheet({
             </div>
           </div>
 
-          {error ? <div className="text-sm text-destructive">{error}</div> : null}
+          {error ? <div className="text-destructive text-sm">{error}</div> : null}
         </div>
 
         <SheetFooter>
@@ -495,7 +495,11 @@ export function TimeDepositEditorSheet({
             Cancel
           </Button>
           <Button type="button" onClick={() => void handleSubmit()} disabled={isSubmitting}>
-            {isSubmitting ? "Saving..." : mode === "create" ? "Create Time Deposit" : "Save Changes"}
+            {isSubmitting
+              ? "Saving..."
+              : mode === "create"
+                ? "Create Time Deposit"
+                : "Save Changes"}
           </Button>
         </SheetFooter>
       </SheetContent>

@@ -6,13 +6,13 @@ use std::path::{Path, PathBuf};
 use std::sync::Arc;
 
 use chrono::{DateTime, Utc};
-use uuid::Uuid;
-use wealthfolio_core::settings::SettingsRepositoryTrait;
-use wealthfolio_core::sync::{
+use panorama_core::settings::SettingsRepositoryTrait;
+use panorama_core::sync::{
     is_shared_setting_key, FolderSyncSnapshotManifestV1, APP_SYNC_TABLES, FOLDER_SYNC_VERSION_V1,
 };
-use wealthfolio_storage_sqlite::db;
-use wealthfolio_storage_sqlite::sync::{AppSyncRepository, FolderSyncRepository};
+use panorama_storage_sqlite::db;
+use panorama_storage_sqlite::sync::{AppSyncRepository, FolderSyncRepository};
+use uuid::Uuid;
 
 use crate::services::folder_sync_fs::{FolderSyncFsService, FolderSyncSnapshotFileRef};
 use crate::services::folder_sync_importer::{FolderSyncImportResult, FolderSyncImporter};
@@ -266,23 +266,23 @@ mod tests {
     use std::sync::Arc;
 
     use diesel::prelude::*;
-    use tempfile::tempdir;
-    use wealthfolio_core::settings::SettingsRepositoryTrait;
-    use wealthfolio_core::sync::{
+    use panorama_core::settings::SettingsRepositoryTrait;
+    use panorama_core::sync::{
         FolderSyncEventFileV1, FolderSyncSnapshotManifestV1, SyncEntity, SyncOperation,
         FOLDER_SYNC_VERSION_V1,
     };
-    use wealthfolio_storage_sqlite::db::{self, write_actor};
-    use wealthfolio_storage_sqlite::schema::platforms;
-    use wealthfolio_storage_sqlite::settings::SettingsRepository;
-    use wealthfolio_storage_sqlite::sync::{AppSyncRepository, FolderSyncRepository};
+    use panorama_storage_sqlite::db::{self, write_actor};
+    use panorama_storage_sqlite::schema::platforms;
+    use panorama_storage_sqlite::settings::SettingsRepository;
+    use panorama_storage_sqlite::sync::{AppSyncRepository, FolderSyncRepository};
+    use tempfile::tempdir;
 
     use super::FolderSyncSnapshotService;
     use crate::services::folder_sync_fs::FolderSyncFsService;
 
     struct SnapshotTestDevice {
         app_data_dir: PathBuf,
-        pool: Arc<wealthfolio_storage_sqlite::DbPool>,
+        pool: Arc<panorama_storage_sqlite::DbPool>,
         app_sync_repository: Arc<AppSyncRepository>,
         folder_sync_repository: Arc<FolderSyncRepository>,
         settings_repository: Arc<SettingsRepository>,
@@ -331,10 +331,10 @@ mod tests {
     }
 
     fn load_platform_name(
-        pool: &Arc<wealthfolio_storage_sqlite::DbPool>,
+        pool: &Arc<panorama_storage_sqlite::DbPool>,
         platform_id: &str,
     ) -> Option<String> {
-        let mut conn = wealthfolio_storage_sqlite::get_connection(pool).expect("conn");
+        let mut conn = panorama_storage_sqlite::get_connection(pool).expect("conn");
         platforms::table
             .filter(platforms::id.eq(platform_id))
             .select(platforms::name)

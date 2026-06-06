@@ -1,4 +1,4 @@
-import { Button, DataGrid, Icons, useDataGrid } from "@wealthfolio/ui";
+import { Button, DataGrid, Icons, useDataGrid } from "@panorama/ui";
 import { useCallback, useMemo, useState } from "react";
 import { createColumnHelper } from "@tanstack/react-table";
 import type { AssetKind, Quote } from "@/lib/types";

@@ -7,8 +7,43 @@ use async_trait::async_trait;
 use super::addon_traits::AddonServiceTrait;
 use super::models::*;
 
-// Constants
-pub const ADDON_STORE_API_BASE_URL: &str = "https://wealthfolio.app/api/addons";
+const ADDON_STORE_API_BASE_URL_ENV: &str = "PANORAMA_ADDON_STORE_API_BASE_URL";
+
+fn addon_store_api_base_url() -> Result<String, String> {
+    std::env::var(ADDON_STORE_API_BASE_URL_ENV)
+        .ok()
+        .map(|value| value.trim().trim_end_matches('/').to_string())
+        .filter(|value| !value.is_empty())
+        .ok_or_else(|| {
+            format!(
+                "Panorama addon store is not configured. Set {} to enable remote addon store access.",
+                ADDON_STORE_API_BASE_URL_ENV
+            )
+        })
+}
+
+fn unavailable_update_check_result(
+    addon_id: &str,
+    current_version: &str,
+    error: String,
+) -> AddonUpdateCheckResult {
+    AddonUpdateCheckResult {
+        addon_id: addon_id.to_string(),
+        update_info: AddonUpdateInfo {
+            current_version: current_version.to_string(),
+            latest_version: "unknown".to_string(),
+            update_available: false,
+            download_url: None,
+            release_notes: None,
+            release_date: None,
+            changelog_url: None,
+            is_critical: None,
+            has_breaking_changes: None,
+            min_panorama_version: None,
+        },
+        error: Some(error),
+    }
+}
 
 /// Helper function to create a request with common headers
 fn create_request_with_headers(
@@ -22,9 +57,9 @@ fn create_request_with_headers(
     // Always add User-Agent, with version if available
     let app_version = option_env!("CARGO_PKG_VERSION");
     let user_agent = if let Some(version) = app_version {
-        format!("Wealthfolio/{}", version)
+        format!("Panorama/{}", version)
     } else {
-        "Wealthfolio".to_string()
+        "Panorama".to_string()
     };
     request = request.header("User-Agent", user_agent);
 
@@ -632,8 +667,9 @@ pub fn parse_manifest_json_metadata(manifest_content: &str) -> Result<AddonManif
     let homepage = raw_manifest["homepage"].as_str().map(|s| s.to_string());
     let repository = raw_manifest["repository"].as_str().map(|s| s.to_string());
     let license = raw_manifest["license"].as_str().map(|s| s.to_string());
-    let min_wealthfolio_version = raw_manifest["minWealthfolioVersion"]
+    let min_panorama_version = raw_manifest["minPanoramaVersion"]
         .as_str()
+        .or_else(|| raw_manifest["minWealthfolioVersion"].as_str())
         .map(|s| s.to_string());
     let keywords = raw_manifest["keywords"].as_array().map(|arr| {
         arr.iter()
@@ -724,7 +760,7 @@ pub fn parse_manifest_json_metadata(manifest_content: &str) -> Result<AddonManif
         homepage,
         repository,
         license,
-        min_wealthfolio_version,
+        min_panorama_version,
         keywords,
         icon,
         installed_at: None,
@@ -783,9 +819,19 @@ pub async fn check_addon_update_from_api(
     current_version: &str,
     instance_id: Option<&str>,
 ) -> Result<AddonUpdateCheckResult, String> {
+    let base_url = match addon_store_api_base_url() {
+        Ok(url) => url,
+        Err(error) => {
+            return Ok(unavailable_update_check_result(
+                addon_id,
+                current_version,
+                error,
+            ))
+        }
+    };
     let api_url = format!(
         "{}/update-check?addonId={}&currentVersion={}",
-        ADDON_STORE_API_BASE_URL, addon_id, current_version
+        base_url, addon_id, current_version
     );
 
     let client = reqwest::Client::new();
@@ -811,9 +857,9 @@ pub async fn download_addon_package(download_url: &str) -> Result<Vec<u8>, Strin
     // Always add User-Agent, with version if available
     let app_version = option_env!("CARGO_PKG_VERSION");
     let user_agent = if let Some(version) = app_version {
-        format!("Wealthfolio/{}", version)
+        format!("Panorama/{}", version)
     } else {
-        "Wealthfolio".to_string()
+        "Panorama".to_string()
     };
     request = request.header("User-Agent", user_agent);
 
@@ -902,7 +948,8 @@ pub async fn download_addon_from_store(
     addon_id: &str,
     instance_id: &str,
 ) -> Result<Vec<u8>, String> {
-    let download_api_url = format!("{}/{}/download", ADDON_STORE_API_BASE_URL, addon_id);
+    let base_url = addon_store_api_base_url()?;
+    let download_api_url = format!("{}/{}/download", base_url, addon_id);
 
     log::info!(
         "Calling download API for addon '{}' at URL: {}",
@@ -1172,8 +1219,14 @@ pub fn remove_addon_from_staging(addon_id: &str, base_dir: impl AsRef<Path>) -> 
 pub async fn fetch_addon_store_listings(
     instance_id: Option<&str>,
 ) -> Result<Vec<serde_json::Value>, String> {
+    let api_url = match addon_store_api_base_url() {
+        Ok(url) => url,
+        Err(error) => {
+            log::warn!("{}", error);
+            return Ok(Vec::new());
+        }
+    };
     // Fetch all addons and let frontend filter by status
-    let api_url = ADDON_STORE_API_BASE_URL.to_string();
 
     let client = reqwest::Client::new();
     let response =
@@ -1243,7 +1296,8 @@ pub async fn submit_addon_rating(
         return Err("Rating must be between 1 and 5".to_string());
     }
 
-    let api_url = format!("{}/{}/ratings", ADDON_STORE_API_BASE_URL, addon_id);
+    let base_url = addon_store_api_base_url()?;
+    let api_url = format!("{}/{}/ratings", base_url, addon_id);
 
     let mut request_body = serde_json::json!({
         "rating": rating
@@ -1537,7 +1591,7 @@ impl AddonServiceTrait for AddonService {
                                 changelog_url: None,
                                 is_critical: None,
                                 has_breaking_changes: None,
-                                min_wealthfolio_version: None,
+                                min_panorama_version: None,
                             },
                             error: Some(err),
                         });

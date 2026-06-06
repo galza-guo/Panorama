@@ -1,8 +1,8 @@
 use std::sync::Arc;
 
 use crate::context::ServiceContext;
+use panorama_core::assets::{Asset, AssetProfileEnrichmentStats, UpdateAssetProfile};
 use tauri::State;
-use wealthfolio_core::assets::{Asset, AssetProfileEnrichmentStats, UpdateAssetProfile};
 
 #[tauri::command]
 pub async fn get_asset_profile(

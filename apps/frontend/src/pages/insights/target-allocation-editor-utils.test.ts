@@ -354,7 +354,9 @@ describe("target allocation editor assignment helpers", () => {
           folderNodeId: "gold",
         },
       ],
-      exclusions: [{ subjectKey: targetHolding.subjectKey, subjectType: targetHolding.subjectType }],
+      exclusions: [
+        { subjectKey: targetHolding.subjectKey, subjectType: targetHolding.subjectType },
+      ],
     };
 
     const updated = removeHoldingOverrides(plan, [targetHolding]);

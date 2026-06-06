@@ -1,17 +1,16 @@
-# @wealthfolio/addon-sdk
+# @panorama/addon-sdk
 
-[![Version](https://img.shields.io/npm/v/@wealthfolio/addon-sdk?style=flat-square)](https://www.npmjs.com/package/@wealthfolio/addon-sdk)
-[![Downloads](https://img.shields.io/npm/dm/@wealthfolio/addon-sdk?style=flat-square)](https://www.npmjs.com/package/@wealthfolio/addon-sdk)
-[![License](https://img.shields.io/npm/l/@wealthfolio/addon-sdk?style=flat-square)](https://github.com/galza-guo/Panorama/blob/main/LICENSE)
+[![Version](https://img.shields.io/npm/v/@panorama/addon-sdk?style=flat-square)](https://www.npmjs.com/package/@panorama/addon-sdk)
+[![Downloads](https://img.shields.io/npm/dm/@panorama/addon-sdk?style=flat-square)](https://www.npmjs.com/package/@panorama/addon-sdk)
+[![License](https://img.shields.io/npm/l/@panorama/addon-sdk?style=flat-square)](https://github.com/galza-guo/Panorama/blob/main/LICENSE)
 [![TypeScript](https://img.shields.io/badge/TypeScript-Ready-blue?style=flat-square)](https://www.typescriptlang.org/)
-[![Node](https://img.shields.io/node/v/@wealthfolio/addon-sdk?style=flat-square)](https://nodejs.org/)
+[![Node](https://img.shields.io/node/v/@panorama/addon-sdk?style=flat-square)](https://nodejs.org/)
 
 A comprehensive TypeScript SDK for building secure, feature-rich addons for
 Panorama. Extend your portfolio management experience with custom analytics,
 integrations, and visualizations.
 
-The package name remains `@wealthfolio/addon-sdk` for compatibility with the
-existing Wealthfolio v3 addon ecosystem.
+The package name is `@panorama/addon-sdk`.
 
 ## 📚 Table of Contents
 
@@ -59,7 +58,7 @@ mkdir my-portfolio-addon && cd my-portfolio-addon
 
 # 2. Initialize and install dependencies
 npm init -y
-npm install @wealthfolio/addon-sdk react react-dom
+npm install @panorama/addon-sdk react react-dom
 npm install -D typescript @types/react vite @vitejs/plugin-react
 
 # 3. Create basic files
@@ -73,7 +72,7 @@ mkdir src && touch src/index.ts
 
 ```typescript
 // src/index.ts
-import { getAddonContext, type AddonContext } from '@wealthfolio/addon-sdk';
+import { getAddonContext, type AddonContext } from '@panorama/addon-sdk';
 
 export default function enable(context: AddonContext) {
   // Add navigation item
@@ -105,13 +104,13 @@ export default function enable(context: AddonContext) {
 
 ```bash
 # Using npm
-npm install @wealthfolio/addon-sdk @tanstack/react-query
+npm install @panorama/addon-sdk @tanstack/react-query
 
 # Using yarn
-yarn add @wealthfolio/addon-sdk @tanstack/react-query
+yarn add @panorama/addon-sdk @tanstack/react-query
 
 # Using pnpm
-pnpm add @wealthfolio/addon-sdk @tanstack/react-query
+pnpm add @panorama/addon-sdk @tanstack/react-query
 ```
 
 ### Requirements
@@ -123,7 +122,7 @@ pnpm add @wealthfolio/addon-sdk @tanstack/react-query
 
 ### Package Information
 
-- **Package Name**: `@wealthfolio/addon-sdk`
+- **Package Name**: `@panorama/addon-sdk`
 - **Current Version**: 1.0.0
 - **Bundle Format**: ESM (ECMAScript Modules)
 - **Type Definitions**: Included (TypeScript ready)
@@ -138,17 +137,17 @@ The SDK supports multiple import patterns:
 
 ```typescript
 // Default import (recommended)
-import { getAddonContext } from '@wealthfolio/addon-sdk';
+import { getAddonContext } from '@panorama/addon-sdk';
 
 // Named imports
-import { AddonContext, PermissionLevel } from '@wealthfolio/addon-sdk';
+import { AddonContext, PermissionLevel } from '@panorama/addon-sdk';
 
 // Type-only imports
-import type { AddonManifest, Permission } from '@wealthfolio/addon-sdk';
+import type { AddonManifest, Permission } from '@panorama/addon-sdk';
 
 // Subpath imports
-import type { PortfolioHolding } from '@wealthfolio/addon-sdk/types';
-import { PERMISSION_CATEGORIES } from '@wealthfolio/addon-sdk/permissions';
+import type { PortfolioHolding } from '@panorama/addon-sdk/types';
+import { PERMISSION_CATEGORIES } from '@panorama/addon-sdk/permissions';
 ```
 
 ## 🏗️ Project Structure
@@ -188,7 +187,7 @@ Create a `manifest.json` file in your addon root:
   "license": "MIT",
   "main": "dist/addon.js",
   "sdkVersion": "1.0.0",
-  "minWealthfolioVersion": "1.0.0",
+  "minPanoramaVersion": "1.0.0",
   "keywords": ["portfolio", "fees", "tracking", "analytics"],
   "icon": "data:image/svg+xml;base64,...",
   "permissions": [
@@ -216,18 +215,19 @@ Create a `manifest.json` file in your addon root:
 
 ### Optional Fields
 
-| Field                   | Type           | Description                            |
-| ----------------------- | -------------- | -------------------------------------- |
-| `description`           | `string`       | Brief description of functionality     |
-| `author`                | `string`       | Author name or organization            |
-| `homepage`              | `string`       | Project homepage URL                   |
-| `license`               | `string`       | License identifier                     |
-| `main`                  | `string`       | Entry point file (default: "addon.js") |
-| `sdkVersion`            | `string`       | Compatible SDK version                 |
-| `permissions`           | `Permission[]` | Security permissions required          |
-| `minWealthfolioVersion` | `string`       | Minimum compatible host version (field name retained for compatibility) |
-| `keywords`              | `string[]`     | Keywords for discoverability           |
-| `icon`                  | `string`       | Addon icon (base64 or relative path)   |
+| Field                   | Type           | Description                                        |
+| ----------------------- | -------------- | -------------------------------------------------- |
+| `description`           | `string`       | Brief description of functionality                 |
+| `author`                | `string`       | Author name or organization                        |
+| `homepage`              | `string`       | Project homepage URL                               |
+| `license`               | `string`       | License identifier                                 |
+| `main`                  | `string`       | Entry point file (default: "addon.js")             |
+| `sdkVersion`            | `string`       | Compatible SDK version                             |
+| `permissions`           | `Permission[]` | Security permissions required                      |
+| `minPanoramaVersion`    | `string`       | Minimum compatible host version                    |
+| `minWealthfolioVersion` | `string`       | Legacy alias accepted for existing addon manifests |
+| `keywords`              | `string[]`     | Keywords for discoverability                       |
+| `icon`                  | `string`       | Addon icon (base64 or relative path)               |
 
 ## 🔨 Development Guide
 
@@ -240,8 +240,8 @@ example:
 // src/addon.tsx
 import React from 'react';
 import { QueryClientProvider } from '@tanstack/react-query';
-import type { AddonContext, AddonEnableFunction } from '@wealthfolio/addon-sdk';
-import { Icons } from '@wealthfolio/ui';
+import type { AddonContext, AddonEnableFunction } from '@panorama/addon-sdk';
+import { Icons } from '@panorama/ui';
 import FeesPage from './pages/fees-page';
 
 // Main addon component
@@ -324,7 +324,7 @@ export default enable;
 
 1. **Shared Query Client**: Uses `context.api.query.getClient()` for consistent
    data fetching
-2. **UI Icons**: Leverages `@wealthfolio/ui` for consistent iconography
+2. **UI Icons**: Leverages `@panorama/ui` for consistent iconography
 3. **Error Handling**: Comprehensive error handling with logging
 4. **Resource Management**: Proper cleanup of sidebar items and event listeners
 5. **TypeScript**: Full type safety with proper imports
@@ -338,8 +338,8 @@ export default enable;
 // components/FeesPage.tsx
 import React, { useEffect, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import type { AddonContext } from '@wealthfolio/addon-sdk';
-import type { Holding, Account, Activity } from '@wealthfolio/addon-sdk/types';
+import type { AddonContext } from '@panorama/addon-sdk';
+import type { Holding, Account, Activity } from '@panorama/addon-sdk/types';
 
 interface FeesPageProps {
   ctx: AddonContext;
@@ -494,8 +494,8 @@ export default AnalyticsDashboard;
 ```typescript
 // hooks/usePortfolioData.ts
 import { useState, useEffect } from 'react';
-import { getAddonContext } from '@wealthfolio/addon-sdk';
-import type { Holding, PerformanceMetrics } from '@wealthfolio/addon-sdk/types';
+import { getAddonContext } from '@panorama/addon-sdk';
+import type { Holding, PerformanceMetrics } from '@panorama/addon-sdk/types';
 
 export function usePortfolioData(accountId?: string) {
   const [holdings, setHoldings] = useState<Holding[]>([]);
@@ -845,8 +845,8 @@ if (ctx.api.logger.isLevelEnabled('debug')) {
 
 ### Shared QueryClient Integration
 
-The SDK provides access to Panorama's shared React Query client for
-consistent data fetching and caching:
+The SDK provides access to Panorama's shared React Query client for consistent
+data fetching and caching:
 
 ```typescript
 // Access the shared QueryClient instance
@@ -893,10 +893,10 @@ function MyAddonComponent() {
 
 ```typescript
 // Before
-import ctx from '@wealthfolio/addon-sdk';
+import ctx from '@panorama/addon-sdk';
 
 // After (recommended)
-import { getAddonContext } from '@wealthfolio/addon-sdk';
+import { getAddonContext } from '@panorama/addon-sdk';
 const ctx = getAddonContext();
 ```
 
@@ -904,11 +904,11 @@ const ctx = getAddonContext();
 
 ```typescript
 // Before
-import type { AddonContext, AddonManifest } from '@wealthfolio/addon-sdk';
+import type { AddonContext, AddonManifest } from '@panorama/addon-sdk';
 
 // After (more specific)
-import type { AddonContext } from '@wealthfolio/addon-sdk';
-import type { AddonManifest } from '@wealthfolio/addon-sdk/manifest';
+import type { AddonContext } from '@panorama/addon-sdk';
+import type { AddonManifest } from '@panorama/addon-sdk/manifest';
 ```
 
 ## 👩‍💻 Development Guide
@@ -926,7 +926,7 @@ cd my-portfolio-addon
 npm init -y
 
 # Install the SDK and peer dependencies
-npm install @wealthfolio/addon-sdk
+npm install @panorama/addon-sdk
 npm install --save-dev typescript @types/react vite @vitejs/plugin-react
 
 # Install React (peer dependency)
@@ -1087,7 +1087,7 @@ pnpm build
 npm link
 
 # In your addon project
-npm link @wealthfolio/addon-sdk
+npm link @panorama/addon-sdk
 
 # Test your changes
 npm run dev
@@ -1151,7 +1151,7 @@ if (process.env.NODE_ENV === 'development') {
 #### 1. Error Handling
 
 ```typescript
-import { getAddonContext } from '@wealthfolio/addon-sdk';
+import { getAddonContext } from '@panorama/addon-sdk';
 
 async function fetchPortfolioData() {
   const ctx = getAddonContext();
@@ -1276,8 +1276,8 @@ We welcome contributions to improve the addon SDK!
 1. **Fork and Clone**
 
    ```bash
-   git clone https://github.com/yourusername/wealthfolio.git
-   cd wealthfolio/packages/addon-sdk
+   git clone https://github.com/yourusername/Panorama.git
+   cd Panorama/packages/addon-sdk
    ```
 
 2. **Install Dependencies**
@@ -1306,7 +1306,7 @@ We welcome contributions to improve the addon SDK!
    npm link
 
    # In your test addon project
-   npm link @wealthfolio/addon-sdk
+   npm link @panorama/addon-sdk
    ```
 
 5. **Submit Changes**
@@ -1327,13 +1327,13 @@ We welcome contributions to improve the addon SDK!
 
 ### Package Details
 
-| Field            | Value                                                             |
-| ---------------- | ----------------------------------------------------------------- |
-| **Package Name** | `@wealthfolio/addon-sdk`                                          |
-| **Scope**        | `@wealthfolio`                                                    |
-| **Registry**     | [npmjs.com](https://www.npmjs.com/package/@wealthfolio/addon-sdk) |
-| **License**      | MIT                                                               |
-| **Repository**   | [GitHub](https://github.com/galza-guo/Panorama)                   |
+| Field            | Value                                                          |
+| ---------------- | -------------------------------------------------------------- |
+| **Package Name** | `@panorama/addon-sdk`                                          |
+| **Scope**        | `@panorama`                                                    |
+| **Registry**     | [npmjs.com](https://www.npmjs.com/package/@panorama/addon-sdk) |
+| **License**      | MIT                                                            |
+| **Repository**   | [GitHub](https://github.com/galza-guo/Panorama)                |
 
 ### Version History
 
@@ -1356,23 +1356,23 @@ We follow [Semantic Versioning](https://semver.org/) (SemVer):
 
 ```bash
 # Latest stable version
-npm install @wealthfolio/addon-sdk
+npm install @panorama/addon-sdk
 
 # Specific version
-npm install @wealthfolio/addon-sdk@1.0.0
+npm install @panorama/addon-sdk@1.0.0
 
 # Version range
-npm install @wealthfolio/addon-sdk@^1.0.0
+npm install @panorama/addon-sdk@^1.0.0
 ```
 
 #### Beta/Preview Releases
 
 ```bash
 # Latest beta version
-npm install @wealthfolio/addon-sdk@beta
+npm install @panorama/addon-sdk@beta
 
 # Specific beta version
-npm install @wealthfolio/addon-sdk@1.1.0-beta.1
+npm install @panorama/addon-sdk@1.1.0-beta.1
 ```
 
 #### Development Version
@@ -1389,19 +1389,19 @@ npm install github:galza-guo/Panorama#<branch-or-commit>
 
 ```bash
 # View package information
-npm info @wealthfolio/addon-sdk
+npm info @panorama/addon-sdk
 
 # View all available versions
-npm view @wealthfolio/addon-sdk versions --json
+npm view @panorama/addon-sdk versions --json
 
 # View latest version
-npm view @wealthfolio/addon-sdk version
+npm view @panorama/addon-sdk version
 
 # View package dependencies
-npm view @wealthfolio/addon-sdk dependencies
+npm view @panorama/addon-sdk dependencies
 
 # Check for outdated packages
-npm outdated @wealthfolio/addon-sdk
+npm outdated @panorama/addon-sdk
 ```
 
 ### Publishing Information (For Maintainers)
@@ -1416,7 +1416,7 @@ npm login
 npm whoami
 
 # Check publishing permissions
-npm access list packages @wealthfolio
+npm access list packages @panorama
 ```
 
 #### Release Process
@@ -1430,7 +1430,7 @@ npm run build
 
 # 3. Test the build
 npm pack
-tar -tf wealthfolio-addon-sdk-*.tgz
+tar -tf panorama-addon-sdk-*.tgz
 
 # 4. Publish to npm
 npm publish
@@ -1457,11 +1457,11 @@ git push --tags
 View package statistics:
 
 - **Downloads**:
-  [npm-stat.com](https://npm-stat.com/charts.html?package=@wealthfolio/addon-sdk)
+  [npm-stat.com](https://npm-stat.com/charts.html?package=@panorama/addon-sdk)
 - **Bundle Size**:
-  [bundlephobia.com](https://bundlephobia.com/package/@wealthfolio/addon-sdk)
+  [bundlephobia.com](https://bundlephobia.com/package/@panorama/addon-sdk)
 - **Dependencies**:
-  [npm.anvaka.com](https://npm.anvaka.com/#/view/2d/@wealthfolio/addon-sdk)
+  [npm.anvaka.com](https://npm.anvaka.com/#/view/2d/@panorama/addon-sdk)
 
 ### Security
 
@@ -1508,8 +1508,7 @@ npm pack && tar -tf *.tgz
 1. **Documentation**: Check this README and the
    [Panorama addon docs](https://github.com/galza-guo/Panorama/tree/main/docs/addons)
 2. **Issues**: [GitHub Issues](https://github.com/galza-guo/Panorama/issues)
-3. **Upstream Reference**:
-   [Wealthfolio](https://github.com/afadil/wealthfolio)
+3. **Upstream Reference**: [Wealthfolio](https://github.com/afadil/wealthfolio)
 
 ## 📄 License
 
@@ -1533,7 +1532,7 @@ MIT - see [LICENSE](LICENSE) for details.
 
 #### 1. Module Resolution Errors
 
-**Error**: `Cannot resolve module '@wealthfolio/addon-sdk'`
+**Error**: `Cannot resolve module '@panorama/addon-sdk'`
 
 **Solutions**:
 
@@ -1566,7 +1565,7 @@ node --version
 }
 
 // Use explicit type imports
-import type { AddonContext } from '@wealthfolio/addon-sdk';
+import type { AddonContext } from '@panorama/addon-sdk';
 ```
 
 #### 3. React Peer Dependency Warnings
@@ -1594,7 +1593,7 @@ npm list react react-dom
 export default defineConfig({
   build: {
     rollupOptions: {
-      external: ['react', 'react-dom', '@wealthfolio/addon-sdk'],
+      external: ['react', 'react-dom', '@panorama/addon-sdk'],
     },
   },
 });
@@ -1743,7 +1742,7 @@ If you're still experiencing issues:
 1. **Check Version Compatibility**:
 
    ```bash
-   npm list @wealthfolio/addon-sdk
+   npm list @panorama/addon-sdk
    ```
 
 2. **Create Minimal Reproduction**:

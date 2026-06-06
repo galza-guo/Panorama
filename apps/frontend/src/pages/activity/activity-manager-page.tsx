@@ -22,7 +22,7 @@ import {
   Page,
   PageContent,
   PageHeader,
-} from "@wealthfolio/ui";
+} from "@panorama/ui";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import type { AccountSelectOption } from "./components/forms/fields";

@@ -10,10 +10,7 @@ use crate::{
 
 use chrono::{NaiveDate, Utc};
 use log::{debug, info, warn};
-use rust_decimal::Decimal;
-use serde::{Deserialize, Serialize};
-use tauri::{AppHandle, State};
-use wealthfolio_core::{
+use panorama_core::{
     accounts::TrackingMode,
     allocation::{AllocationHoldings, PortfolioAllocations},
     holdings::Holding,
@@ -26,6 +23,9 @@ use wealthfolio_core::{
     quotes::MarketSyncMode,
     valuation::DailyAccountValuation,
 };
+use rust_decimal::Decimal;
+use serde::{Deserialize, Serialize};
+use tauri::{AppHandle, State};
 
 // ============================================================================
 // Snapshot Info Types
@@ -955,7 +955,7 @@ pub async fn get_snapshot_by_date(
         .collect();
 
     // Fetch asset details if we have positions
-    let assets_map: HashMap<String, wealthfolio_core::assets::Asset> = if !asset_ids.is_empty() {
+    let assets_map: HashMap<String, panorama_core::assets::Asset> = if !asset_ids.is_empty() {
         state
             .asset_service()
             .get_assets_by_asset_ids(&asset_ids)
@@ -986,11 +986,11 @@ pub async fn get_snapshot_by_date(
 
         let (holding_type, id_prefix) = if asset.kind.is_alternative() {
             (
-                wealthfolio_core::holdings::HoldingType::AlternativeAsset,
+                panorama_core::holdings::HoldingType::AlternativeAsset,
                 "ALT",
             )
         } else {
-            (wealthfolio_core::holdings::HoldingType::Security, "SEC")
+            (panorama_core::holdings::HoldingType::Security, "SEC")
         };
 
         // Extract purchase_price from metadata for alternative assets
@@ -1006,7 +1006,7 @@ pub async fn get_snapshot_by_date(
             })
         });
 
-        let instrument = wealthfolio_core::holdings::Instrument {
+        let instrument = panorama_core::holdings::Instrument {
             id: asset.id.clone(),
             symbol: asset.display_code.clone().unwrap_or_default(),
             name: asset.name.clone(),
@@ -1029,8 +1029,8 @@ pub async fn get_snapshot_by_date(
             local_currency: position.currency.clone(),
             base_currency: base_currency.clone(),
             fx_rate: None,
-            market_value: wealthfolio_core::holdings::MonetaryValue::zero(),
-            cost_basis: Some(wealthfolio_core::holdings::MonetaryValue {
+            market_value: panorama_core::holdings::MonetaryValue::zero(),
+            cost_basis: Some(panorama_core::holdings::MonetaryValue {
                 local: position.total_cost_basis,
                 base: Decimal::ZERO,
             }),
@@ -1061,7 +1061,7 @@ pub async fn get_snapshot_by_date(
         let holding = Holding {
             id: format!("CASH-{}-{}", account_id, currency),
             account_id: account_id.clone(),
-            holding_type: wealthfolio_core::holdings::HoldingType::Cash,
+            holding_type: panorama_core::holdings::HoldingType::Cash,
             instrument: None,
             asset_kind: None, // Cash holdings have no asset
             quantity: amount,
@@ -1070,11 +1070,11 @@ pub async fn get_snapshot_by_date(
             local_currency: currency.clone(),
             base_currency: base_currency.clone(),
             fx_rate: None,
-            market_value: wealthfolio_core::holdings::MonetaryValue {
+            market_value: panorama_core::holdings::MonetaryValue {
                 local: amount,
                 base: Decimal::ZERO,
             },
-            cost_basis: Some(wealthfolio_core::holdings::MonetaryValue {
+            cost_basis: Some(panorama_core::holdings::MonetaryValue {
                 local: amount,
                 base: Decimal::ZERO,
             }),

@@ -2,8 +2,8 @@
   "$schema": "./ai-prompt-templates.schema.json",
   "schemaVersion": 1,
   "templates": {
-    "wealthfolio-assistant-v1": {
-      "id": "wealthfolio-assistant-v1",
+    "panorama-assistant-v1": {
+      "id": "panorama-assistant-v1",
       "version": "1.0.0",
       "name": "Panorama Assistant",
       "description": "Default assistant template for portfolio analysis and insights",
@@ -49,6 +49,6 @@
   },
   "metadata": {
     "lastUpdated": "2026-01-15",
-    "maintainer": "wealthfolio-team"
+    "maintainer": "panorama-team"
   }
 }

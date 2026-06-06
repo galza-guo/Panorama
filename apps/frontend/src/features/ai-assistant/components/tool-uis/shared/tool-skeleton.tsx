@@ -1,4 +1,4 @@
-import { Skeleton } from "@wealthfolio/ui";
+import { Skeleton } from "@panorama/ui";
 
 interface TableSkeletonProps {
   rows?: number;

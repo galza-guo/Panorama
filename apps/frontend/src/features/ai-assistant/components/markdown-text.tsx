@@ -9,7 +9,7 @@ import {
 import { type FC, memo, useState } from "react";
 import { Link } from "react-router-dom";
 
-import { Icons } from "@wealthfolio/ui/components/ui/icons";
+import { Icons } from "@panorama/ui/components/ui/icons";
 import remarkGfm from "remark-gfm";
 
 import { ExternalLink } from "@/components/external-link";
@@ -112,7 +112,7 @@ const customComponents = memoizeMarkdownComponents({
   pre: ({ className, ...props }) => (
     <pre
       className={cn(
-        "aui-md-pre not-prose overflow-x-auto rounded-b-lg rounded-t-none bg-black p-4 text-sm text-white",
+        "aui-md-pre not-prose overflow-x-auto rounded-t-none rounded-b-lg bg-black p-4 text-sm text-white",
         className,
       )}
       {...props}
@@ -149,7 +149,7 @@ const customComponents = memoizeMarkdownComponents({
   th: ({ className, ...props }) => (
     <th
       className={cn(
-        "aui-md-th bg-muted whitespace-nowrap px-3 py-2 text-left text-xs font-semibold first:rounded-tl-lg last:rounded-tr-lg",
+        "aui-md-th bg-muted px-3 py-2 text-left text-xs font-semibold whitespace-nowrap first:rounded-tl-lg last:rounded-tr-lg",
         className,
       )}
       {...props}
@@ -158,7 +158,7 @@ const customComponents = memoizeMarkdownComponents({
   td: ({ className, ...props }) => (
     <td
       className={cn(
-        "aui-md-td whitespace-nowrap border-b border-l px-3 py-2 text-left text-sm last:border-r",
+        "aui-md-td border-b border-l px-3 py-2 text-left text-sm whitespace-nowrap last:border-r",
         className,
       )}
       {...props}

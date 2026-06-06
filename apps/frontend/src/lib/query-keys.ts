@@ -82,17 +82,6 @@ export const QueryKeys = {
   ADDON_STORE_LISTINGS: "addonStoreListings",
   ADDON_AUTO_UPDATE_CHECK: "addonAutoUpdateCheck",
 
-  // Cloud Sync
-  BROKER_CONNECTIONS: "brokerConnections",
-  BROKER_ACCOUNTS: "brokerAccounts",
-  PLATFORMS: "platforms",
-  SYNCED_ACCOUNTS: "syncedAccounts",
-  SUBSCRIPTION_PLANS: "subscriptionPlans",
-  SUBSCRIPTION_PLANS_PUBLIC: "subscriptionPlansPublic",
-  USER_INFO: "userInfo",
-  BROKER_SYNC_STATES: "brokerSyncStates",
-  IMPORT_RUNS: "importRuns",
-
   // Alternative Assets & Net Worth
   NET_WORTH: "netWorth",
   netWorth: (date?: string) => [QueryKeys.NET_WORTH, date ?? "current"],

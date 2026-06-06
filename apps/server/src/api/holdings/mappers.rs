@@ -1,4 +1,4 @@
-use wealthfolio_core::portfolio::snapshot::SnapshotSource;
+use panorama_core::portfolio::snapshot::SnapshotSource;
 
 // Re-export date parsing utilities from shared module
 pub use crate::api::shared::{parse_date, parse_date_optional};

@@ -33,7 +33,7 @@ use crate::errors::Result;
 use crate::fx::currency::{get_normalization_rule, normalize_currency_code};
 use crate::secrets::SecretStore;
 
-use wealthfolio_market_data::{exchanges_for_currency, mic_to_exchange_name};
+use panorama_market_data::{exchanges_for_currency, mic_to_exchange_name};
 
 /// Provider information combining static info with settings.
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]

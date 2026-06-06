@@ -32,7 +32,7 @@ const insuranceHolding: AlternativeAssetHolding = {
 };
 
 vi.mock("@/components/page", () => ({
-  SwipablePage: ({ views }: { views: Array<{ value: string; content: ReactNode }> }) => (
+  SwipablePage: ({ views }: { views: { value: string; content: ReactNode }[] }) => (
     <div>{views.find((view) => view.value === "assets")?.content}</div>
   ),
 }));

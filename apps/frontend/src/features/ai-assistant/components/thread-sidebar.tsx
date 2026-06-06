@@ -1,16 +1,16 @@
 import React, { useState, useMemo, useCallback } from "react";
-import { Button } from "@wealthfolio/ui/components/ui/button";
-import { Input } from "@wealthfolio/ui/components/ui/input";
-import { Icons } from "@wealthfolio/ui/components/ui/icons";
-import { Badge } from "@wealthfolio/ui/components/ui/badge";
-import { InputTags } from "@wealthfolio/ui/components/ui/tag-input";
+import { Button } from "@panorama/ui/components/ui/button";
+import { Input } from "@panorama/ui/components/ui/input";
+import { Icons } from "@panorama/ui/components/ui/icons";
+import { Badge } from "@panorama/ui/components/ui/badge";
+import { InputTags } from "@panorama/ui/components/ui/tag-input";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@wealthfolio/ui/components/ui/dropdown-menu";
+} from "@panorama/ui/components/ui/dropdown-menu";
 import {
   AlertDialog,
   AlertDialogCancel,
@@ -19,7 +19,7 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from "@wealthfolio/ui/components/ui/alert-dialog";
+} from "@panorama/ui/components/ui/alert-dialog";
 import {
   Dialog,
   DialogContent,
@@ -27,8 +27,8 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "@wealthfolio/ui/components/ui/dialog";
-import { Label } from "@wealthfolio/ui/components/ui/label";
+} from "@panorama/ui/components/ui/dialog";
+import { Label } from "@panorama/ui/components/ui/label";
 import { cn } from "@/lib/utils";
 import type { ChatThread } from "../types";
 
@@ -267,7 +267,7 @@ export function ThreadSidebar({
       {/* Search */}
       <div className="border-b p-2">
         <div className="relative">
-          <Icons.Search className="text-muted-foreground absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2" />
+          <Icons.Search className="text-muted-foreground absolute top-1/2 left-2.5 h-4 w-4 -translate-y-1/2" />
           <Input
             type="search"
             placeholder="Search conversations..."

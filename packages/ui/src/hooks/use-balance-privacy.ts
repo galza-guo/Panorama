@@ -19,7 +19,7 @@ export interface BalancePrivacyHook {
  *
  * @example
  * ```tsx
- * import { useBalancePrivacy } from '@wealthfolio/ui';
+ * import { useBalancePrivacy } from '@panorama/ui';
  *
  * function MyComponent() {
  *   const { isBalanceHidden, toggleBalanceVisibility } = useBalancePrivacy();

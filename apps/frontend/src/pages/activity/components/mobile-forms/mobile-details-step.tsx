@@ -1,5 +1,5 @@
-import { ScrollArea } from "@wealthfolio/ui/components/ui/scroll-area";
-import { Textarea } from "@wealthfolio/ui/components/ui/textarea";
+import { ScrollArea } from "@panorama/ui/components/ui/scroll-area";
+import { Textarea } from "@panorama/ui/components/ui/textarea";
 import { QuoteMode, type ActivityType } from "@/lib/constants";
 import { useSettingsContext } from "@/lib/settings-provider";
 import { AdvancedOptionsSection } from "../forms/fields/advanced-options-section";
@@ -20,7 +20,7 @@ import {
   SheetDescription,
   SheetHeader,
   SheetTitle,
-} from "@wealthfolio/ui";
+} from "@panorama/ui";
 import { useEffect, useMemo, useState } from "react";
 import { useFormContext } from "react-hook-form";
 import { restrictionAllowsType } from "@/lib/activity-restrictions";
@@ -346,7 +346,7 @@ function MobileAccountSheet({ accounts, open, onOpenChange, onSelect }: MobileAc
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent side="bottom" className="rounded-t-4xl mx-1 h-[70vh] p-0">
+      <SheetContent side="bottom" className="mx-1 h-[70vh] rounded-t-4xl p-0">
         <SheetHeader className="border-border border-b px-6 py-4">
           <SheetTitle>Select Account</SheetTitle>
           <SheetDescription>Choose the account for this transaction</SheetDescription>

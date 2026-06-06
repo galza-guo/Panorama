@@ -12,8 +12,8 @@ import {
   PopoverContent,
   PopoverTrigger,
   Skeleton,
-} from "@wealthfolio/ui";
-import { buildCategoryTree, type TreeNode } from "@wealthfolio/ui/components/ui/tree-view";
+} from "@panorama/ui";
+import { buildCategoryTree, type TreeNode } from "@panorama/ui/components/ui/tree-view";
 import { cn } from "@/lib/utils";
 import { useTaxonomy } from "@/hooks/use-taxonomies";
 import type { TaxonomyCategory } from "@/lib/types";

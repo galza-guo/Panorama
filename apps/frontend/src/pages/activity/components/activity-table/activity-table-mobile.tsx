@@ -1,5 +1,5 @@
 import { TickerAvatar } from "@/components/ticker-avatar";
-import { Card } from "@wealthfolio/ui/components/ui/card";
+import { Card } from "@panorama/ui/components/ui/card";
 import {
   calculateActivityValue,
   isCashActivity,
@@ -11,7 +11,7 @@ import {
 import { ActivityType, ActivityTypeNames } from "@/lib/constants";
 import { ActivityDetails } from "@/lib/types";
 import { formatDateTime } from "@/lib/utils";
-import { formatAmount, Separator } from "@wealthfolio/ui";
+import { formatAmount, Separator } from "@panorama/ui";
 import { Link } from "react-router-dom";
 import { ActivityOperations } from "../activity-operations";
 import { ActivityTypeBadge } from "../activity-type-badge";

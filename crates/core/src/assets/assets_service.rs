@@ -18,7 +18,7 @@ use super::auto_classification::{AutoClassificationService, ClassificationInput}
 use crate::errors::{DatabaseError, Error, Result};
 
 // Import mic_to_currency for resolving exchange trading currencies
-use wealthfolio_market_data::mic_to_currency;
+use panorama_market_data::mic_to_currency;
 
 /// Converts a provider's asset_type string to our InstrumentType enum.
 /// Provider data uses various naming conventions (e.g., "CRYPTOCURRENCY", "ETF", "Equity").

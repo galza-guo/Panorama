@@ -4,10 +4,10 @@ use std::fs;
 use std::sync::Arc;
 
 use chrono::Utc;
-use wealthfolio_core::sync::{
+use panorama_core::sync::{
     event_file_name, FolderSyncEventFileV1, FolderSyncMetadataV1, FOLDER_SYNC_VERSION_V1,
 };
-use wealthfolio_storage_sqlite::sync::{
+use panorama_storage_sqlite::sync::{
     AppSyncRepository, FolderSyncRepository, FolderSyncStatusUpdate,
 };
 
@@ -200,14 +200,14 @@ mod tests {
     use std::path::PathBuf;
     use std::sync::Arc;
 
-    use tempfile::tempdir;
-    use wealthfolio_core::settings::SettingsRepositoryTrait;
-    use wealthfolio_core::sync::{FolderSyncEventFileV1, SyncEntity, SyncOperation};
-    use wealthfolio_storage_sqlite::db::{self, write_actor, WriteHandle};
-    use wealthfolio_storage_sqlite::settings::SettingsRepository;
-    use wealthfolio_storage_sqlite::sync::{
+    use panorama_core::settings::SettingsRepositoryTrait;
+    use panorama_core::sync::{FolderSyncEventFileV1, SyncEntity, SyncOperation};
+    use panorama_storage_sqlite::db::{self, write_actor, WriteHandle};
+    use panorama_storage_sqlite::settings::SettingsRepository;
+    use panorama_storage_sqlite::sync::{
         insert_outbox_event, AppSyncRepository, FolderSyncRepository, OutboxWriteRequest,
     };
+    use tempfile::tempdir;
 
     use crate::services::folder_sync_fs::FolderSyncFsService;
 

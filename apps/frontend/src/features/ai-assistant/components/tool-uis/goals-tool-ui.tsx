@@ -1,18 +1,10 @@
 import type { ToolCallMessagePartProps } from "@assistant-ui/react";
 import { makeAssistantToolUI } from "@assistant-ui/react";
-import {
-  Badge,
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-  Progress,
-  Skeleton,
-} from "@wealthfolio/ui";
+import { Badge, Card, CardContent, CardHeader, CardTitle, Progress, Skeleton } from "@panorama/ui";
 import { useMemo } from "react";
 import { cn } from "@/lib/utils";
 import { useBalancePrivacy } from "@/hooks/use-balance-privacy";
-import { Icons } from "@wealthfolio/ui/components/ui/icons";
+import { Icons } from "@panorama/ui/components/ui/icons";
 import { useSettingsContext } from "@/lib/settings-provider";
 
 // ============================================================================
@@ -261,7 +253,7 @@ function GoalCard({
           ) : (
             <Icons.Target className="text-muted-foreground h-4 w-4 flex-shrink-0" />
           )}
-          <span className="text-sm font-medium leading-tight">{goal.title}</span>
+          <span className="text-sm leading-tight font-medium">{goal.title}</span>
         </div>
         <Badge
           variant={goal.isAchieved ? "default" : "secondary"}

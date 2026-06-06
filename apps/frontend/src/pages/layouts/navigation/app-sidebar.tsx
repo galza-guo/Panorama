@@ -6,10 +6,10 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from "@wealthfolio/ui";
-import { Button } from "@wealthfolio/ui/components/ui/button";
-import { Icons } from "@wealthfolio/ui/components/ui/icons";
-import { Separator } from "@wealthfolio/ui/components/ui/separator";
+} from "@panorama/ui";
+import { Button } from "@panorama/ui/components/ui/button";
+import { Icons } from "@panorama/ui/components/ui/icons";
+import { Separator } from "@panorama/ui/components/ui/separator";
 import { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { type NavLink, type NavigationProps, isPathActive } from "./app-navigation";
@@ -85,7 +85,7 @@ export function AppSidebar({ navigation }: AppSidebarProps) {
                     document.dispatchEvent(event);
                   }}
                   className={cn(
-                    "text-foreground [&_svg]:size-5! mb-4 h-12 transition-all duration-300",
+                    "text-foreground mb-4 h-12 transition-all duration-300 [&_svg]:size-5!",
                     collapsed
                       ? "justify-center rounded-md"
                       : "bg-muted/50 hover:bg-muted/80 justify-start rounded-full px-4 shadow-none",
@@ -105,7 +105,7 @@ export function AppSidebar({ navigation }: AppSidebarProps) {
                     Search...
                   </span>
                   {!collapsed && (
-                    <kbd className="bg-background text-muted-foreground pointer-events-none inline-flex h-5 select-none items-center gap-1 rounded border px-1.5 font-mono text-[10px] font-medium opacity-100">
+                    <kbd className="bg-background text-muted-foreground pointer-events-none inline-flex h-5 items-center gap-1 rounded border px-1.5 font-mono text-[10px] font-medium opacity-100 select-none">
                       <span className="text-xs">⌘</span>K
                     </kbd>
                   )}
@@ -131,7 +131,7 @@ export function AppSidebar({ navigation }: AppSidebarProps) {
                   variant="ghost"
                   onClick={logout}
                   className={cn(
-                    "text-foreground [&_svg]:size-5! mb-1 h-12 rounded-md transition-all duration-300",
+                    "text-foreground mb-1 h-12 rounded-md transition-all duration-300 [&_svg]:size-5!",
                     collapsed ? "justify-center" : "justify-start",
                   )}
                   title="Logout"
@@ -156,7 +156,7 @@ export function AppSidebar({ navigation }: AppSidebarProps) {
                 variant="ghost"
                 onClick={() => setCollapsed(!collapsed)}
                 className={cn(
-                  "text-muted-foreground [&_svg]:size-5! h-12 cursor-pointer rounded-md transition-all duration-300 hover:bg-transparent",
+                  "text-muted-foreground h-12 cursor-pointer rounded-md transition-all duration-300 hover:bg-transparent [&_svg]:size-5!",
                   collapsed ? "justify-center" : "justify-start",
                 )}
                 aria-label={collapsed ? "Expand Sidebar" : "Collapse Sidebar"}
@@ -194,7 +194,7 @@ function NavItem({ item, collapsed, className, ...props }: NavItemProps) {
       variant={isActive ? "secondary" : "ghost"}
       asChild
       className={cn(
-        "text-foreground [&_svg]:size-5! mb-1 h-12 rounded-md transition-all duration-300",
+        "text-foreground mb-1 h-12 rounded-md transition-all duration-300 [&_svg]:size-5!",
         collapsed ? "justify-center" : "justify-start",
         className,
       )}
@@ -237,7 +237,7 @@ function AddonsMenu({ addons, collapsed }: AddonsMenuProps) {
         <Button
           variant={hasActiveAddon ? "secondary" : "ghost"}
           className={cn(
-            "text-foreground [&_svg]:size-5! mb-1 h-12 rounded-md transition-all duration-300",
+            "text-foreground mb-1 h-12 rounded-md transition-all duration-300 [&_svg]:size-5!",
             collapsed ? "justify-center" : "justify-start",
           )}
         >

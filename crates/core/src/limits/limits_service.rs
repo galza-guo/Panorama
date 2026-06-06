@@ -672,7 +672,7 @@ mod tests {
             amount: Some(dec!(1000)),
             currency: "USD".to_string(),
             metadata: external_metadata(),
-            source_group_id: None, // From outside Wealthfolio
+            source_group_id: None, // From outside Panorama
         }];
         let service = make_service(activities);
         let (start, end) = dates();

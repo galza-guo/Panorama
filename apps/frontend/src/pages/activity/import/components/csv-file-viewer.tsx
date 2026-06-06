@@ -1,15 +1,15 @@
-import { DataTableColumnHeader } from "@wealthfolio/ui/components/ui/data-table/data-table-column-header";
-import { DataTableFacetedFilterProps } from "@wealthfolio/ui/components/ui/data-table/data-table-faceted-filter";
-import { DataTablePagination } from "@wealthfolio/ui/components/ui/data-table/data-table-pagination";
-import { DataTableToolbar } from "@wealthfolio/ui/components/ui/data-table/data-table-toolbar";
-import { Icons } from "@wealthfolio/ui/components/ui/icons";
-import { Table, TableBody, TableCell, TableRow } from "@wealthfolio/ui/components/ui/table";
+import { DataTableColumnHeader } from "@panorama/ui/components/ui/data-table/data-table-column-header";
+import { DataTableFacetedFilterProps } from "@panorama/ui/components/ui/data-table/data-table-faceted-filter";
+import { DataTablePagination } from "@panorama/ui/components/ui/data-table/data-table-pagination";
+import { DataTableToolbar } from "@panorama/ui/components/ui/data-table/data-table-toolbar";
+import { Icons } from "@panorama/ui/components/ui/icons";
+import { Table, TableBody, TableCell, TableRow } from "@panorama/ui/components/ui/table";
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
-} from "@wealthfolio/ui/components/ui/tooltip";
+} from "@panorama/ui/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 import {
   ColumnDef,
@@ -137,7 +137,7 @@ export function CSVFileViewer({ data, className, maxHeight = "400px" }: CSVFileV
         const isHeader = row.original.id === 0;
 
         return (
-          <div className={cn("whitespace-nowrap font-mono text-xs", isHeader && "font-semibold")}>
+          <div className={cn("font-mono text-xs whitespace-nowrap", isHeader && "font-semibold")}>
             {(content as React.ReactNode) || (
               <span className="text-muted-foreground italic">empty line</span>
             )}

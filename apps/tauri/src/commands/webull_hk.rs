@@ -4,15 +4,7 @@ use std::collections::HashMap;
 use std::sync::Arc;
 
 use chrono::Utc;
-use rust_decimal::Decimal;
-use serde::{Deserialize, Serialize};
-use tauri::State;
-use uuid::Uuid;
-use wealthfolio_connect::webull_hk::{
-    client::{WebullHkClient, WebullHkEnvironment},
-    sync::{map_account_list, map_account_snapshot, WebullHkAccountSnapshot},
-};
-use wealthfolio_core::{
+use panorama_core::{
     accounts::TrackingMode,
     assets::AssetSpec,
     connectors::{
@@ -24,6 +16,14 @@ use wealthfolio_core::{
     portfolio::snapshot::{AccountStateSnapshot, Position, SnapshotSource},
     utils::time_utils::valuation_date_today,
 };
+use panorama_local_connectors::webull_hk::{
+    client::{WebullHkClient, WebullHkEnvironment},
+    sync::{map_account_list, map_account_snapshot, WebullHkAccountSnapshot},
+};
+use rust_decimal::Decimal;
+use serde::{Deserialize, Serialize};
+use tauri::State;
+use uuid::Uuid;
 
 use crate::{context::ServiceContext, secret_store::shared_secret_store};
 
@@ -214,7 +214,7 @@ pub async fn link_webull_hk_account(
         || local_account.provider.as_deref() != Some("WEBULL_HK")
         || local_account.provider_account_id.as_deref() != Some(request.remote_account_id.trim());
     if should_update_account {
-        let mut update = wealthfolio_core::accounts::AccountUpdate {
+        let mut update = panorama_core::accounts::AccountUpdate {
             id: Some(local_account.id.clone()),
             name: local_account.name,
             account_type: local_account.account_type,
@@ -334,10 +334,10 @@ struct SaveSnapshotStats {
 
 async fn save_mapped_snapshot(
     context: &Arc<ServiceContext>,
-    account: &wealthfolio_core::accounts::Account,
+    account: &panorama_core::accounts::Account,
     snapshot_date: chrono::NaiveDate,
     mapped_snapshot: WebullHkAccountSnapshot,
-) -> wealthfolio_core::Result<SaveSnapshotStats> {
+) -> panorama_core::Result<SaveSnapshotStats> {
     let asset_specs = mapped_snapshot
         .positions
         .iter()
@@ -366,7 +366,7 @@ async fn save_mapped_snapshot(
         let asset_id = key_to_asset_id
             .get(&spec_key)
             .cloned()
-            .ok_or_else(|| wealthfolio_core::Error::Asset(format!("Asset {spec_key} not found")))?;
+            .ok_or_else(|| panorama_core::Error::Asset(format!("Asset {spec_key} not found")))?;
         cost_basis += convert_amount_for_snapshot(
             context,
             mapped_position.total_cost_basis,
@@ -445,7 +445,7 @@ async fn convert_amount_for_snapshot(
     from_currency: &str,
     to_currency: &str,
     date: chrono::NaiveDate,
-) -> wealthfolio_core::Result<Decimal> {
+) -> panorama_core::Result<Decimal> {
     if from_currency == to_currency {
         return Ok(amount);
     }

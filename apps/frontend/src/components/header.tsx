@@ -1,5 +1,5 @@
-import { Button } from "@wealthfolio/ui/components/ui/button";
-import { Icons } from "@wealthfolio/ui/components/ui/icons";
+import { Button } from "@panorama/ui/components/ui/button";
+import { Icons } from "@panorama/ui/components/ui/icons";
 import { cn } from "@/lib/utils";
 import { Link, useNavigate } from "react-router-dom";
 

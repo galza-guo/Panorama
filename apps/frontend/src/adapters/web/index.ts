@@ -33,24 +33,8 @@ export type {
   UpdateCheckPayload,
   PlatformCapabilities,
   PlatformInfo,
-  BackendSyncStateResult,
-  BackendEnableSyncResult,
-  BackendSyncEngineStatusResult,
-  BackendSyncBootstrapOverwriteCheckResult,
-  BackendSyncReconcileReadyResult,
-  BackendSyncBootstrapResult,
-  BackendSyncCycleResult,
-  BackendSyncBackgroundEngineResult,
-  BackendSyncSnapshotUploadResult,
-  EphemeralKeyPair,
   Logger,
 } from "../types";
-
-export type {
-  ConfirmPairingWithBootstrapResult,
-  PairingFlowPhase,
-  PairingFlowResponse,
-} from "../shared/connect";
 
 // Re-export AI types from features/ai-assistant
 export type {
@@ -211,57 +195,6 @@ export {
   getNetWorthHistory,
 } from "../shared/alternative-assets";
 
-// Connect Commands (Broker + Device Sync + Auth)
-export {
-  syncBrokerData,
-  getSyncedAccounts,
-  getPlatforms,
-  listBrokerConnections,
-  listBrokerAccounts,
-  getSubscriptionPlans,
-  getSubscriptionPlansPublic,
-  getUserInfo,
-  getBrokerSyncStates,
-  getImportRuns,
-  getDeviceSyncState,
-  enableDeviceSync,
-  clearDeviceSyncData,
-  reinitializeDeviceSync,
-  getSyncEngineStatus,
-  getPairingSourceStatus,
-  deviceSyncBootstrapOverwriteCheck,
-  deviceSyncReconcileReadyState,
-  syncBootstrapSnapshotIfNeeded,
-  syncTriggerCycle,
-  deviceSyncStartBackgroundEngine,
-  deviceSyncStopBackgroundEngine,
-  getDevice,
-  listDevices,
-  updateDevice,
-  deleteDevice,
-  revokeDevice,
-  resetTeamSync,
-  createPairing,
-  getPairing,
-  approvePairing,
-  completePairing,
-  cancelPairing,
-  claimPairing,
-  getPairingMessages,
-  confirmPairing,
-  completePairingWithTransfer,
-  confirmPairingWithBootstrap,
-  beginPairingConfirm,
-  getPairingFlowState,
-  approvePairingOverwrite,
-  cancelPairingFlow,
-  deviceSyncGenerateSnapshotNow,
-  deviceSyncCancelSnapshotUpload,
-  restoreSyncSession,
-  storeSyncSession,
-  clearSyncSession,
-} from "../shared/connect";
-
 // Webull HK Local Connect Commands
 export {
   createWebullHkConnection,
@@ -349,9 +282,6 @@ export {
   listenDatabaseRestored,
   listenNavigateToRoute,
   listenDeepLink,
-  listenBrokerSyncStart,
-  listenBrokerSyncComplete,
-  listenBrokerSyncError,
 } from "./events";
 
 // File Dialogs (web-specific implementations)
@@ -402,19 +332,3 @@ export {
   submitAddonRating,
   fetchAddonStoreListings,
 } from "./addons";
-
-// Crypto Commands (web stubs - not available in web mode)
-export {
-  syncGenerateRootKey,
-  syncDeriveDek,
-  syncGenerateKeypair,
-  syncComputeSharedSecret,
-  syncDeriveSessionKey,
-  syncEncrypt,
-  syncDecrypt,
-  syncGeneratePairingCode,
-  syncHashPairingCode,
-  syncHmacSha256,
-  syncComputeSas,
-  syncGenerateDeviceId,
-} from "./crypto";

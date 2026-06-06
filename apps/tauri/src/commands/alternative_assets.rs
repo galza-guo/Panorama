@@ -16,7 +16,7 @@ use tauri::State;
 
 use crate::context::ServiceContext;
 
-use wealthfolio_core::assets::{
+use panorama_core::assets::{
     AssetKind, CreateAlternativeAssetRequest as CoreCreateRequest,
     LinkLiabilityRequest as CoreLinkRequest, UpdateAssetDetailsRequest as CoreUpdateDetailsRequest,
     UpdateValuationRequest as CoreValuationRequest,

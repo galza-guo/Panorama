@@ -3,7 +3,7 @@ import { useAccounts } from "@/hooks/use-accounts";
 import { QueryKeys } from "@/lib/query-keys";
 import type { Goal, GoalAllocation } from "@/lib/types";
 import { useQuery } from "@tanstack/react-query";
-import { Button, EmptyPlaceholder, Icons, Separator, Skeleton } from "@wealthfolio/ui";
+import { Button, EmptyPlaceholder, Icons, Separator, Skeleton } from "@panorama/ui";
 import { useState } from "react";
 import { SettingsHeader } from "../settings-header";
 import GoalsAllocations from "./components/goal-allocations";
@@ -92,7 +92,7 @@ const SettingsGoalsPage = () => {
                 ))}
               </div>
               <h3 className="p-2 pt-12 text-xl font-bold">Allocations</h3>
-              <h5 className="text-muted-foreground p-2 pb-4 pt-0 text-sm font-light">
+              <h5 className="text-muted-foreground p-2 pt-0 pb-4 text-sm font-light">
                 Click on a cell to specify the percentage of each account&apos;s allocation to your
                 goals.
               </h5>

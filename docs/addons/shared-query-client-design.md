@@ -3,8 +3,8 @@
 ## Overview
 
 This document describes the design for sharing the React Query client between
-the main Panorama application and addons, enabling automatic cache
-invalidation and data synchronization.
+the main Panorama application and addons, enabling automatic cache invalidation
+and data synchronization.
 
 ## Architecture
 
@@ -50,7 +50,7 @@ Both the main app and addons use the same query keys to ensure cache
 consistency:
 
 ```typescript
-// Shared in @wealthfolio/addon-sdk
+// Shared in @panorama/addon-sdk
 export const QueryKeys = {
   GOALS: "goals",
   GOALS_ALLOCATIONS: "goals_allocations",
@@ -160,7 +160,7 @@ With the shared query client approach, cache invalidation happens automatically:
 Always import and use QueryKeys from the addon SDK:
 
 ```typescript
-import { QueryKeys } from "@wealthfolio/addon-sdk";
+import { QueryKeys } from "@panorama/addon-sdk";
 ```
 
 ### 2. Listen for Relevant Events

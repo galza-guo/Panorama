@@ -6,10 +6,10 @@ use diesel::r2d2::{self, Pool};
 use diesel::sqlite::SqliteConnection;
 use std::sync::Arc;
 
-use wealthfolio_connect::broker_ingest::{
-    ImportRun, ImportRunRepositoryTrait as ConnectImportRunRepositoryTrait,
+use panorama_core::activities::{
+    ImportRun, ImportRunRepositoryTrait as CoreImportRunRepositoryTrait,
 };
-use wealthfolio_core::errors::Result;
+use panorama_core::errors::Result;
 
 use crate::db::{get_connection, WriteHandle};
 use crate::errors::StorageError;
@@ -138,7 +138,7 @@ impl ImportRunRepository {
 }
 
 #[async_trait]
-impl ConnectImportRunRepositoryTrait for ImportRunRepository {
+impl CoreImportRunRepositoryTrait for ImportRunRepository {
     async fn create(&self, import_run: ImportRun) -> Result<ImportRun> {
         ImportRunRepository::create(self, import_run).await
     }
@@ -153,13 +153,5 @@ impl ConnectImportRunRepositoryTrait for ImportRunRepository {
 
     fn get_recent_for_account(&self, account_id: &str, limit: i64) -> Result<Vec<ImportRun>> {
         ImportRunRepository::get_recent_for_account(self, account_id, limit)
-    }
-
-    fn get_all(&self, limit: i64, offset: i64) -> Result<Vec<ImportRun>> {
-        ImportRunRepository::get_all(self, limit, offset)
-    }
-
-    fn get_by_run_type(&self, run_type: &str, limit: i64, offset: i64) -> Result<Vec<ImportRun>> {
-        ImportRunRepository::get_by_run_type(self, run_type, limit, offset)
     }
 }

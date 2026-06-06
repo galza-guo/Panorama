@@ -16,13 +16,13 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@wealthfolio/ui";
+} from "@panorama/ui";
 import { useMemo, type FC } from "react";
 import { cn } from "@/lib/utils";
 import { useBalancePrivacy } from "@/hooks/use-balance-privacy";
 import { ResponsiveContainer, Treemap, Tooltip as ChartTooltip } from "recharts";
 import { useSettingsContext } from "@/lib/settings-provider";
-import { AnimatedToggleGroup } from "@wealthfolio/ui";
+import { AnimatedToggleGroup } from "@panorama/ui";
 
 // ============================================================================
 // Types
@@ -488,7 +488,7 @@ function HoldingsContent({ args, result, status }: HoldingsContentProps) {
 
   // Treemap view component
   const TreemapView = () => (
-    <div className="pb-2 pt-4">
+    <div className="pt-4 pb-2">
       <div className="flex flex-wrap items-start justify-between gap-2 px-4 pb-2">
         <div>
           <p className="text-sm font-medium">Your Portfolio {returnLabel}</p>
@@ -683,7 +683,7 @@ function HoldingsContent({ args, result, status }: HoldingsContentProps) {
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-0">
         {ReturnTypeToggle}
       </CardHeader>
-      <CardContent className="px-0 pb-0 pt-4">
+      <CardContent className="px-0 pt-4 pb-0">
         <TableView />
       </CardContent>
     </Card>

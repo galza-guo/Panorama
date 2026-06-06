@@ -871,8 +871,8 @@ Attribution/mapping follows a folder/file mental model:
 - folders are target categories
 - asset leaves represent holdings/assets inside folders
 - moving an asset leaf to another folder retargets matching current holdings
-- untargeting an asset leaf removes the target leaf and clears or suppresses
-  its holding-level route
+- untargeting an asset leaf removes the target leaf and clears or suppresses its
+  holding-level route
 
 The right panel is not a permanent assignment control surface. It appears only
 when at least one current holding is outside the target tree. This panel is an
@@ -882,8 +882,8 @@ each holding.
 Holding attribution has three states:
 
 1. Explicit target: the holding has its own route to a target folder.
-2. Use account default: the holding has no holding-specific rule and follows
-   its account default, if one exists.
+2. Use account default: the holding has no holding-specific rule and follows its
+   account default, if one exists.
 3. Explicitly untargeted: the holding suppresses any account default and appears
    in the right-side `Untargeted` inbox.
 
@@ -950,9 +950,9 @@ outside a folder.
 Deleting an asset leaf means `Untarget`, not deleting the real asset.
 
 If matching explicitly targeted holdings have an account default, ask whether
-they should `Use Account Default`, become `Explicitly Untargeted`, or cancel.
-If matching holdings are already using an account default, untargeting makes
-them explicitly untargeted. Holdings without a usable account default become
+they should `Use Account Default`, become `Explicitly Untargeted`, or cancel. If
+matching holdings are already using an account default, untargeting makes them
+explicitly untargeted. Holdings without a usable account default become
 explicitly untargeted.
 
 ### Duplicates

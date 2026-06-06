@@ -1,9 +1,9 @@
 import { useMemo, useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 
-import { Separator } from "@wealthfolio/ui";
-import { Button } from "@wealthfolio/ui/components/ui/button";
-import { Icons } from "@wealthfolio/ui/components/ui/icons";
+import { Separator } from "@panorama/ui";
+import { Button } from "@panorama/ui/components/ui/button";
+import { Icons } from "@panorama/ui/components/ui/icons";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -13,7 +13,7 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from "@wealthfolio/ui/components/ui/alert-dialog";
+} from "@panorama/ui/components/ui/alert-dialog";
 import { RefreshQuotesConfirmDialog } from "./refresh-quotes-confirm-dialog";
 
 import { useAlternativeHoldings } from "@/hooks/use-alternative-assets";
@@ -47,7 +47,7 @@ import {
   type InsurancePolicyFormValues,
 } from "@/pages/insurance/components/insurance-policy-editor-sheet";
 import { getEffectiveTimeDepositCurrentValue } from "@/lib/time-deposit-calculations";
-import { toast } from "@wealthfolio/ui/components/ui/use-toast";
+import { toast } from "@panorama/ui/components/ui/use-toast";
 import { syncPanoramaMpfUnitPrices } from "@/adapters";
 import { useAlternativeAssetMutations } from "./alternative-assets/hooks";
 import { SettingsHeader } from "../settings/settings-header";

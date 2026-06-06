@@ -8,9 +8,9 @@ use chacha20poly1305::{
 use rand::{rngs::OsRng, RngCore};
 use serde::{Deserialize, Serialize};
 
-use wealthfolio_core::{
+use panorama_core::{
     errors::Error,
-    secrets::{format_service_id, SecretStore},
+    secrets::{format_legacy_service_id, format_service_id, SecretStore},
     Result,
 };
 
@@ -86,7 +86,7 @@ impl FileSecretStore {
 
         if value.get("ciphertext").is_some() {
             let key = self.encryption_key.ok_or_else(|| {
-                Error::Secret("WF_SECRET_KEY must be set to decrypt the secrets file".into())
+                Error::Secret("PANORAMA_SECRET_KEY must be set to decrypt the secrets file".into())
             })?;
             let enc: EncryptedSecrets = serde_json::from_value(value)?;
             let nonce_bytes = BASE64
@@ -155,14 +155,17 @@ impl SecretStore for FileSecretStore {
 
     fn get_secret(&self, service: &str) -> Result<Option<String>> {
         let key = format_service_id(service);
+        let legacy_key = format_legacy_service_id(service);
         let store = self.read_store()?;
-        Ok(store.get(&key).cloned())
+        Ok(store.get(&key).or_else(|| store.get(&legacy_key)).cloned())
     }
 
     fn delete_secret(&self, service: &str) -> Result<()> {
         let key = format_service_id(service);
+        let legacy_key = format_legacy_service_id(service);
         self.with_store(|store| {
             store.remove(&key);
+            store.remove(&legacy_key);
             Ok(())
         })
     }
@@ -179,14 +182,14 @@ fn decode_encryption_key(raw: &str) -> Result<[u8; 32]> {
         Err(_) if trimmed.len() == 32 => trimmed.as_bytes().to_vec(),
         Err(_) => {
             return Err(Error::Secret(
-                "WF_SECRET_KEY must be a base64 string or 32-byte ascii value".into(),
+                "PANORAMA_SECRET_KEY must be a base64 string or 32-byte ascii value".into(),
             ))
         }
     };
 
     if decoded.len() != 32 {
         return Err(Error::Secret(
-            "WF_SECRET_KEY must decode to exactly 32 bytes".into(),
+            "PANORAMA_SECRET_KEY must decode to exactly 32 bytes".into(),
         ));
     }
 

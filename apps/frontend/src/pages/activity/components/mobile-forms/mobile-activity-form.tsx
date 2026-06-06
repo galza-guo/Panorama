@@ -1,7 +1,7 @@
 import { logger } from "@/adapters";
-import { Button } from "@wealthfolio/ui/components/ui/button";
-import { Form } from "@wealthfolio/ui/components/ui/form";
-import { Icons } from "@wealthfolio/ui/components/ui/icons";
+import { Button } from "@panorama/ui/components/ui/button";
+import { Form } from "@panorama/ui/components/ui/form";
+import { Icons } from "@panorama/ui/components/ui/icons";
 import {
   Sheet,
   SheetContent,
@@ -9,7 +9,7 @@ import {
   SheetFooter,
   SheetHeader,
   SheetTitle,
-} from "@wealthfolio/ui/components/ui/sheet";
+} from "@panorama/ui/components/ui/sheet";
 import { QuoteMode } from "@/lib/constants";
 import { isSymbolRequired } from "@/lib/activity-utils";
 import type { ActivityDetails } from "@/lib/types";
@@ -178,7 +178,7 @@ export function MobileActivityForm({ accounts, activity, open, onClose }: Mobile
 
   return (
     <Sheet open={open} onOpenChange={handleOpenChange}>
-      <SheetContent side="bottom" className="rounded-t-4xl mx-1 flex h-[90vh] flex-col p-0">
+      <SheetContent side="bottom" className="mx-1 flex h-[90vh] flex-col rounded-t-4xl p-0">
         <SheetHeader className="border-b px-6 py-4">
           <div className="flex flex-col items-center space-y-2">
             <SheetTitle>{activity?.id ? "Update Activity" : "Add Activity"}</SheetTitle>

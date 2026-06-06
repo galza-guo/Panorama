@@ -135,10 +135,10 @@ export const CurrencyInput = forwardRef<HTMLButtonElement, CurrencyInputProps>(
           <Sheet open={open} onOpenChange={setOpen}>
             <SheetContent
               side="bottom"
-              className="rounded-t-4xl mx-1 h-[85vh] p-0"
+              className="mx-1 h-[85vh] rounded-t-4xl p-0"
               onOpenAutoFocus={handleOpenAutoFocus}
             >
-              <SheetHeader className="border-border border-b px-6 pb-4 pt-6">
+              <SheetHeader className="border-border border-b px-6 pt-6 pb-4">
                 <SheetTitle>Select Currency</SheetTitle>
                 <SheetDescription>Choose your activity currency</SheetDescription>
               </SheetHeader>
@@ -174,7 +174,7 @@ export const CurrencyInput = forwardRef<HTMLButtonElement, CurrencyInputProps>(
                 </div>
                 <div className="border-border border-b px-6 py-4">
                   <div className="relative">
-                    <Icons.Search className="text-muted-foreground absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2" />
+                    <Icons.Search className="text-muted-foreground absolute top-1/2 left-4 h-5 w-5 -translate-y-1/2" />
                     <Input
                       ref={searchInputRef}
                       type="text"

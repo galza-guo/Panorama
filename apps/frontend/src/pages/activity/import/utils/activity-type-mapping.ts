@@ -1,7 +1,7 @@
 import { ActivityType } from "@/lib/constants";
 
 /**
- * Maps common CSV activity type labels to canonical Wealthfolio activity types.
+ * Maps common CSV activity type labels to canonical Panorama activity types.
  * Used for auto-detection during CSV import mapping.
  * Keys must be UPPERCASE.
  */

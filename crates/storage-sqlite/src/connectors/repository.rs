@@ -3,13 +3,13 @@
 use async_trait::async_trait;
 use chrono::Utc;
 use diesel::prelude::*;
-use std::sync::Arc;
-use uuid::Uuid;
-use wealthfolio_core::connectors::{
+use panorama_core::connectors::{
     ExternalAccountLink, ExternalAccountLinkRepositoryTrait, ExternalConnection,
     ExternalConnectionRepositoryTrait, NewExternalAccountLink, NewExternalConnection,
 };
-use wealthfolio_core::Result;
+use panorama_core::Result;
+use std::sync::Arc;
+use uuid::Uuid;
 
 use super::model::{serialize_capabilities, ExternalAccountLinkDB, ExternalConnectionDB};
 use super::schema::{external_account_links, external_connections};
@@ -272,13 +272,13 @@ mod tests {
     use diesel::r2d2::{self, Pool};
     use diesel::sqlite::SqliteConnection;
     use diesel::RunQueryDsl;
-    use tempfile::tempdir;
-    use wealthfolio_core::connectors::{
+    use panorama_core::connectors::{
         ConnectorCapability, ConnectorEnvironment, ConnectorProvider,
         ExternalAccountLinkRepositoryTrait, ExternalAccountLinkStatus,
         ExternalConnectionRepositoryTrait, ExternalConnectionStatus, NewExternalAccountLink,
         NewExternalConnection,
     };
+    use tempfile::tempdir;
 
     use super::ConnectorRepository;
     use crate::db::{create_pool, get_connection, init, run_migrations, write_actor::spawn_writer};

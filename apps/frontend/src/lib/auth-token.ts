@@ -1,4 +1,5 @@
-const AUTH_TOKEN_KEY = "wealthfolio_auth_token";
+const AUTH_TOKEN_KEY = "panorama_auth_token";
+const LEGACY_AUTH_TOKEN_KEY = "wealthfolio_auth_token";
 
 let authToken: string | null = null;
 let unauthorizedHandler: (() => void) | null = null;
@@ -23,7 +24,8 @@ function getLocalStorage(): Pick<Storage, "getItem" | "setItem" | "removeItem"> 
 
 function safeGetAuthToken() {
   try {
-    return getLocalStorage()?.getItem(AUTH_TOKEN_KEY) ?? null;
+    const storage = getLocalStorage();
+    return storage?.getItem(AUTH_TOKEN_KEY) ?? storage?.getItem(LEGACY_AUTH_TOKEN_KEY) ?? null;
   } catch {
     return null;
   }
@@ -43,6 +45,7 @@ function persistAuthToken(token: string | null) {
       storage.setItem(AUTH_TOKEN_KEY, token);
     } else {
       storage.removeItem(AUTH_TOKEN_KEY);
+      storage.removeItem(LEGACY_AUTH_TOKEN_KEY);
     }
   } catch {
     // Fall back to in-memory auth when storage is unavailable.

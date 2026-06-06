@@ -826,7 +826,7 @@ describe("ChatThread type", () => {
         schemaVersion: 1,
         providerId: "openai",
         modelId: "gpt-4o",
-        promptTemplateId: "wealthfolio-assistant-v1",
+        promptTemplateId: "panorama-assistant-v1",
         promptVersion: "1.0.0",
         locale: "en-US",
         toolsAllowlist: ["get_holdings", "get_accounts"],

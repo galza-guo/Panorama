@@ -1,20 +1,20 @@
 import { getIncomeSummary } from "@/adapters";
-import { Badge } from "@wealthfolio/ui/components/ui/badge";
-import { Card, CardContent, CardHeader, CardTitle } from "@wealthfolio/ui/components/ui/card";
+import { Badge } from "@panorama/ui/components/ui/badge";
+import { Card, CardContent, CardHeader, CardTitle } from "@panorama/ui/components/ui/card";
 import {
   ChartContainer,
   ChartTooltip,
   ChartTooltipContent,
-} from "@wealthfolio/ui/components/ui/chart";
-import { EmptyPlaceholder } from "@wealthfolio/ui/components/ui/empty-placeholder";
-import { Icons } from "@wealthfolio/ui/components/ui/icons";
-import { Skeleton } from "@wealthfolio/ui/components/ui/skeleton";
+} from "@panorama/ui/components/ui/chart";
+import { EmptyPlaceholder } from "@panorama/ui/components/ui/empty-placeholder";
+import { Icons } from "@panorama/ui/components/ui/icons";
+import { Skeleton } from "@panorama/ui/components/ui/skeleton";
 import { useBalancePrivacy } from "@/hooks/use-balance-privacy";
 
 import { QueryKeys } from "@/lib/query-keys";
 import type { IncomeSummary } from "@/lib/types";
 import { useQuery } from "@tanstack/react-query";
-import { AmountDisplay, AnimatedToggleGroup, GainPercent, PrivacyAmount } from "@wealthfolio/ui";
+import { AmountDisplay, AnimatedToggleGroup, GainPercent, PrivacyAmount } from "@panorama/ui";
 import React, { useState } from "react";
 import { Cell, Pie, PieChart } from "recharts";
 import { IncomeHistoryChart } from "./income-history-chart";
@@ -84,7 +84,7 @@ export default function IncomePage() {
   if (!periodSummary || !totalSummary) {
     return (
       <>
-        <div className="pointer-events-auto fixed right-2 top-4 z-20 lg:right-4">
+        <div className="pointer-events-auto fixed top-4 right-2 z-20 lg:right-4">
           <IncomePeriodSelector
             selectedPeriod={selectedPeriod}
             onPeriodSelect={setSelectedPeriod}
@@ -164,7 +164,7 @@ export default function IncomePage() {
   return (
     <>
       {/* Period selector - fixed position in header area */}
-      <div className="pointer-events-auto fixed right-2 top-4 z-20 hidden md:block lg:right-4">
+      <div className="pointer-events-auto fixed top-4 right-2 z-20 hidden md:block lg:right-4">
         <IncomePeriodSelector selectedPeriod={selectedPeriod} onPeriodSelect={setSelectedPeriod} />
       </div>
 
@@ -409,7 +409,7 @@ export default function IncomePage() {
                                   {percentage.toFixed(1)}% of total
                                 </div>
                                 {/* Tooltip arrow */}
-                                <div className="border-t-border absolute left-1/2 top-full h-0 w-0 -translate-x-1/2 transform border-l-4 border-r-4 border-t-4 border-l-transparent border-r-transparent"></div>
+                                <div className="border-t-border absolute top-full left-1/2 h-0 w-0 -translate-x-1/2 transform border-t-4 border-r-4 border-l-4 border-r-transparent border-l-transparent"></div>
                               </div>
                             </div>
                           </div>

@@ -1,7 +1,7 @@
 import { AccountSelector } from "@/components/account-selector";
 import { TickerAvatar } from "@/components/ticker-avatar";
 import TickerSearchInput from "@/components/ticker-search";
-import { Icons } from "@wealthfolio/ui/components/ui/icons";
+import { Icons } from "@panorama/ui/components/ui/icons";
 import { Account, SymbolSearchResult } from "@/lib/types";
 import { QuoteMode } from "@/lib/constants";
 import { cn } from "@/lib/utils";
@@ -17,7 +17,7 @@ import {
   FormMessage,
   MoneyInput,
   QuantityInput,
-} from "@wealthfolio/ui";
+} from "@panorama/ui";
 import { memo, useCallback, useMemo, useState } from "react";
 import { useFieldArray, useFormContext, useWatch } from "react-hook-form";
 import { z } from "zod";
@@ -368,7 +368,7 @@ export const BulkHoldingsForm = ({ onAccountChange }: BulkHoldingsFormProps) => 
             <div className="col-span-6">Tickers</div>
             <div className="col-span-1 text-right">Shares</div>
             <div className="col-span-2 text-right">Average cost</div>
-            <div className="col-span-2 whitespace-nowrap text-right">Total value</div>
+            <div className="col-span-2 text-right whitespace-nowrap">Total value</div>
             <div className="col-span-1 text-right"></div>
           </div>
 

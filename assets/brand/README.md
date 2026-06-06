@@ -21,6 +21,6 @@ Wealthfolio", prominently, with a disclaimer.
 
 ## Contact
 
-For trademark permission requests: hello@wealthfolio.app
+For trademark permission requests: hello@panorama.app
 
 See: [TRADEMARKS.md](../../TRADEMARKS.md)

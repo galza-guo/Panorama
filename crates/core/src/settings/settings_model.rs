@@ -13,7 +13,8 @@ pub struct Settings {
     pub auto_update_check_enabled: bool,
     pub menu_bar_visible: bool,
     pub sync_enabled: bool,
-    pub wealthfolio_connect_visible: bool,
+    #[serde(rename = "wealthfolioConnectVisible")]
+    pub legacy_connect_visible: bool,
 }
 
 impl Default for Settings {
@@ -27,7 +28,7 @@ impl Default for Settings {
             auto_update_check_enabled: true,
             menu_bar_visible: true,
             sync_enabled: true,
-            wealthfolio_connect_visible: false,
+            legacy_connect_visible: false,
         }
     }
 }
@@ -37,8 +38,8 @@ mod tests {
     use super::Settings;
 
     #[test]
-    fn defaults_hide_legacy_wealthfolio_connect() {
-        assert!(!Settings::default().wealthfolio_connect_visible);
+    fn defaults_hide_legacy_panorama_local_connectors() {
+        assert!(!Settings::default().legacy_connect_visible);
     }
 }
 
@@ -52,7 +53,8 @@ pub struct SettingsUpdate {
     pub auto_update_check_enabled: Option<bool>,
     pub menu_bar_visible: Option<bool>,
     pub sync_enabled: Option<bool>,
-    pub wealthfolio_connect_visible: Option<bool>,
+    #[serde(rename = "wealthfolioConnectVisible")]
+    pub legacy_connect_visible: Option<bool>,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]

@@ -7,7 +7,7 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from "@wealthfolio/ui/components/ui/alert-dialog";
+} from "@panorama/ui/components/ui/alert-dialog";
 
 interface RefreshQuotesConfirmDialogProps {
   open: boolean;

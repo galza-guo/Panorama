@@ -1,12 +1,12 @@
 use std::sync::Arc;
 
 use log::debug;
-use tauri::State;
-use wealthfolio_core::health::{MigrationResult, MigrationStatus};
-use wealthfolio_core::taxonomies::{
+use panorama_core::health::{MigrationResult, MigrationStatus};
+use panorama_core::taxonomies::{
     AssetTaxonomyAssignment, Category, NewAssetTaxonomyAssignment, NewCategory, NewTaxonomy,
     Taxonomy, TaxonomyWithCategories,
 };
+use tauri::State;
 
 use crate::context::ServiceContext;
 
@@ -207,7 +207,7 @@ pub async fn get_migration_status(
     state: State<'_, Arc<ServiceContext>>,
 ) -> Result<MigrationStatus, String> {
     debug!("Checking migration status...");
-    wealthfolio_core::health::get_migration_status(
+    panorama_core::health::get_migration_status(
         state.asset_service().as_ref(),
         state.taxonomy_service().as_ref(),
     )
@@ -225,7 +225,7 @@ pub async fn migrate_legacy_classifications(
 /// Core migration logic - can be called from Tauri command or health fix action
 pub async fn run_legacy_migration(state: &Arc<ServiceContext>) -> Result<MigrationResult, String> {
     debug!("Starting legacy classification migration...");
-    wealthfolio_core::health::migrate_legacy_classifications(
+    panorama_core::health::migrate_legacy_classifications(
         state.asset_service().as_ref(),
         state.taxonomy_service().as_ref(),
     )

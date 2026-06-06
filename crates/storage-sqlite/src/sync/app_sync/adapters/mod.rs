@@ -3,7 +3,7 @@
 //! In v2, most replay is handled by a generic rowset applier in `AppSyncRepository`.
 //! This module is the stable extension point for richer per-entity semantics.
 
-use wealthfolio_core::sync::SyncEntity;
+use panorama_core::sync::SyncEntity;
 
 #[derive(Debug, Clone)]
 pub struct EntityAdapterDescriptor {

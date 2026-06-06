@@ -24,9 +24,9 @@ import {
   SelectValue,
   Skeleton,
   Textarea,
-} from "@wealthfolio/ui";
-import { CurrencyInput } from "@wealthfolio/ui/components/financial";
-import { Icons } from "@wealthfolio/ui/components/ui/icons";
+} from "@panorama/ui";
+import { CurrencyInput } from "@panorama/ui/components/financial";
+import { Icons } from "@panorama/ui/components/ui/icons";
 import { useMemo, useState, useCallback } from "react";
 import { Link } from "react-router-dom";
 import { useForm, FormProvider } from "react-hook-form";

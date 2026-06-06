@@ -1,16 +1,14 @@
 [package]
-name = "wealthfolio-server"
+name = "panorama-server"
 version.workspace = true
 edition.workspace = true
 
 [dependencies]
 # Internal crates
-wealthfolio-market-data = { workspace = true }
-wealthfolio-core = { workspace = true }
-wealthfolio-connect = { workspace = true }
-wealthfolio-storage-sqlite = { workspace = true }
-wealthfolio-device-sync = { workspace = true }
-wealthfolio-ai = { workspace = true }
+panorama-market-data = { workspace = true }
+panorama-core = { workspace = true }
+panorama-storage-sqlite = { workspace = true }
+panorama-ai = { workspace = true }
 
 # Web framework
 axum = { version = "0.8", features = ["json", "macros", "multipart"] }
@@ -49,11 +47,6 @@ futures = "0.3"
 futures-core = "0.3"
 semver = "1"
 hyper = { version = "0.14", features = ["full"] }
-
-[features]
-default = []
-connect-sync = []
-device-sync = []
 
 [dev-dependencies]
 reqwest = { version = "0.12", features = ["json"] }

@@ -11,7 +11,7 @@ import {
 } from "@/adapters";
 import type { UpdateProviderSettingsRequest, SetDefaultProviderRequest } from "@/lib/types";
 import { QueryKeys } from "@/lib/query-keys";
-import { toast } from "@wealthfolio/ui/components/ui/use-toast";
+import { toast } from "@panorama/ui/components/ui/use-toast";
 
 const AI_PROVIDERS_KEY = [QueryKeys.AI_PROVIDERS] as const;
 

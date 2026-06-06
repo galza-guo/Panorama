@@ -3,7 +3,7 @@
 use thiserror::Error;
 
 use crate::errors::DatabaseError;
-use wealthfolio_market_data::errors::MarketDataError as ExternalMarketDataError;
+use panorama_market_data::errors::MarketDataError as ExternalMarketDataError;
 use yahoo_finance_api::YahooError;
 
 /// Errors that can occur during market data/quote operations.

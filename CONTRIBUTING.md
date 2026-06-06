@@ -60,7 +60,7 @@ something together!
 
 - Join our [Discord](https://discord.gg/WDMCY6aPWK)
 - Open a [Discussion](https://github.com/afadil/wealthfolio/discussions)
-- Email: hello@wealthfolio.app
+- Email: hello@panorama.app
 
 ## License
 

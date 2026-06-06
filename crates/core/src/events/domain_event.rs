@@ -8,7 +8,7 @@ use crate::accounts::TrackingMode;
 ///
 /// These events represent facts about domain data changes. Runtime adapters
 /// translate them into platform-specific actions (portfolio recalculation,
-/// asset enrichment, broker sync, etc.).
+/// asset enrichment, etc.).
 #[derive(Clone, Debug, Serialize, Deserialize)]
 #[serde(tag = "type", rename_all = "snake_case")]
 pub enum DomainEvent {
@@ -61,10 +61,6 @@ pub enum DomainEvent {
     /// Manual snapshot was saved (manual entry, CSV import, broker import).
     /// Triggers portfolio recalculation for the affected account.
     ManualSnapshotSaved { account_id: String },
-
-    /// Device sync pulled changes from another device.
-    /// Triggers full portfolio recalculation for all accounts.
-    DeviceSyncPullComplete,
 }
 
 /// Represents a currency change on an account for FX sync planning.
@@ -146,12 +142,6 @@ impl DomainEvent {
     pub fn manual_snapshot_saved(account_id: String) -> Self {
         Self::ManualSnapshotSaved { account_id }
     }
-
-    /// Creates a DeviceSyncPullComplete event.
-    /// Triggers full portfolio recalculation for all accounts.
-    pub fn device_sync_pull_complete() -> Self {
-        Self::DeviceSyncPullComplete
-    }
 }
 
 #[cfg(test)]
@@ -225,15 +215,5 @@ mod tests {
             }
             _ => panic!("Expected AssetsUpdated"),
         }
-    }
-
-    #[test]
-    fn test_device_sync_pull_complete_serialization() {
-        let event = DomainEvent::device_sync_pull_complete();
-        let json = serde_json::to_string(&event).unwrap();
-        assert!(json.contains("device_sync_pull_complete"));
-
-        let deserialized: DomainEvent = serde_json::from_str(&json).unwrap();
-        assert!(matches!(deserialized, DomainEvent::DeviceSyncPullComplete));
     }
 }

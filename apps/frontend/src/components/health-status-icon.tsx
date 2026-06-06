@@ -1,9 +1,9 @@
 import { useHealthStatus } from "@/hooks/use-health";
 import { usePortfolioSyncOptional } from "@/context/portfolio-sync-context";
 import { cn } from "@/lib/utils";
-import { Button } from "@wealthfolio/ui/components/ui/button";
-import { Icons } from "@wealthfolio/ui/components/ui/icons";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@wealthfolio/ui";
+import { Button } from "@panorama/ui/components/ui/button";
+import { Icons } from "@panorama/ui/components/ui/icons";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@panorama/ui";
 import { Link } from "react-router-dom";
 import type { HealthSeverity } from "@/lib/types";
 

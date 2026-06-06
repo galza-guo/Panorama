@@ -1,5 +1,5 @@
-import { Card, CardContent, CardHeader, CardTitle } from "@wealthfolio/ui";
-import { AmountDisplay, Icons } from "@wealthfolio/ui";
+import { Card, CardContent, CardHeader, CardTitle } from "@panorama/ui";
+import { AmountDisplay, Icons } from "@panorama/ui";
 import type { FeeAnalytics } from "../lib/fee-calculation.service";
 
 // Simple EmptyPlaceholder component since it's not exported from UI package
@@ -23,7 +23,7 @@ function EmptyPlaceholder({
           {icon}
         </div>
         <h2 className="mt-2 text-xl font-semibold">{title}</h2>
-        <p className="text-muted-foreground mt-2 text-center text-sm font-normal leading-6">
+        <p className="text-muted-foreground mt-2 text-center text-sm leading-6 font-normal">
           {description}
         </p>
       </div>
@@ -138,7 +138,7 @@ export function AccountBreakdown({
                           {percentage.toFixed(1)}% of total fees
                         </div>
                         {/* Tooltip arrow */}
-                        <div className="border-t-border absolute left-1/2 top-full h-0 w-0 -translate-x-1/2 transform border-l-4 border-r-4 border-t-4 border-l-transparent border-r-transparent"></div>
+                        <div className="border-t-border absolute top-full left-1/2 h-0 w-0 -translate-x-1/2 transform border-t-4 border-r-4 border-l-4 border-r-transparent border-l-transparent"></div>
                       </div>
                     </div>
                   </div>

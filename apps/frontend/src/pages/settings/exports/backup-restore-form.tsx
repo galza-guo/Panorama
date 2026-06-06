@@ -1,12 +1,12 @@
-import { Button } from "@wealthfolio/ui/components/ui/button";
+import { Button } from "@panorama/ui/components/ui/button";
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from "@wealthfolio/ui/components/ui/card";
-import { Icons } from "@wealthfolio/ui/components/ui/icons";
+} from "@panorama/ui/components/ui/card";
+import { Icons } from "@panorama/ui/components/ui/icons";
 import { useBackupRestore } from "./use-backup-restore";
 
 const desktopNotes = [

@@ -14,7 +14,7 @@ import {
   DonutChart,
   EmptyPlaceholder,
   Skeleton,
-} from "@wealthfolio/ui";
+} from "@panorama/ui";
 import { useMemo, useState } from "react";
 
 interface DrillableAccountChartProps {
@@ -171,7 +171,7 @@ export function DrillableAccountChart({
     <Card className="overflow-hidden backdrop-blur-sm">
       <CardHeader>
         {isAtRoot ? (
-          <CardTitle className="text-muted-foreground text-sm font-medium uppercase tracking-wider">
+          <CardTitle className="text-muted-foreground text-sm font-medium tracking-wider uppercase">
             Accounts
           </CardTitle>
         ) : (

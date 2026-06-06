@@ -11,9 +11,9 @@ export type { PlatformInfo };
 
 function defaultCapabilities(): PlatformCapabilities {
   return {
-    connect_sync: true,
-    device_sync: true,
-    cloud_sync: true,
+    connect_sync: false,
+    device_sync: false,
+    cloud_sync: false,
   };
 }
 

@@ -1,6 +1,6 @@
 import { QueryClientProvider, type QueryClient } from "@tanstack/react-query";
-import type { AddonContext, AddonEnableFunction } from "@wealthfolio/addon-sdk";
-import { Icons } from "@wealthfolio/ui";
+import type { AddonContext, AddonEnableFunction } from "@panorama/addon-sdk";
+import { Icons } from "@panorama/ui";
 import React from "react";
 import FeesPage from "./pages/fees-page";
 

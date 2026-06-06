@@ -7,11 +7,11 @@ use diesel::SqliteConnection;
 use std::sync::Arc;
 use uuid::Uuid;
 
-use wealthfolio_core::taxonomies::{
+use panorama_core::taxonomies::{
     AssetTaxonomyAssignment, Category, NewAssetTaxonomyAssignment, NewCategory, NewTaxonomy,
     Taxonomy, TaxonomyRepositoryTrait, TaxonomyWithCategories,
 };
-use wealthfolio_core::Result;
+use panorama_core::Result;
 
 use super::model::{
     AssetTaxonomyAssignmentDB, CategoryDB, NewAssetTaxonomyAssignmentDB, NewCategoryDB,
@@ -389,8 +389,8 @@ mod tests {
     use crate::db::{create_pool, get_connection, init, run_migrations, write_actor::spawn_writer};
     use crate::schema::sync_outbox;
     use diesel::prelude::*;
+    use panorama_core::taxonomies::{NewCategory, TaxonomyRepositoryTrait};
     use tempfile::tempdir;
-    use wealthfolio_core::taxonomies::{NewCategory, TaxonomyRepositoryTrait};
 
     #[tokio::test]
     async fn create_category_projects_taxonomy_category_outbox_event() {

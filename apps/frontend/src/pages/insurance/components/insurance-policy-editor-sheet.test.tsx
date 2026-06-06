@@ -10,18 +10,12 @@ vi.mock("@/lib/settings-provider", () => ({
   useSettingsContext: useSettingsContextMock,
 }));
 
-vi.mock("@wealthfolio/ui", async () => {
-  const actual = await vi.importActual<typeof import("@wealthfolio/ui")>("@wealthfolio/ui");
+vi.mock("@panorama/ui", async () => {
+  const actual = await vi.importActual<typeof import("@panorama/ui")>("@panorama/ui");
 
   return {
     ...actual,
-    CurrencyInput: ({
-      value,
-      onChange,
-    }: {
-      value?: string;
-      onChange: (value: string) => void;
-    }) => (
+    CurrencyInput: ({ value, onChange }: { value?: string; onChange: (value: string) => void }) => (
       <input
         aria-label="Currency"
         data-testid="mock-currency-input"

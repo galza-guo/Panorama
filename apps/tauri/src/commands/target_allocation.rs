@@ -1,10 +1,8 @@
 use std::sync::Arc;
 
 use crate::context::ServiceContext;
+use panorama_core::portfolio::target_allocation::{TargetAllocationPlanData, TargetAllocationView};
 use tauri::State;
-use wealthfolio_core::portfolio::target_allocation::{
-    TargetAllocationPlanData, TargetAllocationView,
-};
 
 #[tauri::command]
 pub async fn get_target_allocation(

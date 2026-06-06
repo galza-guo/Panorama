@@ -1,6 +1,5 @@
-//! Repository for managing platform/brokerage data in the local database.
+//! Repository for managing local platform records.
 
-use async_trait::async_trait;
 use diesel::prelude::*;
 use diesel::r2d2::{self, Pool};
 use diesel::sqlite::SqliteConnection;
@@ -10,13 +9,10 @@ use crate::db::{get_connection, WriteHandle};
 use crate::errors::StorageError;
 use crate::schema::platforms;
 use crate::schema::platforms::dsl::*;
-use wealthfolio_connect::broker::PlatformRepositoryTrait;
-use wealthfolio_connect::Platform as ConnectPlatform;
-use wealthfolio_core::errors::Result;
+use panorama_core::errors::Result;
 
 use super::model::{Platform, PlatformDB};
 
-/// Repository for platform CRUD operations
 pub struct PlatformRepository {
     pool: Arc<Pool<r2d2::ConnectionManager<SqliteConnection>>>,
     writer: WriteHandle,
@@ -30,7 +26,6 @@ impl PlatformRepository {
         Self { pool, writer }
     }
 
-    /// Get a platform by its slug ID
     pub fn get_by_id(&self, platform_id: &str) -> Result<Option<Platform>> {
         let mut conn = get_connection(&self.pool)?;
 
@@ -44,7 +39,6 @@ impl PlatformRepository {
         Ok(result.map(Platform::from))
     }
 
-    /// Get a platform by its external UUID
     pub fn get_by_external_id(&self, ext_id: &str) -> Result<Option<Platform>> {
         let mut conn = get_connection(&self.pool)?;
 
@@ -58,7 +52,6 @@ impl PlatformRepository {
         Ok(result.map(Platform::from))
     }
 
-    /// List all platforms
     pub fn list(&self) -> Result<Vec<Platform>> {
         let mut conn = get_connection(&self.pool)?;
 
@@ -71,7 +64,6 @@ impl PlatformRepository {
         Ok(results.into_iter().map(Platform::from).collect())
     }
 
-    /// Upsert a platform (insert or update on conflict)
     pub async fn upsert(&self, platform: Platform) -> Result<Platform> {
         let platform_db: PlatformDB = platform.into();
 
@@ -85,7 +77,6 @@ impl PlatformRepository {
                     .map_err(StorageError::from)?
                     .is_some();
 
-                // Try to insert, on conflict update
                 diesel::insert_into(platforms::table)
                     .values(&platform_db)
                     .on_conflict(platforms::id)
@@ -104,13 +95,11 @@ impl PlatformRepository {
                     tx.insert(&platform_db)?;
                 }
 
-                // Return the platform
                 Ok(Platform::from(platform_db))
             })
             .await
     }
 
-    /// Delete a platform by ID
     pub async fn delete(&self, platform_id: &str) -> Result<usize> {
         let id_to_delete = platform_id.to_string();
         self.writer
@@ -132,58 +121,5 @@ impl PlatformRepository {
                 Ok(affected)
             })
             .await
-    }
-}
-
-impl From<Platform> for ConnectPlatform {
-    fn from(value: Platform) -> Self {
-        Self {
-            id: value.id,
-            name: value.name,
-            url: value.url,
-            external_id: value.external_id,
-            kind: value.kind,
-            website_url: value.website_url,
-            logo_url: value.logo_url,
-        }
-    }
-}
-
-impl From<ConnectPlatform> for Platform {
-    fn from(value: ConnectPlatform) -> Self {
-        Self {
-            id: value.id,
-            name: value.name,
-            url: value.url,
-            external_id: value.external_id,
-            kind: value.kind,
-            website_url: value.website_url,
-            logo_url: value.logo_url,
-        }
-    }
-}
-
-#[async_trait]
-impl PlatformRepositoryTrait for PlatformRepository {
-    fn get_by_id(&self, platform_id: &str) -> Result<Option<ConnectPlatform>> {
-        PlatformRepository::get_by_id(self, platform_id).map(|p| p.map(Into::into))
-    }
-
-    fn get_by_external_id(&self, ext_id: &str) -> Result<Option<ConnectPlatform>> {
-        PlatformRepository::get_by_external_id(self, ext_id).map(|p| p.map(Into::into))
-    }
-
-    fn list(&self) -> Result<Vec<ConnectPlatform>> {
-        PlatformRepository::list(self).map(|items| items.into_iter().map(Into::into).collect())
-    }
-
-    async fn upsert(&self, platform: ConnectPlatform) -> Result<ConnectPlatform> {
-        PlatformRepository::upsert(self, platform.into())
-            .await
-            .map(Into::into)
-    }
-
-    async fn delete(&self, platform_id: &str) -> Result<usize> {
-        PlatformRepository::delete(self, platform_id).await
     }
 }

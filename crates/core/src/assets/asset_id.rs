@@ -4,7 +4,7 @@
 //! This module retains only symbol parsing helpers needed by other modules.
 //! The typed prefix ID system (SEC:AAPL:XNAS) is removed.
 
-use wealthfolio_market_data::{strip_yahoo_suffix, yahoo_exchange_suffixes, yahoo_suffix_to_mic};
+use panorama_market_data::{strip_yahoo_suffix, yahoo_exchange_suffixes, yahoo_suffix_to_mic};
 
 use crate::quotes::constants::{DATA_SOURCE_EASTMONEY_CN, DATA_SOURCE_TIANTIAN_FUND};
 

@@ -13,15 +13,15 @@ use axum::{
     Json, Router,
 };
 use base64::{engine::general_purpose::STANDARD as BASE64, Engine as _};
+use panorama_core::{
+    quotes::MarketSyncMode,
+    settings::{Settings, SettingsServiceTrait, SettingsUpdate},
+};
+use panorama_storage_sqlite::db;
 use reqwest::StatusCode as HttpStatusCode;
 use semver::Version;
 use serde::Deserialize;
 use tokio::{fs, task};
-use wealthfolio_core::{
-    quotes::MarketSyncMode,
-    settings::{Settings, SettingsServiceTrait, SettingsUpdate},
-};
-use wealthfolio_storage_sqlite::db;
 
 async fn get_settings(State(state): State<Arc<AppState>>) -> ApiResult<Json<Settings>> {
     let s = state.settings_service.get_settings()?;
@@ -47,7 +47,7 @@ async fn update_settings(
                 account_ids: None,
                 market_sync_mode: MarketSyncMode::BackfillHistory {
                     asset_ids: None,
-                    days: wealthfolio_core::quotes::DEFAULT_HISTORY_DAYS,
+                    days: panorama_core::quotes::DEFAULT_HISTORY_DAYS,
                 },
                 force_full_recalculation: true,
             };
@@ -89,13 +89,14 @@ async fn get_app_info(State(state): State<Arc<AppState>>) -> ApiResult<Json<AppI
 
     // For web mode, logs typically go to the same directory or a subdirectory
     // In production, this would typically be configured via environment variables
-    let logs_dir = std::env::var("WF_LOGS_DIR").unwrap_or_else(|_| {
-        StdPath::new(&state.data_root)
-            .join("logs")
-            .to_str()
-            .unwrap_or("")
-            .to_string()
-    });
+    let logs_dir = crate::config::env_with_legacy_fallback("PANORAMA_LOGS_DIR", "WF_LOGS_DIR")
+        .unwrap_or_else(|| {
+            StdPath::new(&state.data_root)
+                .join("logs")
+                .to_str()
+                .unwrap_or("")
+                .to_string()
+        });
 
     Ok(Json(AppInfoResponse {
         version,

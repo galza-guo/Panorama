@@ -7,4 +7,4 @@ pub use model::AccountStateSnapshotDB;
 pub use repository::SnapshotRepository;
 
 // Re-export trait from core for convenience
-pub use wealthfolio_core::portfolio::snapshot::SnapshotRepositoryTrait;
+pub use panorama_core::portfolio::snapshot::SnapshotRepositoryTrait;

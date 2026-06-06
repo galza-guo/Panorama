@@ -5,8 +5,7 @@
 //! and Axum backends implement this trait with their specific service instances.
 
 use async_trait::async_trait;
-use std::sync::Arc;
-use wealthfolio_core::{
+use panorama_core::{
     accounts::AccountServiceTrait,
     activities::ActivityServiceTrait,
     goals::GoalServiceTrait,
@@ -19,6 +18,7 @@ use wealthfolio_core::{
     secrets::SecretStore,
     settings::SettingsServiceTrait,
 };
+use std::sync::Arc;
 
 use crate::types::ChatRepositoryTrait;
 
@@ -76,9 +76,7 @@ pub trait AiEnvironment: Send + Sync {
 pub mod test_env {
     use super::*;
     use chrono::{DateTime, NaiveDate, Utc};
-    use std::collections::{HashMap, HashSet};
-    use std::sync::RwLock;
-    use wealthfolio_core::{
+    use panorama_core::{
         accounts::TrackingMode,
         accounts::{Account, AccountServiceTrait, AccountUpdate, NewAccount},
         activities::{
@@ -103,6 +101,8 @@ pub mod test_env {
         valuation::{DailyAccountValuation, ValuationServiceTrait},
         Error as CoreError, Result as CoreResult,
     };
+    use std::collections::{HashMap, HashSet};
+    use std::sync::RwLock;
 
     /// Mock secret store for testing.
     #[derive(Default)]
@@ -287,7 +287,7 @@ pub mod test_env {
 
         fn get_import_mapping(&self, _account_id: String) -> CoreResult<ImportMappingData> {
             // Return error to simulate no saved mapping (tests will use auto-detection)
-            Err(wealthfolio_core::errors::DatabaseError::NotFound(
+            Err(panorama_core::errors::DatabaseError::NotFound(
                 "No saved import mapping".to_string(),
             )
             .into())
@@ -324,7 +324,7 @@ pub mod test_env {
             &self,
             _account_id: String,
             _activities: Vec<ActivityImport>,
-        ) -> CoreResult<wealthfolio_core::activities::ImportActivitiesResult> {
+        ) -> CoreResult<panorama_core::activities::ImportActivitiesResult> {
             unimplemented!("MockActivityService::import_activities")
         }
 
@@ -345,24 +345,24 @@ pub mod test_env {
         fn parse_csv(
             &self,
             content: &[u8],
-            config: &wealthfolio_core::activities::ParseConfig,
-        ) -> CoreResult<wealthfolio_core::activities::ParsedCsvResult> {
+            config: &panorama_core::activities::ParseConfig,
+        ) -> CoreResult<panorama_core::activities::ParsedCsvResult> {
             // Delegate to the actual core parser for testing
-            wealthfolio_core::activities::parse_csv(content, config)
+            panorama_core::activities::parse_csv(content, config)
         }
 
         async fn prepare_activities(
             &self,
             _activities: Vec<NewActivity>,
             _account: &Account,
-        ) -> CoreResult<wealthfolio_core::activities::PrepareActivitiesResult> {
+        ) -> CoreResult<panorama_core::activities::PrepareActivitiesResult> {
             unimplemented!("MockActivityService::prepare_activities")
         }
 
         async fn upsert_activities_bulk(
             &self,
-            _activities: Vec<wealthfolio_core::activities::ActivityUpsert>,
-        ) -> CoreResult<wealthfolio_core::activities::BulkUpsertResult> {
+            _activities: Vec<panorama_core::activities::ActivityUpsert>,
+        ) -> CoreResult<panorama_core::activities::BulkUpsertResult> {
             unimplemented!("MockActivityService::upsert_activities_bulk")
         }
     }
@@ -394,7 +394,7 @@ pub mod test_env {
 
         async fn holdings_from_snapshot(
             &self,
-            _snapshot: &wealthfolio_core::portfolio::snapshot::AccountStateSnapshot,
+            _snapshot: &panorama_core::portfolio::snapshot::AccountStateSnapshot,
             _base_currency: &str,
         ) -> CoreResult<Vec<Holding>> {
             Ok(Vec::new())
@@ -1031,7 +1031,7 @@ pub mod test_env {
         fn calculate_accounts_simple_performance(
             &self,
             _account_ids: &[String],
-        ) -> CoreResult<Vec<wealthfolio_core::performance::SimplePerformanceMetrics>> {
+        ) -> CoreResult<Vec<panorama_core::performance::SimplePerformanceMetrics>> {
             Ok(Vec::new())
         }
     }

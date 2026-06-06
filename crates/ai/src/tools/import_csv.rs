@@ -17,8 +17,8 @@ use std::collections::{HashMap, HashSet};
 use std::str::FromStr;
 use std::sync::Arc;
 
+use panorama_core::activities::{ImportMappingData, ParseConfig, ParsedCsvResult};
 use rust_decimal::Decimal;
-use wealthfolio_core::activities::{ImportMappingData, ParseConfig, ParsedCsvResult};
 
 use super::constants::MAX_IMPORT_ROWS;
 use super::record_activity::AccountOption;

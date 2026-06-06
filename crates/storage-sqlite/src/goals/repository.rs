@@ -1,5 +1,5 @@
-use wealthfolio_core::goals::{Goal, GoalRepositoryTrait, GoalsAllocation, NewGoal};
-use wealthfolio_core::Result;
+use panorama_core::goals::{Goal, GoalRepositoryTrait, GoalsAllocation, NewGoal};
+use panorama_core::Result;
 
 use super::model::{GoalDB, GoalsAllocationDB, NewGoalDB};
 use crate::db::{get_connection, WriteHandle};

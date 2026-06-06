@@ -49,7 +49,7 @@ common task playbooks.
 - **Frontend**: React + Vite + Tailwind v4 + shadcn (`apps/frontend/`)
 - **Desktop**: Tauri/Rust with SQLite (`apps/tauri/`, `crates/`)
 - **Web mode**: Axum HTTP server (`apps/server/`)
-- **Packages**: `@wealthfolio/ui`, addon-sdk, addon-dev-tools (`packages/`)
+- **Packages**: `@panorama/ui`, addon-sdk, addon-dev-tools (`packages/`)
 
 ## Code Layout
 
@@ -120,7 +120,7 @@ crates/
 
 ### UI patterns
 
-- Components: `@wealthfolio/ui` and `packages/ui/src/components/`
+- Components: `@panorama/ui` and `packages/ui/src/components/`
 - Forms: `react-hook-form` + `zod` schemas from
   `apps/frontend/src/lib/schemas.ts`
 - Theme: tokens in `apps/frontend/src/globals.css`

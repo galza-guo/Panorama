@@ -6,7 +6,7 @@ use axum::{
     routing::{get, post, put},
     Json, Router,
 };
-use wealthfolio_ai::{
+use panorama_ai::{
     AiProvidersResponse, ListModelsResponse, SetDefaultProviderRequest,
     UpdateProviderSettingsRequest,
 };

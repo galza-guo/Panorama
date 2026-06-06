@@ -1,13 +1,13 @@
 import type { ImportValidationStatus, QuoteImport } from "@/lib/types/quote-import";
-import { Badge } from "@wealthfolio/ui/components/ui/badge";
+import { Badge } from "@panorama/ui/components/ui/badge";
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from "@wealthfolio/ui/components/ui/card";
-import { Icons } from "@wealthfolio/ui/components/ui/icons";
+} from "@panorama/ui/components/ui/card";
+import { Icons } from "@panorama/ui/components/ui/icons";
 import {
   Table,
   TableBody,
@@ -15,13 +15,13 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@wealthfolio/ui/components/ui/table";
+} from "@panorama/ui/components/ui/table";
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
-} from "@wealthfolio/ui/components/ui/tooltip";
+} from "@panorama/ui/components/ui/tooltip";
 
 function formatValidationStatus(status: ImportValidationStatus): string {
   switch (status) {

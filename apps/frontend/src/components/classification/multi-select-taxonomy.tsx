@@ -1,5 +1,5 @@
 import { useState, useMemo } from "react";
-import { Button } from "@wealthfolio/ui/components/ui/button";
+import { Button } from "@panorama/ui/components/ui/button";
 import {
   Command,
   CommandEmpty,
@@ -8,11 +8,11 @@ import {
   CommandItem,
   CommandList,
   CommandSeparator,
-} from "@wealthfolio/ui/components/ui/command";
-import { Popover, PopoverContent, PopoverTrigger } from "@wealthfolio/ui/components/ui/popover";
-import { Skeleton } from "@wealthfolio/ui/components/ui/skeleton";
-import { Input } from "@wealthfolio/ui/components/ui/input";
-import { Icons } from "@wealthfolio/ui";
+} from "@panorama/ui/components/ui/command";
+import { Popover, PopoverContent, PopoverTrigger } from "@panorama/ui/components/ui/popover";
+import { Skeleton } from "@panorama/ui/components/ui/skeleton";
+import { Input } from "@panorama/ui/components/ui/input";
+import { Icons } from "@panorama/ui";
 import { cn } from "@/lib/utils";
 import {
   useTaxonomy,
@@ -284,7 +284,7 @@ export function MultiSelectTaxonomy({
                         className="h-8 pr-6 text-sm"
                         placeholder="100"
                       />
-                      <span className="text-muted-foreground pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-sm">
+                      <span className="text-muted-foreground pointer-events-none absolute top-1/2 right-2 -translate-y-1/2 text-sm">
                         %
                       </span>
                     </div>

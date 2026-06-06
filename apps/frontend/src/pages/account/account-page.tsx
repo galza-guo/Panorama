@@ -17,12 +17,12 @@ import {
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
-} from "@wealthfolio/ui";
+} from "@panorama/ui";
 import { useMemo, useState } from "react";
 
 import { ActionPalette, type ActionPaletteGroup } from "@/components/action-palette";
 import { PrivacyToggle } from "@/components/privacy-toggle";
-import { Button } from "@wealthfolio/ui/components/ui/button";
+import { Button } from "@panorama/ui/components/ui/button";
 import {
   Command,
   CommandEmpty,
@@ -30,9 +30,9 @@ import {
   CommandInput,
   CommandItem,
   CommandList,
-} from "@wealthfolio/ui/components/ui/command";
-import { Popover, PopoverContent, PopoverTrigger } from "@wealthfolio/ui/components/ui/popover";
-import { ScrollArea } from "@wealthfolio/ui/components/ui/scroll-area";
+} from "@panorama/ui/components/ui/command";
+import { Popover, PopoverContent, PopoverTrigger } from "@panorama/ui/components/ui/popover";
+import { ScrollArea } from "@panorama/ui/components/ui/scroll-area";
 import {
   Sheet,
   SheetContent,
@@ -40,7 +40,7 @@ import {
   SheetHeader,
   SheetTitle,
   SheetTrigger,
-} from "@wealthfolio/ui/components/ui/sheet";
+} from "@panorama/ui/components/ui/sheet";
 import { useAccounts } from "@/hooks/use-accounts";
 import { useValuationHistory } from "@/hooks/use-valuation-history";
 import { AccountType } from "@/lib/constants";
@@ -61,7 +61,7 @@ import { PortfolioUpdateTrigger } from "@/pages/dashboard/portfolio-update-trigg
 import { useRecalculatePortfolioMutation } from "@/hooks/use-calculate-portfolio";
 import { useCalculatePerformanceHistory } from "@/pages/performance/hooks/use-performance-data";
 import { useQuery } from "@tanstack/react-query";
-import { Icons, type Icon } from "@wealthfolio/ui";
+import { Icons, type Icon } from "@panorama/ui";
 import { format, parseISO, subMonths } from "date-fns";
 import { useNavigate, useParams } from "react-router-dom";
 import { AccountContributionLimit } from "./account-contribution-limit";
@@ -393,7 +393,7 @@ const AccountPage = () => {
           )}
           <div className="flex min-w-0 flex-col justify-center">
             <div className="flex items-center gap-1">
-              <h1 className="truncate text-base font-semibold leading-tight md:text-lg">
+              <h1 className="truncate text-base leading-tight font-semibold md:text-lg">
                 {account?.name ?? "Account"}
               </h1>
               {/* Desktop account selector */}
@@ -460,7 +460,7 @@ const AccountPage = () => {
                       <Icons.ChevronDown className="text-muted-foreground h-5 w-5" />
                     </Button>
                   </SheetTrigger>
-                  <SheetContent side="bottom" className="rounded-t-4xl mx-1 h-[80vh] p-0">
+                  <SheetContent side="bottom" className="mx-1 h-[80vh] rounded-t-4xl p-0">
                     <SheetHeader className="border-border border-b px-6 py-4">
                       <SheetTitle>Switch Account</SheetTitle>
                       <SheetDescription>Choose an account to view</SheetDescription>
@@ -600,7 +600,7 @@ const AccountPage = () => {
                           }}
                         />
                         <IntervalSelector
-                          className="relative bottom-10 left-0 right-0 z-10"
+                          className="relative right-0 bottom-10 left-0 z-10"
                           onIntervalSelect={handleIntervalSelect}
                           isLoading={isValuationHistoryLoading}
                           defaultValue={INITIAL_INTERVAL_CODE}

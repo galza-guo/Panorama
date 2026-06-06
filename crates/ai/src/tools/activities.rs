@@ -7,7 +7,7 @@ use std::sync::Arc;
 use super::constants::{DEFAULT_PAGE_SIZE, MAX_ACTIVITIES_ROWS};
 use crate::env::AiEnvironment;
 use crate::error::AiError;
-use wealthfolio_core::activities::Sort;
+use panorama_core::activities::Sort;
 
 // ============================================================================
 // Tool Arguments and Output

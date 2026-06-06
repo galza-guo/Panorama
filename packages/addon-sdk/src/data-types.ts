@@ -625,7 +625,6 @@ export interface Settings {
   autoUpdateCheckEnabled: boolean;
   menuBarVisible: boolean;
   syncEnabled: boolean;
-  wealthfolioConnectVisible: boolean;
 }
 
 export interface Goal {

@@ -1,12 +1,18 @@
 # Folder Sync Design
 
-**Goal:** Add a simple, stable, mostly invisible desktop sync flow for shared household finance data using Syncthing as the transport layer, without requiring a hosted server.
+**Goal:** Add a simple, stable, mostly invisible desktop sync flow for shared
+household finance data using Syncthing as the transport layer, without requiring
+a hosted server.
 
 ## Context
 
-Panorama already stores the shared finance domain in local SQLite and already contains app-side sync foundations such as outbox records, applied event tracking, cursor state, and last-writer-wins metadata. That foundation is a better fit than syncing the live `app.db` file itself.
+Panorama already stores the shared finance domain in local SQLite and already
+contains app-side sync foundations such as outbox records, applied event
+tracking, cursor state, and last-writer-wins metadata. That foundation is a
+better fit than syncing the live `app.db` file itself.
 
-The product goal is not millisecond sync or zero-conflict collaboration. The goal is:
+The product goal is not millisecond sync or zero-conflict collaboration. The
+goal is:
 
 - first-time setup is simple
 - routine usage is automatic
@@ -15,11 +21,14 @@ The product goal is not millisecond sync or zero-conflict collaboration. The goa
 
 ## Why Not Sync `app.db`
 
-Directly syncing the live SQLite database file is not reliable enough for this use case.
+Directly syncing the live SQLite database file is not reliable enough for this
+use case.
 
-- SQLite runs with WAL enabled in this repository, so the durable state is not always represented by a single file.
+- SQLite runs with WAL enabled in this repository, so the durable state is not
+  always represented by a single file.
 - Syncthing understands files, not database transaction boundaries.
-- Concurrent edits on two devices produce file-level conflicts, not domain-level conflicts.
+- Concurrent edits on two devices produce file-level conflicts, not domain-level
+  conflicts.
 - Database-file conflicts are hard to explain and hard to recover from.
 
 Instead, Panorama should sync application-level content:
@@ -27,7 +36,8 @@ Instead, Panorama should sync application-level content:
 - incremental domain change events for day-to-day updates
 - periodic shared-data snapshots for bootstrap and recovery
 
-Each device continues to use its own local SQLite database as the runtime source of truth.
+Each device continues to use its own local SQLite database as the runtime source
+of truth.
 
 ## Scope
 
@@ -53,7 +63,8 @@ Each device continues to use its own local SQLite database as the runtime source
 
 ## Shared Data Boundary
 
-The first version should sync only household-visible finance data and required shared settings.
+The first version should sync only household-visible finance data and required
+shared settings.
 
 ### Sync This
 
@@ -65,7 +76,8 @@ The first version should sync only household-visible finance data and required s
 - classifications and assignments
 - import mappings/profiles that affect shared bookkeeping behavior
 - quotes and market-related shared data already persisted in SQLite
-- holdings snapshots and other portfolio snapshots required for consistent shared views
+- holdings snapshots and other portfolio snapshots required for consistent
+  shared views
 - minimal shared settings such as `base_currency`
 
 ### Do Not Sync
@@ -78,17 +90,20 @@ The first version should sync only household-visible finance data and required s
 - logs
 - backups
 
-This split keeps the shared household ledger aligned while preserving per-device identity and local ergonomics.
+This split keeps the shared household ledger aligned while preserving per-device
+identity and local ergonomics.
 
 ## High-Level Architecture
 
 ### Local Runtime
 
-Each device keeps using its own local SQLite database in the existing app data directory. No live database file is shared.
+Each device keeps using its own local SQLite database in the existing app data
+directory. No live database file is shared.
 
 ### Shared Folder
 
-The user chooses a Syncthing-managed folder. Panorama treats that folder as a transport mailbox, not as a runtime database.
+The user chooses a Syncthing-managed folder. Panorama treats that folder as a
+transport mailbox, not as a runtime database.
 
 Suggested layout:
 
@@ -113,7 +128,8 @@ Rules:
 - devices never edit or delete another device's files
 - runtime state about what has already been imported stays local, in SQLite
 
-This avoids shared mutable index files, which would otherwise create avoidable Syncthing conflicts.
+This avoids shared mutable index files, which would otherwise create avoidable
+Syncthing conflicts.
 
 ## Event Model
 
@@ -130,7 +146,9 @@ Each event file contains:
 - `payload`
 - optional metadata such as app version and schema version
 
-The existing local outbox infrastructure should remain the source of exportable mutations. The new folder-sync layer should adapt pending outbox records into event files written to the shared folder.
+The existing local outbox infrastructure should remain the source of exportable
+mutations. The new folder-sync layer should adapt pending outbox records into
+event files written to the shared folder.
 
 ### Event Export
 
@@ -138,7 +156,8 @@ When a shared mutation occurs:
 
 1. The application writes the normal local domain change.
 2. The existing outbox records that shared mutation.
-3. The folder-sync exporter writes an immutable event file into `events/<device-id>/`.
+3. The folder-sync exporter writes an immutable event file into
+   `events/<device-id>/`.
 4. Syncthing distributes that file.
 
 ### Event Import
@@ -160,7 +179,8 @@ Snapshots are not the normal day-to-day sync mechanism. They exist for:
 - disaster recovery
 - faster recovery than replaying all historical events
 
-Snapshots should export only the shared data set, not the entire device database.
+Snapshots should export only the shared data set, not the entire device
+database.
 
 ### Snapshot Creation
 
@@ -181,7 +201,9 @@ When a new device joins:
 
 ### Explicit Non-Goal
 
-Version 1 does not support merging two already-diverged independent ledgers. Joining an existing shared folder means adopting the shared ledger from that folder.
+Version 1 does not support merging two already-diverged independent ledgers.
+Joining an existing shared folder means adopting the shared ledger from that
+folder.
 
 ## Sync Triggers
 
@@ -201,7 +223,8 @@ Suggested cadence:
 - import scan every 5-10 seconds while the app is open
 - import scan on startup and foreground even if the timer has not fired yet
 
-This is intentionally not real-time. It is optimized for household bookkeeping, not collaborative editing latency.
+This is intentionally not real-time. It is optimized for household bookkeeping,
+not collaborative editing latency.
 
 ## Conflict Handling
 
@@ -216,7 +239,9 @@ Consequences:
 - delete vs update follows the same ordering rule
 - simultaneous edits resolve predictably, but not collaboratively
 
-To keep the experience understandable, the UI should not expose a complex conflict workflow. Instead, sync history should record plain-language entries such as:
+To keep the experience understandable, the UI should not expose a complex
+conflict workflow. Instead, sync history should record plain-language entries
+such as:
 
 - remote change replaced local version
 - older remote change skipped
@@ -252,7 +277,8 @@ This should be treated as normal, not an error:
 
 ## UX
 
-The user asked for a very small UI footprint. Version 1 should add a single `Folder Sync` section in settings.
+The user asked for a very small UI footprint. Version 1 should add a single
+`Folder Sync` section in settings.
 
 ### Setup UI
 
@@ -283,7 +309,8 @@ The app should never require routine manual sync if the folder is healthy.
 
 ## Data and State Placement
 
-Folder-sync runtime metadata should be local-only, persisted separately from shared content. That includes:
+Folder-sync runtime metadata should be local-only, persisted separately from
+shared content. That includes:
 
 - selected shared folder path
 - local `device_id`
@@ -292,7 +319,8 @@ Folder-sync runtime metadata should be local-only, persisted separately from sha
 - recent sync history
 - current status
 
-This metadata may live in new local-only SQLite tables or a local config file, but local SQLite is preferred for consistency with existing app architecture.
+This metadata may live in new local-only SQLite tables or a local config file,
+but local SQLite is preferred for consistency with existing app architecture.
 
 ## Testing Strategy
 
@@ -333,4 +361,5 @@ Build version 1 as:
 - periodic snapshots for bootstrap and recovery
 - lightweight status/history UI
 
-This is the simplest design that is still stable and defensible for a two-person household finance workflow.
+This is the simplest design that is still stable and defensible for a two-person
+household finance workflow.

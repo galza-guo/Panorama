@@ -1,15 +1,15 @@
 import { useState } from "react";
 
-import { Alert, AlertDescription } from "@wealthfolio/ui/components/ui/alert";
-import { Badge } from "@wealthfolio/ui/components/ui/badge";
-import { Button } from "@wealthfolio/ui/components/ui/button";
+import { Alert, AlertDescription } from "@panorama/ui/components/ui/alert";
+import { Badge } from "@panorama/ui/components/ui/badge";
+import { Button } from "@panorama/ui/components/ui/button";
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from "@wealthfolio/ui/components/ui/card";
+} from "@panorama/ui/components/ui/card";
 
 import { useFolderSync } from "../hooks/use-folder-sync";
 
@@ -26,17 +26,19 @@ const statusLabels: Record<string, string> = {
   unsupported: "Unsupported",
 };
 
-const statusVariants: Record<string, "destructive" | "outline" | "secondary" | "success" | "warning"> =
-  {
-    idle: "outline",
-    checking: "secondary",
-    exporting: "secondary",
-    applying_changes: "secondary",
-    up_to_date: "success",
-    needs_attention: "warning",
-    folder_unavailable: "destructive",
-    unsupported: "outline",
-  };
+const statusVariants: Record<
+  string,
+  "destructive" | "outline" | "secondary" | "success" | "warning"
+> = {
+  idle: "outline",
+  checking: "secondary",
+  exporting: "secondary",
+  applying_changes: "secondary",
+  up_to_date: "success",
+  needs_attention: "warning",
+  folder_unavailable: "destructive",
+  unsupported: "outline",
+};
 
 function getStatusLabel(syncState: string | null | undefined): string {
   if (!syncState) {
@@ -57,7 +59,7 @@ function getStatusVariant(
 function TimestampRow({ label, value }: { label: string; value: string | null | undefined }) {
   return (
     <div className="space-y-1">
-      <dt className="text-muted-foreground text-xs uppercase tracking-wide">{label}</dt>
+      <dt className="text-muted-foreground text-xs tracking-wide uppercase">{label}</dt>
       <dd className="text-sm">
         {value ? (
           <time className="font-mono text-xs" dateTime={value}>
@@ -132,7 +134,7 @@ export function FolderSyncCard() {
           </CardHeader>
           <CardContent className="space-y-5">
             <div className="space-y-1">
-              <p className="text-muted-foreground text-xs uppercase tracking-wide">Shared folder</p>
+              <p className="text-muted-foreground text-xs tracking-wide uppercase">Shared folder</p>
               <p className="bg-muted rounded-md px-3 py-2 font-mono text-xs">
                 {config?.sharedFolderPath ?? "Not configured"}
               </p>
@@ -179,7 +181,9 @@ export function FolderSyncCard() {
           <CardHeader className="flex flex-row items-start justify-between gap-3 space-y-0">
             <div className="space-y-1">
               <CardTitle className="text-lg">Status</CardTitle>
-              <CardDescription>Review the current sync state and recent timestamps.</CardDescription>
+              <CardDescription>
+                Review the current sync state and recent timestamps.
+              </CardDescription>
             </div>
             <Badge variant={getStatusVariant(syncState)}>{getStatusLabel(syncState)}</Badge>
           </CardHeader>

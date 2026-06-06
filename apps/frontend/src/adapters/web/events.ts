@@ -182,16 +182,3 @@ export const listenNavigateToRoute = <T>(_handler: EventCallback<T>): Promise<Un
 export const listenDeepLink = <T>(_handler: EventCallback<T>): Promise<UnlistenFn> => {
   return Promise.resolve(noopUnlisten);
 };
-
-// Broker sync events
-export const listenBrokerSyncStart = <T>(handler: EventCallback<T>): Promise<UnlistenFn> => {
-  return portfolioEventBridge.listen("broker:sync-start", handler);
-};
-
-export const listenBrokerSyncComplete = <T>(handler: EventCallback<T>): Promise<UnlistenFn> => {
-  return portfolioEventBridge.listen("broker:sync-complete", handler);
-};
-
-export const listenBrokerSyncError = <T>(handler: EventCallback<T>): Promise<UnlistenFn> => {
-  return portfolioEventBridge.listen("broker:sync-error", handler);
-};

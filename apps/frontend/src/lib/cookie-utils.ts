@@ -3,7 +3,8 @@
  */
 
 export const COOKIE_NAMES = {
-  PREFERRED_SIGNIN_PROVIDER: "wealthfolio_preferred_signin_provider",
+  PREFERRED_SIGNIN_PROVIDER: "panorama_preferred_signin_provider",
+  LEGACY_PREFERRED_SIGNIN_PROVIDER: "wealthfolio_preferred_signin_provider",
 } as const;
 
 // Cookie max-age: 1 year in seconds
@@ -44,7 +45,9 @@ export function deleteCookie(name: string): void {
  * Get preferred sign-in provider from cookie
  */
 export function getPreferredProvider(): "google" | "email" | null {
-  const value = getCookieValue(COOKIE_NAMES.PREFERRED_SIGNIN_PROVIDER);
+  const value =
+    getCookieValue(COOKIE_NAMES.PREFERRED_SIGNIN_PROVIDER) ??
+    getCookieValue(COOKIE_NAMES.LEGACY_PREFERRED_SIGNIN_PROVIDER);
   if (value === "google" || value === "email") {
     return value;
   }
@@ -56,4 +59,5 @@ export function getPreferredProvider(): "google" | "email" | null {
  */
 export function savePreferredProvider(provider: "google" | "email"): void {
   setCookie(COOKIE_NAMES.PREFERRED_SIGNIN_PROVIDER, provider);
+  deleteCookie(COOKIE_NAMES.LEGACY_PREFERRED_SIGNIN_PROVIDER);
 }

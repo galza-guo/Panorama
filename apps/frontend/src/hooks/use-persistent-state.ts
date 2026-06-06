@@ -1,1 +1,1 @@
-export { usePersistentState } from "@wealthfolio/ui";
+export { usePersistentState } from "@panorama/ui";

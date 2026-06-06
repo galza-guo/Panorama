@@ -26,7 +26,8 @@ export const getFolderSyncState = (): Promise<FolderSyncState> => Promise.resolv
 export const initializeFolderSync = (): Promise<FolderSyncCommandResult> =>
   Promise.resolve(unsupportedResult);
 
-export const joinFolderSync = (): Promise<FolderSyncCommandResult> => Promise.resolve(unsupportedResult);
+export const joinFolderSync = (): Promise<FolderSyncCommandResult> =>
+  Promise.resolve(unsupportedResult);
 
 export const retryFolderSyncNow = (): Promise<FolderSyncCommandResult> =>
   Promise.resolve(unsupportedResult);

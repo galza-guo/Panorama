@@ -1,19 +1,19 @@
-import { Button } from "@wealthfolio/ui/components/ui/button";
+import { Button } from "@panorama/ui/components/ui/button";
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from "@wealthfolio/ui/components/ui/card";
-import { DataTable } from "@wealthfolio/ui/components/ui/data-table";
-import { Dialog, DialogContent, DialogTrigger } from "@wealthfolio/ui/components/ui/dialog";
-import { Icons } from "@wealthfolio/ui/components/ui/icons";
-import { Skeleton } from "@wealthfolio/ui/components/ui/skeleton";
+} from "@panorama/ui/components/ui/card";
+import { DataTable } from "@panorama/ui/components/ui/data-table";
+import { Dialog, DialogContent, DialogTrigger } from "@panorama/ui/components/ui/dialog";
+import { Icons } from "@panorama/ui/components/ui/icons";
+import { Skeleton } from "@panorama/ui/components/ui/skeleton";
 import { ExchangeRate } from "@/lib/types";
 import { formatDate } from "@/lib/utils";
 import { ColumnDef } from "@tanstack/react-table";
-import { ActionConfirm } from "@wealthfolio/ui";
+import { ActionConfirm } from "@panorama/ui";
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { AddExchangeRateForm } from "./add-exchange-rate-form";

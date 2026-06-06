@@ -14,49 +14,18 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
-import {
-  isDesktop,
-  listenBrokerSyncComplete,
-  listenBrokerSyncError,
-  listenDatabaseRestored,
-  logger,
-} from "@/adapters";
+import { isDesktop, listenDatabaseRestored, logger } from "@/adapters";
 import { QueryKeys } from "@/lib/query-keys";
 
 const TOAST_IDS = {
   marketSyncStart: "market-sync-start",
   portfolioUpdateStart: "portfolio-update-start",
   portfolioUpdateError: "portfolio-update-error",
-  brokerSyncStart: "broker-sync-start",
 } as const;
 
-const CLOUD_SYNC_INVALIDATION_EXCLUSIONS = new Set<string>([
-  QueryKeys.BROKER_CONNECTIONS,
-  QueryKeys.BROKER_ACCOUNTS,
-  QueryKeys.BROKER_SYNC_STATES,
-  QueryKeys.IMPORT_RUNS,
-  QueryKeys.USER_INFO,
-  QueryKeys.SUBSCRIPTION_PLANS,
-  QueryKeys.SUBSCRIPTION_PLANS_PUBLIC,
-  QueryKeys.SYNCED_ACCOUNTS,
-  QueryKeys.PLATFORMS,
-]);
-
-const shouldInvalidateNonAiQueries = ({
-  queryKey,
-}: {
-  queryKey: readonly unknown[];
-}): boolean => {
+const shouldInvalidateNonAiQueries = ({ queryKey }: { queryKey: readonly unknown[] }): boolean => {
   const rootKey = queryKey[0];
   if (rootKey === QueryKeys.AI_PROVIDERS || rootKey === QueryKeys.AI_PROVIDER_MODELS) {
-    return false;
-  }
-
-  if (typeof rootKey === "string" && CLOUD_SYNC_INVALIDATION_EXCLUSIONS.has(rootKey)) {
-    return false;
-  }
-
-  if (rootKey === "sync") {
     return false;
   }
 
@@ -191,107 +160,6 @@ const useGlobalEventListener = () => {
       });
     };
 
-    const handleBrokerSyncComplete = (event: {
-      payload: {
-        success: boolean;
-        message: string;
-        accountsSynced?: { created: number; updated: number; skipped: number };
-        activitiesSynced?: { activitiesUpserted: number; assetsInserted: number };
-        holdingsSynced?: {
-          accountsSynced: number;
-          snapshotsUpserted: number;
-          positionsUpserted: number;
-          assetsInserted: number;
-          newAssetIds: string[];
-        };
-        newAccounts?: {
-          localAccountId: string;
-          providerAccountId: string;
-          defaultName: string;
-          currency: string;
-          institutionName?: string;
-        }[];
-      };
-    }) => {
-      const { success, message, accountsSynced, activitiesSynced, holdingsSynced, newAccounts } =
-        event.payload || {
-          success: false,
-          message: "Unknown error",
-        };
-
-      // Dismiss the loading toast
-      toast.dismiss(TOAST_IDS.brokerSyncStart);
-
-      // Invalidate queries that could be affected by sync
-      queryClientRef.current.invalidateQueries({ predicate: shouldInvalidateNonAiQueries });
-
-      if (success) {
-        // Check if there are new accounts that need configuration
-        if (newAccounts && newAccounts.length > 0) {
-          toast.info("New accounts found", {
-            description: `${newAccounts.length} new account(s) need to be configured`,
-            action: {
-              label: "Review",
-              onClick: () => {
-                navigateRef.current("/settings/accounts");
-              },
-            },
-            duration: Infinity, // Don't auto-dismiss - user must act or dismiss manually
-          });
-        } else {
-          // Build description with key numbers
-          const accountsCreated = accountsSynced?.created ?? 0;
-          const accountsUpdated = accountsSynced?.updated ?? 0;
-          const activities = activitiesSynced?.activitiesUpserted ?? 0;
-          const activityAssets = activitiesSynced?.assetsInserted ?? 0;
-          const positions = holdingsSynced?.positionsUpserted ?? 0;
-          const holdingsAccounts = holdingsSynced?.accountsSynced ?? 0;
-          const holdingsAssets = holdingsSynced?.assetsInserted ?? 0;
-          const totalNewAssets = activityAssets + holdingsAssets;
-
-          const hasChanges =
-            accountsCreated > 0 ||
-            accountsUpdated > 0 ||
-            activities > 0 ||
-            totalNewAssets > 0 ||
-            positions > 0;
-
-          let description: string;
-          if (hasChanges) {
-            const parts: string[] = [];
-            if (accountsCreated > 0) parts.push(`${accountsCreated} new accounts`);
-            if (accountsUpdated > 0) parts.push(`${accountsUpdated} accounts updated`);
-            if (activities > 0) parts.push(`${activities} activities`);
-            if (positions > 0) parts.push(`${positions} positions (${holdingsAccounts} accounts)`);
-            if (totalNewAssets > 0) parts.push(`${totalNewAssets} new assets`);
-            description = parts.join(" · ");
-          } else {
-            description = "Everything is up to date";
-          }
-
-          toast.success("Broker Sync Complete", {
-            description,
-            duration: 5000,
-          });
-        }
-      } else {
-        toast.error("Broker Sync Failed", {
-          description: message,
-          duration: 10000,
-        });
-      }
-    };
-
-    const handleBrokerSyncError = (event: { payload: { error: string } }) => {
-      const { error } = event.payload || { error: "Unknown error" };
-      // Dismiss the loading toast
-      toast.dismiss(TOAST_IDS.brokerSyncStart);
-      toast.error("Broker Sync Failed", {
-        description: error,
-        duration: 10000,
-      });
-    };
-
     const setupListeners = async () => {
       const unlistenPortfolioSyncStart = await listenPortfolioUpdateStart(
         handlePortfolioUpdateStart,
@@ -306,8 +174,6 @@ const useGlobalEventListener = () => {
       const unlistenMarketComplete = await listenMarketSyncComplete(handleMarketSyncComplete);
       const unlistenMarketError = await listenMarketSyncError(handleMarketSyncError);
       const unlistenDatabaseRestored = await listenDatabaseRestored(handleDatabaseRestored);
-      const unlistenBrokerSyncComplete = await listenBrokerSyncComplete(handleBrokerSyncComplete);
-      const unlistenBrokerSyncError = await listenBrokerSyncError(handleBrokerSyncError);
 
       const cleanup = () => {
         unlistenPortfolioSyncStart();
@@ -317,8 +183,6 @@ const useGlobalEventListener = () => {
         unlistenMarketComplete();
         unlistenMarketError();
         unlistenDatabaseRestored();
-        unlistenBrokerSyncComplete();
-        unlistenBrokerSyncError();
       };
 
       // If unmounted while setting up, clean up immediately

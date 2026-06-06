@@ -4,11 +4,11 @@
   "description": "An addon for tracking and analyzing investment fees across your portfolio",
   "type": "module",
   "main": "dist/addon.js",
-  "author": "Wealthfolio",
+  "author": "Panorama",
   "license": "MIT",
-  "homepage": "https://github.com/afadil/wealthfolio",
+  "homepage": "https://github.com/galza-guo/Panorama",
   "keywords": [
-    "wealthfolio",
+    "panorama",
     "addon",
     "investment",
     "fees",
@@ -19,7 +19,7 @@
   "scripts": {
     "build": "vite build",
     "dev": "vite build --watch",
-    "dev:server": "wealthfolio dev",
+    "dev:server": "panorama dev",
     "clean": "rm -rf dist",
     "package": "mkdir -p dist && zip -r dist/$npm_package_name-$npm_package_version.zip manifest.json dist/ assets/ README.md",
     "bundle": "pnpm clean && pnpm build && pnpm package",
@@ -28,8 +28,8 @@
   },
   "dependencies": {
     "@tanstack/react-query": "^5.90.20",
-    "@wealthfolio/addon-sdk": "workspace:*",
-    "@wealthfolio/ui": "workspace:*"
+    "@panorama/addon-sdk": "workspace:*",
+    "@panorama/ui": "workspace:*"
   },
   "peerDependencies": {
     "react": "^19.2.4",
@@ -41,7 +41,7 @@
     "@types/react": "^19.2.13",
     "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-react": "^4.3.4",
-    "@wealthfolio/addon-dev-tools": "workspace:*",
+    "@panorama/addon-dev-tools": "workspace:*",
     "clsx": "^2.1.1",
     "date-fns": "^4.1.0",
     "recharts": "^3.7.0",

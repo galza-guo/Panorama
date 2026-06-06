@@ -8,8 +8,8 @@ import {
   SheetContent,
   SheetHeader,
   SheetTitle,
-} from "@wealthfolio/ui";
-import { AmountDisplay } from "@wealthfolio/ui/components/financial/amount-display";
+} from "@panorama/ui";
+import { AmountDisplay } from "@panorama/ui/components/financial/amount-display";
 import { format } from "date-fns";
 
 interface ActivityDetailSheetProps {
@@ -110,7 +110,7 @@ export function ActivityDetailSheet({ activity, open, onOpenChange }: ActivityDe
           <div className="from-primary/5 to-primary/10 rounded-xl border bg-gradient-to-br p-4">
             <div className="flex items-start justify-between">
               <div>
-                <div className="text-muted-foreground mb-1 text-xs uppercase tracking-wide">
+                <div className="text-muted-foreground mb-1 text-xs tracking-wide uppercase">
                   {ActivityTypeNames[activity.activityType] || activity.activityType}
                 </div>
                 {activity.assetSymbol && (
@@ -205,7 +205,7 @@ export function ActivityDetailSheet({ activity, open, onOpenChange }: ActivityDe
           {/* Comment */}
           {activity.comment && (
             <DetailSection title="Notes" icon={<Icons.FileText className="h-4 w-4" />}>
-              <p className="whitespace-pre-wrap text-sm">{activity.comment}</p>
+              <p className="text-sm whitespace-pre-wrap">{activity.comment}</p>
             </DetailSection>
           )}
 

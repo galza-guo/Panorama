@@ -1,7 +1,7 @@
-//! SQLite storage implementation for Wealthfolio.
+//! SQLite storage implementation for Panorama.
 //!
 //! This crate provides all database-related functionality using Diesel ORM with SQLite.
-//! It implements the repository traits defined in `wealthfolio-core` and contains:
+//! It implements the repository traits defined in `panorama-core` and contains:
 //! - Database connection pooling and management
 //! - Diesel migrations
 //! - Repository implementations for all domain entities
@@ -55,8 +55,8 @@ pub use db::{
 // Re-export storage errors and conversion helpers
 pub use errors::{IntoCore, StorageError};
 
-// Re-export from wealthfolio-core for convenience
-pub use wealthfolio_core::errors::{DatabaseError, Error, Result};
+// Re-export from panorama-core for convenience
+pub use panorama_core::errors::{DatabaseError, Error, Result};
 
 // Re-export SQLite utilities
 pub use utils::{chunk_for_sqlite, SQLITE_MAX_PARAMS_CHUNK};

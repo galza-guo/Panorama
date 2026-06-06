@@ -1,6 +1,6 @@
 import type { ToolCallMessagePartProps } from "@assistant-ui/react";
 import { makeAssistantToolUI } from "@assistant-ui/react";
-import { Badge, Card, CardContent, CardHeader, CardTitle, Skeleton } from "@wealthfolio/ui";
+import { Badge, Card, CardContent, CardHeader, CardTitle, Skeleton } from "@panorama/ui";
 import { useMemo } from "react";
 import { useSettingsContext } from "@/lib/settings-provider";
 
@@ -155,7 +155,7 @@ function AccountCard({ account }: { account: AccountDto }) {
   return (
     <div className="bg-background/60 hover:bg-background/80 flex items-center justify-between rounded-lg border p-3 transition-colors">
       <div className="flex flex-col gap-0.5">
-        <span className="text-sm font-medium leading-tight">{account.name}</span>
+        <span className="text-sm leading-tight font-medium">{account.name}</span>
         <span className="text-muted-foreground text-xs">
           {formatAccountType(account.accountType)}
         </span>

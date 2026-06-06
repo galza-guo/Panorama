@@ -7,6 +7,8 @@ declare global {
     __TAURI__?: unknown;
 
     // Exposed for addon integration
+    __panorama_query_client__?: QueryClient;
+    __panorama_navigate__?: (route: string) => void;
     __wealthfolio_query_client__?: QueryClient;
     __wealthfolio_navigate__?: (route: string) => void;
 
@@ -23,4 +25,3 @@ declare global {
 }
 
 export {};
-

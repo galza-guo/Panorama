@@ -4,8 +4,8 @@ use std::fs;
 use std::sync::Arc;
 
 use chrono::Utc;
-use wealthfolio_core::sync::{FolderSyncEventFileV1, FOLDER_SYNC_VERSION_V1};
-use wealthfolio_storage_sqlite::sync::{
+use panorama_core::sync::{FolderSyncEventFileV1, FOLDER_SYNC_VERSION_V1};
+use panorama_storage_sqlite::sync::{
     AppSyncRepository, FolderSyncRepository, FolderSyncStatusUpdate,
 };
 
@@ -355,14 +355,14 @@ mod tests {
     use std::sync::Arc;
 
     use diesel::prelude::*;
-    use tempfile::tempdir;
-    use wealthfolio_core::sync::{
+    use panorama_core::sync::{
         FolderSyncEventFileV1, FolderSyncMetadataV1, SyncEntity, SyncOperation,
         FOLDER_SYNC_VERSION_V1,
     };
-    use wealthfolio_storage_sqlite::db::{self, write_actor};
-    use wealthfolio_storage_sqlite::schema::platforms;
-    use wealthfolio_storage_sqlite::sync::{AppSyncRepository, FolderSyncRepository};
+    use panorama_storage_sqlite::db::{self, write_actor};
+    use panorama_storage_sqlite::schema::platforms;
+    use panorama_storage_sqlite::sync::{AppSyncRepository, FolderSyncRepository};
+    use tempfile::tempdir;
 
     use crate::services::folder_sync_fs::FolderSyncFsService;
 
@@ -370,7 +370,7 @@ mod tests {
 
     struct ImporterTestContext {
         _tempdir: tempfile::TempDir,
-        pool: Arc<wealthfolio_storage_sqlite::DbPool>,
+        pool: Arc<panorama_storage_sqlite::DbPool>,
         app_sync_repository: Arc<AppSyncRepository>,
         folder_sync_repository: Arc<FolderSyncRepository>,
         fs_service: FolderSyncFsService,
@@ -415,10 +415,10 @@ mod tests {
     }
 
     fn load_platform_name(
-        pool: &Arc<wealthfolio_storage_sqlite::DbPool>,
+        pool: &Arc<panorama_storage_sqlite::DbPool>,
         platform_id: &str,
     ) -> Option<String> {
-        let mut conn = wealthfolio_storage_sqlite::get_connection(pool).expect("conn");
+        let mut conn = panorama_storage_sqlite::get_connection(pool).expect("conn");
         platforms::table
             .filter(platforms::id.eq(platform_id))
             .select(platforms::name)

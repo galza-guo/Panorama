@@ -1,6 +1,6 @@
-//! Wealthfolio Core - Domain entities, services, and traits.
+//! Panorama Core - Domain entities, services, and traits.
 //!
-//! This crate contains the core business logic for Wealthfolio.
+//! This crate contains the core business logic for Panorama.
 //! It is database-agnostic and defines traits that are implemented
 //! by the `storage-sqlite` crate.
 

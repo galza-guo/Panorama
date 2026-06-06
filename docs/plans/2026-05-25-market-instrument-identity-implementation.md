@@ -1,14 +1,24 @@
 # Market Instrument Identity Implementation Plan
 
-> **For Claude:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task.
+> **For Claude:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to
+> implement this plan task-by-task.
 
-**Goal:** Make market instrument identity deterministic so search, creation, and quote sync do not create duplicate assets such as `001594` and `001594.FUND`.
+**Goal:** Make market instrument identity deterministic so search, creation, and
+quote sync do not create duplicate assets such as `001594` and `001594.FUND`.
 
-**Architecture:** Add one canonical identity layer in core asset/quote code and use it in search dedupe plus asset creation/update. Keep the existing database fields; derive a stable dedupe key from `instrument_type`, canonical symbol, MIC, quote currency, and preferred provider.
+**Architecture:** Add one canonical identity layer in core asset/quote code and
+use it in search dedupe plus asset creation/update. Keep the existing database
+fields; derive a stable dedupe key from `instrument_type`, canonical symbol,
+MIC, quote currency, and preferred provider.
 
-**Implementation note:** The final model uses an explicit `InstrumentType::Fund`. Tiantian funds store a bare fund code such as `001594` in `instrument_symbol`, keep `instrument_exchange_mic=NULL`, and use `display_code=001594.FUND` plus `preferred_provider=TIANTIAN_FUND` for user/provider clarity.
+**Implementation note:** The final model uses an explicit
+`InstrumentType::Fund`. Tiantian funds store a bare fund code such as `001594`
+in `instrument_symbol`, keep `instrument_exchange_mic=NULL`, and use
+`display_code=001594.FUND` plus `preferred_provider=TIANTIAN_FUND` for
+user/provider clarity.
 
-**Tech Stack:** Rust core crates, market-data providers, SQLite-backed repositories, existing Rust unit tests.
+**Tech Stack:** Rust core crates, market-data providers, SQLite-backed
+repositories, existing Rust unit tests.
 
 ---
 
@@ -111,7 +121,7 @@ fn test_market_identity_key_crypto() {
 Run:
 
 ```bash
-cargo test -p wealthfolio-core assets_model_tests::test_market_identity_key -- --nocapture
+cargo test -p panorama-core assets_model_tests::test_market_identity_key -- --nocapture
 ```
 
 Expected: fails because `market_identity_key` does not exist.
@@ -168,7 +178,7 @@ pub fn market_identity_key(
 Run:
 
 ```bash
-cargo test -p wealthfolio-core assets_model_tests::test_market_identity_key -- --nocapture
+cargo test -p panorama-core assets_model_tests::test_market_identity_key -- --nocapture
 ```
 
 Expected: all new tests pass.
@@ -184,7 +194,11 @@ Expected: all new tests pass.
 
 **Step 1: Write failing test**
 
-Add a test that builds search summaries with the same Tiantian fund represented as `001594` and `001594.FUND`, then asserts the merge keeps only the canonical fund result. If existing quote-service tests do not expose a convenient full service harness, extract a small pure helper from `search_symbol_with_currency` first and test that helper.
+Add a test that builds search summaries with the same Tiantian fund represented
+as `001594` and `001594.FUND`, then asserts the merge keeps only the canonical
+fund result. If existing quote-service tests do not expose a convenient full
+service harness, extract a small pure helper from `search_symbol_with_currency`
+first and test that helper.
 
 Target behavior:
 
@@ -199,7 +213,7 @@ assert_eq!(results[0].data_source.as_deref(), Some("TIANTIAN_FUND"));
 Run:
 
 ```bash
-cargo test -p wealthfolio-core quotes::service_tests::search_dedupes_tiantian_fund_aliases -- --nocapture
+cargo test -p panorama-core quotes::service_tests::search_dedupes_tiantian_fund_aliases -- --nocapture
 ```
 
 Expected: fails because current dedupe only compares `(symbol, exchange_mic)`.
@@ -258,7 +272,8 @@ let new_provider_results: Vec<SymbolSearchResult> = provider_results
     .collect();
 ```
 
-Use a cleaner fallback than the sketch above if needed; avoid invalid temporary references.
+Use a cleaner fallback than the sketch above if needed; avoid invalid temporary
+references.
 
 **Step 4: Prefer canonical provider result**
 
@@ -274,8 +289,8 @@ When two provider results share a key, keep the more canonical one:
 Run:
 
 ```bash
-cargo test -p wealthfolio-core quotes::service_tests::search_dedupes_tiantian_fund_aliases -- --nocapture
-cargo test -p wealthfolio-core quotes::service_tests -- --nocapture
+cargo test -p panorama-core quotes::service_tests::search_dedupes_tiantian_fund_aliases -- --nocapture
+cargo test -p panorama-core quotes::service_tests -- --nocapture
 ```
 
 Expected: targeted search tests pass.
@@ -287,7 +302,8 @@ Expected: targeted search tests pass.
 **Files:**
 
 - Modify: `crates/core/src/assets/assets_service.rs`
-- Test: `crates/core/src/assets/assets_model_tests.rs` or existing asset service tests
+- Test: `crates/core/src/assets/assets_model_tests.rs` or existing asset service
+  tests
 
 **Step 1: Write failing tests**
 
@@ -310,10 +326,11 @@ stores:
 Run:
 
 ```bash
-cargo test -p wealthfolio-core assets -- --nocapture
+cargo test -p panorama-core assets -- --nocapture
 ```
 
-Expected: fails where creation/update keeps a bare code or infers an exchange MIC.
+Expected: fails where creation/update keeps a bare code or infers an exchange
+MIC.
 
 **Step 3: Implement minimal correction**
 
@@ -336,7 +353,7 @@ Do not add new database fields in this task.
 Run:
 
 ```bash
-cargo test -p wealthfolio-core assets -- --nocapture
+cargo test -p panorama-core assets -- --nocapture
 ```
 
 Expected: asset model/service tests pass.
@@ -356,7 +373,8 @@ The script should:
 
 - require `--db /path/to/app.db`
 - default to dry run
-- find pairs where canonical asset has display `.FUND`, instrument type `FUND`, and Tiantian provider
+- find pairs where canonical asset has display `.FUND`, instrument type `FUND`,
+  and Tiantian provider
 - find bare same-code asset with same or empty name
 - report activity counts and quote counts
 - only auto-deactivate bare duplicate when activity count is zero
@@ -370,7 +388,8 @@ cp "/Users/guolite/Library/Application Support/com.gallantguo.panorama/app.db" /
 python scripts/repair_market_identity_duplicates.py --db /tmp/panorama-identity-repair-test.db
 ```
 
-Expected: reports the `001594` duplicate and says it is safe to deactivate/delete.
+Expected: reports the `001594` duplicate and says it is safe to
+deactivate/delete.
 
 **Step 3: Add apply mode**
 
@@ -391,7 +410,8 @@ python scripts/repair_market_identity_duplicates.py --db /tmp/panorama-identity-
 sqlite3 /tmp/panorama-identity-repair-test.db "select display_code,is_active from assets where display_code in ('001594','001594.FUND');"
 ```
 
-Expected: canonical asset displayed as `001594.FUND` remains active; bare `001594` is inactive.
+Expected: canonical asset displayed as `001594.FUND` remains active; bare
+`001594` is inactive.
 
 ---
 
@@ -406,8 +426,8 @@ Expected: canonical asset displayed as `001594.FUND` remains active; bare `00159
 Run:
 
 ```bash
-cargo test -p wealthfolio-core
-cargo test -p wealthfolio-market-data
+cargo test -p panorama-core
+cargo test -p panorama-market-data
 ```
 
 Expected: both pass.

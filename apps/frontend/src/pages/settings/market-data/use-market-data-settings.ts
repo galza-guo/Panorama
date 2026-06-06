@@ -7,7 +7,7 @@ import {
   type MarketDataProviderSetting,
 } from "@/adapters";
 import { QueryKeys } from "@/lib/query-keys";
-import { toast } from "@wealthfolio/ui/components/ui/use-toast";
+import { toast } from "@panorama/ui/components/ui/use-toast";
 
 export function useMarketDataProviderSettings() {
   return useQuery({

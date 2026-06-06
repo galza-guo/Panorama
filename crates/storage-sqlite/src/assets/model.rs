@@ -8,7 +8,7 @@ use diesel::prelude::*;
 use log::error;
 use serde::{Deserialize, Serialize};
 
-use wealthfolio_core::assets::{Asset, AssetKind, InstrumentType, NewAsset, QuoteMode};
+use panorama_core::assets::{Asset, AssetKind, InstrumentType, NewAsset, QuoteMode};
 
 /// Helper to parse datetime string to NaiveDateTime.
 ///

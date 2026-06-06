@@ -5,11 +5,11 @@ use std::sync::Arc;
 use std::time::Duration;
 
 use chrono::Utc;
-use tokio::sync::{mpsc, watch, Mutex};
-use tokio::task::JoinHandle;
-use wealthfolio_storage_sqlite::sync::{
+use panorama_storage_sqlite::sync::{
     AppSyncRepository, FolderSyncRepository, FolderSyncStatusUpdate,
 };
+use tokio::sync::{mpsc, watch, Mutex};
+use tokio::task::JoinHandle;
 
 use crate::services::folder_sync_exporter::FolderSyncExporter;
 use crate::services::folder_sync_fs::FolderSyncFsService;
@@ -176,22 +176,22 @@ mod tests {
     use std::time::Duration;
 
     use diesel::prelude::*;
-    use tempfile::tempdir;
-    use wealthfolio_core::sync::{
+    use panorama_core::sync::{
         FolderSyncEventFileV1, SyncEntity, SyncOperation, FOLDER_SYNC_VERSION_V1,
     };
-    use wealthfolio_storage_sqlite::db::{self, write_actor, WriteHandle};
-    use wealthfolio_storage_sqlite::schema::platforms;
-    use wealthfolio_storage_sqlite::sync::{
+    use panorama_storage_sqlite::db::{self, write_actor, WriteHandle};
+    use panorama_storage_sqlite::schema::platforms;
+    use panorama_storage_sqlite::sync::{
         insert_outbox_event, AppSyncRepository, FolderSyncRepository, OutboxWriteRequest,
     };
+    use tempfile::tempdir;
 
     use crate::services::folder_sync_fs::FolderSyncFsService;
 
     use super::FolderSyncRuntime;
 
     struct RuntimeTestDevice {
-        pool: Arc<wealthfolio_storage_sqlite::DbPool>,
+        pool: Arc<panorama_storage_sqlite::DbPool>,
         writer: WriteHandle,
         app_sync_repository: Arc<AppSyncRepository>,
         folder_sync_repository: Arc<FolderSyncRepository>,
@@ -234,10 +234,10 @@ mod tests {
     }
 
     fn load_platform_name(
-        pool: &Arc<wealthfolio_storage_sqlite::DbPool>,
+        pool: &Arc<panorama_storage_sqlite::DbPool>,
         platform_id: &str,
     ) -> Option<String> {
-        let mut conn = wealthfolio_storage_sqlite::get_connection(pool).expect("conn");
+        let mut conn = panorama_storage_sqlite::get_connection(pool).expect("conn");
         platforms::table
             .filter(platforms::id.eq(platform_id))
             .select(platforms::name)

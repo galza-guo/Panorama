@@ -3,7 +3,7 @@ import { useEffect, useMemo } from "react";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
 
-import { Button } from "@wealthfolio/ui/components/ui/button";
+import { Button } from "@panorama/ui/components/ui/button";
 import {
   Form,
   FormControl,
@@ -11,12 +11,12 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-} from "@wealthfolio/ui/components/ui/form";
-import { Icons } from "@wealthfolio/ui/components/ui/icons";
-import { Input } from "@wealthfolio/ui/components/ui/input";
-import { Textarea } from "@wealthfolio/ui/components/ui/textarea";
+} from "@panorama/ui/components/ui/form";
+import { Icons } from "@panorama/ui/components/ui/icons";
+import { Input } from "@panorama/ui/components/ui/input";
+import { Textarea } from "@panorama/ui/components/ui/textarea";
 import { QuoteMode } from "@/lib/constants";
-import { ResponsiveSelect, type ResponsiveSelectOption } from "@wealthfolio/ui";
+import { ResponsiveSelect, type ResponsiveSelectOption } from "@panorama/ui";
 import { SingleSelectTaxonomy } from "@/components/classification/single-select-taxonomy";
 import { MultiSelectTaxonomy } from "@/components/classification/multi-select-taxonomy";
 import { useTaxonomies } from "@/hooks/use-taxonomies";

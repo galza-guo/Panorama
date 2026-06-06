@@ -1,4 +1,4 @@
-import type { AddonContext } from "@wealthfolio/addon-sdk";
+import type { AddonContext } from "@panorama/addon-sdk";
 import {
   Card,
   CardContent,
@@ -10,7 +10,7 @@ import {
   PageHeader,
   Skeleton,
   useBalancePrivacy,
-} from "@wealthfolio/ui";
+} from "@panorama/ui";
 import React, { useState } from "react";
 import {
   AccountBreakdown,

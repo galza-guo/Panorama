@@ -1,11 +1,11 @@
 use chrono;
+use panorama_storage_sqlite::db;
 use serde::Serialize;
 use std::fs::File;
 use std::io::Read;
 use std::path::Path;
 use tauri::Manager;
 use tauri::{AppHandle, Emitter};
-use wealthfolio_storage_sqlite::db;
 
 use crate::context::ServiceContext;
 #[cfg(desktop)]
@@ -133,7 +133,7 @@ pub async fn backup_database_to_path(
 
     // Create a custom backup path in the specified directory
     let timestamp = chrono::Local::now().format("%Y%m%d_%H%M%S");
-    let backup_filename = format!("wealthfolio_backup_{}.db", timestamp);
+    let backup_filename = format!("panorama_backup_{}.db", timestamp);
     let backup_path = Path::new(&normalized_backup_dir).join(&backup_filename);
 
     let backup_path_str = backup_path.to_string_lossy().to_string();

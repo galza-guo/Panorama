@@ -5,13 +5,11 @@
 
 use std::sync::Arc;
 
-use tokio::sync::mpsc;
-use wealthfolio_connect::BrokerSyncServiceTrait;
-use wealthfolio_core::{
+use panorama_core::{
     assets::AssetServiceTrait,
     events::{DomainEvent, DomainEventSink},
-    secrets::SecretStore,
 };
+use tokio::sync::mpsc;
 
 use super::queue_worker::{event_queue_worker, QueueWorkerDeps};
 use crate::events::EventBus;
@@ -57,19 +55,17 @@ impl WebDomainEventSink {
     pub fn start_worker(
         &self,
         asset_service: Arc<dyn AssetServiceTrait + Send + Sync>,
-        connect_sync_service: Arc<dyn BrokerSyncServiceTrait + Send + Sync>,
         event_bus: EventBus,
-        health_service: Arc<dyn wealthfolio_core::health::HealthServiceTrait + Send + Sync>,
+        health_service: Arc<dyn panorama_core::health::HealthServiceTrait + Send + Sync>,
         snapshot_service: Arc<
-            dyn wealthfolio_core::portfolio::snapshot::SnapshotServiceTrait + Send + Sync,
+            dyn panorama_core::portfolio::snapshot::SnapshotServiceTrait + Send + Sync,
         >,
-        quote_service: Arc<dyn wealthfolio_core::quotes::QuoteServiceTrait + Send + Sync>,
+        quote_service: Arc<dyn panorama_core::quotes::QuoteServiceTrait + Send + Sync>,
         valuation_service: Arc<
-            dyn wealthfolio_core::portfolio::valuation::ValuationServiceTrait + Send + Sync,
+            dyn panorama_core::portfolio::valuation::ValuationServiceTrait + Send + Sync,
         >,
-        account_service: Arc<wealthfolio_core::accounts::AccountService>,
-        fx_service: Arc<dyn wealthfolio_core::fx::FxServiceTrait + Send + Sync>,
-        secret_store: Arc<dyn SecretStore>,
+        account_service: Arc<panorama_core::accounts::AccountService>,
+        fx_service: Arc<dyn panorama_core::fx::FxServiceTrait + Send + Sync>,
     ) {
         let rx = self
             .rx
@@ -80,7 +76,6 @@ impl WebDomainEventSink {
 
         let deps = Arc::new(QueueWorkerDeps {
             asset_service,
-            connect_sync_service,
             event_bus,
             health_service,
             snapshot_service,
@@ -88,7 +83,6 @@ impl WebDomainEventSink {
             valuation_service,
             account_service,
             fx_service,
-            secret_store,
         });
 
         // Spawn the background worker

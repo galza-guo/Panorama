@@ -290,9 +290,9 @@ mod tests {
     use super::*;
     use crate::env::test_env::{MockAccountService, MockEnvironment, MockQuoteService};
     use chrono::Utc;
+    use panorama_core::accounts::Account;
+    use panorama_core::quotes::SymbolSearchResult;
     use std::sync::RwLock;
-    use wealthfolio_core::accounts::Account;
-    use wealthfolio_core::quotes::SymbolSearchResult;
 
     fn account(id: &str, name: &str, currency: &str) -> Account {
         Account {

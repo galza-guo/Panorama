@@ -11,10 +11,10 @@ use axum::{
     routing::{delete, get, post, put},
     Json, Router,
 };
-use wealthfolio_core::quotes::{
+use panorama_core::quotes::{
     LatestQuoteSnapshot, MarketSyncMode, ProviderInfo, Quote, QuoteImport, SymbolSearchResult,
 };
-use wealthfolio_market_data::ExchangeInfo;
+use panorama_market_data::ExchangeInfo;
 
 async fn get_market_data_providers(
     State(state): State<Arc<AppState>>,
@@ -239,11 +239,11 @@ struct ResolveSymbolQuoteQuery {
 async fn resolve_symbol_quote(
     State(state): State<Arc<AppState>>,
     Query(q): Query<ResolveSymbolQuoteQuery>,
-) -> ApiResult<Json<wealthfolio_core::quotes::ResolvedQuote>> {
+) -> ApiResult<Json<panorama_core::quotes::ResolvedQuote>> {
     let inst_type = q
         .instrument_type
         .as_deref()
-        .and_then(wealthfolio_core::assets::InstrumentType::from_db_str);
+        .and_then(panorama_core::assets::InstrumentType::from_db_str);
     let res = state
         .quote_service
         .resolve_symbol_quote(&q.symbol, q.exchange_mic.as_deref(), inst_type.as_ref())
@@ -252,7 +252,7 @@ async fn resolve_symbol_quote(
 }
 
 async fn get_exchanges() -> Json<Vec<ExchangeInfo>> {
-    Json(wealthfolio_market_data::get_exchange_list())
+    Json(panorama_market_data::get_exchange_list())
 }
 
 pub fn router() -> Router<Arc<AppState>> {

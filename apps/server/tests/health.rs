@@ -1,10 +1,18 @@
 use axum::{body::Body, http::Request};
+use panorama_server::{api::app_router, build_state, config::Config};
 use tempfile::tempdir;
 use tower::ServiceExt;
-use wealthfolio_server::{api::app_router, build_state, config::Config};
 
 #[tokio::test]
 async fn healthz_works() {
+    for key in [
+        "PANORAMA_DB_PATH",
+        "PANORAMA_SECRET_KEY",
+        "WF_DB_PATH",
+        "WF_SECRET_KEY",
+    ] {
+        std::env::remove_var(key);
+    }
     let tmp = tempdir().unwrap();
     std::env::set_var("WF_DB_PATH", tmp.path().join("test.db"));
     std::env::set_var("WF_SECRET_KEY", "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
@@ -23,7 +31,12 @@ async fn healthz_works() {
         .unwrap();
     assert_eq!(response.status(), 200);
 
-    for key in ["WF_DB_PATH", "WF_SECRET_KEY"] {
+    for key in [
+        "PANORAMA_DB_PATH",
+        "PANORAMA_SECRET_KEY",
+        "WF_DB_PATH",
+        "WF_SECRET_KEY",
+    ] {
         std::env::remove_var(key);
     }
 }

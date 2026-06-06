@@ -12,8 +12,8 @@ use crate::db::{get_connection, WriteHandle};
 use crate::errors::StorageError;
 use crate::schema::quote_sync_state::dsl as qss_dsl;
 use crate::utils::chunk_for_sqlite;
-use wealthfolio_core::quotes::{ProviderSyncStats, QuoteSyncState, SyncStateStore};
-use wealthfolio_core::Result;
+use panorama_core::quotes::{ProviderSyncStats, QuoteSyncState, SyncStateStore};
+use panorama_core::Result;
 
 pub struct QuoteSyncStateRepository {
     pool: Arc<Pool<ConnectionManager<SqliteConnection>>>,

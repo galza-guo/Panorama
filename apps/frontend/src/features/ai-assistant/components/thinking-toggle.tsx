@@ -1,6 +1,6 @@
 import type { FC } from "react";
-import { Badge, Tooltip, TooltipContent, TooltipTrigger } from "@wealthfolio/ui";
-import { Icons } from "@wealthfolio/ui/components/ui/icons";
+import { Badge, Tooltip, TooltipContent, TooltipTrigger } from "@panorama/ui";
+import { Icons } from "@panorama/ui/components/ui/icons";
 import { cn } from "@/lib/utils";
 import { useChatModelContext } from "../hooks/use-chat-model-context";
 
@@ -22,7 +22,7 @@ export const ThinkingToggle: FC = () => {
         <Badge
           variant={thinkingEnabled ? "default" : "outline"}
           className={cn(
-            "h-5 cursor-pointer select-none gap-1 px-1.5 text-[10px] font-normal transition-colors",
+            "h-5 cursor-pointer gap-1 px-1.5 text-[10px] font-normal transition-colors select-none",
             thinkingEnabled
               ? "bg-primary/90 hover:bg-primary"
               : "text-muted-foreground hover:bg-muted hover:text-foreground",

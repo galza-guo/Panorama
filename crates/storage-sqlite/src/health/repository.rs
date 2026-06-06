@@ -6,8 +6,8 @@ use diesel::r2d2::{self, Pool};
 use diesel::SqliteConnection;
 use std::sync::Arc;
 
-use wealthfolio_core::health::{HealthDismissalStore, IssueDismissal};
-use wealthfolio_core::Result;
+use panorama_core::health::{HealthDismissalStore, IssueDismissal};
+use panorama_core::Result;
 
 use super::model::HealthIssueDismissalDB;
 use crate::db::{get_connection, WriteHandle};

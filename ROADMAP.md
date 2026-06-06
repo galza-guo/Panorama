@@ -3,8 +3,8 @@
 ## Vision
 
 To help individuals build their wealth with a safe, privacy-focused, and
-localized tool that tracks global portfolios alongside HK/CN-specific assets
-and workflows.
+localized tool that tracks global portfolios alongside HK/CN-specific assets and
+workflows.
 
 ## Strategy
 
@@ -91,9 +91,9 @@ and workflows.
 ---
 
 We're building Panorama to be a practical, local-first alternative to online
-investment trackers, especially for users who need HK/CN market coverage
-without giving up privacy. The plan will evolve, but the priorities stay the
-same: private data, clear workflows, and focused functionality.
+investment trackers, especially for users who need HK/CN market coverage without
+giving up privacy. The plan will evolve, but the priorities stay the same:
+private data, clear workflows, and focused functionality.
 
 Ideas and feedback welcome - open an issue at
 <https://github.com/galza-guo/Panorama/issues>.

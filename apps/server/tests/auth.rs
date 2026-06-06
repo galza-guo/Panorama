@@ -4,12 +4,13 @@ use axum::{
     http::{header, Method, Request},
 };
 use base64::{engine::general_purpose::STANDARD as BASE64, Engine as _};
+use panorama_server::{api::app_router, build_state, config::Config};
 use rand::{rngs::OsRng, RngCore};
 use tempfile::tempdir;
 use tower::ServiceExt;
-use wealthfolio_server::{api::app_router, build_state, config::Config};
 
 async fn build_test_router(password: &str) -> axum::Router {
+    cleanup_env();
     let tmp = tempdir().unwrap();
     std::env::set_var("WF_DB_PATH", tmp.path().join("test.db"));
 
@@ -31,7 +32,14 @@ async fn build_test_router(password: &str) -> axum::Router {
 }
 
 fn cleanup_env() {
-    for key in ["WF_DB_PATH", "WF_AUTH_PASSWORD_HASH", "WF_SECRET_KEY"] {
+    for key in [
+        "PANORAMA_DB_PATH",
+        "PANORAMA_AUTH_PASSWORD_HASH",
+        "PANORAMA_SECRET_KEY",
+        "WF_DB_PATH",
+        "WF_AUTH_PASSWORD_HASH",
+        "WF_SECRET_KEY",
+    ] {
         std::env::remove_var(key);
     }
 }

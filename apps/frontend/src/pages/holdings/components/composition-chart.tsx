@@ -2,13 +2,13 @@ import { usePersistentState } from "@/hooks/use-persistent-state";
 import { useSettingsContext } from "@/lib/settings-provider";
 import { Holding } from "@/lib/types";
 import { cn } from "@/lib/utils";
-import { AnimatedToggleGroup, formatAmount, formatPercent } from "@wealthfolio/ui";
-import { Button } from "@wealthfolio/ui/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@wealthfolio/ui/components/ui/card";
-import { EmptyPlaceholder } from "@wealthfolio/ui/components/ui/empty-placeholder";
-import { Icons } from "@wealthfolio/ui/components/ui/icons";
-import { Skeleton } from "@wealthfolio/ui/components/ui/skeleton";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@wealthfolio/ui/components/ui/tooltip";
+import { AnimatedToggleGroup, formatAmount, formatPercent } from "@panorama/ui";
+import { Button } from "@panorama/ui/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@panorama/ui/components/ui/card";
+import { EmptyPlaceholder } from "@panorama/ui/components/ui/empty-placeholder";
+import { Icons } from "@panorama/ui/components/ui/icons";
+import { Skeleton } from "@panorama/ui/components/ui/skeleton";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@panorama/ui/components/ui/tooltip";
 import { useEffect, useMemo, useRef, type FC } from "react";
 import { Link } from "react-router-dom";
 import { Tooltip as ChartTooltip, ResponsiveContainer, type TreemapNode, Treemap } from "recharts";
@@ -352,7 +352,7 @@ export function PortfolioComposition({ holdings, isLoading }: PortfolioCompositi
         <CardHeader className="flex flex-row items-center justify-between space-y-0">
           <div className="flex items-center space-x-2">
             <Icons.LayoutDashboard className="text-muted-foreground h-4 w-4" />
-            <CardTitle className="text-muted-foreground text-sm font-medium uppercase tracking-wider">
+            <CardTitle className="text-muted-foreground text-sm font-medium tracking-wider uppercase">
               Composition
             </CardTitle>
           </div>
@@ -392,7 +392,7 @@ export function PortfolioComposition({ holdings, isLoading }: PortfolioCompositi
     <Card>
       <CardHeader className="flex flex-row items-center justify-between space-y-0">
         <div className="flex items-center space-x-2">
-          <CardTitle className="text-muted-foreground text-sm font-medium uppercase tracking-wider">
+          <CardTitle className="text-muted-foreground text-sm font-medium tracking-wider uppercase">
             Composition
           </CardTitle>
         </div>

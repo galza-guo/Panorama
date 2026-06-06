@@ -3743,7 +3743,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "wealthfolio-server"
+name = "panorama-server"
 version = "2.1.0"
 dependencies = [
  "anyhow",
@@ -3774,11 +3774,11 @@ dependencies = [
  "utoipa",
  "utoipa-swagger-ui",
  "uuid",
- "wealthfolio_core",
+ "panorama_core",
 ]
 
 [[package]]
-name = "wealthfolio_core"
+name = "panorama_core"
 version = "2.1.0"
 dependencies = [
  "anyhow",

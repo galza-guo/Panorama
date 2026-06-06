@@ -23,12 +23,6 @@ mod ai_chat;
 mod ai_providers;
 mod alternative_assets;
 mod assets;
-#[cfg(any(feature = "connect-sync", feature = "device-sync"))]
-pub mod connect;
-#[cfg(feature = "device-sync")]
-mod device_sync;
-#[cfg(feature = "device-sync")]
-pub(crate) mod device_sync_engine;
 mod exchange_rates;
 mod goals;
 mod health;
@@ -41,8 +35,6 @@ mod portfolio;
 mod secrets;
 mod settings;
 pub mod shared;
-#[cfg(feature = "device-sync")]
-mod sync_crypto;
 mod target_allocation;
 mod taxonomies;
 
@@ -103,18 +95,6 @@ pub fn app_router(state: Arc<AppState>, config: &Config) -> Router {
         .merge(ai_providers::router())
         .merge(ai_chat::router())
         .merge(health::router());
-
-    #[cfg(feature = "device-sync")]
-    {
-        protected_api = protected_api
-            .merge(device_sync::router())
-            .merge(sync_crypto::router());
-    }
-
-    #[cfg(any(feature = "connect-sync", feature = "device-sync"))]
-    {
-        protected_api = protected_api.merge(connect::router());
-    }
 
     let protected_api = if requires_auth {
         protected_api.layer(middleware::from_fn_with_state(

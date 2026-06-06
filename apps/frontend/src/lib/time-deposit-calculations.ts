@@ -63,7 +63,10 @@ function roundTo(value: number, precision = 10): number {
 }
 
 function resolveExpectedMaturityValue(
-  input: Pick<TimeDepositCurrentValueInput, "principal" | "startDate" | "maturityDate" | "quotedAnnualRatePct" | "guaranteedMaturityValue">,
+  input: Pick<
+    TimeDepositCurrentValueInput,
+    "principal" | "startDate" | "maturityDate" | "quotedAnnualRatePct" | "guaranteedMaturityValue"
+  >,
 ): number {
   if (typeof input.guaranteedMaturityValue === "number") {
     return input.guaranteedMaturityValue;
@@ -82,7 +85,10 @@ function resolveExpectedMaturityValue(
 }
 
 function resolveAnnualizedReturnPct(
-  input: Pick<TimeDepositCurrentValueInput, "principal" | "startDate" | "maturityDate" | "quotedAnnualRatePct" | "guaranteedMaturityValue">,
+  input: Pick<
+    TimeDepositCurrentValueInput,
+    "principal" | "startDate" | "maturityDate" | "quotedAnnualRatePct" | "guaranteedMaturityValue"
+  >,
 ): number {
   if (typeof input.guaranteedMaturityValue === "number") {
     return (
@@ -150,7 +156,7 @@ export function getTimeDepositDerivedMetrics(
   const annualizedReturnPct = resolveAnnualizedReturnPct(input);
   const progressPct = totalDays === 0 ? 1 : daysElapsed / totalDays;
   const holdingPeriodReturnPct =
-    input.principal > 0 ? roundTo(((estimatedCurrentValue / input.principal) - 1) * 100) : 0;
+    input.principal > 0 ? roundTo((estimatedCurrentValue / input.principal - 1) * 100) : 0;
 
   return {
     daysElapsed,

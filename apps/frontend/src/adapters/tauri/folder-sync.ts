@@ -12,7 +12,9 @@ export const initializeFolderSync = async (
   return invoke<FolderSyncCommandResult>("initialize_folder_sync", { sharedFolderPath });
 };
 
-export const joinFolderSync = async (sharedFolderPath: string): Promise<FolderSyncCommandResult> => {
+export const joinFolderSync = async (
+  sharedFolderPath: string,
+): Promise<FolderSyncCommandResult> => {
   return invoke<FolderSyncCommandResult>("join_folder_sync", { sharedFolderPath });
 };
 

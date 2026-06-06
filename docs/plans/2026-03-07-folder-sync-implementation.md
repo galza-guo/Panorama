@@ -1,20 +1,30 @@
 # Folder Sync Implementation Plan
 
-> **For Claude:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task.
+> **For Claude:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to
+> implement this plan task-by-task.
 
-**Goal:** Build desktop-only folder-based shared-data sync using Syncthing transport, with automatic event export/import, snapshot bootstrap, and lightweight sync status/history UI.
+**Goal:** Build desktop-only folder-based shared-data sync using Syncthing
+transport, with automatic event export/import, snapshot bootstrap, and
+lightweight sync status/history UI.
 
-**Architecture:** Keep each device's SQLite database local and treat the Syncthing folder as an append-only transport mailbox. Reuse the existing app-side sync outbox and LWW application logic, but replace the current server transport dependency with a folder transport and local-only sync metadata.
+**Architecture:** Keep each device's SQLite database local and treat the
+Syncthing folder as an append-only transport mailbox. Reuse the existing
+app-side sync outbox and LWW application logic, but replace the current server
+transport dependency with a folder transport and local-only sync metadata.
 
-**Tech Stack:** Tauri, Rust, SQLite/Diesel, existing storage-sqlite sync infrastructure, React frontend, Syncthing-managed shared folder on disk.
+**Tech Stack:** Tauri, Rust, SQLite/Diesel, existing storage-sqlite sync
+infrastructure, React frontend, Syncthing-managed shared folder on disk.
 
 ---
 
 ### Task 1: Create local-only folder sync metadata storage
 
 **Files:**
-- Create: `crates/storage-sqlite/migrations/2026-03-07-000001_folder_sync_foundation/up.sql`
-- Create: `crates/storage-sqlite/migrations/2026-03-07-000001_folder_sync_foundation/down.sql`
+
+- Create:
+  `crates/storage-sqlite/migrations/2026-03-07-000001_folder_sync_foundation/up.sql`
+- Create:
+  `crates/storage-sqlite/migrations/2026-03-07-000001_folder_sync_foundation/down.sql`
 - Modify: `crates/storage-sqlite/src/schema.rs`
 - Create: `crates/storage-sqlite/src/sync/folder_sync/mod.rs`
 - Create: `crates/storage-sqlite/src/sync/folder_sync/model.rs`
@@ -33,7 +43,7 @@ Add repository tests that expect:
 
 **Step 2: Run test to verify it fails**
 
-Run: `cargo test -p wealthfolio-storage-sqlite folder_sync -- --nocapture`
+Run: `cargo test -p panorama-storage-sqlite folder_sync -- --nocapture`
 Expected: FAIL because folder sync storage types and tables do not exist.
 
 **Step 3: Write minimal implementation**
@@ -49,7 +59,7 @@ Implement a repository API with focused methods only for v1 behavior.
 
 **Step 4: Run test to verify it passes**
 
-Run: `cargo test -p wealthfolio-storage-sqlite folder_sync -- --nocapture`
+Run: `cargo test -p panorama-storage-sqlite folder_sync -- --nocapture`
 Expected: PASS
 
 **Step 5: Commit**
@@ -62,6 +72,7 @@ git commit -m "feat: add folder sync local metadata storage"
 ### Task 2: Define shared-folder file contracts
 
 **Files:**
+
 - Create: `crates/core/src/sync/folder_sync.rs`
 - Modify: `crates/core/src/sync/mod.rs`
 - Test: `crates/core/src/sync/folder_sync.rs`
@@ -78,8 +89,8 @@ Add tests for:
 
 **Step 2: Run test to verify it fails**
 
-Run: `cargo test -p wealthfolio-core folder_sync -- --nocapture`
-Expected: FAIL because folder sync contract types do not exist.
+Run: `cargo test -p panorama-core folder_sync -- --nocapture` Expected: FAIL
+because folder sync contract types do not exist.
 
 **Step 3: Write minimal implementation**
 
@@ -94,8 +105,7 @@ Keep the format versioned and append-only.
 
 **Step 4: Run test to verify it passes**
 
-Run: `cargo test -p wealthfolio-core folder_sync -- --nocapture`
-Expected: PASS
+Run: `cargo test -p panorama-core folder_sync -- --nocapture` Expected: PASS
 
 **Step 5: Commit**
 
@@ -107,6 +117,7 @@ git commit -m "feat: define folder sync file contracts"
 ### Task 3: Implement shared-folder file system service
 
 **Files:**
+
 - Create: `apps/tauri/src/services/folder_sync_fs.rs`
 - Test: `apps/tauri/src/services/folder_sync_fs.rs`
 
@@ -122,8 +133,8 @@ Add tests using temp directories for:
 
 **Step 2: Run test to verify it fails**
 
-Run: `cargo test -p panorama folder_sync_fs -- --nocapture`
-Expected: FAIL because the file system service does not exist.
+Run: `cargo test -p panorama folder_sync_fs -- --nocapture` Expected: FAIL
+because the file system service does not exist.
 
 **Step 3: Write minimal implementation**
 
@@ -138,8 +149,7 @@ Use temp-file-then-rename semantics for writes.
 
 **Step 4: Run test to verify it passes**
 
-Run: `cargo test -p panorama folder_sync_fs -- --nocapture`
-Expected: PASS
+Run: `cargo test -p panorama folder_sync_fs -- --nocapture` Expected: PASS
 
 **Step 5: Commit**
 
@@ -151,6 +161,7 @@ git commit -m "feat: add folder sync file system service"
 ### Task 4: Export shared outbox mutations into event files
 
 **Files:**
+
 - Create: `apps/tauri/src/services/folder_sync_exporter.rs`
 - Modify: `apps/tauri/src/context/providers.rs`
 - Modify: `crates/storage-sqlite/src/sync/mod.rs`
@@ -167,8 +178,8 @@ Add tests that:
 
 **Step 2: Run test to verify it fails**
 
-Run: `cargo test -p panorama folder_sync_exporter -- --nocapture`
-Expected: FAIL because no exporter exists.
+Run: `cargo test -p panorama folder_sync_exporter -- --nocapture` Expected: FAIL
+because no exporter exists.
 
 **Step 3: Write minimal implementation**
 
@@ -181,8 +192,7 @@ Implement an exporter that:
 
 **Step 4: Run test to verify it passes**
 
-Run: `cargo test -p panorama folder_sync_exporter -- --nocapture`
-Expected: PASS
+Run: `cargo test -p panorama folder_sync_exporter -- --nocapture` Expected: PASS
 
 **Step 5: Commit**
 
@@ -194,6 +204,7 @@ git commit -m "feat: export shared mutations to folder sync events"
 ### Task 5: Import remote event files into local SQLite
 
 **Files:**
+
 - Create: `apps/tauri/src/services/folder_sync_importer.rs`
 - Modify: `crates/storage-sqlite/src/sync/app_sync/repository.rs`
 - Test: `apps/tauri/src/services/folder_sync_importer.rs`
@@ -209,8 +220,8 @@ Add tests that:
 
 **Step 2: Run test to verify it fails**
 
-Run: `cargo test -p panorama folder_sync_importer -- --nocapture`
-Expected: FAIL because no importer exists.
+Run: `cargo test -p panorama folder_sync_importer -- --nocapture` Expected: FAIL
+because no importer exists.
 
 **Step 3: Write minimal implementation**
 
@@ -224,8 +235,7 @@ Implement importer logic that:
 
 **Step 4: Run test to verify it passes**
 
-Run: `cargo test -p panorama folder_sync_importer -- --nocapture`
-Expected: PASS
+Run: `cargo test -p panorama folder_sync_importer -- --nocapture` Expected: PASS
 
 **Step 5: Commit**
 
@@ -237,6 +247,7 @@ git commit -m "feat: import remote folder sync events"
 ### Task 6: Implement snapshot export and join/restore flow
 
 **Files:**
+
 - Create: `apps/tauri/src/services/folder_sync_snapshot.rs`
 - Modify: `apps/tauri/src/commands/utilities.rs`
 - Modify: `crates/storage-sqlite/src/db/mod.rs`
@@ -252,8 +263,8 @@ Add tests that:
 
 **Step 2: Run test to verify it fails**
 
-Run: `cargo test -p panorama folder_sync_snapshot -- --nocapture`
-Expected: FAIL because snapshot service does not exist.
+Run: `cargo test -p panorama folder_sync_snapshot -- --nocapture` Expected: FAIL
+because snapshot service does not exist.
 
 **Step 3: Write minimal implementation**
 
@@ -268,8 +279,7 @@ Reuse existing backup/restore helpers where possible.
 
 **Step 4: Run test to verify it passes**
 
-Run: `cargo test -p panorama folder_sync_snapshot -- --nocapture`
-Expected: PASS
+Run: `cargo test -p panorama folder_sync_snapshot -- --nocapture` Expected: PASS
 
 **Step 5: Commit**
 
@@ -281,6 +291,7 @@ git commit -m "feat: add folder sync snapshot bootstrap flow"
 ### Task 7: Add background orchestration for invisible sync
 
 **Files:**
+
 - Create: `apps/tauri/src/services/folder_sync_runtime.rs`
 - Modify: `apps/tauri/src/lib.rs`
 - Modify: `apps/tauri/src/context/registry.rs`
@@ -297,8 +308,8 @@ Add tests for:
 
 **Step 2: Run test to verify it fails**
 
-Run: `cargo test -p panorama folder_sync_runtime -- --nocapture`
-Expected: FAIL because runtime orchestration does not exist.
+Run: `cargo test -p panorama folder_sync_runtime -- --nocapture` Expected: FAIL
+because runtime orchestration does not exist.
 
 **Step 3: Write minimal implementation**
 
@@ -312,8 +323,7 @@ Implement a runtime that:
 
 **Step 4: Run test to verify it passes**
 
-Run: `cargo test -p panorama folder_sync_runtime -- --nocapture`
-Expected: PASS
+Run: `cargo test -p panorama folder_sync_runtime -- --nocapture` Expected: PASS
 
 **Step 5: Commit**
 
@@ -325,6 +335,7 @@ git commit -m "feat: add automatic folder sync runtime"
 ### Task 8: Expose Tauri commands for folder sync setup and status
 
 **Files:**
+
 - Create: `apps/tauri/src/commands/folder_sync.rs`
 - Modify: `apps/tauri/src/commands/mod.rs`
 - Modify: `apps/tauri/src/lib.rs`
@@ -342,17 +353,17 @@ Add tests that expect commands for:
 
 **Step 2: Run test to verify it fails**
 
-Run: `cargo test -p panorama folder_sync_command -- --nocapture`
-Expected: FAIL because the commands do not exist.
+Run: `cargo test -p panorama folder_sync_command -- --nocapture` Expected: FAIL
+because the commands do not exist.
 
 **Step 3: Write minimal implementation**
 
-Add thin commands that delegate to the folder sync services and return frontend-friendly DTOs.
+Add thin commands that delegate to the folder sync services and return
+frontend-friendly DTOs.
 
 **Step 4: Run test to verify it passes**
 
-Run: `cargo test -p panorama folder_sync_command -- --nocapture`
-Expected: PASS
+Run: `cargo test -p panorama folder_sync_command -- --nocapture` Expected: PASS
 
 **Step 5: Commit**
 
@@ -364,6 +375,7 @@ git commit -m "feat: expose folder sync commands"
 ### Task 9: Add frontend adapter bindings and hooks
 
 **Files:**
+
 - Modify: `apps/frontend/src/adapters/tauri/core.ts`
 - Modify: `apps/frontend/src/adapters/tauri/index.ts`
 - Create: `apps/frontend/src/features/folder-sync/hooks/use-folder-sync.ts`
@@ -380,8 +392,8 @@ Add hook tests for:
 
 **Step 2: Run test to verify it fails**
 
-Run: `pnpm test use-folder-sync`
-Expected: FAIL because the hook and adapter bindings do not exist.
+Run: `pnpm test use-folder-sync` Expected: FAIL because the hook and adapter
+bindings do not exist.
 
 **Step 3: Write minimal implementation**
 
@@ -389,8 +401,7 @@ Create adapter calls and one focused React hook for the settings UI.
 
 **Step 4: Run test to verify it passes**
 
-Run: `pnpm test use-folder-sync`
-Expected: PASS
+Run: `pnpm test use-folder-sync` Expected: PASS
 
 **Step 5: Commit**
 
@@ -402,10 +413,13 @@ git commit -m "feat: add folder sync frontend bindings"
 ### Task 10: Add the minimal settings UI
 
 **Files:**
-- Create: `apps/frontend/src/features/folder-sync/components/folder-sync-card.tsx`
+
+- Create:
+  `apps/frontend/src/features/folder-sync/components/folder-sync-card.tsx`
 - Modify: `apps/frontend/src/pages/settings/about/about-page.tsx`
 - Modify: `apps/frontend/src/lib/types.ts`
-- Test: `apps/frontend/src/features/folder-sync/components/folder-sync-card.test.tsx`
+- Test:
+  `apps/frontend/src/features/folder-sync/components/folder-sync-card.test.tsx`
 
 **Step 1: Write the failing tests**
 
@@ -419,17 +433,17 @@ Add component tests that expect:
 
 **Step 2: Run test to verify it fails**
 
-Run: `pnpm test folder-sync-card`
-Expected: FAIL because the card does not exist.
+Run: `pnpm test folder-sync-card` Expected: FAIL because the card does not
+exist.
 
 **Step 3: Write minimal implementation**
 
-Build a small settings card only. Keep it utilitarian and avoid a separate dashboard.
+Build a small settings card only. Keep it utilitarian and avoid a separate
+dashboard.
 
 **Step 4: Run test to verify it passes**
 
-Run: `pnpm test folder-sync-card`
-Expected: PASS
+Run: `pnpm test folder-sync-card` Expected: PASS
 
 **Step 5: Commit**
 
@@ -441,27 +455,24 @@ git commit -m "feat: add folder sync settings ui"
 ### Task 11: Run integrated verification
 
 **Files:**
+
 - Modify: `docs/plans/2026-03-07-folder-sync-implementation.md`
 
 **Step 1: Run Rust tests**
 
-Run: `cargo test`
-Expected: PASS
+Run: `cargo test` Expected: PASS
 
 **Step 2: Run frontend tests**
 
-Run: `pnpm test`
-Expected: PASS
+Run: `pnpm test` Expected: PASS
 
 **Step 3: Run type checks**
 
-Run: `pnpm type-check`
-Expected: PASS
+Run: `pnpm type-check` Expected: PASS
 
 **Step 4: Run lint**
 
-Run: `pnpm lint`
-Expected: PASS
+Run: `pnpm lint` Expected: PASS
 
 **Step 5: Manual two-device test**
 
@@ -487,7 +498,10 @@ git commit -m "docs: verify folder sync implementation plan"
 Automated verification completed on March 7, 2026.
 
 - `cargo test`
-  - Initial sandboxed run failed in `wealthfolio-device-sync` because several snapshot upload tests bind a local listener and the sandbox denied socket binding (`Os { code: 1, kind: PermissionDenied, message: "Operation not permitted" }`).
+  - Initial sandboxed run failed in `wealthfolio-device-sync` because several
+    snapshot upload tests bind a local listener and the sandbox denied socket
+    binding
+    (`Os { code: 1, kind: PermissionDenied, message: "Operation not permitted" }`).
   - Re-ran `cargo test` outside the sandbox. Result: PASS.
 - `pnpm test`
   - Result: PASS.
@@ -504,4 +518,5 @@ Manual verification status:
 - Required follow-up:
   - initialize folder sync on device A
   - join the same shared folder on device B
-  - verify automatic catch-up after edits, offline replay, and missing-folder degraded state
+  - verify automatic catch-up after edits, offline replay, and missing-folder
+    degraded state

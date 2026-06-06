@@ -6,7 +6,8 @@
 - Prepared on: `2026-03-03`
 - Upstream base: `upstream/main`
 - Divergence vs `upstream/main`: `ahead 8`, `behind 0`
-- Divergence vs current `origin/main`: `HEAD unique 420`, `origin/main unique 30`
+- Divergence vs current `origin/main`: `HEAD unique 420`,
+  `origin/main unique 30`
 
 ## Why This Should Not Merge Directly Into Current `main`
 
@@ -98,9 +99,9 @@ This avoids destructive history rewriting on the current `main`.
 
 Run these on the branch before cutover:
 
-- `cargo test -p wealthfolio-market-data --lib`
-- `cargo test -p wealthfolio-core panorama`
-- `cargo check -p wealthfolio-server`
+- `cargo test -p panorama-market-data --lib`
+- `cargo test -p panorama-core panorama`
+- `cargo check -p panorama-server`
 - `cargo check -p wealthfolio-app`
 - `pnpm --filter frontend test -- --run`
 - `pnpm build:types`
@@ -131,7 +132,7 @@ Run these on the branch before cutover:
 ### Intentionally not migrated
 
 - Open Exchange Rates-specific FX lane
-- Renaming `@wealthfolio/*` package names
+- Renaming `@panorama/*` package names
 - Renaming compatibility fields such as `minWealthfolioVersion`
 - Renaming `Wealthfolio Connect` service identifiers and service-owned links
 
@@ -148,7 +149,7 @@ Run these on the branch before cutover:
 
 - Evaluate whether Yahoo-based automatic FX is sufficient long term
 - Add an Open Exchange Rates lane only if Yahoo FX proves unreliable
-- Decide whether addon package publishing should stay `@wealthfolio/*` or gain a
+- Decide whether addon package publishing should stay `@panorama/*` or gain a
   separate Panorama distribution story
 - Migrate or retire the legacy `website/` source tree if that site is still
   maintained outside the v3 application repo

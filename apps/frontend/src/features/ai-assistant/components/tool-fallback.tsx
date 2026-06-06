@@ -1,10 +1,10 @@
 import type { ToolCallMessagePartComponent } from "@assistant-ui/react";
 import { useState } from "react";
 
-import { Icons } from "@wealthfolio/ui/components/ui/icons";
+import { Icons } from "@panorama/ui/components/ui/icons";
 import { cn } from "@/lib/utils";
-import { Badge } from "@wealthfolio/ui/components/ui/badge";
-import { Button } from "@wealthfolio/ui/components/ui/button";
+import { Badge } from "@panorama/ui/components/ui/badge";
+import { Button } from "@panorama/ui/components/ui/button";
 
 /**
  * Type guard to check if result has wrapped format with meta

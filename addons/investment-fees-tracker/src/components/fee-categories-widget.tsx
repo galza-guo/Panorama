@@ -1,5 +1,5 @@
-import { Card, CardContent, CardHeader, CardTitle } from "@wealthfolio/ui";
-import { AmountDisplay, Icons } from "@wealthfolio/ui";
+import { Card, CardContent, CardHeader, CardTitle } from "@panorama/ui";
+import { AmountDisplay, Icons } from "@panorama/ui";
 import type { FeeAnalytics } from "../lib/fee-calculation.service";
 
 interface FeeCategoriesWidgetProps {

@@ -4,11 +4,11 @@ import { PORTFOLIO_ACCOUNT_ID } from "@/lib/constants";
 import { getDisplaySymbol } from "@/lib/symbol-display";
 import { Account, Holding } from "@/lib/types";
 import { cn } from "@/lib/utils";
-import { AmountDisplay, FacetedSearchInput, GainPercent, Separator } from "@wealthfolio/ui";
-import { Button } from "@wealthfolio/ui/components/ui/button";
-import { Card } from "@wealthfolio/ui/components/ui/card";
-import { Icons } from "@wealthfolio/ui/components/ui/icons";
-import { Skeleton } from "@wealthfolio/ui/components/ui/skeleton";
+import { AmountDisplay, FacetedSearchInput, GainPercent, Separator } from "@panorama/ui";
+import { Button } from "@panorama/ui/components/ui/button";
+import { Card } from "@panorama/ui/components/ui/card";
+import { Icons } from "@panorama/ui/components/ui/icons";
+import { Skeleton } from "@panorama/ui/components/ui/skeleton";
 import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { HoldingsMobileFilterSheet } from "./holdings-mobile-filter-sheet";
@@ -154,7 +154,7 @@ export const HoldingsTableMobile = ({
             >
               <Icons.ListFilter className="h-4 w-4" />
               {hasActiveFilters && (
-                <span className="bg-destructive absolute right-0 top-0.5 h-2 w-2 rounded-full" />
+                <span className="bg-destructive absolute top-0.5 right-0 h-2 w-2 rounded-full" />
               )}
             </Button>
           )}

@@ -2,9 +2,9 @@ use std::sync::Arc;
 
 use crate::context::ServiceContext;
 use log::{debug, info, warn};
+use panorama_core::health::{FixAction, HealthConfig, HealthServiceTrait, HealthStatus};
+use panorama_core::quotes::SyncMode;
 use tauri::State;
-use wealthfolio_core::health::{FixAction, HealthConfig, HealthServiceTrait, HealthStatus};
-use wealthfolio_core::quotes::SyncMode;
 
 /// Get current health status (cached or fresh check).
 #[tauri::command]

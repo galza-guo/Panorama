@@ -1,5 +1,5 @@
-import { Button } from "@wealthfolio/ui/components/ui/button";
-import { Icons } from "@wealthfolio/ui/components/ui/icons";
+import { Button } from "@panorama/ui/components/ui/button";
+import { Icons } from "@panorama/ui/components/ui/icons";
 import { motion } from "motion/react";
 
 // ─────────────────────────────────────────────────────────────────────────────

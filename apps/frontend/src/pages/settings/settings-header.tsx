@@ -1,5 +1,5 @@
-import { Button } from "@wealthfolio/ui/components/ui/button";
-import { Icons } from "@wealthfolio/ui/components/ui/icons";
+import { Button } from "@panorama/ui/components/ui/button";
+import { Icons } from "@panorama/ui/components/ui/icons";
 import { cn } from "@/lib/utils";
 import { useNavigate } from "react-router-dom";
 
@@ -53,9 +53,9 @@ export function SettingsHeader({
           </Button>
         )}
         <div className="grid min-w-0 gap-1">
-          <h1 className="font-heading break-words text-lg font-bold lg:text-xl">{heading}</h1>
+          <h1 className="font-heading text-lg font-bold break-words lg:text-xl">{heading}</h1>
           {text && (
-            <p className="text-muted-foreground lg:text-md break-words text-sm font-light">
+            <p className="text-muted-foreground lg:text-md text-sm font-light break-words">
               {text}
             </p>
           )}

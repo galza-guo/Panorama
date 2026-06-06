@@ -1,6 +1,6 @@
 use chrono::{DateTime, Datelike, Duration, NaiveDate, TimeZone, Utc, Weekday};
 use chrono_tz::Tz;
-use wealthfolio_market_data::resolver::exchange_metadata;
+use panorama_market_data::resolver::exchange_metadata;
 
 /// Default timezone for valuation dates.
 /// This is the canonical timezone used to convert UTC instants to domain dates.

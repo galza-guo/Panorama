@@ -2,17 +2,17 @@ import { useState, useMemo } from "react";
 import { Link } from "react-router-dom";
 import { AssistantRuntimeProvider } from "@assistant-ui/react";
 import { cn } from "@/lib/utils";
-import { Button } from "@wealthfolio/ui/components/ui/button";
-import { Icons } from "@wealthfolio/ui/components/ui/icons";
-import { Badge, EmptyPlaceholder } from "@wealthfolio/ui";
+import { Button } from "@panorama/ui/components/ui/button";
+import { Icons } from "@panorama/ui/components/ui/icons";
+import { Badge, EmptyPlaceholder } from "@panorama/ui";
 import {
   Sheet,
   SheetContent,
   SheetHeader,
   SheetTitle,
   SheetTrigger,
-} from "@wealthfolio/ui/components/ui/sheet";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@wealthfolio/ui/components/ui/tooltip";
+} from "@panorama/ui/components/ui/sheet";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@panorama/ui/components/ui/tooltip";
 import { Thread } from "./thread";
 import { ThreadList } from "./thread-list";
 import { ProviderPicker } from "./provider-picker";
@@ -95,7 +95,7 @@ function MobileSidebar() {
       </SheetTrigger>
       <SheetContent
         side="left"
-        className="flex w-[280px] flex-col gap-0 px-0 pb-[max(env(safe-area-inset-bottom),0.75rem)] pt-[max(env(safe-area-inset-top),0.75rem)]"
+        className="flex w-[280px] flex-col gap-0 px-0 pt-[max(env(safe-area-inset-top),0.75rem)] pb-[max(env(safe-area-inset-bottom),0.75rem)]"
       >
         <SheetHeader className="sr-only">
           <SheetTitle>Conversations</SheetTitle>

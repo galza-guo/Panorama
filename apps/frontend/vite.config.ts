@@ -5,8 +5,12 @@ import { defineConfig } from "vitest/config";
 
 const host = process.env.TAURI_DEV_HOST;
 const apiTarget =
-  process.env.VITE_API_TARGET || process.env.WF_API_TARGET || "http://127.0.0.1:8080";
-const enableProxy = process.env.WF_ENABLE_VITE_PROXY === "true";
+  process.env.VITE_API_TARGET ||
+  process.env.PANORAMA_API_TARGET ||
+  process.env.WF_API_TARGET ||
+  "http://127.0.0.1:8080";
+const enableProxy =
+  process.env.PANORAMA_ENABLE_VITE_PROXY === "true" || process.env.WF_ENABLE_VITE_PROXY === "true";
 const serverProxy = enableProxy
   ? {
       "/api": {
@@ -42,8 +46,8 @@ export default defineConfig({
   },
   resolve: {
     alias: {
-      "@wealthfolio/addon-sdk": path.resolve(__dirname, "../../packages/addon-sdk/src"),
-      "@wealthfolio/ui": path.resolve(__dirname, "../../packages/ui/src"),
+      "@panorama/addon-sdk": path.resolve(__dirname, "../../packages/addon-sdk/src"),
+      "@panorama/ui": path.resolve(__dirname, "../../packages/ui/src"),
       // Conditional adapter alias based on build target
       "@/adapters": path.resolve(
         __dirname,

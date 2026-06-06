@@ -17,8 +17,7 @@ export const useAccountsPerformanceSummary = (accounts: Account[] | undefined) =
         calculatePerformanceSummary({
           itemType: "account",
           itemId: account.id,
-          trackingMode:
-            account.trackingMode === "NOT_SET" ? undefined : account.trackingMode,
+          trackingMode: account.trackingMode === "NOT_SET" ? undefined : account.trackingMode,
         }),
       enabled: !!account.id,
       retry: false,

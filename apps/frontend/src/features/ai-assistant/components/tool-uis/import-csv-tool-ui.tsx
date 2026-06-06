@@ -18,15 +18,15 @@ import {
   SelectValue,
   Skeleton,
   useDataGrid,
-} from "@wealthfolio/ui";
-import { Icons } from "@wealthfolio/ui/components/ui/icons";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@wealthfolio/ui/components/ui/tooltip";
+} from "@panorama/ui";
+import { Icons } from "@panorama/ui/components/ui/icons";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@panorama/ui/components/ui/tooltip";
 import { useMemo, useState, useCallback } from "react";
 import { useSettingsContext } from "@/lib/settings-provider";
 import { searchTicker } from "@/adapters";
 import { saveActivities, updateToolResult } from "@/adapters";
 import { CreateCustomAssetDialog } from "@/components/create-custom-asset-dialog";
-import type { SymbolSearchResult } from "@wealthfolio/ui";
+import type { SymbolSearchResult } from "@panorama/ui";
 import type {
   ImportCsvArgs,
   ImportCsvOutput,

@@ -1,11 +1,11 @@
-# @wealthfolio/ui
+# @panorama/ui
 
 Panorama's shared UI component library built on top of shadcn/ui and Tailwind
 CSS.
 
 ## Overview
 
-The `@wealthfolio/ui` package provides a complete design system for Panorama
+The `@panorama/ui` package provides a complete design system for Panorama
 addons, ensuring consistent styling and user experience across all extensions.
 
 ## Features
@@ -21,7 +21,7 @@ addons, ensuring consistent styling and user experience across all extensions.
 For addons:
 
 ```bash
-npm install @wealthfolio/ui
+npm install @panorama/ui
 ```
 
 ## Package Structure
@@ -47,7 +47,7 @@ packages/ui/
 ### Basic Components
 
 ```tsx
-import { Button, Card, CardContent } from "@wealthfolio/ui";
+import { Button, Card, CardContent } from "@panorama/ui";
 
 function MyComponent() {
   return (
@@ -63,7 +63,7 @@ function MyComponent() {
 ### Financial Components
 
 ```tsx
-import { AmountDisplay, GainAmount, GainPercent } from "@wealthfolio/ui";
+import { AmountDisplay, GainAmount, GainPercent } from "@panorama/ui";
 
 function FinancialData() {
   return (
@@ -80,10 +80,10 @@ function FinancialData() {
 
 ```tsx
 // Import components
-import { Button, Card, CardContent, AmountDisplay } from "@wealthfolio/ui";
+import { Button, Card, CardContent, AmountDisplay } from "@panorama/ui";
 
 // Import styles (once in your main file)
-import "@wealthfolio/ui/styles";
+import "@panorama/ui/styles";
 
 function MyAddon() {
   return (
@@ -110,13 +110,13 @@ function MyAddon() {
 Import the CSS file in your addon:
 
 ```tsx
-import "@wealthfolio/ui/styles";
+import "@panorama/ui/styles";
 ```
 
 Or in your CSS:
 
 ```css
-@import "@wealthfolio/ui/styles";
+@import "@panorama/ui/styles";
 ```
 
 ## Components
@@ -157,7 +157,7 @@ The Flexoki theme is defined in `packages/ui/src/styles.css`. Updates here
 automatically apply to:
 
 - Main application
-- All addons using `@wealthfolio/ui`
+- All addons using `@panorama/ui`
 
 ## Development
 
@@ -218,7 +218,7 @@ When updating shared components:
 
 ### For Addon Developers
 
-1. Always import from `@wealthfolio/ui` instead of creating custom components
+1. Always import from `@panorama/ui` instead of creating custom components
 2. Import styles once in your main addon file
 3. Use provided utility functions for consistent styling
 4. Leverage financial components for data display

@@ -3,17 +3,17 @@ import { useEffect, useState } from "react";
 import { getAppInfo } from "@/adapters";
 import { usePlatform } from "@/hooks/use-platform";
 import { useCheckForUpdates } from "@/hooks/use-updater";
-import { Button } from "@wealthfolio/ui/components/ui/button";
+import { Button } from "@panorama/ui/components/ui/button";
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from "@wealthfolio/ui/components/ui/card";
-import { Icons } from "@wealthfolio/ui/components/ui/icons";
-import { Separator } from "@wealthfolio/ui/components/ui/separator";
-import { toast } from "@wealthfolio/ui/components/ui/use-toast";
+} from "@panorama/ui/components/ui/card";
+import { Icons } from "@panorama/ui/components/ui/icons";
+import { Separator } from "@panorama/ui/components/ui/separator";
+import { toast } from "@panorama/ui/components/ui/use-toast";
 import { SettingsHeader } from "../settings-header";
 
 export default function AboutSettingsPage() {
@@ -151,7 +151,7 @@ export default function AboutSettingsPage() {
 
               <div className="grid gap-4">
                 <div className="space-y-1">
-                  <p className="text-muted-foreground text-xs uppercase tracking-wide">
+                  <p className="text-muted-foreground text-xs tracking-wide uppercase">
                     Database path
                   </p>
                   <div className="flex items-center gap-2">
@@ -170,7 +170,7 @@ export default function AboutSettingsPage() {
                   </div>
                 </div>
                 <div className="space-y-1">
-                  <p className="text-muted-foreground text-xs uppercase tracking-wide">
+                  <p className="text-muted-foreground text-xs tracking-wide uppercase">
                     Logs directory
                   </p>
                   <div className="flex items-center gap-2">

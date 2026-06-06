@@ -1,7 +1,7 @@
 //! Repository for AI chat persistence.
 //!
 //! Provides CRUD operations for chat threads and messages.
-//! Implements the `ChatRepositoryTrait` from wealthfolio-ai.
+//! Implements the `ChatRepositoryTrait` from panorama-ai.
 
 use async_trait::async_trait;
 use chrono::{DateTime, Utc};
@@ -10,13 +10,13 @@ use diesel::r2d2::{ConnectionManager, Pool};
 use diesel::sqlite::SqliteConnection;
 use std::sync::Arc;
 
-use wealthfolio_ai::{
+use panorama_ai::{
     AiError, ChatMessage, ChatMessageContent, ChatMessagePart, ChatMessageRole,
     ChatRepositoryResult, ChatRepositoryTrait, ChatThread, ChatThreadConfig, ListThreadsRequest,
     ThreadPage, CHAT_MAX_CONTENT_SIZE_BYTES,
 };
-use wealthfolio_core::errors::{DatabaseError, ValidationError};
-use wealthfolio_core::{Error as CoreError, Result as CoreResult};
+use panorama_core::errors::{DatabaseError, ValidationError};
+use panorama_core::{Error as CoreError, Result as CoreResult};
 
 use crate::db::{get_connection, WriteHandle};
 use crate::schema::{ai_messages, ai_thread_tags, ai_threads};
@@ -685,7 +685,7 @@ mod tests {
 
     #[test]
     fn test_thread_conversion_with_config() {
-        let config = ChatThreadConfig::new("openai", "gpt-4o", "wealthfolio-assistant-v1", "1.0.0")
+        let config = ChatThreadConfig::new("openai", "gpt-4o", "panorama-assistant-v1", "1.0.0")
             .with_default_tools();
         let thread = ChatThread::with_config(config.clone());
 
@@ -697,7 +697,7 @@ mod tests {
         let back_config = back.config.unwrap();
         assert_eq!(back_config.provider_id, "openai");
         assert_eq!(back_config.model_id, "gpt-4o");
-        assert_eq!(back_config.prompt_template_id, "wealthfolio-assistant-v1");
+        assert_eq!(back_config.prompt_template_id, "panorama-assistant-v1");
         assert!(back_config.tools_allowlist.is_some());
     }
 
@@ -948,7 +948,7 @@ mod tests {
             schema_version: 1,
             provider_id: "anthropic".to_string(),
             model_id: "claude-3-sonnet".to_string(),
-            prompt_template_id: "wealthfolio-assistant-v1".to_string(),
+            prompt_template_id: "panorama-assistant-v1".to_string(),
             prompt_version: "2.0.0".to_string(),
             locale: Some("en-US".to_string()),
             detail_level: Some("detailed".to_string()),

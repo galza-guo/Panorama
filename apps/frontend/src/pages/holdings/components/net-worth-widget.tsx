@@ -1,18 +1,18 @@
-import { Card } from "@wealthfolio/ui/components/ui/card";
+import { Card } from "@panorama/ui/components/ui/card";
 import {
   Collapsible,
   CollapsibleContent,
   CollapsibleTrigger,
-} from "@wealthfolio/ui/components/ui/collapsible";
-import { Icons } from "@wealthfolio/ui/components/ui/icons";
-import { Skeleton } from "@wealthfolio/ui/components/ui/skeleton";
+} from "@panorama/ui/components/ui/collapsible";
+import { Icons } from "@panorama/ui/components/ui/icons";
+import { Skeleton } from "@panorama/ui/components/ui/skeleton";
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
-} from "@wealthfolio/ui/components/ui/tooltip";
-import { PrivacyAmount } from "@wealthfolio/ui";
+} from "@panorama/ui/components/ui/tooltip";
+import { PrivacyAmount } from "@panorama/ui";
 import { useNetWorth } from "@/hooks/use-alternative-assets";
 import { useSettingsContext } from "@/lib/settings-provider";
 import { cn } from "@/lib/utils";
@@ -99,7 +99,7 @@ const NetWorthWidgetError = ({ error, compact = false }: { error: Error; compact
       </div>
       <div className="min-w-0 flex-1">
         <p className="text-destructive text-sm font-medium">Failed to load net worth</p>
-        <p className="text-muted-foreground mt-1 break-words text-xs">
+        <p className="text-muted-foreground mt-1 text-xs break-words">
           {error?.message || "An unexpected error occurred"}
         </p>
       </div>
@@ -221,7 +221,7 @@ export const NetWorthWidget = ({
         <div className="flex items-center justify-between">
           <span
             className={cn(
-              "text-muted-foreground font-medium uppercase tracking-wider",
+              "text-muted-foreground font-medium tracking-wider uppercase",
               compact ? "text-[10px]" : "text-xs",
             )}
           >

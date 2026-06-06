@@ -5,11 +5,11 @@ import { useAccountsPerformanceSummary } from "@/hooks/use-accounts-performance-
 import { useLatestValuations } from "@/hooks/use-latest-valuations";
 import { useSettingsContext } from "@/lib/settings-provider";
 import type { Account, AccountValuation, PerformanceMetrics } from "@/lib/types";
-import { GainAmount, GainPercent, PrivacyAmount } from "@wealthfolio/ui";
-import { Button } from "@wealthfolio/ui/components/ui/button";
-import { Icons } from "@wealthfolio/ui/components/ui/icons";
-import { Separator } from "@wealthfolio/ui/components/ui/separator";
-import { Skeleton } from "@wealthfolio/ui/components/ui/skeleton";
+import { GainAmount, GainPercent, PrivacyAmount } from "@panorama/ui";
+import { Button } from "@panorama/ui/components/ui/button";
+import { Icons } from "@panorama/ui/components/ui/icons";
+import { Separator } from "@panorama/ui/components/ui/separator";
+import { Skeleton } from "@panorama/ui/components/ui/skeleton";
 import React, { useCallback, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 
@@ -108,8 +108,7 @@ function calculateAccountPerformance(
   if (performanceSummary) {
     const fxRate = Number(valuation.fxRateToBase ?? 1) || 1;
     const gainLossAmount = Number(performanceSummary.periodGain);
-    const totalReturnPercent =
-      performanceSummary.cumulativeMwr ?? performanceSummary.periodReturn;
+    const totalReturnPercent = performanceSummary.cumulativeMwr ?? performanceSummary.periodReturn;
 
     return {
       totalGainLossAmountAccountCurrency: gainLossAmount,
@@ -176,7 +175,7 @@ const AccountSummaryComponent = React.memo(
       }
 
       return (
-        <div className="border-border bg-card shadow-xs flex w-full items-center justify-between gap-3 rounded-lg border px-4 py-3 md:px-5 md:py-4">
+        <div className="border-border bg-card flex w-full items-center justify-between gap-3 rounded-lg border px-4 py-3 shadow-xs md:px-5 md:py-4">
           {skeletonContent}
         </div>
       );
@@ -210,69 +209,68 @@ const AccountSummaryComponent = React.memo(
     const content = (
       <>
         <div className="flex min-w-0 flex-1 flex-col gap-1 md:gap-1.5">
-          <h3 className="truncate text-sm font-semibold leading-tight md:text-base md:font-semibold">
+          <h3 className="truncate text-sm leading-tight font-semibold md:text-base md:font-semibold">
             {name}
           </h3>
           <p className="text-muted-foreground truncate text-xs md:text-sm">{subText}</p>
         </div>
         <div className="flex shrink-0 items-center gap-2 md:gap-3">
           <div className="flex min-h-[3rem] flex-col items-end justify-center gap-1 md:gap-1.5">
-            <p className="text-sm font-semibold leading-tight md:text-base md:font-semibold">
+            <p className="text-sm leading-tight font-semibold md:text-base md:font-semibold">
               <PrivacyAmount value={totalValue} currency={currency} />
             </p>
             {(gainAmountToDisplay !== null || gainPercentToDisplay !== null) &&
-              !(gainAmountToDisplay === 0 && gainPercentToDisplay === 0) && (
-                compactPerformanceDisplay ? (
-                  <div className="flex flex-wrap items-center justify-end gap-1.5 md:gap-2">
-                    {gainAmountToDisplay !== null && (
+              !(gainAmountToDisplay === 0 && gainPercentToDisplay === 0) &&
+              (compactPerformanceDisplay ? (
+                <div className="flex flex-wrap items-center justify-end gap-1.5 md:gap-2">
+                  {gainAmountToDisplay !== null && (
+                    <GainAmount
+                      className="text-xs font-medium md:text-sm md:font-medium"
+                      value={gainAmountToDisplay ?? 0}
+                      currency={gainDisplayCurrency}
+                      displayCurrency={false}
+                    />
+                  )}
+                  {gainPercentToDisplay !== null && (
+                    <GainPercent
+                      className="text-[11px] font-medium md:text-xs"
+                      value={gainPercentToDisplay}
+                      variant="badge"
+                    />
+                  )}
+                </div>
+              ) : (
+                <div className="flex flex-wrap items-center justify-end gap-x-1.5 gap-y-0.5 md:gap-x-2">
+                  {gainAmountToDisplay !== null && (
+                    <>
+                      <span className="text-muted-foreground text-[11px] font-medium md:text-xs">
+                        {gainLossLabel}
+                      </span>
                       <GainAmount
                         className="text-xs font-medium md:text-sm md:font-medium"
                         value={gainAmountToDisplay ?? 0}
                         currency={gainDisplayCurrency}
                         displayCurrency={false}
+                        showSign={false}
                       />
-                    )}
-                    {gainPercentToDisplay !== null && (
+                    </>
+                  )}
+                  {gainAmountToDisplay !== null && gainPercentToDisplay !== null && (
+                    <Separator orientation="vertical" className="h-3 md:h-4" />
+                  )}
+                  {gainPercentToDisplay !== null && (
+                    <>
+                      <span className="text-muted-foreground text-[11px] font-medium md:text-xs">
+                        {returnLabel}
+                      </span>
                       <GainPercent
-                        className="text-[11px] font-medium md:text-xs"
+                        className="text-xs font-medium md:text-sm md:font-medium"
                         value={gainPercentToDisplay}
-                        variant="badge"
                       />
-                    )}
-                  </div>
-                ) : (
-                  <div className="flex flex-wrap items-center justify-end gap-x-1.5 gap-y-0.5 md:gap-x-2">
-                    {gainAmountToDisplay !== null && (
-                      <>
-                        <span className="text-muted-foreground text-[11px] font-medium md:text-xs">
-                          {gainLossLabel}
-                        </span>
-                        <GainAmount
-                          className="text-xs font-medium md:text-sm md:font-medium"
-                          value={gainAmountToDisplay ?? 0}
-                          currency={gainDisplayCurrency}
-                          displayCurrency={false}
-                          showSign={false}
-                        />
-                      </>
-                    )}
-                    {gainAmountToDisplay !== null && gainPercentToDisplay !== null && (
-                      <Separator orientation="vertical" className="h-3 md:h-4" />
-                    )}
-                    {gainPercentToDisplay !== null && (
-                      <>
-                        <span className="text-muted-foreground text-[11px] font-medium md:text-xs">
-                          {returnLabel}
-                        </span>
-                        <GainPercent
-                          className="text-xs font-medium md:text-sm md:font-medium"
-                          value={gainPercentToDisplay}
-                        />
-                      </>
-                    )}
-                  </div>
-                )
-              )}
+                    </>
+                  )}
+                </div>
+              ))}
           </div>
           {isGroup ? (
             <div className="flex items-center justify-center">
@@ -319,7 +317,7 @@ const AccountSummaryComponent = React.memo(
       return (
         <Link
           to={`/accounts/${accountId}`}
-          className="border-border bg-card shadow-xs flex w-full cursor-pointer items-center justify-between gap-3 rounded-lg border px-4 py-3 transition-all duration-150 hover:shadow-md md:px-5 md:py-4"
+          className="border-border bg-card flex w-full cursor-pointer items-center justify-between gap-3 rounded-lg border px-4 py-3 shadow-xs transition-all duration-150 hover:shadow-md md:px-5 md:py-4"
         >
           {content}
         </Link>
@@ -327,7 +325,7 @@ const AccountSummaryComponent = React.memo(
     }
 
     return (
-      <div className="border-border bg-card shadow-xs flex w-full items-center justify-between gap-3 rounded-lg border px-4 py-3 md:px-5 md:py-4">
+      <div className="border-border bg-card flex w-full items-center justify-between gap-3 rounded-lg border px-4 py-3 shadow-xs md:px-5 md:py-4">
         {content}
       </div>
     );
@@ -427,7 +425,7 @@ export const AccountsSummary = React.memo(() => {
       return Array.from({ length: 4 }).map((_, index) => (
         <div
           key={`skeleton-${index}`}
-          className="border-border bg-card shadow-xs rounded-lg border px-4 py-3 md:px-5 md:py-4"
+          className="border-border bg-card rounded-lg border px-4 py-3 shadow-xs md:px-5 md:py-4"
         >
           <AccountSummarySkeleton />
         </div>
@@ -443,7 +441,7 @@ export const AccountsSummary = React.memo(() => {
             </div>
             <div className="min-w-0 flex-1">
               <p className="text-destructive text-sm font-medium">Failed to load accounts</p>
-              <p className="text-muted-foreground mt-1 break-words text-xs">
+              <p className="text-muted-foreground mt-1 text-xs break-words">
                 {errorAccounts?.message || "An unexpected error occurred"}
               </p>
               <p className="text-muted-foreground mt-2 text-xs">
@@ -598,7 +596,7 @@ export const AccountsSummary = React.memo(() => {
             return (
               <div
                 key={group.accountName}
-                className="border-border bg-card shadow-xs overflow-hidden rounded-lg border transition-shadow duration-150 hover:shadow-md"
+                className="border-border bg-card overflow-hidden rounded-lg border shadow-xs transition-shadow duration-150 hover:shadow-md"
               >
                 <div className="cursor-pointer">
                   <AccountSummaryComponent

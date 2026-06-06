@@ -6,10 +6,8 @@ use axum::{
     routing::{get, post},
     Json, Router,
 };
+use panorama_core::portfolio::target_allocation::{TargetAllocationPlanData, TargetAllocationView};
 use serde::Deserialize;
-use wealthfolio_core::portfolio::target_allocation::{
-    TargetAllocationPlanData, TargetAllocationView,
-};
 
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]

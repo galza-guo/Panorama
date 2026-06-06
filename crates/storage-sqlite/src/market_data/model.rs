@@ -6,7 +6,7 @@ use rust_decimal::Decimal;
 use serde::{Deserialize, Serialize};
 use std::str::FromStr;
 
-use wealthfolio_core::quotes::{
+use panorama_core::quotes::{
     DataSource, MarketDataProviderSetting, ProviderCapabilities, Quote, QuoteSyncState,
 };
 

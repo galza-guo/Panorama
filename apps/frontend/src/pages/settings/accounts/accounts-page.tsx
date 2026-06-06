@@ -1,8 +1,5 @@
-import { getPlatforms } from "@/adapters";
 import { useAccounts } from "@/hooks/use-accounts";
-import { QueryKeys } from "@/lib/query-keys";
-import type { Account, Platform } from "@/lib/types";
-import { useQuery } from "@tanstack/react-query";
+import type { Account } from "@/lib/types";
 import {
   Button,
   EmptyPlaceholder,
@@ -11,8 +8,8 @@ import {
   Skeleton,
   ToggleGroup,
   ToggleGroupItem,
-} from "@wealthfolio/ui";
-import { Input } from "@wealthfolio/ui/components/ui/input";
+} from "@panorama/ui";
+import { Input } from "@panorama/ui/components/ui/input";
 import { useMemo, useState } from "react";
 import { SettingsHeader } from "../settings-header";
 import { AccountEditModal } from "./components/account-edit-modal";
@@ -23,17 +20,6 @@ type FilterType = "all" | "active" | "archived" | "hidden";
 
 const SettingsAccountsPage = () => {
   const { accounts, isLoading } = useAccounts({ filterActive: false, includeArchived: true });
-
-  const { data: platforms } = useQuery<Platform[], Error>({
-    queryKey: [QueryKeys.PLATFORMS],
-    queryFn: getPlatforms,
-  });
-
-  // Create a map of platform ID to platform for quick lookup
-  const platformMap = useMemo(() => {
-    if (!platforms) return new Map<string, Platform>();
-    return new Map(platforms.map((p) => [p.id, p]));
-  }, [platforms]);
 
   const [visibleModal, setVisibleModal] = useState(false);
   const [selectedAccount, setSelectedAccount] = useState<Account | null>(null);
@@ -141,7 +127,6 @@ const SettingsAccountsPage = () => {
     <AccountItem
       key={account.id}
       account={account}
-      platform={account.platformId ? platformMap.get(account.platformId) : undefined}
       onEdit={handleEditAccount}
       onDelete={handleDeleteAccount}
       onArchive={handleArchiveAccount}
@@ -176,19 +161,19 @@ const SettingsAccountsPage = () => {
         {/* Search and Filter Bar */}
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div className="relative flex-1 sm:max-w-sm">
-            <Icons.Search className="text-muted-foreground absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2" />
+            <Icons.Search className="text-muted-foreground absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2" />
             <Input
               type="text"
               placeholder="Search accounts..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="!h-9 pl-9 pr-9 text-sm"
+              className="!h-9 pr-9 pl-9 text-sm"
             />
             {searchQuery && (
               <button
                 type="button"
                 onClick={() => setSearchQuery("")}
-                className="text-muted-foreground hover:text-foreground absolute right-3 top-1/2 -translate-y-1/2"
+                className="text-muted-foreground hover:text-foreground absolute top-1/2 right-3 -translate-y-1/2"
                 aria-label="Clear search"
               >
                 <Icons.Close className="h-4 w-4" />

@@ -1,17 +1,25 @@
 use axum::{body::to_bytes, body::Body, http::Request};
+use panorama_server::{api::app_router, build_state, config::Config};
 use tempfile::tempdir;
 use tower::ServiceExt;
 use tower_http::services::{ServeDir, ServeFile};
-use wealthfolio_server::{api::app_router, build_state, config::Config};
 
 fn cleanup_env() {
-    for key in ["WF_DB_PATH", "WF_SECRET_KEY", "WF_STATIC_DIR"] {
+    for key in [
+        "PANORAMA_DB_PATH",
+        "PANORAMA_SECRET_KEY",
+        "PANORAMA_STATIC_DIR",
+        "WF_DB_PATH",
+        "WF_SECRET_KEY",
+        "WF_STATIC_DIR",
+    ] {
         std::env::remove_var(key);
     }
 }
 
 #[tokio::test]
 async fn serves_index_html_for_unknown_route() {
+    cleanup_env();
     let db_dir = tempdir().unwrap();
     let static_dir = tempdir().unwrap();
     let index_path = static_dir.path().join("index.html");

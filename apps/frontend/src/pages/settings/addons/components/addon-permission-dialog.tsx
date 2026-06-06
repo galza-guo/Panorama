@@ -1,5 +1,5 @@
-import { Badge } from "@wealthfolio/ui/components/ui/badge";
-import { Button } from "@wealthfolio/ui/components/ui/button";
+import { Badge } from "@panorama/ui/components/ui/badge";
+import { Button } from "@panorama/ui/components/ui/button";
 import {
   Dialog,
   DialogContent,
@@ -7,15 +7,10 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "@wealthfolio/ui/components/ui/dialog";
-import { Icons } from "@wealthfolio/ui/components/ui/icons";
-import type {
-  AddonManifest,
-  Permission,
-  PermissionCategory,
-  RiskLevel,
-} from "@wealthfolio/addon-sdk";
-import { AlertFeedback } from "@wealthfolio/ui";
+} from "@panorama/ui/components/ui/dialog";
+import { Icons } from "@panorama/ui/components/ui/icons";
+import type { AddonManifest, Permission, PermissionCategory, RiskLevel } from "@panorama/addon-sdk";
+import { AlertFeedback } from "@panorama/ui";
 import { PermissionCategoriesDisplay } from "./permission-categories-display";
 
 interface PermissionDialogProps {

@@ -6,19 +6,19 @@ import {
   DialogDescription,
   DialogHeader,
   DialogTitle,
-} from "@wealthfolio/ui/components/ui/dialog";
-import { Button } from "@wealthfolio/ui/components/ui/button";
-import { Input } from "@wealthfolio/ui/components/ui/input";
-import { Label } from "@wealthfolio/ui/components/ui/label";
-import { Checkbox } from "@wealthfolio/ui/components/ui/checkbox";
-import { Icons } from "@wealthfolio/ui/components/ui/icons";
+} from "@panorama/ui/components/ui/dialog";
+import { Button } from "@panorama/ui/components/ui/button";
+import { Input } from "@panorama/ui/components/ui/input";
+import { Label } from "@panorama/ui/components/ui/label";
+import { Checkbox } from "@panorama/ui/components/ui/checkbox";
+import { Icons } from "@panorama/ui/components/ui/icons";
 import {
   CurrencyInput,
   DatePickerInput,
   ResponsiveSelect,
   MoneyInput,
   QuantityInput,
-} from "@wealthfolio/ui";
+} from "@panorama/ui";
 import { cn } from "@/lib/utils";
 import { useSettingsContext } from "@/lib/settings-provider";
 import {

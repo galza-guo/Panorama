@@ -2755,7 +2755,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "wealthfolio_core"
+name = "panorama_core"
 version = "2.1.0"
 dependencies = [
  "anyhow",

@@ -1,21 +1,16 @@
 [package]
-name = "wealthfolio-connect"
+name = "panorama-local-connectors"
 version.workspace = true
 edition.workspace = true
 
 [dependencies]
-wealthfolio-core = { workspace = true }
-tokio = { workspace = true }
+panorama-core = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
 chrono = { workspace = true }
-thiserror = { workspace = true }
-async-trait = { workspace = true }
 uuid = { workspace = true }
 rust_decimal = { workspace = true }
-log = { workspace = true }
 
-# HTTP client (for Connect API)
 reqwest = { workspace = true }
 base64 = "0.22"
 hmac = "0.12"
@@ -24,5 +19,4 @@ sha1 = "0.10"
 urlencoding = "2"
 
 [features]
-default = ["broker"]
-broker = []
+default = []

@@ -1,8 +1,8 @@
-import { Button } from "@wealthfolio/ui/components/ui/button";
-import { Card, CardContent } from "@wealthfolio/ui/components/ui/card";
-import { Icons } from "@wealthfolio/ui/components/ui/icons";
-import { Label } from "@wealthfolio/ui/components/ui/label";
-import { RadioGroup, RadioGroupItem } from "@wealthfolio/ui/components/ui/radio-group";
+import { Button } from "@panorama/ui/components/ui/button";
+import { Card, CardContent } from "@panorama/ui/components/ui/card";
+import { Icons } from "@panorama/ui/components/ui/icons";
+import { Label } from "@panorama/ui/components/ui/label";
+import { RadioGroup, RadioGroupItem } from "@panorama/ui/components/ui/radio-group";
 import { ExportDataType, ExportedFileFormat } from "@/lib/types";
 import { useState } from "react";
 import { useExportData } from "./use-export-data";
@@ -107,7 +107,7 @@ export const ExportForm = () => {
   return (
     <>
       <div className="mt-8 px-2">
-        <h3 className="pb-3 pt-5 font-semibold">Choose Your Preferred Format</h3>
+        <h3 className="pt-5 pb-3 font-semibold">Choose Your Preferred Format</h3>
         <RadioGroup
           onValueChange={setSelectedFormat}
           className="grid grid-cols-1 gap-4 md:grid-cols-3"
@@ -132,7 +132,7 @@ export const ExportForm = () => {
 
       {selectedFormat && (
         <div className="px-2 pt-4">
-          <h3 className="pb-3 pt-5 font-semibold">Customize Your Export</h3>
+          <h3 className="pt-5 pb-3 font-semibold">Customize Your Export</h3>
           {dataTypes[selectedFormat as keyof typeof dataTypes].map((item) => (
             <Card key={item.key} className="mb-4">
               <CardContent className="flex items-center justify-between p-4">

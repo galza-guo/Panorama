@@ -9,12 +9,12 @@ use crate::{
 };
 
 use log::{debug, error};
-use tauri::{AppHandle, State};
-use wealthfolio_core::quotes::{
+use panorama_core::quotes::{
     service::ProviderInfo, LatestQuoteSnapshot, MarketSyncMode, Quote, QuoteImport,
     SymbolSearchResult,
 };
-use wealthfolio_market_data::ExchangeInfo;
+use panorama_market_data::ExchangeInfo;
+use tauri::{AppHandle, State};
 
 #[tauri::command]
 pub async fn search_symbol(
@@ -208,10 +208,10 @@ pub async fn resolve_symbol_quote(
     exchange_mic: Option<String>,
     instrument_type: Option<String>,
     state: State<'_, Arc<ServiceContext>>,
-) -> Result<wealthfolio_core::quotes::ResolvedQuote, String> {
+) -> Result<panorama_core::quotes::ResolvedQuote, String> {
     let inst_type = instrument_type
         .as_deref()
-        .and_then(wealthfolio_core::assets::InstrumentType::from_db_str);
+        .and_then(panorama_core::assets::InstrumentType::from_db_str);
     state
         .quote_service()
         .resolve_symbol_quote(&symbol, exchange_mic.as_deref(), inst_type.as_ref())
@@ -221,5 +221,5 @@ pub async fn resolve_symbol_quote(
 
 #[tauri::command]
 pub fn get_exchanges() -> Vec<ExchangeInfo> {
-    wealthfolio_market_data::get_exchange_list()
+    panorama_market_data::get_exchange_list()
 }

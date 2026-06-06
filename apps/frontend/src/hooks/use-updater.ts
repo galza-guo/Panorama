@@ -5,7 +5,7 @@ import {
   checkForUpdates,
   installUpdate,
 } from "@/adapters";
-import { toast } from "@wealthfolio/ui/components/ui/use-toast";
+import { toast } from "@panorama/ui/components/ui/use-toast";
 import type { UpdateInfo } from "@/lib/types";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect } from "react";

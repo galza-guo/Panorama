@@ -1,6 +1,6 @@
 import { LiquidGlass } from "@/components/liquid-glass";
 import { cn } from "@/lib/utils";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuTrigger, Icons } from "@wealthfolio/ui";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuTrigger, Icons } from "@panorama/ui";
 import { motion } from "motion/react";
 import React, { useCallback, useId, useMemo, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";

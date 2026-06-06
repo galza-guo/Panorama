@@ -12,7 +12,7 @@ use crate::errors::StorageError;
 use crate::schema::{
     folder_sync_config, folder_sync_history, folder_sync_imported_events, folder_sync_status,
 };
-use wealthfolio_core::errors::Result;
+use panorama_core::errors::Result;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct FolderSyncConfigRecord {

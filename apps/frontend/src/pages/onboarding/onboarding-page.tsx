@@ -1,8 +1,8 @@
 import { usePlatform } from "@/hooks/use-platform";
 import { useSettings } from "@/hooks/use-settings";
 import { useSettingsContext } from "@/lib/settings-provider";
-import { Button } from "@wealthfolio/ui/components/ui/button";
-import { Icons } from "@wealthfolio/ui/components/ui/icons";
+import { Button } from "@panorama/ui/components/ui/button";
+import { Icons } from "@panorama/ui/components/ui/icons";
 import { AnimatePresence, motion } from "motion/react";
 import { useRef, useState } from "react";
 import { Navigate } from "react-router-dom";
@@ -52,11 +52,7 @@ const OnboardingPage = () => {
       <header className="flex-none px-4 pt-8 sm:px-6 sm:pt-12">
         <div className="flex flex-col items-center">
           {/* Logo */}
-          <img
-            alt="Panorama"
-            className="mb-3 h-16 w-16 sm:h-20 sm:w-20"
-            src="/logo-vantage.png"
-          />
+          <img alt="Panorama" className="mb-3 h-16 w-16 sm:h-20 sm:w-20" src="/logo-vantage.png" />
 
           {/* Progress indicators */}
           <div className="flex gap-2">
@@ -108,7 +104,7 @@ const OnboardingPage = () => {
 
       {/* Fixed Footer */}
       <footer className="flex-none pb-[env(safe-area-inset-bottom)]">
-        <div className="sm:pb-18 mx-auto max-w-4xl px-4 pb-8 pt-6 sm:px-6">
+        <div className="mx-auto max-w-4xl px-4 pt-6 pb-8 sm:px-6 sm:pb-18">
           {isFinalStep ? (
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <div className="order-2 sm:order-1">
@@ -120,7 +116,7 @@ const OnboardingPage = () => {
               <div className="order-1 flex flex-col gap-2 sm:order-2 sm:flex-row sm:gap-3">
                 <Button
                   data-testid="onboarding-finish-button"
-                  className="from-primary to-primary/90 bg-linear-to-r order-1 sm:order-2"
+                  className="from-primary to-primary/90 order-1 bg-linear-to-r sm:order-2"
                   onClick={() => updateSettings({ onboardingCompleted: true })}
                 >
                   Get Started

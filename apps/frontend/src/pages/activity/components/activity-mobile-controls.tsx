@@ -1,4 +1,4 @@
-import { Button, Icons, Input } from "@wealthfolio/ui";
+import { Button, Icons, Input } from "@panorama/ui";
 import { ActivityType } from "@/lib/constants";
 import { Account } from "@/lib/types";
 import { useState } from "react";
@@ -62,7 +62,7 @@ export function ActivityMobileControls({
           <div className="relative">
             <Icons.ListFilter className="h-4 w-4" />
             {hasActiveFilters && (
-              <span className="bg-primary absolute -left-[1.5px] -top-1 h-2 w-2 rounded-full" />
+              <span className="bg-primary absolute -top-1 -left-[1.5px] h-2 w-2 rounded-full" />
             )}
           </div>
         </Button>

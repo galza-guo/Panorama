@@ -1,5 +1,5 @@
 // Addon Commands
-import type { AddonUpdateCheckResult } from "@wealthfolio/addon-sdk";
+import type { AddonUpdateCheckResult } from "@panorama/addon-sdk";
 import type { AddonStoreListing } from "@/lib/types";
 import type { ExtractedAddon, InstalledAddon, AddonManifest } from "../types";
 

@@ -1,11 +1,11 @@
 [package]
-name = "wealthfolio-ai"
+name = "panorama-ai"
 version.workspace = true
 edition.workspace = true
-description = "AI assistant with LLM orchestration using rig-core for Wealthfolio"
+description = "AI assistant with LLM orchestration using rig-core for Panorama"
 authors = ["Aziz Fadil"]
 license = "AGPL-3.0"
-repository = "https://github.com/afadil/wealthfolio"
+repository = "https://github.com/galza-guo/Panorama"
 
 [features]
 default = []
@@ -40,7 +40,7 @@ tokio-stream = "0.1"
 rust_decimal = { workspace = true }
 
 # Sibling crates
-wealthfolio-core = { path = "../core" }
+panorama-core = { path = "../core" }
 
 [dev-dependencies]
 tempfile = "3"

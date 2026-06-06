@@ -76,7 +76,7 @@ function PasteDialogImpl({
           <label className="flex cursor-pointer items-start gap-3">
             <RadioItem ref={expandRadioRef} name="expand-option" value="expand" defaultChecked />
             <div className="flex flex-col gap-1">
-              <span className="text-sm font-medium leading-none">Create new rows</span>
+              <span className="text-sm leading-none font-medium">Create new rows</span>
               <span className="text-muted-foreground text-sm">
                 Add {pasteDialog.rowsNeeded} new row
                 {pasteDialog.rowsNeeded !== 1 ? "s" : ""} to the table and paste all data
@@ -86,7 +86,7 @@ function PasteDialogImpl({
           <label className="flex cursor-pointer items-start gap-3">
             <RadioItem name="expand-option" value="no-expand" />
             <div className="flex flex-col gap-1">
-              <span className="text-sm font-medium leading-none">Keep current rows</span>
+              <span className="text-sm leading-none font-medium">Keep current rows</span>
               <span className="text-muted-foreground text-sm">Paste only what fits in the existing rows</span>
             </div>
           </label>
@@ -107,7 +107,7 @@ function RadioItem({ className, ...props }: React.ComponentProps<"input">) {
     <input
       type="radio"
       className={cn(
-        "border-input bg-background shadow-xs relative size-4 shrink-0 appearance-none rounded-full border outline-none transition-[color,box-shadow]",
+        "border-input bg-background relative size-4 shrink-0 appearance-none rounded-full border shadow-xs transition-[color,box-shadow] outline-none",
         "text-primary focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px]",
         "disabled:cursor-not-allowed disabled:opacity-50",
         "checked:before:bg-primary checked:before:absolute checked:before:start-1/2 checked:before:top-1/2 checked:before:size-2 checked:before:-translate-x-1/2 checked:before:-translate-y-1/2 checked:before:rounded-full checked:before:content-['']",

@@ -1,32 +1,21 @@
-//! SQLite storage implementation for sync (platforms, app sync state, import runs).
+//! SQLite storage implementation for local sync state and import runs.
 
 pub mod app_sync;
 pub mod folder_sync;
 pub mod import_run;
 pub mod platform;
-pub mod state;
 
+use panorama_core::portfolio::snapshot::SnapshotSource;
+use panorama_core::sync::{SyncEntity, SyncOperation};
+use panorama_core::Result;
 use serde::Serialize;
 use uuid::Uuid;
-use wealthfolio_core::portfolio::snapshot::SnapshotSource;
-use wealthfolio_core::sync::{SyncEntity, SyncOperation};
-use wealthfolio_core::Result;
-
-/// Broker ingest aliases. `import_run` includes both broker ingest and manual CSV imports.
-pub mod broker_ingest {
-    pub use super::import_run::{ImportRunDB, ImportRunRepository};
-    pub use super::platform::{Platform, PlatformDB, PlatformRepository};
-    pub use super::state::{
-        BrokerSyncState, BrokerSyncStateDB, BrokerSyncStateRepository, PlaidInvestmentsCheckpoint,
-        PlaidSyncCheckpoint, SnapTradeCheckpoint, SyncStatus,
-    };
-}
 
 // Re-export for convenience
 pub(crate) use app_sync::flush_projected_outbox;
 pub use app_sync::{
-    insert_outbox_event, AppSyncRepository, OutboxWriteRequest, SqliteSyncEngineDbPorts,
-    SyncLocalDataSummary, SyncTableRowCount,
+    insert_outbox_event, AppSyncRepository, OutboxWriteRequest, SyncLocalDataSummary,
+    SyncTableRowCount,
 };
 pub use folder_sync::{
     FolderSyncConfigRecord, FolderSyncHistoryEntryRecord, FolderSyncRepository,
@@ -34,10 +23,6 @@ pub use folder_sync::{
 };
 pub use import_run::{ImportRunDB, ImportRunRepository};
 pub use platform::{Platform, PlatformDB, PlatformRepository};
-pub use state::{
-    BrokerSyncState, BrokerSyncStateDB, BrokerSyncStateRepository, PlaidInvestmentsCheckpoint,
-    PlaidSyncCheckpoint, SnapTradeCheckpoint, SyncStatus,
-};
 
 pub fn should_sync_outbox_for_account_create(provider_account_id: Option<&str>) -> bool {
     provider_account_id.is_none_or(|id| id.trim().is_empty())

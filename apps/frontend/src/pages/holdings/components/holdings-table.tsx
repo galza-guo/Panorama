@@ -1,29 +1,29 @@
-import { Button } from "@wealthfolio/ui/components/ui/button";
-import { DataTable } from "@wealthfolio/ui/components/ui/data-table";
-import { DataTableColumnHeader } from "@wealthfolio/ui/components/ui/data-table/data-table-column-header";
+import { Button } from "@panorama/ui/components/ui/button";
+import { DataTable } from "@panorama/ui/components/ui/data-table";
+import { DataTableColumnHeader } from "@panorama/ui/components/ui/data-table/data-table-column-header";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from "@wealthfolio/ui/components/ui/dropdown-menu";
-import { Icons } from "@wealthfolio/ui/components/ui/icons";
+} from "@panorama/ui/components/ui/dropdown-menu";
+import { Icons } from "@panorama/ui/components/ui/icons";
 import { safeDivide } from "@/lib/utils";
 import type { ColumnDef } from "@tanstack/react-table";
-import { GainPercent, Badge } from "@wealthfolio/ui";
+import { GainPercent, Badge } from "@panorama/ui";
 
 import { TickerAvatar } from "@/components/ticker-avatar";
-import { Skeleton } from "@wealthfolio/ui/components/ui/skeleton";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@wealthfolio/ui/components/ui/tooltip";
+import { Skeleton } from "@panorama/ui/components/ui/skeleton";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@panorama/ui/components/ui/tooltip";
 import { useBalancePrivacy } from "@/hooks/use-balance-privacy";
 import { useSettingsContext } from "@/lib/settings-provider";
 import { getDisplaySymbol } from "@/lib/symbol-display";
 import { Holding } from "@/lib/types";
-import { AmountDisplay, QuantityDisplay } from "@wealthfolio/ui";
+import { AmountDisplay, QuantityDisplay } from "@panorama/ui";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 
-import { AnimatedToggleGroup } from "@wealthfolio/ui";
+import { AnimatedToggleGroup } from "@panorama/ui";
 
 // Helper function to get display value and currency based on toggle state
 const getDisplayValueAndCurrency = (

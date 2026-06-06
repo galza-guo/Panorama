@@ -48,9 +48,7 @@ export function getSymbolPresentation(input: SymbolPresentationInput): SymbolPre
   const hasFundSuffix = normalized.endsWith(".FUND") && isSixDigitCode(fundCode);
   const isTiantianFund = preferredProvider === "TIANTIAN_FUND" || hasFundSuffix;
   const isFund =
-    preferredProvider === "TIANTIAN_FUND" ||
-    isFundType(input.instrumentType) ||
-    hasFundSuffix;
+    preferredProvider === "TIANTIAN_FUND" || isFundType(input.instrumentType) || hasFundSuffix;
 
   if (isFund && isSixDigitCode(fundCode)) {
     return {

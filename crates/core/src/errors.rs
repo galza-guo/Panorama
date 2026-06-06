@@ -1,4 +1,4 @@
-//! Core error types for the Wealthfolio application.
+//! Core error types for the Panorama application.
 //!
 //! This module defines database-agnostic error types. Storage-specific errors
 //! (from Diesel, SQLite, etc.) are converted to these types by the storage layer.

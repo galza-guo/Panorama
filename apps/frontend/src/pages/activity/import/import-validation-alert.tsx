@@ -1,8 +1,8 @@
 import React from "react";
 
-import { Alert, AlertDescription, AlertTitle } from "@wealthfolio/ui/components/ui/alert";
-import { Button } from "@wealthfolio/ui/components/ui/button";
-import { Icons } from "@wealthfolio/ui/components/ui/icons";
+import { Alert, AlertDescription, AlertTitle } from "@panorama/ui/components/ui/alert";
+import { Button } from "@panorama/ui/components/ui/button";
+import { Icons } from "@panorama/ui/components/ui/icons";
 
 interface ValidationAlertProps {
   success: boolean;

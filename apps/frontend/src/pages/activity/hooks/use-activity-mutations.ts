@@ -1,6 +1,6 @@
 import { logger, createActivity, deleteActivity, saveActivities, updateActivity } from "@/adapters";
 import { generateId } from "@/lib/id";
-import { toast } from "@wealthfolio/ui/components/ui/use-toast";
+import { toast } from "@panorama/ui/components/ui/use-toast";
 import {
   ActivityBulkMutationRequest,
   ActivityBulkMutationResult,

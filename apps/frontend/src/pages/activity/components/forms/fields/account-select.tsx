@@ -9,7 +9,7 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@wealthfolio/ui";
+} from "@panorama/ui";
 import { useEffect } from "react";
 import { useFormContext, type FieldPath, type FieldValues, type PathValue } from "react-hook-form";
 

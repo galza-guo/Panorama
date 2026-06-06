@@ -271,10 +271,7 @@ async function installAddon(zipPath) {
 }
 
 // CLI Setup
-program
-  .name("wealthfolio")
-  .description("Panorama Addon Development CLI")
-  .version("1.0.0");
+program.name("panorama").description("Panorama Addon Development CLI").version("1.0.0");
 
 program
   .command("create <name>")

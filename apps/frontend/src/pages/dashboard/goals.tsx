@@ -5,18 +5,18 @@ import {
   CardDescription,
   CardHeader,
   CardTitle,
-} from "@wealthfolio/ui/components/ui/card";
-import { Icons } from "@wealthfolio/ui/components/ui/icons";
-import { Progress } from "@wealthfolio/ui/components/ui/progress";
-import { Skeleton } from "@wealthfolio/ui/components/ui/skeleton";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@wealthfolio/ui/components/ui/tooltip";
+} from "@panorama/ui/components/ui/card";
+import { Icons } from "@panorama/ui/components/ui/icons";
+import { Progress } from "@panorama/ui/components/ui/progress";
+import { Skeleton } from "@panorama/ui/components/ui/skeleton";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@panorama/ui/components/ui/tooltip";
 import { useAccounts } from "@/hooks/use-accounts";
 import { useBalancePrivacy } from "@/hooks/use-balance-privacy";
 import { useLatestValuations } from "@/hooks/use-latest-valuations";
 import { calculateGoalProgress } from "@/lib/portfolio-helper";
 import { Goal, GoalAllocation } from "@/lib/types";
 import { useQuery } from "@tanstack/react-query";
-import { AmountDisplay, formatPercent } from "@wealthfolio/ui";
+import { AmountDisplay, formatPercent } from "@panorama/ui";
 import { useMemo } from "react";
 import { Link } from "react-router-dom";
 
@@ -78,7 +78,7 @@ export function SavingGoals() {
     return (
       <div className="flex flex-wrap gap-4 pb-4">
         <h2 className="text-md font-semibold">Saving Goals</h2>
-        <Card className="border-border/50 bg-success/10 shadow-xs w-full">
+        <Card className="border-border/50 bg-success/10 w-full shadow-xs">
           <CardContent className="px-4 py-6">
             <div className="text-center">
               <p className="text-sm">No saving goals set.</p>
@@ -99,7 +99,7 @@ export function SavingGoals() {
   return (
     <div className="flex flex-wrap gap-4 pb-4">
       <h2 className="text-md font-semibold">Saving Goals</h2>
-      <Card className="shadow-xs w-full">
+      <Card className="w-full shadow-xs">
         <CardContent className="bg-transparent px-4 pt-6">
           {[...goals]
             .sort((a, b) => a.targetAmount - b.targetAmount)

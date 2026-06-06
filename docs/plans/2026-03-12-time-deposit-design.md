@@ -1,15 +1,19 @@
 # Time Deposit Design
 
-**Goal:** Add a simple Panorama-specialized `Time Deposit` workflow with its own page and editor, while reusing the existing alternative asset model and automatically deriving current value from term-deposit metadata.
+**Goal:** Add a simple Panorama-specialized `Time Deposit` workflow with its own
+page and editor, while reusing the existing alternative asset model and
+automatically deriving current value from term-deposit metadata.
 
 ## Context
 
-Panorama already has two specialized asset workflows layered on top of alternative assets:
+Panorama already has two specialized asset workflows layered on top of
+alternative assets:
 
 - `Insurance`, implemented as `OTHER` plus Panorama metadata
 - `MPF`, implemented as either first-class `MPF` or Panorama-marked metadata
 
-`Time Deposit` should follow the lighter `Insurance` pattern, not the heavier `MPF` pattern.
+`Time Deposit` should follow the lighter `Insurance` pattern, not the heavier
+`MPF` pattern.
 
 This keeps the change surgical:
 
@@ -22,14 +26,16 @@ This keeps the change surgical:
 
 Version 1 adds a dedicated `Time Deposits` page and a dedicated editor sheet.
 
-It is a specialized asset workflow, but still backed by the existing alternative asset create/update mutations.
+It is a specialized asset workflow, but still backed by the existing alternative
+asset create/update mutations.
 
 Users should be able to:
 
 - create a time deposit from either quoted annual rate or known maturity value
 - see automatically derived current value
 - see maturity value, days left, and annualized return
-- override the derived current value when they have a bank-provided current amount
+- override the derived current value when they have a bank-provided current
+  amount
 
 ## Scope
 
@@ -84,14 +90,17 @@ Field meanings:
 - `principal`: original deposit amount
 - `start_date`: deposit start date
 - `maturity_date`: contractual maturity date
-- `quoted_annual_rate`: optional quoted annual rate as a percent, stored exactly as entered
+- `quoted_annual_rate`: optional quoted annual rate as a percent, stored exactly
+  as entered
 - `guaranteed_maturity_value`: optional contractual maturity proceeds
 - `valuation_mode`: `derived` or `manual`
-- `current_value_override`: optional bank-provided current amount that overrides derived value
+- `current_value_override`: optional bank-provided current amount that overrides
+  derived value
 - `valuation_date`: date associated with the manual override if one exists
 - `status`: `active`, `matured`, or `closed`
 
-The asset's stored `purchase_price` and `purchase_date` should continue to map to:
+The asset's stored `purchase_price` and `purchase_date` should continue to map
+to:
 
 - `purchase_price = principal`
 - `purchase_date = start_date`
@@ -111,10 +120,12 @@ Version 1 uses one explicit convention:
 The editor should support two valid entry paths:
 
 1. Rate-driven
-   - user enters `principal`, `start_date`, `maturity_date`, `quoted_annual_rate`
+   - user enters `principal`, `start_date`, `maturity_date`,
+     `quoted_annual_rate`
    - system derives `guaranteed_maturity_value`
 2. Maturity-driven
-   - user enters `principal`, `start_date`, `maturity_date`, `guaranteed_maturity_value`
+   - user enters `principal`, `start_date`, `maturity_date`,
+     `guaranteed_maturity_value`
    - system derives implied annualized return
 
 If both `quoted_annual_rate` and `guaranteed_maturity_value` are present:
@@ -127,8 +138,10 @@ If both `quoted_annual_rate` and `guaranteed_maturity_value` are present:
 
 For `valuation_mode = derived`:
 
-- before maturity, current value is principal plus accrued simple interest based on elapsed days
-- on or after maturity, current value is the guaranteed maturity value if known, otherwise the derived maturity amount from quoted rate
+- before maturity, current value is principal plus accrued simple interest based
+  on elapsed days
+- on or after maturity, current value is the guaranteed maturity value if known,
+  otherwise the derived maturity amount from quoted rate
 
 For `valuation_mode = manual`:
 
@@ -147,7 +160,8 @@ Derived values should include:
 
 ## Backend Behavior
 
-Automatic current value should be computed in the alternative-holdings layer, not only in the page component.
+Automatic current value should be computed in the alternative-holdings layer,
+not only in the page component.
 
 Reason:
 
@@ -164,11 +178,13 @@ Recommended behavior in `alternative_assets_service.rs`:
 Version 1 accepts one tradeoff:
 
 - the asset can have live derived current value in holdings and summary views
-- quote history remains based on recorded quotes rather than a synthesized daily accrual curve
+- quote history remains based on recorded quotes rather than a synthesized daily
+  accrual curve
 
 ## UI
 
-The page should match existing Panorama specialized pages such as `Insurance` and `MPF`.
+The page should match existing Panorama specialized pages such as `Insurance`
+and `MPF`.
 
 Recommended route and label:
 
@@ -199,7 +215,8 @@ The editor sheet should:
 - show live derived previews
 - allow manual current-value override without hiding the derived estimate
 
-The asset profile should keep using the shared alternative-asset page shell and add time-deposit-specific detail rows.
+The asset profile should keep using the shared alternative-asset page shell and
+add time-deposit-specific detail rows.
 
 ## Classification and Display
 
@@ -218,14 +235,16 @@ No blocking product questions remain for version 1.
 Implementation assumptions:
 
 - `Time Deposits` is not added to the primary sidebar navigation
-- it is exposed through its dedicated route and any Panorama-specialized entry points we wire during implementation
+- it is exposed through its dedicated route and any Panorama-specialized entry
+  points we wire during implementation
 - historical quote synthesis is postponed
 
 ## Success Criteria
 
 The design is successful if:
 
-- users can create a time deposit without understanding generic alternative-asset fields
+- users can create a time deposit without understanding generic
+  alternative-asset fields
 - Panorama shows a live current value automatically
 - the page and editor feel consistent with existing specialized asset flows
 - the implementation does not require new core asset kinds or migrations

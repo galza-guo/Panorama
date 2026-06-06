@@ -12,12 +12,11 @@ tauri-build = { version = "2.5", features = [] }
 
 [dependencies]
 # Internal crates
-wealthfolio-market-data = { workspace = true }
-wealthfolio-core = { workspace = true }
-wealthfolio-connect = { workspace = true }
-wealthfolio-storage-sqlite = { workspace = true }
-wealthfolio-device-sync = { workspace = true }
-wealthfolio-ai = { workspace = true }
+panorama-market-data = { workspace = true }
+panorama-core = { workspace = true }
+panorama-local-connectors = { workspace = true }
+panorama-storage-sqlite = { workspace = true }
+panorama-ai = { workspace = true }
 
 # Tauri
 tauri = { version = "2.10", features = [] }
@@ -43,17 +42,6 @@ async-trait = { workspace = true }
 # Additional dependencies
 dotenvy = "0.15.7"
 keyring = "2.0"
-local-ip-address = "0.6"
-hostname = "0.3"
-base64 = "0.22"
-urlencoding = "2.1.3"
-
-# Crypto
-chacha20poly1305 = { workspace = true }
-x25519-dalek = { workspace = true }
-hkdf = { workspace = true }
-sha2 = { workspace = true }
-rand = { workspace = true }
 
 [features]
 default = []
@@ -61,8 +49,6 @@ default = []
 # DO NOT REMOVE!!
 custom-protocol = ["tauri/custom-protocol"]
 appstore = [] # Feature flag for App Store builds
-connect-sync = []
-device-sync = []
 
 [lib]
 name = "panorama_app_lib"
