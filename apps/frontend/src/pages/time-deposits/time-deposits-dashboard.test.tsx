@@ -6,15 +6,12 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import type { AlternativeAssetHolding } from "@/lib/types";
 
-const {
-  useAlternativeHoldingsMock,
-  useAlternativeAssetMutationsMock,
-  editorValuesRef,
-} = vi.hoisted(() => ({
-  useAlternativeHoldingsMock: vi.fn(),
-  useAlternativeAssetMutationsMock: vi.fn(),
-  editorValuesRef: { current: null as Record<string, unknown> | null },
-}));
+const { useAlternativeHoldingsMock, useAlternativeAssetMutationsMock, editorValuesRef } =
+  vi.hoisted(() => ({
+    useAlternativeHoldingsMock: vi.fn(),
+    useAlternativeAssetMutationsMock: vi.fn(),
+    editorValuesRef: { current: null as Record<string, unknown> | null },
+  }));
 
 vi.mock("@/hooks/use-alternative-assets", () => ({
   useAlternativeHoldings: useAlternativeHoldingsMock,
@@ -48,9 +45,7 @@ import TimeDepositsDashboard from "./time-deposits-dashboard";
 
 const TODAY = new Date("2026-02-20T00:00:00Z");
 
-function buildHolding(
-  overrides: Partial<AlternativeAssetHolding> = {},
-): AlternativeAssetHolding {
+function buildHolding(overrides: Partial<AlternativeAssetHolding> = {}): AlternativeAssetHolding {
   return {
     id: "ALT-TD-1",
     kind: "other",
@@ -136,9 +131,18 @@ describe("time deposits dashboard", () => {
   beforeEach(() => {
     editorValuesRef.current = buildFormValues();
     useAlternativeAssetMutationsMock.mockReturnValue({
-      createMutation: { isPending: false, mutateAsync: vi.fn().mockResolvedValue({ assetId: "ALT-TD-NEW" }) },
-      updateMetadataMutation: { isPending: false, mutateAsync: vi.fn().mockResolvedValue(undefined) },
-      updateValuationMutation: { isPending: false, mutateAsync: vi.fn().mockResolvedValue(undefined) },
+      createMutation: {
+        isPending: false,
+        mutateAsync: vi.fn().mockResolvedValue({ assetId: "ALT-TD-NEW" }),
+      },
+      updateMetadataMutation: {
+        isPending: false,
+        mutateAsync: vi.fn().mockResolvedValue(undefined),
+      },
+      updateValuationMutation: {
+        isPending: false,
+        mutateAsync: vi.fn().mockResolvedValue(undefined),
+      },
     });
   });
 
@@ -214,7 +218,10 @@ describe("time deposits dashboard", () => {
     useAlternativeAssetMutationsMock.mockReturnValue({
       createMutation: { isPending: false, mutateAsync: createMutation },
       updateMetadataMutation: { isPending: false, mutateAsync: updateMetadataMutation },
-      updateValuationMutation: { isPending: false, mutateAsync: vi.fn().mockResolvedValue(undefined) },
+      updateValuationMutation: {
+        isPending: false,
+        mutateAsync: vi.fn().mockResolvedValue(undefined),
+      },
     });
     useAlternativeHoldingsMock.mockReturnValue({
       data: [],
@@ -230,7 +237,7 @@ describe("time deposits dashboard", () => {
     await user.click(screen.getByRole("button", { name: "Submit Create Time Deposit" }));
 
     expect(createMutation).toHaveBeenCalledWith({
-      kind: "other",
+      kind: "time_deposit",
       name: "New Deposit",
       currency: "HKD",
       currentValue: "10100",
@@ -281,7 +288,10 @@ describe("time deposits dashboard", () => {
     const updateValuationMutation = vi.fn().mockResolvedValue(undefined);
 
     useAlternativeAssetMutationsMock.mockReturnValue({
-      createMutation: { isPending: false, mutateAsync: vi.fn().mockResolvedValue({ assetId: "ALT-TD-NEW" }) },
+      createMutation: {
+        isPending: false,
+        mutateAsync: vi.fn().mockResolvedValue({ assetId: "ALT-TD-NEW" }),
+      },
       updateMetadataMutation: { isPending: false, mutateAsync: updateMetadataMutation },
       updateValuationMutation: { isPending: false, mutateAsync: updateValuationMutation },
     });
@@ -307,6 +317,7 @@ describe("time deposits dashboard", () => {
       assetId: "ALT-TD-1",
       name: "HSBC 3M Deposit",
       notes: "Updated note",
+      currency: "HKD",
       metadata: {
         panorama_category: "time_deposit",
         sub_type: "time_deposit",

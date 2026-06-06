@@ -51,12 +51,9 @@ export interface LinkableAsset {
   name: string;
 }
 
-const SPECIALIZED_TIME_DEPOSIT_KIND = "TIME_DEPOSIT" as const;
-const SPECIALIZED_INSURANCE_KIND = "INSURANCE_POLICY" as const;
-type QuickAddKind =
-  | AlternativeAssetKind
-  | typeof SPECIALIZED_TIME_DEPOSIT_KIND
-  | typeof SPECIALIZED_INSURANCE_KIND;
+const SPECIALIZED_TIME_DEPOSIT_KIND = AlternativeAssetKind.TIME_DEPOSIT;
+const SPECIALIZED_INSURANCE_KIND = AlternativeAssetKind.INSURANCE;
+type QuickAddKind = AlternativeAssetKind;
 
 // Asset type configuration using theme colors
 const ASSET_TYPES = [
@@ -150,6 +147,8 @@ const kindToApiKind: Record<AlternativeAssetKind, AlternativeAssetKindApi> = {
   [AlternativeAssetKind.COLLECTIBLE]: "collectible",
   [AlternativeAssetKind.PRECIOUS_METAL]: "precious",
   [AlternativeAssetKind.MPF]: "mpf",
+  [AlternativeAssetKind.TIME_DEPOSIT]: "time_deposit",
+  [AlternativeAssetKind.INSURANCE]: "insurance",
   [AlternativeAssetKind.LIABILITY]: "liability",
   [AlternativeAssetKind.OTHER]: "other",
 };
@@ -207,7 +206,9 @@ function parseOptionalNumber(value: string): number | undefined {
   return parsed;
 }
 
-function buildTimeDepositStatus(values: Pick<TimeDepositFormValues, "valuationDate" | "maturityDate">) {
+function buildTimeDepositStatus(
+  values: Pick<TimeDepositFormValues, "valuationDate" | "maturityDate">,
+) {
   return values.valuationDate >= values.maturityDate ? "matured" : "active";
 }
 
@@ -265,10 +266,7 @@ function buildTimeDepositPatch(values: TimeDepositFormValues) {
   };
 }
 
-function buildInsuranceCreateMetadata(
-  values: InsurancePolicyFormValues,
-  valuationDate: string,
-) {
+function buildInsuranceCreateMetadata(values: InsurancePolicyFormValues, valuationDate: string) {
   return buildInsuranceMetadata({
     owner: values.owner,
     policy_type: values.policyType,
@@ -284,10 +282,7 @@ function buildInsuranceCreateMetadata(
   });
 }
 
-function buildInsurancePatch(
-  values: InsurancePolicyFormValues,
-  valuationDate: string,
-) {
+function buildInsurancePatch(values: InsurancePolicyFormValues, valuationDate: string) {
   return buildInsuranceMetadataPatch({
     owner: values.owner,
     policy_type: values.policyType,
@@ -334,7 +329,9 @@ function getTimeDepositCurrentValue(values: TimeDepositFormValues): number | und
 }
 
 function formatValueForMutation(value: number | undefined): string | undefined {
-  return value !== undefined && Number.isFinite(value) ? String(Number(value.toFixed(2))) : undefined;
+  return value !== undefined && Number.isFinite(value)
+    ? String(Number(value.toFixed(2)))
+    : undefined;
 }
 
 interface AlternativeAssetQuickAddModalProps {
@@ -525,7 +522,7 @@ export function AlternativeAssetQuickAddModal({
     }
 
     const response = await createMutation.mutateAsync({
-      kind: "other",
+      kind: "time_deposit",
       name: values.name,
       currency: values.currency,
       currentValue,
@@ -549,7 +546,7 @@ export function AlternativeAssetQuickAddModal({
   const handleInsuranceSubmit = async (values: InsurancePolicyFormValues) => {
     const valuationDate = toIsoDate(effectiveToday);
     const response = await createMutation.mutateAsync({
-      kind: "other",
+      kind: "insurance",
       name: values.name,
       currency: values.currency,
       currentValue: values.currentValue,

@@ -344,7 +344,7 @@ export default function HealthPage() {
                           dataHash: issue.dataHash,
                         })
                       }
-                      onFix={() => issue.fixAction && fixMutation.mutate(issue.fixAction)}
+                      onFix={() => issue.fixAction && fixMutation.mutate(issue)}
                       isDismissing={dismissMutation.isPending}
                       isFixing={fixMutation.isPending}
                     />
@@ -374,7 +374,7 @@ export default function HealthPage() {
         }}
         onFix={() => {
           if (selectedIssue?.fixAction) {
-            fixMutation.mutate(selectedIssue.fixAction);
+            fixMutation.mutate(selectedIssue);
           }
         }}
         isDismissing={dismissMutation.isPending}

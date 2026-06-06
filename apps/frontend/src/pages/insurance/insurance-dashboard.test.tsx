@@ -250,7 +250,10 @@ describe("insurance dashboard", () => {
     useAlternativeAssetMutationsMock.mockReturnValue({
       createMutation: { isPending: false, mutateAsync: createMutation },
       updateMetadataMutation: { isPending: false, mutateAsync: updateMetadataMutation },
-      updateValuationMutation: { isPending: false, mutateAsync: vi.fn().mockResolvedValue(undefined) },
+      updateValuationMutation: {
+        isPending: false,
+        mutateAsync: vi.fn().mockResolvedValue(undefined),
+      },
     });
     useAlternativeHoldingsMock.mockReturnValue({
       data: [],
@@ -267,7 +270,7 @@ describe("insurance dashboard", () => {
 
     await waitFor(() =>
       expect(createMutation).toHaveBeenCalledWith({
-        kind: "other",
+        kind: "insurance",
         name: "New Insurance Policy",
         currency: "HKD",
         currentValue: "125000",

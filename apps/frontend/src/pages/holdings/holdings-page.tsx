@@ -17,6 +17,19 @@ import {
 } from "@/hooks/use-alternative-assets";
 import { usePersistentState } from "@/hooks/use-persistent-state";
 import {
+  asFiniteNumber,
+  buildInsuranceMetadataPatch,
+  buildMpfMetadataPatch,
+  buildTimeDepositMetadataPatch,
+  isInsuranceAsset,
+  isMpfAsset,
+  isTimeDepositAsset,
+  normalizeMpfSubfunds,
+  parsePanoramaAssetAttributes,
+  type PanoramaMpfSubfund,
+} from "@/lib/panorama-asset-attributes";
+import { getEffectiveTimeDepositCurrentValue } from "@/lib/time-deposit-calculations";
+import {
   PORTFOLIO_ACCOUNT_ID,
   HOLDING_CATEGORY_FILTERS,
   apiKindToAlternativeAssetKind,
@@ -45,13 +58,208 @@ import {
   type LinkableAsset,
   type LinkedLiability,
 } from "@/pages/asset/alternative-assets";
-import { reEnrichAssetProfiles, updateAlternativeAssetMetadata } from "@/adapters";
+import {
+  reEnrichAssetProfiles,
+  updateAlternativeAssetMetadata,
+  updateAlternativeAssetValuation,
+} from "@/adapters";
 import { ClassificationSheet } from "@/components/classification/classification-sheet";
 import { useUpdatePortfolioMutation } from "@/hooks/use-calculate-portfolio";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { QueryKeys } from "@/lib/query-keys";
 import { useSettingsContext } from "@/lib/settings-provider";
 import { toast } from "@wealthfolio/ui/components/ui/use-toast";
+import {
+  MpfAssetEditorSheet,
+  type MpfAssetFormValues,
+} from "@/pages/mpf/components/mpf-asset-editor-sheet";
+import {
+  TimeDepositEditorSheet,
+  type TimeDepositFormValues,
+} from "@/pages/time-deposits/components/time-deposit-editor-sheet";
+import {
+  InsurancePolicyEditorSheet,
+  type InsurancePolicyFormValues,
+} from "@/pages/insurance/components/insurance-policy-editor-sheet";
+
+function toIsoDate(value: Date): string {
+  return value.toISOString().slice(0, 10);
+}
+
+function parseOptionalNumber(value: string): number | undefined {
+  const trimmed = value.trim();
+  if (!trimmed) {
+    return undefined;
+  }
+
+  const parsed = Number(trimmed);
+  if (!Number.isFinite(parsed) || parsed < 0) {
+    return undefined;
+  }
+
+  return parsed;
+}
+
+function parsePositiveNumber(value: string): number | undefined {
+  const trimmed = value.trim();
+  if (!trimmed) {
+    return undefined;
+  }
+
+  const parsed = Number(trimmed);
+  if (!Number.isFinite(parsed) || parsed <= 0) {
+    return undefined;
+  }
+
+  return parsed;
+}
+
+function buildTimeDepositStatus(
+  values: Pick<TimeDepositFormValues, "valuationDate" | "maturityDate">,
+) {
+  return values.valuationDate >= values.maturityDate ? "matured" : "active";
+}
+
+function buildTimeDepositPatch(values: TimeDepositFormValues) {
+  return {
+    ...buildTimeDepositMetadataPatch({
+      owner: values.owner,
+      provider: values.provider,
+      principal: parsePositiveNumber(values.principal),
+      start_date: toIsoDate(values.startDate),
+      maturity_date: toIsoDate(values.maturityDate),
+      quoted_annual_rate:
+        values.inputMode === "rate" ? parsePositiveNumber(values.quotedAnnualRate) : undefined,
+      guaranteed_maturity_value:
+        values.inputMode === "maturity"
+          ? parsePositiveNumber(values.guaranteedMaturityValue)
+          : undefined,
+      valuation_mode: values.valuationMode,
+      current_value_override:
+        values.valuationMode === "manual"
+          ? parsePositiveNumber(values.currentValueOverride)
+          : undefined,
+      valuation_date: toIsoDate(values.valuationDate),
+      status: buildTimeDepositStatus(values),
+    }),
+    purchase_price: values.principal.trim(),
+    purchase_date: toIsoDate(values.startDate),
+  };
+}
+
+function getTimeDepositCurrentValue(values: TimeDepositFormValues): number | undefined {
+  const principal = parsePositiveNumber(values.principal);
+  const quotedAnnualRate = parsePositiveNumber(values.quotedAnnualRate);
+  const guaranteedMaturityValue = parsePositiveNumber(values.guaranteedMaturityValue);
+  const currentValueOverride = parsePositiveNumber(values.currentValueOverride);
+
+  if (!principal || values.maturityDate <= values.startDate) {
+    return undefined;
+  }
+
+  if (values.inputMode === "rate" && quotedAnnualRate === undefined) {
+    return undefined;
+  }
+
+  if (values.inputMode === "maturity" && guaranteedMaturityValue === undefined) {
+    return undefined;
+  }
+
+  return getEffectiveTimeDepositCurrentValue({
+    principal,
+    startDate: values.startDate,
+    maturityDate: values.maturityDate,
+    asOfDate: values.valuationDate,
+    quotedAnnualRatePct: quotedAnnualRate,
+    guaranteedMaturityValue,
+    valuationMode: values.valuationMode,
+    currentValueOverride,
+  });
+}
+
+function formatValueForMutation(value: number | undefined): string | undefined {
+  return value !== undefined && Number.isFinite(value)
+    ? String(Number(value.toFixed(2)))
+    : undefined;
+}
+
+function getStoredTimeDepositValuation(holding: AlternativeAssetHolding): {
+  date: string;
+  value?: number;
+} {
+  const attributes = parsePanoramaAssetAttributes(holding.metadata);
+  const principal = asFiniteNumber(attributes.principal ?? holding.purchasePrice);
+  const quotedAnnualRate = asFiniteNumber(attributes.quoted_annual_rate);
+  const guaranteedMaturityValue = asFiniteNumber(attributes.guaranteed_maturity_value);
+  const currentValueOverride = asFiniteNumber(attributes.current_value_override);
+  const startDate =
+    typeof attributes.start_date === "string" ? attributes.start_date : holding.purchaseDate;
+  const maturityDate =
+    typeof attributes.maturity_date === "string" ? attributes.maturity_date : undefined;
+  const valuationDate =
+    typeof attributes.valuation_date === "string" && attributes.valuation_date.trim()
+      ? attributes.valuation_date.trim()
+      : holding.valuationDate.slice(0, 10);
+
+  if (!principal || !startDate || !maturityDate) {
+    return { date: valuationDate, value: asFiniteNumber(holding.marketValue) };
+  }
+
+  return {
+    date: valuationDate,
+    value: getEffectiveTimeDepositCurrentValue({
+      principal,
+      startDate,
+      maturityDate,
+      asOfDate: valuationDate,
+      quotedAnnualRatePct: quotedAnnualRate,
+      guaranteedMaturityValue,
+      valuationMode: attributes.valuation_mode === "manual" ? "manual" : "derived",
+      currentValueOverride,
+    }),
+  };
+}
+
+function getStoredInsuranceValuationDate(holding: AlternativeAssetHolding): string {
+  const attributes = parsePanoramaAssetAttributes(holding.metadata);
+  return typeof attributes.valuation_date === "string" && attributes.valuation_date.trim()
+    ? attributes.valuation_date.trim()
+    : holding.valuationDate.slice(0, 10);
+}
+
+function mergeMpfSubfunds(
+  existingRaw: unknown,
+  nextRows: MpfAssetFormValues["subfunds"],
+): PanoramaMpfSubfund[] {
+  const existingByName = new Map(
+    normalizeMpfSubfunds(existingRaw).map(
+      (subfund) => [subfund.name.trim().toLowerCase(), subfund] as const,
+    ),
+  );
+
+  return nextRows
+    .map((row) => {
+      const name = row.name.trim();
+      if (!name) {
+        return null;
+      }
+
+      const units = parseOptionalNumber(row.units);
+      const existing = existingByName.get(name.toLowerCase());
+
+      return {
+        name,
+        ...(existing?.code ? { code: existing.code } : {}),
+        ...(units !== undefined ? { units } : {}),
+        ...(existing?.nav !== undefined ? { nav: existing.nav } : {}),
+        ...(existing?.market_value !== undefined ? { market_value: existing.market_value } : {}),
+        ...(existing?.allocation_pct !== undefined
+          ? { allocation_pct: existing.allocation_pct }
+          : {}),
+      } satisfies PanoramaMpfSubfund;
+    })
+    .filter((entry): entry is PanoramaMpfSubfund => Boolean(entry));
+}
 
 export const HoldingsPage = () => {
   const isMobileViewport = useIsMobileViewport();
@@ -94,6 +302,13 @@ export const HoldingsPage = () => {
 
   // Alternative asset action state
   const [editAsset, setEditAsset] = useState<AssetDetailsSheetAsset | null>(null);
+  const [editMpfAsset, setEditMpfAsset] = useState<AlternativeAssetHolding | null>(null);
+  const [editTimeDepositAsset, setEditTimeDepositAsset] = useState<AlternativeAssetHolding | null>(
+    null,
+  );
+  const [editInsuranceAsset, setEditInsuranceAsset] = useState<AlternativeAssetHolding | null>(
+    null,
+  );
   const [updateValueAsset, setUpdateValueAsset] = useState<AlternativeAssetHolding | null>(null);
   const [isSavingDetails, setIsSavingDetails] = useState(false);
 
@@ -143,30 +358,191 @@ export const HoldingsPage = () => {
 
   // Handler to convert AlternativeAssetHolding to AssetDetailsSheetAsset for editing
   const handleEditAsset = useCallback((holding: AlternativeAssetHolding) => {
+    setEditAsset(null);
+    setEditMpfAsset(null);
+    setEditTimeDepositAsset(null);
+    setEditInsuranceAsset(null);
+
+    if (isMpfAsset(holding)) {
+      setEditMpfAsset(holding);
+      return;
+    }
+
+    if (isTimeDepositAsset(holding)) {
+      setEditTimeDepositAsset(holding);
+      return;
+    }
+
+    if (isInsuranceAsset(holding)) {
+      setEditInsuranceAsset(holding);
+      return;
+    }
+
     const assetForSheet: AssetDetailsSheetAsset = {
       id: holding.id,
       name: holding.name,
       kind: apiKindToAlternativeAssetKind(holding.kind),
       currency: holding.currency,
       metadata: holding.metadata,
+      notes: holding.notes,
     };
     setEditAsset(assetForSheet);
   }, []);
 
+  const invalidateAlternativeAssetQueries = useCallback(() => {
+    queryClient.invalidateQueries({ queryKey: [QueryKeys.ALTERNATIVE_HOLDINGS] });
+    queryClient.invalidateQueries({ queryKey: [QueryKeys.HOLDINGS] });
+    queryClient.invalidateQueries({ queryKey: [QueryKeys.ASSETS] });
+    queryClient.invalidateQueries({ queryKey: [QueryKeys.NET_WORTH] });
+    queryClient.invalidateQueries({ queryKey: [QueryKeys.NET_WORTH_HISTORY] });
+  }, [queryClient]);
+
   // Handler to save asset details
   const handleSaveAssetDetails = useCallback(
-    async (assetId: string, metadata: JsonObject, name?: string) => {
+    async (assetId: string, metadata: JsonObject, name?: string, notes?: string | null) => {
       setIsSavingDetails(true);
       try {
-        await updateAlternativeAssetMetadata(assetId, metadata, name);
-        // Invalidate queries to refresh the list
-        queryClient.invalidateQueries({ queryKey: [QueryKeys.ALTERNATIVE_HOLDINGS] });
-        queryClient.invalidateQueries({ queryKey: [QueryKeys.NET_WORTH] });
+        await updateAlternativeAssetMetadata(assetId, metadata, name, notes);
+        invalidateAlternativeAssetQueries();
       } finally {
         setIsSavingDetails(false);
       }
     },
-    [queryClient],
+    [invalidateAlternativeAssetQueries],
+  );
+
+  const handleMpfSave = useCallback(
+    async (values: MpfAssetFormValues) => {
+      if (!editMpfAsset) return;
+
+      setIsSavingDetails(true);
+      try {
+        const valuationDate = toIsoDate(values.valuationDate);
+        const existingAttributes = parsePanoramaAssetAttributes(editMpfAsset.metadata);
+        const mergedSubfunds = mergeMpfSubfunds(existingAttributes.mpf_subfunds, values.subfunds);
+
+        await updateAlternativeAssetMetadata(
+          editMpfAsset.id,
+          buildMpfMetadataPatch({
+            owner: values.owner,
+            trustee: values.trustee,
+            mpf_scheme: values.scheme,
+            valuation_date: valuationDate,
+            mpf_subfunds: mergedSubfunds,
+          }),
+          values.name,
+          values.notes || null,
+          values.currency,
+        );
+
+        const existingQuoteDate = editMpfAsset.valuationDate.slice(0, 10);
+        const valuationChanged =
+          editMpfAsset.marketValue !== values.currentValue || existingQuoteDate !== valuationDate;
+
+        if (valuationChanged) {
+          await updateAlternativeAssetValuation(editMpfAsset.id, {
+            value: values.currentValue,
+            date: valuationDate,
+          });
+        }
+
+        invalidateAlternativeAssetQueries();
+        setEditMpfAsset(null);
+      } finally {
+        setIsSavingDetails(false);
+      }
+    },
+    [editMpfAsset, invalidateAlternativeAssetQueries],
+  );
+
+  const handleTimeDepositSave = useCallback(
+    async (values: TimeDepositFormValues) => {
+      if (!editTimeDepositAsset) return;
+
+      const currentValue = formatValueForMutation(getTimeDepositCurrentValue(values));
+      if (!currentValue) {
+        return;
+      }
+
+      setIsSavingDetails(true);
+      try {
+        const valuationDate = toIsoDate(values.valuationDate);
+
+        await updateAlternativeAssetMetadata(
+          editTimeDepositAsset.id,
+          buildTimeDepositPatch(values),
+          values.name,
+          values.notes || null,
+          values.currency,
+        );
+
+        const existingValuation = getStoredTimeDepositValuation(editTimeDepositAsset);
+        if (
+          existingValuation.date !== valuationDate ||
+          formatValueForMutation(existingValuation.value) !== currentValue
+        ) {
+          await updateAlternativeAssetValuation(editTimeDepositAsset.id, {
+            value: currentValue,
+            date: valuationDate,
+          });
+        }
+
+        invalidateAlternativeAssetQueries();
+        setEditTimeDepositAsset(null);
+      } finally {
+        setIsSavingDetails(false);
+      }
+    },
+    [editTimeDepositAsset, invalidateAlternativeAssetQueries],
+  );
+
+  const handleInsuranceSave = useCallback(
+    async (values: InsurancePolicyFormValues) => {
+      if (!editInsuranceAsset) return;
+
+      setIsSavingDetails(true);
+      try {
+        const valuationDate = toIsoDate(new Date());
+        const nextCashValue = asFiniteNumber(values.currentValue);
+        const currentCashValue = asFiniteNumber(editInsuranceAsset.marketValue);
+        const valuationChanged = currentCashValue !== nextCashValue;
+
+        await updateAlternativeAssetMetadata(
+          editInsuranceAsset.id,
+          buildInsuranceMetadataPatch({
+            owner: values.owner,
+            policy_type: values.policyType,
+            insurance_provider: values.provider,
+            start_date: values.startDate ? toIsoDate(values.startDate) : undefined,
+            valuation_date: valuationChanged
+              ? valuationDate
+              : getStoredInsuranceValuationDate(editInsuranceAsset),
+            total_paid_to_date: parseOptionalNumber(values.totalPaidToDate),
+            payment_status: values.paymentStatus,
+            next_due_date:
+              values.paymentStatus === "paying" && values.nextDueDate
+                ? toIsoDate(values.nextDueDate)
+                : undefined,
+          }),
+          values.name,
+          values.notes || null,
+          values.currency,
+        );
+
+        if (valuationChanged) {
+          await updateAlternativeAssetValuation(editInsuranceAsset.id, {
+            value: values.currentValue,
+            date: valuationDate,
+          });
+        }
+
+        invalidateAlternativeAssetQueries();
+        setEditInsuranceAsset(null);
+      } finally {
+        setIsSavingDetails(false);
+      }
+    },
+    [editInsuranceAsset, invalidateAlternativeAssetQueries],
   );
 
   // Handler to delete an asset
@@ -751,6 +1127,33 @@ export const HoldingsPage = () => {
       />
 
       {/* Asset Details Sheet (Edit) */}
+      <MpfAssetEditorSheet
+        open={editMpfAsset !== null}
+        onOpenChange={(open) => !open && setEditMpfAsset(null)}
+        mode="edit"
+        holding={editMpfAsset}
+        onSubmit={handleMpfSave}
+        isSubmitting={isSavingDetails}
+      />
+
+      <TimeDepositEditorSheet
+        open={editTimeDepositAsset !== null}
+        onOpenChange={(open) => !open && setEditTimeDepositAsset(null)}
+        mode="edit"
+        holding={editTimeDepositAsset}
+        onSubmit={handleTimeDepositSave}
+        isSubmitting={isSavingDetails}
+      />
+
+      <InsurancePolicyEditorSheet
+        open={editInsuranceAsset !== null}
+        onOpenChange={(open) => !open && setEditInsuranceAsset(null)}
+        mode="edit"
+        holding={editInsuranceAsset}
+        onSubmit={handleInsuranceSave}
+        isSubmitting={isSavingDetails}
+      />
+
       <AssetDetailsSheet
         open={editAsset !== null}
         onOpenChange={(open) => !open && setEditAsset(null)}

@@ -8,7 +8,7 @@ import { useQuoteHistory } from "@/hooks/use-quote-history";
 import { useSyncMarketDataMutation } from "@/hooks/use-sync-market-data";
 import { useAssetTaxonomyAssignments, useTaxonomy } from "@/hooks/use-taxonomies";
 import { PORTFOLIO_ACCOUNT_ID } from "@/lib/constants";
-import { isMpfAsset, isTimeDepositAsset } from "@/lib/panorama-asset-attributes";
+import { isInsuranceAsset, isMpfAsset, isTimeDepositAsset } from "@/lib/panorama-asset-attributes";
 import { QueryKeys } from "@/lib/query-keys";
 import { useSettingsContext } from "@/lib/settings-provider";
 import { getDisplaySymbol } from "@/lib/symbol-display";
@@ -46,6 +46,8 @@ const ALTERNATIVE_ASSET_KINDS: AssetKind[] = [
   "COLLECTIBLE",
   "PRECIOUS_METAL",
   "MPF",
+  "TIME_DEPOSIT",
+  "INSURANCE",
   "LIABILITY",
   "OTHER",
 ];
@@ -311,15 +313,19 @@ export const AssetProfilePage = () => {
     enabled: isAltAsset,
   });
   const isMpfAltHolding = Boolean(
-    isAltAsset &&
-      altHolding &&
-      (altHolding.kind.toLowerCase() === "mpf" || isMpfAsset(altHolding)),
+    isAltAsset && altHolding && (altHolding.kind.toLowerCase() === "mpf" || isMpfAsset(altHolding)),
   );
   const isTimeDepositAltHolding = Boolean(
     isAltAsset && altHolding && isTimeDepositAsset(altHolding),
   );
-  const alternativeDisplayKind =
-    isMpfAltHolding ? "mpf" : isTimeDepositAltHolding ? "time_deposit" : altHolding?.kind ?? "";
+  const isInsuranceAltHolding = Boolean(isAltAsset && altHolding && isInsuranceAsset(altHolding));
+  const alternativeDisplayKind = isMpfAltHolding
+    ? "mpf"
+    : isTimeDepositAltHolding
+      ? "time_deposit"
+      : isInsuranceAltHolding
+        ? "insurance"
+        : (altHolding?.kind ?? "");
 
   const profile = useMemo(() => {
     const instrument = holding?.instrument;
@@ -769,7 +775,9 @@ export const AssetProfilePage = () => {
                               ? "Edit MPF"
                               : isTimeDepositAltHolding
                                 ? "Edit Time Deposit"
-                                : "Edit Details",
+                                : isInsuranceAltHolding
+                                  ? "Edit Insurance"
+                                  : "Edit Details",
                             onClick: () => altAssetActions.openEditDetails(),
                           },
                           ...(altAssetActions.isLinkableAsset
@@ -867,7 +875,7 @@ export const AssetProfilePage = () => {
             )
           )}
           <div className="flex min-w-0 flex-col justify-center">
-            <h1 className="truncate text-base font-semibold leading-tight md:text-lg">
+            <h1 className="truncate text-base leading-tight font-semibold md:text-lg">
               {assetProfile?.name ?? holding?.instrument?.name ?? assetId ?? "-"}
             </h1>
             <p className="text-muted-foreground flex items-center gap-1.5 text-xs leading-tight md:text-sm">
@@ -1155,6 +1163,8 @@ function AlternativeAssetIcon({ kind, size = 20 }: { kind: string; size?: number
       return <Icons.Briefcase size={size} />;
     case "time_deposit":
       return <Icons.BadgeDollarSign size={size} />;
+    case "insurance":
+      return <Icons.Shield size={size} />;
     case "liability":
       return <Icons.LiabilityDuotone size={size} />;
     default:
@@ -1171,6 +1181,7 @@ function getAlternativeAssetKindLabel(kind: string): string {
     precious: "Precious Metal",
     mpf: "MPF",
     time_deposit: "Time Deposit",
+    insurance: "Insurance",
     liability: "Liability",
     other: "Other Asset",
   };

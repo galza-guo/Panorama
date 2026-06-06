@@ -20,6 +20,9 @@ import { useAlternativeHoldings } from "@/hooks/use-alternative-assets";
 import { useIsMobileViewport } from "@/hooks/use-platform";
 import { useSyncMarketDataMutation } from "@/hooks/use-sync-market-data";
 import {
+  asFiniteNumber,
+  buildInsuranceMetadata,
+  buildInsuranceMetadataPatch,
   buildMpfMetadata,
   buildMpfMetadataPatch,
   buildTimeDepositMetadata,
@@ -39,6 +42,10 @@ import {
   TimeDepositEditorSheet,
   type TimeDepositFormValues,
 } from "@/pages/time-deposits/components/time-deposit-editor-sheet";
+import {
+  InsurancePolicyEditorSheet,
+  type InsurancePolicyFormValues,
+} from "@/pages/insurance/components/insurance-policy-editor-sheet";
 import { getEffectiveTimeDepositCurrentValue } from "@/lib/time-deposit-calculations";
 import { toast } from "@wealthfolio/ui/components/ui/use-toast";
 import { syncPanoramaMpfUnitPrices } from "@/adapters";
@@ -84,7 +91,9 @@ function parsePositiveNumber(value: string): number | undefined {
   return parsed;
 }
 
-function buildTimeDepositStatus(values: Pick<TimeDepositFormValues, "valuationDate" | "maturityDate">) {
+function buildTimeDepositStatus(
+  values: Pick<TimeDepositFormValues, "valuationDate" | "maturityDate">,
+) {
   return values.valuationDate >= values.maturityDate ? "matured" : "active";
 }
 
@@ -142,6 +151,38 @@ function buildTimeDepositPatch(values: TimeDepositFormValues) {
   };
 }
 
+function buildInsuranceCreateMetadata(values: InsurancePolicyFormValues, valuationDate: string) {
+  return buildInsuranceMetadata({
+    owner: values.owner,
+    policy_type: values.policyType,
+    insurance_provider: values.provider,
+    start_date: values.startDate ? toIsoDate(values.startDate) : undefined,
+    valuation_date: valuationDate,
+    total_paid_to_date: parseOptionalNumber(values.totalPaidToDate),
+    payment_status: values.paymentStatus,
+    next_due_date:
+      values.paymentStatus === "paying" && values.nextDueDate
+        ? toIsoDate(values.nextDueDate)
+        : undefined,
+  });
+}
+
+function buildInsurancePatch(values: InsurancePolicyFormValues, valuationDate: string) {
+  return buildInsuranceMetadataPatch({
+    owner: values.owner,
+    policy_type: values.policyType,
+    insurance_provider: values.provider,
+    start_date: values.startDate ? toIsoDate(values.startDate) : undefined,
+    valuation_date: valuationDate,
+    total_paid_to_date: parseOptionalNumber(values.totalPaidToDate),
+    payment_status: values.paymentStatus,
+    next_due_date:
+      values.paymentStatus === "paying" && values.nextDueDate
+        ? toIsoDate(values.nextDueDate)
+        : undefined,
+  });
+}
+
 function getTimeDepositCurrentValue(values: TimeDepositFormValues): number | undefined {
   const principal = parsePositiveNumber(values.principal);
   const quotedAnnualRate = parsePositiveNumber(values.quotedAnnualRate);
@@ -172,7 +213,10 @@ function getTimeDepositCurrentValue(values: TimeDepositFormValues): number | und
   });
 }
 
-function getStoredTimeDepositValuation(holding: AlternativeAssetHolding): { date: string; value?: number } {
+function getStoredTimeDepositValuation(holding: AlternativeAssetHolding): {
+  date: string;
+  value?: number;
+} {
   const attributes = parsePanoramaAssetAttributes(holding.metadata);
   const principal = asNumber(attributes.principal ?? holding.purchasePrice);
   const quotedAnnualRate = asNumber(attributes.quoted_annual_rate);
@@ -206,6 +250,13 @@ function getStoredTimeDepositValuation(holding: AlternativeAssetHolding): { date
   };
 }
 
+function getStoredInsuranceValuationDate(holding: AlternativeAssetHolding): string {
+  const attributes = parsePanoramaAssetAttributes(holding.metadata);
+  return typeof attributes.valuation_date === "string" && attributes.valuation_date.trim()
+    ? attributes.valuation_date.trim()
+    : holding.valuationDate.slice(0, 10);
+}
+
 function asNumber(value: unknown): number | undefined {
   if (typeof value === "number" && Number.isFinite(value)) {
     return value;
@@ -222,7 +273,9 @@ function asNumber(value: unknown): number | undefined {
 }
 
 function formatValueForMutation(value: number | undefined): string | undefined {
-  return value !== undefined && Number.isFinite(value) ? String(Number(value.toFixed(2))) : undefined;
+  return value !== undefined && Number.isFinite(value)
+    ? String(Number(value.toFixed(2)))
+    : undefined;
 }
 
 function mergeSubfunds(
@@ -303,6 +356,8 @@ export default function AssetsPage() {
   const [editingMpfAssetId, setEditingMpfAssetId] = useState<string | null>(null);
   const [isCreatingTimeDeposit, setIsCreatingTimeDeposit] = useState(false);
   const [editingTimeDepositAssetId, setEditingTimeDepositAssetId] = useState<string | null>(null);
+  const [isCreatingInsurance, setIsCreatingInsurance] = useState(false);
+  const [editingInsuranceAssetId, setEditingInsuranceAssetId] = useState<string | null>(null);
   const [assetPendingDelete, setAssetPendingDelete] = useState<ParsedAsset | null>(null);
   const [assetPendingRefetch, setAssetPendingRefetch] = useState<ParsedAsset | null>(null);
 
@@ -322,28 +377,54 @@ export default function AssetsPage() {
     return alternativeHoldings.find((holding) => holding.id === editingTimeDepositAssetId) ?? null;
   }, [alternativeHoldings, editingTimeDepositAssetId]);
 
+  const editingInsuranceHolding = useMemo<AlternativeAssetHolding | null>(() => {
+    if (!editingInsuranceAssetId) {
+      return null;
+    }
+
+    return alternativeHoldings.find((holding) => holding.id === editingInsuranceAssetId) ?? null;
+  }, [alternativeHoldings, editingInsuranceAssetId]);
+
   const isSavingMpfAsset =
     createMutation.isPending ||
     updateMetadataMutation.isPending ||
     updateValuationMutation.isPending;
   const isSavingTimeDeposit = isSavingMpfAsset;
+  const isSavingInsurance = isSavingMpfAsset;
 
   const handleEditAsset = (asset: ParsedAsset) => {
-    if (getPanoramaAssetCategory(asset) === "MPF") {
+    const category = getPanoramaAssetCategory(asset);
+
+    if (category === "MPF") {
       setEditingAsset(null);
       setIsCreatingMpfAsset(false);
       setEditingMpfAssetId(asset.id);
       setIsCreatingTimeDeposit(false);
       setEditingTimeDepositAssetId(null);
+      setIsCreatingInsurance(false);
+      setEditingInsuranceAssetId(null);
       return;
     }
 
-    if (getPanoramaAssetCategory(asset) === "Time Deposit") {
+    if (category === "Time Deposit") {
       setEditingAsset(null);
       setIsCreatingMpfAsset(false);
       setEditingMpfAssetId(null);
       setIsCreatingTimeDeposit(false);
       setEditingTimeDepositAssetId(asset.id);
+      setIsCreatingInsurance(false);
+      setEditingInsuranceAssetId(null);
+      return;
+    }
+
+    if (category === "Insurance") {
+      setEditingAsset(null);
+      setIsCreatingMpfAsset(false);
+      setEditingMpfAssetId(null);
+      setIsCreatingTimeDeposit(false);
+      setEditingTimeDepositAssetId(null);
+      setIsCreatingInsurance(false);
+      setEditingInsuranceAssetId(asset.id);
       return;
     }
 
@@ -415,6 +496,7 @@ export default function AssetsPage() {
       assetId: editingMpfHolding.id,
       name: values.name,
       notes: values.notes || null,
+      currency: values.currency,
       metadata: buildMpfMetadataPatch({
         owner: values.owner,
         trustee: values.trustee,
@@ -451,7 +533,7 @@ export default function AssetsPage() {
 
     if (!editingTimeDepositHolding) {
       const response = await createMutation.mutateAsync({
-        kind: "other",
+        kind: "time_deposit",
         name: values.name,
         currency: values.currency,
         currentValue,
@@ -476,6 +558,7 @@ export default function AssetsPage() {
       assetId: editingTimeDepositHolding.id,
       name: values.name,
       notes: values.notes || null,
+      currency: values.currency,
       metadata: buildTimeDepositPatch(values),
     });
 
@@ -496,6 +579,61 @@ export default function AssetsPage() {
     setEditingTimeDepositAssetId(null);
   };
 
+  const handleInsuranceSubmit = async (values: InsurancePolicyFormValues) => {
+    const valuationDate = toIsoDate(new Date());
+
+    if (!editingInsuranceHolding) {
+      const response = await createMutation.mutateAsync({
+        kind: "insurance",
+        name: values.name,
+        currency: values.currency,
+        currentValue: values.currentValue,
+        valueDate: valuationDate,
+        metadata: buildInsuranceCreateMetadata(values, valuationDate),
+      });
+
+      if (values.notes) {
+        await updateMetadataMutation.mutateAsync({
+          assetId: response.assetId,
+          name: values.name,
+          notes: values.notes,
+          currency: values.currency,
+          metadata: buildInsurancePatch(values, valuationDate),
+        });
+      }
+
+      setIsCreatingInsurance(false);
+      return;
+    }
+
+    const nextCashValue = asFiniteNumber(values.currentValue);
+    const currentCashValue = asFiniteNumber(editingInsuranceHolding.marketValue);
+    const valuationChanged = currentCashValue !== nextCashValue;
+    const patchValuationDate = valuationChanged
+      ? valuationDate
+      : getStoredInsuranceValuationDate(editingInsuranceHolding);
+
+    await updateMetadataMutation.mutateAsync({
+      assetId: editingInsuranceHolding.id,
+      name: values.name,
+      notes: values.notes || null,
+      currency: values.currency,
+      metadata: buildInsurancePatch(values, patchValuationDate),
+    });
+
+    if (valuationChanged) {
+      await updateValuationMutation.mutateAsync({
+        assetId: editingInsuranceHolding.id,
+        request: {
+          value: values.currentValue,
+          date: valuationDate,
+        },
+      });
+    }
+
+    setEditingInsuranceAssetId(null);
+  };
+
   return (
     <div className="space-y-6">
       <SettingsHeader heading="Assets" text="Browse and manage assets tracked in your portfolio.">
@@ -508,6 +646,8 @@ export default function AssetsPage() {
               setEditingAsset(null);
               setEditingMpfAssetId(null);
               setEditingTimeDepositAssetId(null);
+              setEditingInsuranceAssetId(null);
+              setIsCreatingInsurance(false);
               setIsCreatingTimeDeposit(false);
               setIsCreatingMpfAsset(true);
             }}
@@ -524,11 +664,30 @@ export default function AssetsPage() {
               setEditingMpfAssetId(null);
               setIsCreatingMpfAsset(false);
               setEditingTimeDepositAssetId(null);
+              setEditingInsuranceAssetId(null);
+              setIsCreatingInsurance(false);
               setIsCreatingTimeDeposit(true);
             }}
           >
             <Icons.Plus className="mr-2 h-3 w-3" />
             Add Time Deposit
+          </Button>
+          <Button
+            type="button"
+            size="sm"
+            variant="outline"
+            onClick={() => {
+              setEditingAsset(null);
+              setEditingMpfAssetId(null);
+              setIsCreatingMpfAsset(false);
+              setEditingTimeDepositAssetId(null);
+              setIsCreatingTimeDeposit(false);
+              setEditingInsuranceAssetId(null);
+              setIsCreatingInsurance(true);
+            }}
+          >
+            <Icons.Plus className="mr-2 h-3 w-3" />
+            Add Insurance Policy
           </Button>
         </div>
       </SettingsHeader>
@@ -598,6 +757,20 @@ export default function AssetsPage() {
         holding={editingTimeDepositHolding}
         onSubmit={handleTimeDepositSubmit}
         isSubmitting={isSavingTimeDeposit}
+      />
+
+      <InsurancePolicyEditorSheet
+        open={isCreatingInsurance || Boolean(editingInsuranceAssetId)}
+        onOpenChange={(open) => {
+          if (!open) {
+            setIsCreatingInsurance(false);
+            setEditingInsuranceAssetId(null);
+          }
+        }}
+        mode={editingInsuranceAssetId ? "edit" : "create"}
+        holding={editingInsuranceHolding}
+        onSubmit={handleInsuranceSubmit}
+        isSubmitting={isSavingInsurance}
       />
 
       <AlertDialog

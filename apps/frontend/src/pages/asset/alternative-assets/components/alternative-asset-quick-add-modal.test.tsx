@@ -33,7 +33,10 @@ vi.mock("@/pages/time-deposits/components/time-deposit-editor-sheet", () => ({
     open ? (
       <div>
         <div>Mock Time Deposit Sheet</div>
-        <button type="button" onClick={() => void onSubmit(timeDepositEditorValuesRef.current as never)}>
+        <button
+          type="button"
+          onClick={() => void onSubmit(timeDepositEditorValuesRef.current as never)}
+        >
           Submit Time Deposit
         </button>
       </div>
@@ -51,7 +54,10 @@ vi.mock("@/pages/insurance/components/insurance-policy-editor-sheet", () => ({
     open ? (
       <div>
         <div>Mock Insurance Sheet</div>
-        <button type="button" onClick={() => void onSubmit(insuranceEditorValuesRef.current as never)}>
+        <button
+          type="button"
+          onClick={() => void onSubmit(insuranceEditorValuesRef.current as never)}
+        >
           Submit Insurance
         </button>
       </div>
@@ -119,8 +125,14 @@ describe("alternative asset quick add modal", () => {
       },
     });
     useAlternativeAssetMutationsMock.mockReturnValue({
-      createMutation: { isPending: false, mutateAsync: vi.fn().mockResolvedValue({ assetId: "ALT-TD-1" }) },
-      updateMetadataMutation: { isPending: false, mutateAsync: vi.fn().mockResolvedValue(undefined) },
+      createMutation: {
+        isPending: false,
+        mutateAsync: vi.fn().mockResolvedValue({ assetId: "ALT-TD-1" }),
+      },
+      updateMetadataMutation: {
+        isPending: false,
+        mutateAsync: vi.fn().mockResolvedValue(undefined),
+      },
     });
   });
 
@@ -157,7 +169,7 @@ describe("alternative asset quick add modal", () => {
 
     await waitFor(() =>
       expect(createMutation).toHaveBeenCalledWith({
-        kind: "other",
+        kind: "time_deposit",
         name: "HSBC 3M Deposit",
         currency: "HKD",
         currentValue: "10100",
@@ -231,7 +243,7 @@ describe("alternative asset quick add modal", () => {
 
     await waitFor(() =>
       expect(createMutation).toHaveBeenCalledWith({
-        kind: "other",
+        kind: "insurance",
         name: "AIA Wealth Series",
         currency: "HKD",
         currentValue: "125000",

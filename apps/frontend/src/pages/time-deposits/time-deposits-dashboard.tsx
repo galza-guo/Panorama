@@ -68,7 +68,9 @@ function parsePositiveNumber(value: string): number | undefined {
   return parsed;
 }
 
-function buildTimeDepositStatus(values: Pick<TimeDepositFormValues, "valuationDate" | "maturityDate">) {
+function buildTimeDepositStatus(
+  values: Pick<TimeDepositFormValues, "valuationDate" | "maturityDate">,
+) {
   return values.valuationDate >= values.maturityDate ? "matured" : "active";
 }
 
@@ -160,7 +162,10 @@ function getEffectiveCurrentValue(values: TimeDepositFormValues): number | undef
   });
 }
 
-function getStoredValuationForHolding(holding: AlternativeAssetHolding): { date: string; value?: number } {
+function getStoredValuationForHolding(holding: AlternativeAssetHolding): {
+  date: string;
+  value?: number;
+} {
   const attributes = parsePanoramaAssetAttributes(holding.metadata);
   const principal = asFiniteNumber(attributes.principal ?? holding.purchasePrice);
   const quotedAnnualRate = asFiniteNumber(attributes.quoted_annual_rate);
@@ -195,7 +200,9 @@ function getStoredValuationForHolding(holding: AlternativeAssetHolding): { date:
 }
 
 function formatValueForMutation(value: number | undefined): string | undefined {
-  return value !== undefined && Number.isFinite(value) ? String(Number(value.toFixed(2))) : undefined;
+  return value !== undefined && Number.isFinite(value)
+    ? String(Number(value.toFixed(2)))
+    : undefined;
 }
 
 export default function TimeDepositsDashboard({ today }: { today?: Date } = {}) {
@@ -240,19 +247,18 @@ export default function TimeDepositsDashboard({ today }: { today?: Date } = {}) 
         startDate !== undefined &&
         maturityDate !== undefined &&
         (quotedAnnualRate !== undefined || guaranteedMaturityValue !== undefined);
-      const currentValue =
-        canDeriveCurrentValue
-          ? getEffectiveTimeDepositCurrentValue({
-              principal,
-              startDate,
-              maturityDate,
-              asOfDate,
-              quotedAnnualRatePct: quotedAnnualRate,
-              guaranteedMaturityValue,
-              valuationMode,
-              currentValueOverride,
-            })
-          : asFiniteNumber(holding.marketValue);
+      const currentValue = canDeriveCurrentValue
+        ? getEffectiveTimeDepositCurrentValue({
+            principal,
+            startDate,
+            maturityDate,
+            asOfDate,
+            quotedAnnualRatePct: quotedAnnualRate,
+            guaranteedMaturityValue,
+            valuationMode,
+            currentValueOverride,
+          })
+        : asFiniteNumber(holding.marketValue);
       const derivedMetrics =
         principal !== undefined &&
         startDate !== undefined &&
@@ -345,6 +351,7 @@ export default function TimeDepositsDashboard({ today }: { today?: Date } = {}) 
         assetId: editingHolding.id,
         name: values.name,
         notes: values.notes || null,
+        currency: values.currency,
         metadata: patchMetadata,
       });
 
@@ -363,7 +370,7 @@ export default function TimeDepositsDashboard({ today }: { today?: Date } = {}) 
       }
     } else {
       const response = await createMutation.mutateAsync({
-        kind: "other",
+        kind: "time_deposit",
         name: values.name,
         currency: values.currency,
         currentValue,
@@ -471,7 +478,12 @@ export default function TimeDepositsDashboard({ today }: { today?: Date } = {}) 
           <CardHeader>
             <div className="flex items-center justify-between gap-3">
               <CardTitle>Deposit List</CardTitle>
-              <Button type="button" size="sm" variant="outline" onClick={() => setEditorState({ mode: "create" })}>
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                onClick={() => setEditorState({ mode: "create" })}
+              >
                 <Icons.Plus className="mr-2 h-3 w-3" />
                 Add Time Deposit
               </Button>

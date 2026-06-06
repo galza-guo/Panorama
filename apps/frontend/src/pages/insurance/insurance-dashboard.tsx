@@ -171,6 +171,7 @@ export default function InsuranceDashboard({ today }: { today?: Date } = {}) {
         assetId: editingHolding.id,
         name: values.name,
         notes: values.notes,
+        currency: values.currency,
         metadata: buildInsuranceMetadataPatch({
           owner: values.owner,
           policy_type: values.policyType,
@@ -194,7 +195,7 @@ export default function InsuranceDashboard({ today }: { today?: Date } = {}) {
       }
     } else {
       const response = await createMutation.mutateAsync({
-        kind: "other",
+        kind: "insurance",
         name: values.name,
         currency: values.currency,
         currentValue: values.currentValue,
@@ -301,7 +302,12 @@ export default function InsuranceDashboard({ today }: { today?: Date } = {}) {
           <CardHeader>
             <div className="flex items-center justify-between gap-3">
               <CardTitle>Policy List</CardTitle>
-              <Button type="button" size="sm" variant="outline" onClick={() => setEditorState({ mode: "create" })}>
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                onClick={() => setEditorState({ mode: "create" })}
+              >
                 <Icons.Plus className="mr-2 h-3 w-3" />
                 Add Insurance Policy
               </Button>
@@ -397,7 +403,11 @@ export default function InsuranceDashboard({ today }: { today?: Date } = {}) {
                         )}
                       </div>
                       <div>
-                        <div>{row.paymentStatusLabel ?? <span className="text-muted-foreground">Status: -</span>}</div>
+                        <div>
+                          {row.paymentStatusLabel ?? (
+                            <span className="text-muted-foreground">Status: -</span>
+                          )}
+                        </div>
                         <div className="text-muted-foreground text-xs">
                           {row.paymentReminder
                             ? row.paymentReminder
@@ -418,7 +428,6 @@ export default function InsuranceDashboard({ today }: { today?: Date } = {}) {
             )}
           </CardContent>
         </Card>
-
       </div>
 
       {editorState ? (

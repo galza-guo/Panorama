@@ -259,15 +259,10 @@ export function AssetsTableMobile({
                   onClick={() => navigate(`/holdings/${encodeURIComponent(asset.id)}`)}
                   className="hover:bg-muted/60 focus-visible:ring-ring flex flex-1 items-center gap-3 overflow-hidden rounded-md text-left transition"
                 >
-                  <TickerAvatar
-                    symbol={displaySymbol}
-                    className="h-10 w-10 flex-shrink-0"
-                  />
+                  <TickerAvatar symbol={displaySymbol} className="h-10 w-10 flex-shrink-0" />
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-2">
-                      <p className="truncate font-semibold">
-                        {displaySymbol}
-                      </p>
+                      <p className="truncate font-semibold">{displaySymbol}</p>
                       <Badge variant="secondary" className="text-[10px] uppercase">
                         {asset.quoteCcy}
                       </Badge>
@@ -487,7 +482,7 @@ export function AssetsTableMobile({
                             {isSelected && <Icons.Check className="text-secondary h-3 w-3" />}
                           </div>
                           <span className="font-medium">
-                            {kind === "MPF" || kind === "Time Deposit"
+                            {kind === "MPF" || kind === "Time Deposit" || kind === "Insurance"
                               ? kind
                               : (ASSET_KIND_DISPLAY_NAMES[kind] ?? kind)}
                           </span>

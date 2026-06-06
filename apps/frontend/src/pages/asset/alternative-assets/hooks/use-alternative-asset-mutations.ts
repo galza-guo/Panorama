@@ -148,12 +148,14 @@ export function useAlternativeAssetMutations(options: UseAlternativeAssetMutatio
       metadata,
       name,
       notes,
+      currency,
     }: {
       assetId: string;
       metadata: JsonObject;
       name?: string;
       notes?: string | null;
-    }) => updateAlternativeAssetMetadata(assetId, metadata, name, notes),
+      currency?: string;
+    }) => updateAlternativeAssetMetadata(assetId, metadata, name, notes, currency),
     onSuccess: () => {
       invalidateQueries();
       options.onMetadataUpdateSuccess?.();

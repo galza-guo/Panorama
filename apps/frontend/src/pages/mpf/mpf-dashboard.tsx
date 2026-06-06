@@ -190,6 +190,7 @@ export default function MpfDashboard() {
         assetId: editingHolding.id,
         name: values.name,
         notes: values.notes || null,
+        currency: values.currency,
         metadata: buildMpfMetadataPatch({
           owner: values.owner,
           trustee: values.trustee,

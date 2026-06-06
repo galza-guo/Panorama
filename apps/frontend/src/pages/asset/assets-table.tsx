@@ -338,7 +338,7 @@ export function AssetsTable({
     const kinds = new Set(assets.map((asset) => getAssetKindForDisplay(asset)).filter(Boolean));
     return Array.from(kinds).map((kind) => ({
       label:
-        kind === "MPF" || kind === "Time Deposit"
+        kind === "MPF" || kind === "Time Deposit" || kind === "Insurance"
           ? kind
           : (ASSET_KIND_DISPLAY_NAMES[kind] ?? kind),
       value: kind,
