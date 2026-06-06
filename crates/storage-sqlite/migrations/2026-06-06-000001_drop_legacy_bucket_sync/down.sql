@@ -1,0 +1,1 @@
+-- Irreversible cleanup of legacy bucket sync data.

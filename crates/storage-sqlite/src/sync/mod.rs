@@ -80,6 +80,9 @@ pub fn should_sync_outbox_for_snapshot_source(source: SnapshotSource) -> bool {
 pub trait SyncOutboxModel: Serialize {
     const ENTITY: SyncEntity;
     fn sync_entity_id(&self) -> &str;
+    fn sync_entity_id_owned(&self) -> String {
+        self.sync_entity_id().to_string()
+    }
     fn should_sync_outbox(&self, _op: SyncOperation) -> bool {
         true
     }
@@ -97,7 +100,7 @@ pub fn outbox_request_for_model<T: SyncOutboxModel>(
 ) -> Result<OutboxWriteRequest> {
     Ok(OutboxWriteRequest::new(
         T::ENTITY,
-        model.sync_entity_id().to_string(),
+        model.sync_entity_id_owned(),
         op,
         serde_json::to_value(model)?,
     ))

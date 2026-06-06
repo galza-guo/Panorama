@@ -35,6 +35,8 @@ pub fn backoff_seconds(consecutive_failures: i32) -> i64 {
 
 fn remote_entity_id_is_valid(entity: &SyncEntity, entity_id: &str) -> bool {
     match entity {
+        SyncEntity::Taxonomy => !entity_id.trim().is_empty(),
+        SyncEntity::TaxonomyCategory => !entity_id.trim().is_empty() && entity_id.contains(':'),
         SyncEntity::TargetAllocationPlan
         | SyncEntity::TargetAllocationNode
         | SyncEntity::TargetAllocationAccountDefault
@@ -46,6 +48,8 @@ fn remote_entity_id_is_valid(entity: &SyncEntity, entity_id: &str) -> bool {
 
 fn sync_entity_name(entity: &SyncEntity) -> &'static str {
     match entity {
+        SyncEntity::Taxonomy => "taxonomy",
+        SyncEntity::TaxonomyCategory => "taxonomy_category",
         SyncEntity::Account => "account",
         SyncEntity::Asset => "asset",
         SyncEntity::Quote => "quote",

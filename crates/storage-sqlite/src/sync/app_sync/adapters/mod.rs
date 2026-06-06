@@ -14,6 +14,14 @@ pub struct EntityAdapterDescriptor {
 pub fn default_adapter_descriptors() -> Vec<EntityAdapterDescriptor> {
     vec![
         EntityAdapterDescriptor {
+            entity: SyncEntity::Taxonomy,
+            table_name: "taxonomies",
+        },
+        EntityAdapterDescriptor {
+            entity: SyncEntity::TaxonomyCategory,
+            table_name: "taxonomy_categories",
+        },
+        EntityAdapterDescriptor {
             entity: SyncEntity::Account,
             table_name: "accounts",
         },

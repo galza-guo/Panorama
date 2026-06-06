@@ -1032,6 +1032,17 @@ fn create_openai_client(
     provider_url: Option<String>,
 ) -> Result<openai::CompletionsClient<HttpClient>, AiError> {
     let key = api_key.ok_or_else(|| AiError::MissingApiKey(provider_id.to_string()))?;
+    if provider_id == "openai-compatible"
+        && provider_url
+            .as_deref()
+            .map(str::trim)
+            .filter(|url| !url.is_empty())
+            .is_none()
+    {
+        return Err(AiError::InvalidInput(
+            "Base URL is required for OpenAI-Compatible.".to_string(),
+        ));
+    }
     let mut builder = openai::CompletionsClient::builder().api_key(&key);
     if let Some(url) = provider_url {
         builder = builder.base_url(&url);
@@ -1879,6 +1890,25 @@ mod tests {
             }
             _ => panic!("expected provider error"),
         }
+    }
+
+    #[test]
+    fn test_openai_compatible_client_requires_base_url() {
+        let error = create_openai_client(Some("test-key".to_string()), "openai-compatible", None)
+            .expect_err("custom OpenAI-compatible providers should require a base URL");
+
+        match error {
+            AiError::InvalidInput(message) => assert!(message.contains("Base URL")),
+            other => panic!("expected invalid input error, got {other:?}"),
+        }
+    }
+
+    #[test]
+    fn test_openai_client_can_use_default_base_url() {
+        let client = create_openai_client(Some("test-key".to_string()), "openai", None)
+            .expect("OpenAI should use the built-in base URL");
+
+        assert_eq!(client.base_url(), "https://api.openai.com/v1");
     }
 
     #[test]

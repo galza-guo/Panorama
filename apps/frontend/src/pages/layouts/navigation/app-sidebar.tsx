@@ -152,22 +152,25 @@ export function AppSidebar({ navigation }: AppSidebarProps) {
                   </span>
                 </Button>
               )}
-              <Separator className="mt-0" />
-              <div className="flex justify-end">
-                <Button
-                  title="Toggle Sidebar"
-                  variant="ghost"
-                  onClick={() => setCollapsed(!collapsed)}
-                  className="text-muted-foreground [&_svg]:size-5! cursor-pointer rounded-md hover:bg-transparent"
-                  aria-label={collapsed ? "Expand Sidebar" : "Collapse Sidebar"}
-                >
+              <Separator className="mt-0 mb-1" />
+              <Button
+                title="Toggle Sidebar"
+                variant="ghost"
+                onClick={() => setCollapsed(!collapsed)}
+                className={cn(
+                  "text-muted-foreground [&_svg]:size-5! h-12 cursor-pointer rounded-md transition-all duration-300 hover:bg-transparent",
+                  collapsed ? "justify-center" : "justify-start",
+                )}
+                aria-label={collapsed ? "Expand Sidebar" : "Collapse Sidebar"}
+              >
+                <span aria-hidden="true">
                   <Icons.PanelLeftOpen
                     size={18}
                     className={`h-5 w-5 transition-transform duration-500 ease-in-out ${!collapsed ? "rotate-180" : ""}`}
                     aria-label={collapsed ? "Expand Sidebar" : "Collapse Sidebar"}
                   />
-                </Button>
-              </div>
+                </span>
+              </Button>
             </div>
           </div>
         </div>

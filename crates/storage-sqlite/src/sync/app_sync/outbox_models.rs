@@ -18,7 +18,7 @@ use crate::sync::{
     should_sync_outbox_for_account_create, should_sync_outbox_for_activity,
     should_sync_outbox_for_platform, should_sync_outbox_for_snapshot_source,
 };
-use crate::taxonomies::AssetTaxonomyAssignmentDB;
+use crate::taxonomies::{AssetTaxonomyAssignmentDB, CategoryDB, TaxonomyDB};
 use uuid::Uuid;
 use wealthfolio_core::portfolio::snapshot::SnapshotSource;
 use wealthfolio_core::sync::SyncEntity;
@@ -38,6 +38,34 @@ impl SyncOutboxModel for AccountDB {
             }
             _ => true,
         }
+    }
+}
+
+impl SyncOutboxModel for TaxonomyDB {
+    const ENTITY: SyncEntity = SyncEntity::Taxonomy;
+
+    fn sync_entity_id(&self) -> &str {
+        &self.id
+    }
+}
+
+impl SyncOutboxModel for CategoryDB {
+    const ENTITY: SyncEntity = SyncEntity::TaxonomyCategory;
+
+    fn sync_entity_id(&self) -> &str {
+        &self.id
+    }
+
+    fn sync_entity_id_owned(&self) -> String {
+        format!("{}:{}", self.taxonomy_id, self.id)
+    }
+
+    fn delete_payload(entity_id: &str) -> serde_json::Value {
+        let (taxonomy_id, id) = entity_id.split_once(':').unwrap_or(("", entity_id));
+        serde_json::json!({
+            "id": id,
+            "taxonomy_id": taxonomy_id,
+        })
     }
 }
 

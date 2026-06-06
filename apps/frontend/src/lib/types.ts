@@ -1642,7 +1642,6 @@ export interface MergedProvider {
   name: string;
   type: string;
   icon: string;
-  description: string;
   envKey: string;
   connectionFields: ConnectionField[];
   models: MergedModel[];

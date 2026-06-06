@@ -330,6 +330,8 @@ fn normalize_outbox_payload(payload: serde_json::Value) -> Result<serde_json::Va
 
 fn entity_storage_mapping(entity: &SyncEntity) -> Option<(&'static str, &'static str)> {
     match entity {
+        SyncEntity::Taxonomy => Some(("taxonomies", "id")),
+        SyncEntity::TaxonomyCategory => None,
         SyncEntity::Account => Some(("accounts", "id")),
         SyncEntity::Asset => Some(("assets", "id")),
         SyncEntity::Quote => Some(("quotes", "id")),
@@ -356,6 +358,125 @@ fn entity_storage_mapping(entity: &SyncEntity) -> Option<(&'static str, &'static
             Some(("target_allocation_exclusions", "subject_key"))
         }
     }
+}
+
+fn parse_taxonomy_category_entity_id(entity_id: &str) -> Result<(String, String)> {
+    entity_id.split_once(':').map_or_else(
+        || {
+            Err(Error::Database(DatabaseError::Internal(format!(
+                "Taxonomy category sync entity_id '{}' must be formatted as taxonomy_id:id",
+                entity_id
+            ))))
+        },
+        |(taxonomy_id, id)| {
+            if taxonomy_id.trim().is_empty() || id.trim().is_empty() {
+                Err(Error::Database(DatabaseError::Internal(format!(
+                    "Taxonomy category sync entity_id '{}' must include taxonomy_id and id",
+                    entity_id
+                ))))
+            } else {
+                Ok((taxonomy_id.to_string(), id.to_string()))
+            }
+        },
+    )
+}
+
+fn ensure_payload_field(
+    fields: &mut Vec<(String, serde_json::Value)>,
+    field_name: &str,
+    expected_value: &str,
+    entity_id_value: &str,
+) -> Result<()> {
+    if let Some((_, payload_value)) = fields.iter().find(|(name, _)| name == field_name) {
+        if !payload_value_matches_entity_id(payload_value, expected_value) {
+            return Err(Error::Database(DatabaseError::Internal(format!(
+                "Sync payload field '{}' does not match entity_id '{}'",
+                field_name, entity_id_value
+            ))));
+        }
+    } else {
+        fields.push((
+            field_name.to_string(),
+            serde_json::Value::String(expected_value.to_string()),
+        ));
+    }
+    Ok(())
+}
+
+fn apply_taxonomy_category_storage_event_tx(
+    conn: &mut SqliteConnection,
+    entity_id_value: &str,
+    op: SyncOperation,
+    payload_json: &serde_json::Value,
+) -> Result<()> {
+    let (taxonomy_id_value, category_id_value) =
+        parse_taxonomy_category_entity_id(entity_id_value)?;
+    match op {
+        SyncOperation::Delete => {
+            let sql = format!(
+                "DELETE FROM {} WHERE {} = '{}' AND {} = '{}'",
+                quote_identifier("taxonomy_categories"),
+                quote_identifier("taxonomy_id"),
+                escape_sqlite_str(&taxonomy_id_value),
+                quote_identifier("id"),
+                escape_sqlite_str(&category_id_value)
+            );
+            diesel::sql_query(sql)
+                .execute(conn)
+                .map_err(StorageError::from)?;
+        }
+        SyncOperation::Create | SyncOperation::Update => {
+            let payload_obj = payload_json.as_object().ok_or_else(|| {
+                Error::Database(DatabaseError::Internal(
+                    "Sync payload must be a JSON object".to_string(),
+                ))
+            })?;
+
+            let fields: Vec<(String, serde_json::Value)> = payload_obj
+                .iter()
+                .map(|(k, v)| (k.clone(), v.clone()))
+                .collect();
+            let mut fields = normalize_payload_fields(conn, "taxonomy_categories", fields)?;
+            ensure_payload_field(
+                &mut fields,
+                "taxonomy_id",
+                &taxonomy_id_value,
+                entity_id_value,
+            )?;
+            ensure_payload_field(&mut fields, "id", &category_id_value, entity_id_value)?;
+
+            let columns = fields
+                .iter()
+                .map(|(k, _)| quote_identifier(k))
+                .collect::<Vec<_>>()
+                .join(", ");
+            let values = fields
+                .iter()
+                .map(|(_, v)| json_value_to_sql_literal(v))
+                .collect::<Vec<_>>()
+                .join(", ");
+            let upserts = fields
+                .iter()
+                .map(|(k, _)| {
+                    let quoted = quote_identifier(k);
+                    format!("{quoted}=excluded.{quoted}")
+                })
+                .collect::<Vec<_>>()
+                .join(", ");
+
+            let sql = format!(
+                "INSERT INTO {} ({columns}) VALUES ({values}) \
+                 ON CONFLICT({}, {}) DO UPDATE SET {upserts}",
+                quote_identifier("taxonomy_categories"),
+                quote_identifier("taxonomy_id"),
+                quote_identifier("id")
+            );
+            diesel::sql_query(sql)
+                .execute(conn)
+                .map_err(StorageError::from)?;
+        }
+    }
+    Ok(())
 }
 
 fn json_value_to_sql_literal(value: &serde_json::Value) -> String {
@@ -438,6 +559,46 @@ fn resolve_local_device_id(conn: &mut SqliteConnection) -> Option<String> {
         .unwrap_or(None)
 }
 
+fn upsert_local_entity_metadata_for_outbox(
+    conn: &mut SqliteConnection,
+    entity_db: &str,
+    entity_id_value: &str,
+    event_id_value: &str,
+    client_timestamp_value: &str,
+) -> Result<()> {
+    let last_seq_value = sync_entity_metadata::table
+        .filter(sync_entity_metadata::entity.eq(entity_db))
+        .filter(sync_entity_metadata::entity_id.eq(entity_id_value))
+        .select(sync_entity_metadata::last_seq)
+        .first::<i64>(conn)
+        .optional()
+        .map_err(StorageError::from)?
+        .unwrap_or(0);
+
+    diesel::insert_into(sync_entity_metadata::table)
+        .values(SyncEntityMetadataDB {
+            entity: entity_db.to_string(),
+            entity_id: entity_id_value.to_string(),
+            last_event_id: event_id_value.to_string(),
+            last_client_timestamp: client_timestamp_value.to_string(),
+            last_seq: last_seq_value,
+        })
+        .on_conflict((
+            sync_entity_metadata::entity,
+            sync_entity_metadata::entity_id,
+        ))
+        .do_update()
+        .set((
+            sync_entity_metadata::last_event_id.eq(event_id_value.to_string()),
+            sync_entity_metadata::last_client_timestamp.eq(client_timestamp_value.to_string()),
+            sync_entity_metadata::last_seq.eq(last_seq_value),
+        ))
+        .execute(conn)
+        .map_err(StorageError::from)?;
+
+    Ok(())
+}
+
 pub fn insert_outbox_event(
     conn: &mut SqliteConnection,
     request: OutboxWriteRequest,
@@ -455,12 +616,15 @@ pub fn insert_outbox_event(
     let event_id = event_id.unwrap_or_else(|| Uuid::now_v7().to_string());
     let payload = serde_json::to_string(&normalize_outbox_payload(payload)?)?;
     let now = Utc::now().to_rfc3339();
+    let entity_db = enum_to_db(&entity)?;
+    let entity_id_for_metadata = entity_id.clone();
+    let client_timestamp_for_metadata = client_timestamp.clone();
 
     let payload_key_version = resolve_payload_key_version(conn, payload_key_version)?;
     let device_id = resolve_local_device_id(conn);
     let row = SyncOutboxEventDB {
         event_id: event_id.clone(),
-        entity: enum_to_db(&entity)?,
+        entity: entity_db.clone(),
         entity_id,
         op: enum_to_db(&op)?,
         client_timestamp,
@@ -480,6 +644,14 @@ pub fn insert_outbox_event(
         .values(&row)
         .execute(conn)
         .map_err(StorageError::from)?;
+
+    upsert_local_entity_metadata_for_outbox(
+        conn,
+        &entity_db,
+        &entity_id_for_metadata,
+        &event_id,
+        &client_timestamp_for_metadata,
+    )?;
 
     Ok(event_id)
 }
@@ -553,7 +725,10 @@ fn apply_remote_event_lww_tx(
     };
 
     if should_apply {
-        if let Some((table_name, pk_name)) = entity_storage_mapping(&entity) {
+        let applied_table_name = if entity == SyncEntity::TaxonomyCategory {
+            apply_taxonomy_category_storage_event_tx(conn, &entity_id_value, op, &payload_json)?;
+            Some("taxonomy_categories")
+        } else if let Some((table_name, pk_name)) = entity_storage_mapping(&entity) {
             match op {
                 SyncOperation::Delete => {
                     let sql = format!(
@@ -622,7 +797,12 @@ fn apply_remote_event_lww_tx(
                         .map_err(StorageError::from)?;
                 }
             }
+            Some(table_name)
+        } else {
+            None
+        };
 
+        if let Some(table_name) = applied_table_name {
             let now = Utc::now().to_rfc3339();
             diesel::insert_into(sync_table_state::table)
                 .values(SyncTableStateDB {
@@ -1521,6 +1701,9 @@ impl AppSyncRepository {
                 diesel::sql_query(attach_sql)
                     .execute(conn)
                     .map_err(StorageError::from)?;
+                diesel::sql_query("PRAGMA defer_foreign_keys = ON")
+                    .execute(conn)
+                    .map_err(StorageError::from)?;
 
                 let restore_result = (|| -> Result<()> {
                     // Bootstrap reset: clear control-plane sync state so stale events/metadata
@@ -1649,6 +1832,7 @@ impl AppSyncRepository {
                     Ok(())
                 })();
 
+                let _ = diesel::sql_query("PRAGMA defer_foreign_keys = OFF").execute(conn);
                 let detach_sql = format!("DETACH DATABASE {}", snapshot_alias);
                 let _ = diesel::sql_query(detach_sql).execute(conn);
                 restore_result
@@ -1667,7 +1851,7 @@ mod tests {
     use crate::db::{create_pool, get_connection, init, run_migrations, write_actor::spawn_writer};
     use crate::schema::{
         accounts, activity_import_profiles, assets, goals, platforms, sync_applied_events,
-        sync_entity_metadata, sync_outbox,
+        sync_entity_metadata, sync_outbox, taxonomies, taxonomy_categories,
     };
 
     fn setup_db() -> (
@@ -1886,6 +2070,75 @@ mod tests {
             .first(&mut conn)
             .expect("count");
         assert_eq!(account_count, 0, "account insert should be rolled back");
+    }
+
+    #[tokio::test]
+    async fn local_outbox_metadata_blocks_older_remote_overwrite() {
+        let (pool, writer) = setup_db();
+
+        writer
+            .exec(|conn| {
+                insert_account_for_test(conn, "acc-local-newer")?;
+                diesel::update(accounts::table.find("acc-local-newer"))
+                    .set(accounts::name.eq("Local Newer"))
+                    .execute(conn)
+                    .map_err(StorageError::from)?;
+
+                let mut request = OutboxWriteRequest::new(
+                    SyncEntity::Account,
+                    "acc-local-newer",
+                    SyncOperation::Update,
+                    serde_json::json!({
+                        "id": "acc-local-newer",
+                        "name": "Local Newer",
+                        "account_type": "cash",
+                        "currency": "USD",
+                        "is_default": true,
+                        "is_active": true,
+                        "is_archived": false,
+                        "tracking_mode": "portfolio"
+                    }),
+                );
+                request.event_id = Some("evt-local-newer".to_string());
+                request.client_timestamp = "2026-06-01T00:00:10Z".to_string();
+                insert_outbox_event(conn, request)?;
+                Ok(())
+            })
+            .await
+            .expect("write local mutation and outbox");
+
+        let repo = AppSyncRepository::new(pool.clone(), writer);
+        let applied = repo
+            .apply_remote_event_lww(
+                SyncEntity::Account,
+                "acc-local-newer".to_string(),
+                SyncOperation::Update,
+                "evt-remote-older".to_string(),
+                "2026-06-01T00:00:00Z".to_string(),
+                1,
+                serde_json::json!({
+                    "id": "acc-local-newer",
+                    "name": "Remote Older",
+                    "account_type": "cash",
+                    "currency": "USD",
+                    "is_default": true,
+                    "is_active": true,
+                    "is_archived": false,
+                    "tracking_mode": "portfolio"
+                }),
+            )
+            .await
+            .expect("apply remote event");
+
+        let mut conn = get_connection(&pool).expect("conn");
+        let account_name: String = accounts::table
+            .filter(accounts::id.eq("acc-local-newer"))
+            .select(accounts::name)
+            .first(&mut conn)
+            .expect("account name");
+
+        assert!(!applied, "older remote event should be skipped");
+        assert_eq!(account_name, "Local Newer");
     }
 
     #[tokio::test]
@@ -2226,6 +2479,7 @@ mod tests {
         let mut conn = get_connection(&pool).expect("conn");
 
         let entities = [
+            SyncEntity::Taxonomy,
             SyncEntity::Account,
             SyncEntity::Asset,
             SyncEntity::Quote,
@@ -2266,6 +2520,10 @@ mod tests {
                 table_name
             );
         }
+        assert!(
+            entity_storage_mapping(&SyncEntity::TaxonomyCategory).is_none(),
+            "taxonomy_category uses composite PK handling"
+        );
     }
 
     #[tokio::test]
@@ -2288,6 +2546,76 @@ mod tests {
             .await;
 
         assert!(result.is_err(), "expected PK mismatch to be rejected");
+    }
+
+    #[tokio::test]
+    async fn replay_applies_taxonomy_category_with_composite_entity_id() {
+        let (pool, writer) = setup_db();
+        let repo = AppSyncRepository::new(pool.clone(), writer);
+
+        let taxonomy_applied = repo
+            .apply_remote_event_lww(
+                SyncEntity::Taxonomy,
+                "sync_taxonomy".to_string(),
+                SyncOperation::Create,
+                "evt-taxonomy-create".to_string(),
+                "2026-02-19T00:00:00Z".to_string(),
+                1,
+                serde_json::json!({
+                    "id": "sync_taxonomy",
+                    "name": "Sync Taxonomy",
+                    "color": "#123456",
+                    "description": serde_json::Value::Null,
+                    "isSystem": false,
+                    "isSingleSelect": false,
+                    "sortOrder": 999,
+                    "createdAt": "2026-02-19T00:00:00Z",
+                    "updatedAt": "2026-02-19T00:00:00Z"
+                }),
+            )
+            .await
+            .expect("apply taxonomy create");
+        assert!(taxonomy_applied, "expected taxonomy create to apply");
+
+        let category_applied = repo
+            .apply_remote_event_lww(
+                SyncEntity::TaxonomyCategory,
+                "sync_taxonomy:category-a".to_string(),
+                SyncOperation::Create,
+                "evt-category-create".to_string(),
+                "2026-02-19T00:00:01Z".to_string(),
+                2,
+                serde_json::json!({
+                    "id": "category-a",
+                    "taxonomyId": "sync_taxonomy",
+                    "parentId": serde_json::Value::Null,
+                    "name": "Category A",
+                    "key": "category_a",
+                    "color": "#abcdef",
+                    "description": serde_json::Value::Null,
+                    "sortOrder": 1,
+                    "createdAt": "2026-02-19T00:00:00Z",
+                    "updatedAt": "2026-02-19T00:00:00Z"
+                }),
+            )
+            .await
+            .expect("apply taxonomy category create");
+        assert!(category_applied, "expected category create to apply");
+
+        let mut conn = get_connection(&pool).expect("conn");
+        let taxonomy_count: i64 = taxonomies::table
+            .filter(taxonomies::id.eq("sync_taxonomy"))
+            .select(count_star())
+            .first(&mut conn)
+            .expect("count taxonomy");
+        let category_name: String = taxonomy_categories::table
+            .filter(taxonomy_categories::taxonomy_id.eq("sync_taxonomy"))
+            .filter(taxonomy_categories::id.eq("category-a"))
+            .select(taxonomy_categories::name)
+            .first(&mut conn)
+            .expect("category row");
+        assert_eq!(taxonomy_count, 1);
+        assert_eq!(category_name, "Category A");
     }
 
     #[tokio::test]

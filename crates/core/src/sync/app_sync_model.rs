@@ -4,8 +4,11 @@ use serde::{Deserialize, Serialize};
 
 /// Canonical list of local tables that participate in app-side device sync.
 /// Order matters: parent tables before children (FK dependencies).
-pub const APP_SYNC_TABLES: [&str; 20] = [
+pub const APP_SYNC_TABLES: [&str; 22] = [
     // Base tables (no FK deps)
+    "taxonomies",
+    // Depends on: taxonomies; asset_taxonomy_assignments depend on it.
+    "taxonomy_categories",
     "platforms",
     "assets",
     // Depends on: assets
@@ -39,6 +42,8 @@ pub const APP_SYNC_TABLES: [&str; 20] = [
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum SyncEntity {
+    Taxonomy,
+    TaxonomyCategory,
     Account,
     Asset,
     Quote,
@@ -261,6 +266,8 @@ mod tests {
     #[test]
     fn sync_entity_serialization_matches_backend_contract() {
         let actual = [
+            SyncEntity::Taxonomy,
+            SyncEntity::TaxonomyCategory,
             SyncEntity::Account,
             SyncEntity::Asset,
             SyncEntity::Quote,
@@ -286,6 +293,8 @@ mod tests {
         .collect::<Vec<_>>();
 
         let expected = vec![
+            "\"taxonomy\"",
+            "\"taxonomy_category\"",
             "\"account\"",
             "\"asset\"",
             "\"quote\"",

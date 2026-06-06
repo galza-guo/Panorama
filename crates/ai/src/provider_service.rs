@@ -158,19 +158,35 @@ impl AiProviderService {
             .unwrap_or(true) // Default to requiring API key for unknown providers
     }
 
+    /// Check if provider requires a user-supplied custom URL.
+    fn provider_requires_custom_url(&self, provider_id: &str) -> bool {
+        self.catalog
+            .providers
+            .get(provider_id)
+            .map(|p| {
+                p.default_config.url.is_none()
+                    && p.connection_fields.iter().any(|field| {
+                        (field.key == "baseUrl" || field.key == "customUrl") && field.required
+                    })
+            })
+            .unwrap_or(false)
+    }
+
     /// Get the custom URL for a provider from user settings.
     fn get_custom_url(&self, provider_id: &str) -> Option<String> {
         let user_settings = self.load_user_settings();
         user_settings
             .providers
             .get(provider_id)
-            .and_then(|s| s.custom_url.clone())
+            .and_then(|s| s.custom_url.as_deref().and_then(normalize_provider_url))
             .or_else(|| {
                 // Fall back to catalog default URL
-                self.catalog
-                    .providers
-                    .get(provider_id)
-                    .and_then(|p| p.default_config.url.clone())
+                self.catalog.providers.get(provider_id).and_then(|p| {
+                    p.default_config
+                        .url
+                        .as_deref()
+                        .and_then(normalize_provider_url)
+                })
             })
     }
 
@@ -295,7 +311,6 @@ impl AiProviderServiceTrait for AiProviderService {
                     name: catalog_provider.name.clone(),
                     provider_type: catalog_provider.provider_type.clone(),
                     icon: catalog_provider.icon.clone(),
-                    description: catalog_provider.description.clone(),
                     env_key: catalog_provider.env_key.clone(),
                     connection_fields: catalog_provider.connection_fields.clone(),
                     models,
@@ -358,11 +373,7 @@ impl AiProviderServiceTrait for AiProviderService {
             provider_settings.selected_model = Some(model);
         }
         if let Some(url) = request.custom_url {
-            provider_settings.custom_url = if url.trim().is_empty() {
-                None
-            } else {
-                Some(url)
-            };
+            provider_settings.custom_url = normalize_provider_url(&url);
         }
         if let Some(priority) = request.priority {
             provider_settings.priority = priority;
@@ -431,11 +442,24 @@ impl AiProviderServiceTrait for AiProviderService {
         let requires_api_key = self.provider_requires_api_key(provider_id);
         let api_key = self.get_api_key(provider_id);
         let base_url = self.get_custom_url(provider_id);
+        let requires_custom_url = self.provider_requires_custom_url(provider_id);
 
         // Check if API key is required but missing
         if requires_api_key && api_key.is_none() {
             return Err(ProviderApiError::MissingApiKey {
                 provider_id: provider_id.to_string(),
+            });
+        }
+
+        if requires_custom_url && base_url.is_none() {
+            let provider_name = self
+                .catalog
+                .providers
+                .get(provider_id)
+                .map(|provider| provider.name.as_str())
+                .unwrap_or(provider_id);
+            return Err(ProviderApiError::InvalidInput {
+                message: format!("Base URL is required for {}.", provider_name),
             });
         }
 
@@ -478,7 +502,7 @@ impl AiProviderServiceTrait for AiProviderService {
             "ollama" => format!("{}/api/tags", base_url.trim_end_matches('/')),
             "google" => format!("{}/v1beta/models", base_url.trim_end_matches('/')),
             // OpenAI-compatible: OpenAI, Groq, OpenRouter
-            _ => format!("{}/v1/models", base_url.trim_end_matches('/')),
+            _ => openai_compatible_models_url(base_url),
         };
 
         // Build HTTP client and request
@@ -644,6 +668,32 @@ impl AiProviderServiceTrait for AiProviderService {
     }
 }
 
+fn normalize_provider_url(value: &str) -> Option<String> {
+    let trimmed = value.trim().trim_end_matches('/');
+    if trimmed.is_empty() {
+        None
+    } else {
+        Some(trimmed.to_string())
+    }
+}
+
+fn openai_compatible_models_url(base_url: &str) -> String {
+    let base = base_url.trim_end_matches('/');
+    let should_append_v1 = reqwest::Url::parse(base)
+        .ok()
+        .map(|url| {
+            let path = url.path().trim_end_matches('/');
+            path.is_empty() || path == "/" || path == "/api" || path == "/openai"
+        })
+        .unwrap_or(false);
+
+    if should_append_v1 {
+        format!("{}/v1/models", base)
+    } else {
+        format!("{}/models", base)
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -750,6 +800,202 @@ mod tests {
             .models
             .iter()
             .any(|model| model.id == "deepseek-reasoner" && model.capabilities.thinking));
+    }
+
+    #[test]
+    fn test_get_ai_providers_includes_openai_compatible_providers() {
+        let service = AiProviderService::new(
+            Arc::new(MockSettingsRepository::default()),
+            Arc::new(MockSecretStore::default()),
+            include_str!("ai_providers.json"),
+        )
+        .expect("catalog should load");
+
+        let response = service.get_ai_providers().expect("providers should load");
+        let expected = [
+            (
+                "openai-compatible",
+                "Custom OpenAI-Compatible",
+                "LogoOpenAICompatible",
+                "gpt-4o-mini",
+                None,
+            ),
+            (
+                "siliconflow-cn",
+                "SiliconFlow.cn",
+                "LogoSiliconFlow",
+                "Qwen/Qwen3-235B-A22B",
+                Some("https://api.siliconflow.cn/v1"),
+            ),
+            (
+                "siliconflow-com",
+                "SiliconFlow.com",
+                "LogoSiliconFlow",
+                "Qwen/Qwen3-235B-A22B",
+                Some("https://api.siliconflow.com/v1"),
+            ),
+            (
+                "dashscope",
+                "DashScope",
+                "LogoDashScope",
+                "qwen-plus",
+                Some("https://dashscope.aliyuncs.com/compatible-mode/v1"),
+            ),
+            (
+                "modelscope",
+                "ModelScope",
+                "LogoModelScope",
+                "Qwen/Qwen3-30B-A3B",
+                Some("https://api-inference.modelscope.cn/v1"),
+            ),
+            (
+                "minimax-io",
+                "MiniMax.io",
+                "LogoMiniMaxIo",
+                "MiniMax-M2.7",
+                Some("https://api.minimax.io/v1"),
+            ),
+            (
+                "minimaxi",
+                "MiniMaxi.com",
+                "LogoMiniMaxi",
+                "MiniMax-M2.7",
+                Some("https://api.minimaxi.com/v1"),
+            ),
+            (
+                "zai",
+                "Z.ai",
+                "LogoZai",
+                "glm-5.1",
+                Some("https://api.z.ai/api/paas/v4"),
+            ),
+            (
+                "bigmodel",
+                "BigModel",
+                "LogoBigModel",
+                "glm-5.1",
+                Some("https://open.bigmodel.cn/api/paas/v4"),
+            ),
+        ];
+
+        for (id, name, icon, default_model, custom_url) in expected {
+            let provider = response
+                .providers
+                .iter()
+                .find(|provider| provider.id == id)
+                .unwrap_or_else(|| panic!("{id} provider should be present"));
+
+            assert_eq!(provider.name, name);
+            assert_eq!(provider.icon, icon);
+            assert_eq!(provider.provider_type, "api");
+            assert_eq!(provider.default_model, default_model);
+            assert_eq!(provider.custom_url.as_deref(), custom_url);
+            assert!(provider
+                .connection_fields
+                .iter()
+                .any(|field| field.key == "apiKey"));
+            assert!(provider
+                .connection_fields
+                .iter()
+                .any(|field| field.key == "baseUrl"));
+            assert!(provider
+                .models
+                .iter()
+                .any(|model| model.id == default_model));
+        }
+
+        assert_eq!(
+            response.providers.last().map(|provider| provider.id.as_str()),
+            Some("openai-compatible")
+        );
+    }
+
+    #[test]
+    fn test_get_ai_providers_omits_provider_descriptions() {
+        let service = AiProviderService::new(
+            Arc::new(MockSettingsRepository::default()),
+            Arc::new(MockSecretStore::default()),
+            include_str!("ai_providers.json"),
+        )
+        .expect("catalog should load");
+
+        let response = service.get_ai_providers().expect("providers should load");
+        let provider = response
+            .providers
+            .iter()
+            .find(|provider| provider.id == "ollama")
+            .expect("ollama provider should be present");
+        let provider_json = serde_json::to_value(provider).expect("provider should serialize");
+
+        assert!(provider_json.get("description").is_none());
+    }
+
+    #[test]
+    fn test_openai_compatible_requires_custom_url_for_backend_config() {
+        let settings_repo = Arc::new(MockSettingsRepository::default());
+        let secret_store = Arc::new(MockSecretStore::default());
+        secret_store
+            .set_secret("ai_openai-compatible", "test-key")
+            .expect("secret should save");
+
+        let service = AiProviderService::new(
+            settings_repo,
+            secret_store,
+            include_str!("ai_providers.json"),
+        )
+        .expect("catalog should load");
+
+        let error = service
+            .get_provider_config("openai-compatible")
+            .expect_err("custom provider should require a base URL");
+
+        match error {
+            ProviderApiError::InvalidInput { message } => {
+                assert!(message.contains("Base URL"));
+            }
+            other => panic!("expected invalid input error, got {other:?}"),
+        }
+    }
+
+    #[test]
+    fn test_openai_compatible_config_uses_custom_url_and_secret() {
+        let settings_repo = Arc::new(MockSettingsRepository::default());
+        let secret_store = Arc::new(MockSecretStore::default());
+        secret_store
+            .set_secret("ai_openai-compatible", "test-key")
+            .expect("secret should save");
+
+        let mut settings = AiProviderSettings::default();
+        settings.providers.insert(
+            "openai-compatible".to_string(),
+            ProviderUserSettings {
+                custom_url: Some("https://llm.example.test/v1".to_string()),
+                ..Default::default()
+            },
+        );
+        settings_repo.settings.write().unwrap().insert(
+            AI_PROVIDER_SETTINGS_KEY.to_string(),
+            serde_json::to_string(&settings).expect("settings should serialize"),
+        );
+
+        let service = AiProviderService::new(
+            settings_repo,
+            secret_store,
+            include_str!("ai_providers.json"),
+        )
+        .expect("catalog should load");
+
+        let config = service
+            .get_provider_config("openai-compatible")
+            .expect("custom provider should resolve");
+
+        assert_eq!(config.provider_id, "openai-compatible");
+        assert_eq!(config.api_key.as_deref(), Some("test-key"));
+        assert_eq!(
+            config.base_url.as_deref(),
+            Some("https://llm.example.test/v1")
+        );
+        assert!(config.requires_api_key);
     }
 
     #[test]

@@ -199,7 +199,9 @@ export function ProviderSettingsCard({
       hasAutoSelectedRef.current = true;
 
       if (!provider.favoriteModels || provider.favoriteModels.length === 0) {
-        const recommendedModelIds = provider.models.filter((model) => model.isCatalog).map((model) => model.id);
+        const recommendedModelIds = provider.models
+          .filter((model) => model.isCatalog)
+          .map((model) => model.id);
         if (recommendedModelIds.length > 0) {
           onSetFavoriteModels(recommendedModelIds);
         }
@@ -279,7 +281,7 @@ export function ProviderSettingsCard({
             <ProviderIcon name={provider.icon} size={20} className="text-muted-foreground" />
           </div>
 
-          {/* Name and description */}
+          {/* Name */}
           <div className="min-w-0 flex-1">
             <div className="flex flex-wrap items-center gap-2">
               <span className="font-medium">{provider.name}</span>
@@ -298,7 +300,6 @@ export function ProviderSettingsCard({
                 </Badge>
               )}
             </div>
-            <p className="text-muted-foreground mt-0.5 text-xs">{provider.description}</p>
           </div>
 
           {/* Controls */}
@@ -364,7 +365,7 @@ export function ProviderSettingsCard({
                           type="button"
                           variant="ghost"
                           size="icon"
-                          className="absolute right-0 top-0 h-full w-9 hover:bg-transparent"
+                          className="absolute top-0 right-0 h-full w-9 hover:bg-transparent"
                           onClick={handleRevealApiKey}
                           disabled={isLoadingKey}
                           aria-label={showApiKey ? "Hide API key" : "Show API key"}

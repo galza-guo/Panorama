@@ -4,7 +4,6 @@
       "name": "Ollama",
       "type": "local",
       "icon": "LogoOllama",
-      "description": "Local AI models on your machine",
       "envKey": "OLLAMA_API_KEY",
       "defaultConfig": {
         "enabled": false,
@@ -45,7 +44,6 @@
       "name": "Groq",
       "type": "api",
       "icon": "LogoGroq",
-      "description": "Fast inference cloud API",
       "envKey": "GROQ_API_KEY",
       "defaultConfig": {
         "enabled": false,
@@ -87,7 +85,6 @@
       "name": "Google AI",
       "type": "api",
       "icon": "LogoGoogle",
-      "description": "Google Generative AI models",
       "envKey": "GEMINI_API_KEY",
       "defaultConfig": {
         "enabled": false,
@@ -129,7 +126,6 @@
       "name": "Anthropic",
       "type": "api",
       "icon": "LogoAnthropic",
-      "description": "Claude AI models from Anthropic",
       "envKey": "ANTHROPIC_API_KEY",
       "defaultConfig": {
         "enabled": false,
@@ -171,7 +167,6 @@
       "name": "OpenAI",
       "type": "api",
       "icon": "LogoOpenAI",
-      "description": "ChatGPT and GPT models from OpenAI",
       "envKey": "OPENAI_API_KEY",
       "defaultConfig": {
         "enabled": false,
@@ -216,7 +211,6 @@
       "name": "DeepSeek",
       "type": "api",
       "icon": "LogoDeepSeek",
-      "description": "Reasoning and chat models from DeepSeek",
       "envKey": "DEEPSEEK_API_KEY",
       "defaultConfig": {
         "enabled": false,
@@ -255,7 +249,6 @@
       "name": "OpenRouter",
       "type": "api",
       "icon": "LogoOpenRouter",
-      "description": "Access to multiple AI models via OpenRouter",
       "envKey": "OPENROUTER_API_KEY",
       "defaultConfig": {
         "enabled": false,
@@ -295,6 +288,361 @@
       "defaultModel": "openrouter/free",
       "titleModelId": "openrouter/free",
       "documentationUrl": "https://openrouter.ai/docs"
+    },
+    "openai-compatible": {
+      "name": "Custom OpenAI-Compatible",
+      "type": "api",
+      "icon": "LogoOpenAICompatible",
+      "envKey": "OPENAI_COMPATIBLE_API_KEY",
+      "defaultConfig": {
+        "enabled": false,
+        "priority": 120
+      },
+      "connectionFields": [
+        {
+          "key": "apiKey",
+          "label": "API Key",
+          "type": "password",
+          "placeholder": "Enter your provider API key",
+          "required": true
+        },
+        {
+          "key": "baseUrl",
+          "label": "Base URL",
+          "type": "text",
+          "placeholder": "https://api.example.com/v1",
+          "required": true
+        }
+      ],
+      "models": {
+        "gpt-4o-mini": {
+          "capabilities": { "tools": true, "thinking": false, "vision": true }
+        }
+      },
+      "defaultModel": "gpt-4o-mini",
+      "titleModelId": "gpt-4o-mini",
+      "documentationUrl": "https://platform.openai.com/docs/api-reference/chat"
+    },
+    "siliconflow-cn": {
+      "name": "SiliconFlow.cn",
+      "type": "api",
+      "icon": "LogoSiliconFlow",
+      "envKey": "SILICONFLOW_CN_API_KEY",
+      "defaultConfig": {
+        "enabled": false,
+        "priority": 80,
+        "url": "https://api.siliconflow.cn/v1"
+      },
+      "connectionFields": [
+        {
+          "key": "apiKey",
+          "label": "API Key",
+          "type": "password",
+          "placeholder": "Enter your SiliconFlow API key",
+          "required": true,
+          "helpUrl": "https://cloud.siliconflow.cn/account/ak"
+        },
+        {
+          "key": "baseUrl",
+          "label": "Custom Endpoint",
+          "type": "text",
+          "placeholder": "Leave empty to use default",
+          "required": false
+        }
+      ],
+      "models": {
+        "Qwen/Qwen3-235B-A22B": {
+          "capabilities": { "tools": true, "thinking": false, "vision": false }
+        },
+        "Qwen/Qwen3-30B-A3B": {
+          "capabilities": { "tools": true, "thinking": true, "vision": false }
+        },
+        "deepseek-ai/DeepSeek-V3": {
+          "capabilities": { "tools": true, "thinking": false, "vision": false }
+        }
+      },
+      "defaultModel": "Qwen/Qwen3-235B-A22B",
+      "titleModelId": "Qwen/Qwen3-235B-A22B",
+      "documentationUrl": "https://docs.siliconflow.cn/"
+    },
+    "siliconflow-com": {
+      "name": "SiliconFlow.com",
+      "type": "api",
+      "icon": "LogoSiliconFlow",
+      "envKey": "SILICONFLOW_COM_API_KEY",
+      "defaultConfig": {
+        "enabled": false,
+        "priority": 81,
+        "url": "https://api.siliconflow.com/v1"
+      },
+      "connectionFields": [
+        {
+          "key": "apiKey",
+          "label": "API Key",
+          "type": "password",
+          "placeholder": "Enter your SiliconFlow API key",
+          "required": true,
+          "helpUrl": "https://cloud.siliconflow.com/account/ak"
+        },
+        {
+          "key": "baseUrl",
+          "label": "Custom Endpoint",
+          "type": "text",
+          "placeholder": "Leave empty to use default",
+          "required": false
+        }
+      ],
+      "models": {
+        "Qwen/Qwen3-235B-A22B": {
+          "capabilities": { "tools": true, "thinking": false, "vision": false }
+        },
+        "Qwen/Qwen3-30B-A3B": {
+          "capabilities": { "tools": true, "thinking": true, "vision": false }
+        },
+        "deepseek-ai/DeepSeek-V3": {
+          "capabilities": { "tools": true, "thinking": false, "vision": false }
+        }
+      },
+      "defaultModel": "Qwen/Qwen3-235B-A22B",
+      "titleModelId": "Qwen/Qwen3-235B-A22B",
+      "documentationUrl": "https://docs.siliconflow.com/"
+    },
+    "dashscope": {
+      "name": "DashScope",
+      "type": "api",
+      "icon": "LogoDashScope",
+      "envKey": "DASHSCOPE_API_KEY",
+      "defaultConfig": {
+        "enabled": false,
+        "priority": 82,
+        "url": "https://dashscope.aliyuncs.com/compatible-mode/v1"
+      },
+      "connectionFields": [
+        {
+          "key": "apiKey",
+          "label": "API Key",
+          "type": "password",
+          "placeholder": "Enter your DashScope API key",
+          "required": true,
+          "helpUrl": "https://bailian.console.aliyun.com/?tab=model#/api-key"
+        },
+        {
+          "key": "baseUrl",
+          "label": "Custom Endpoint",
+          "type": "text",
+          "placeholder": "Leave empty to use default",
+          "required": false
+        }
+      ],
+      "models": {
+        "qwen-plus": {
+          "capabilities": { "tools": true, "thinking": true, "vision": false }
+        },
+        "qwen-flash": {
+          "capabilities": { "tools": true, "thinking": true, "vision": false }
+        },
+        "qwen-turbo": {
+          "capabilities": { "tools": true, "thinking": true, "vision": false }
+        }
+      },
+      "defaultModel": "qwen-plus",
+      "titleModelId": "qwen-turbo",
+      "documentationUrl": "https://help.aliyun.com/zh/model-studio/developer-reference/compatibility-of-openai-with-dashscope"
+    },
+    "modelscope": {
+      "name": "ModelScope",
+      "type": "api",
+      "icon": "LogoModelScope",
+      "envKey": "MODELSCOPE_API_KEY",
+      "defaultConfig": {
+        "enabled": false,
+        "priority": 83,
+        "url": "https://api-inference.modelscope.cn/v1"
+      },
+      "connectionFields": [
+        {
+          "key": "apiKey",
+          "label": "API Key",
+          "type": "password",
+          "placeholder": "Enter your ModelScope API key",
+          "required": true,
+          "helpUrl": "https://modelscope.cn/my/myaccesstoken"
+        },
+        {
+          "key": "baseUrl",
+          "label": "Custom Endpoint",
+          "type": "text",
+          "placeholder": "Leave empty to use default",
+          "required": false
+        }
+      ],
+      "models": {
+        "Qwen/Qwen3-30B-A3B": {
+          "capabilities": { "tools": true, "thinking": false, "vision": false }
+        },
+        "Qwen/Qwen3-8B": {
+          "capabilities": { "tools": true, "thinking": false, "vision": false }
+        }
+      },
+      "defaultModel": "Qwen/Qwen3-30B-A3B",
+      "titleModelId": "Qwen/Qwen3-8B",
+      "documentationUrl": "https://modelscope.cn/docs/model-service/API-Inference/intro"
+    },
+    "minimax-io": {
+      "name": "MiniMax.io",
+      "type": "api",
+      "icon": "LogoMiniMaxIo",
+      "envKey": "MINIMAX_IO_API_KEY",
+      "defaultConfig": {
+        "enabled": false,
+        "priority": 84,
+        "url": "https://api.minimax.io/v1"
+      },
+      "connectionFields": [
+        {
+          "key": "apiKey",
+          "label": "API Key",
+          "type": "password",
+          "placeholder": "Enter your MiniMax API key",
+          "required": true,
+          "helpUrl": "https://platform.minimaxi.com/user-center/basic-information/interface-key"
+        },
+        {
+          "key": "baseUrl",
+          "label": "Custom Endpoint",
+          "type": "text",
+          "placeholder": "Leave empty to use default",
+          "required": false
+        }
+      ],
+      "models": {
+        "MiniMax-M2.7": {
+          "capabilities": { "tools": true, "thinking": false, "vision": false }
+        },
+        "MiniMax-M1": {
+          "capabilities": { "tools": true, "thinking": false, "vision": false }
+        }
+      },
+      "defaultModel": "MiniMax-M2.7",
+      "titleModelId": "MiniMax-M2.7",
+      "documentationUrl": "https://platform.minimaxi.com/document"
+    },
+    "minimaxi": {
+      "name": "MiniMaxi.com",
+      "type": "api",
+      "icon": "LogoMiniMaxi",
+      "envKey": "MINIMAXI_API_KEY",
+      "defaultConfig": {
+        "enabled": false,
+        "priority": 85,
+        "url": "https://api.minimaxi.com/v1"
+      },
+      "connectionFields": [
+        {
+          "key": "apiKey",
+          "label": "API Key",
+          "type": "password",
+          "placeholder": "Enter your MiniMaxi API key",
+          "required": true,
+          "helpUrl": "https://platform.minimaxi.com/user-center/basic-information/interface-key"
+        },
+        {
+          "key": "baseUrl",
+          "label": "Custom Endpoint",
+          "type": "text",
+          "placeholder": "Leave empty to use default",
+          "required": false
+        }
+      ],
+      "models": {
+        "MiniMax-M2.7": {
+          "capabilities": { "tools": true, "thinking": false, "vision": false }
+        },
+        "MiniMax-M1": {
+          "capabilities": { "tools": true, "thinking": false, "vision": false }
+        }
+      },
+      "defaultModel": "MiniMax-M2.7",
+      "titleModelId": "MiniMax-M2.7",
+      "documentationUrl": "https://www.minimaxi.com/document"
+    },
+    "zai": {
+      "name": "Z.ai",
+      "type": "api",
+      "icon": "LogoZai",
+      "envKey": "ZAI_API_KEY",
+      "defaultConfig": {
+        "enabled": false,
+        "priority": 86,
+        "url": "https://api.z.ai/api/paas/v4"
+      },
+      "connectionFields": [
+        {
+          "key": "apiKey",
+          "label": "API Key",
+          "type": "password",
+          "placeholder": "Enter your Z.ai API key",
+          "required": true,
+          "helpUrl": "https://z.ai/manage-apikey/apikey-list"
+        },
+        {
+          "key": "baseUrl",
+          "label": "Custom Endpoint",
+          "type": "text",
+          "placeholder": "Leave empty to use default",
+          "required": false
+        }
+      ],
+      "models": {
+        "glm-5.1": {
+          "capabilities": { "tools": true, "thinking": true, "vision": false }
+        },
+        "glm-4.6": {
+          "capabilities": { "tools": true, "thinking": true, "vision": false }
+        }
+      },
+      "defaultModel": "glm-5.1",
+      "titleModelId": "glm-5.1",
+      "documentationUrl": "https://docs.z.ai/"
+    },
+    "bigmodel": {
+      "name": "BigModel",
+      "type": "api",
+      "icon": "LogoBigModel",
+      "envKey": "BIGMODEL_API_KEY",
+      "defaultConfig": {
+        "enabled": false,
+        "priority": 87,
+        "url": "https://open.bigmodel.cn/api/paas/v4"
+      },
+      "connectionFields": [
+        {
+          "key": "apiKey",
+          "label": "API Key",
+          "type": "password",
+          "placeholder": "Enter your BigModel API key",
+          "required": true,
+          "helpUrl": "https://bigmodel.cn/usercenter/proj-mgmt/apikeys"
+        },
+        {
+          "key": "baseUrl",
+          "label": "Custom Endpoint",
+          "type": "text",
+          "placeholder": "Leave empty to use default",
+          "required": false
+        }
+      ],
+      "models": {
+        "glm-5.1": {
+          "capabilities": { "tools": true, "thinking": true, "vision": false }
+        },
+        "glm-4.6": {
+          "capabilities": { "tools": true, "thinking": true, "vision": false }
+        }
+      },
+      "defaultModel": "glm-5.1",
+      "titleModelId": "glm-5.1",
+      "documentationUrl": "https://docs.bigmodel.cn/"
     }
   },
   "capabilities": {

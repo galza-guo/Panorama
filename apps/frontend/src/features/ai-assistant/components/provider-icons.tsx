@@ -1,6 +1,38 @@
 import deepseekFavicon from "@/assets/deepseek-favicon.ico";
+import bigModelLogo from "@/assets/provider-logos/bigmodel.png";
+import dashScopeLogo from "@/assets/provider-logos/dashscope.png";
+import miniMaxIoLogo from "@/assets/provider-logos/minimax-io.png";
+import miniMaxiLogo from "@/assets/provider-logos/minimaxi.png";
+import modelScopeLogo from "@/assets/provider-logos/modelscope.png";
+import siliconFlowLogo from "@/assets/provider-logos/siliconflow.png";
+import zAiLogo from "@/assets/provider-logos/zai.png";
+import { CodeXml } from "lucide-react";
 
 // Individual logo components with inline SVGs
+interface LogoProps {
+  size?: number;
+  className?: string;
+}
+
+function LogoImage({
+  src,
+  size = 16,
+  className = "",
+}: LogoProps & {
+  src: string;
+}) {
+  return (
+    <img
+      src={src}
+      alt=""
+      aria-hidden="true"
+      draggable={false}
+      width={size}
+      height={size}
+      className={className}
+    />
+  );
+}
 
 // Generic Bot icon for fallback
 const BotIcon = ({ size = 16, className = "" }: { size?: number; className?: string }) => (
@@ -131,6 +163,30 @@ const LogoDeepSeek = ({ size = 16, className = "" }: { size?: number; className?
   />
 );
 
+const LogoOpenAICompatible = ({ size = 16, className = "" }: LogoProps) => (
+  <CodeXml
+    data-provider-icon="openai-compatible"
+    aria-hidden="true"
+    size={size}
+    className={className}
+    strokeWidth={2}
+  />
+);
+
+const LogoSiliconFlow = (props: LogoProps) => <LogoImage {...props} src={siliconFlowLogo} />;
+
+const LogoDashScope = (props: LogoProps) => <LogoImage {...props} src={dashScopeLogo} />;
+
+const LogoModelScope = (props: LogoProps) => <LogoImage {...props} src={modelScopeLogo} />;
+
+const LogoMiniMaxIo = (props: LogoProps) => <LogoImage {...props} src={miniMaxIoLogo} />;
+
+const LogoMiniMaxi = (props: LogoProps) => <LogoImage {...props} src={miniMaxiLogo} />;
+
+const LogoZai = (props: LogoProps) => <LogoImage {...props} src={zAiLogo} />;
+
+const LogoBigModel = (props: LogoProps) => <LogoImage {...props} src={bigModelLogo} />;
+
 // Icon registry mapping icon names from ai_providers.json to React components
 const icons = {
   LogoOllama,
@@ -140,6 +196,14 @@ const icons = {
   LogoAnthropic,
   LogoOpenRouter,
   LogoDeepSeek,
+  LogoOpenAICompatible,
+  LogoSiliconFlow,
+  LogoDashScope,
+  LogoModelScope,
+  LogoMiniMaxIo,
+  LogoMiniMaxi,
+  LogoZai,
+  LogoBigModel,
 } as const;
 
 type IconName = keyof typeof icons;

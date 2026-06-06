@@ -58,15 +58,17 @@ impl TaxonomyRepositoryTrait for TaxonomyRepository {
 
     async fn create_taxonomy(&self, taxonomy: NewTaxonomy) -> Result<Taxonomy> {
         self.writer
-            .exec(move |conn: &mut SqliteConnection| -> Result<Taxonomy> {
+            .exec_tx(move |tx| -> Result<Taxonomy> {
                 let mut db: NewTaxonomyDB = taxonomy.into();
                 db.id = Some(db.id.unwrap_or_else(|| Uuid::new_v4().to_string()));
 
                 let result = diesel::insert_into(taxonomies::table)
                     .values(&db)
                     .returning(TaxonomyDB::as_returning())
-                    .get_result(conn)
+                    .get_result(tx.conn())
                     .map_err(StorageError::from)?;
+
+                tx.insert(&result)?;
 
                 Ok(Taxonomy::from(result))
             })
@@ -76,7 +78,7 @@ impl TaxonomyRepositoryTrait for TaxonomyRepository {
     async fn update_taxonomy(&self, taxonomy: Taxonomy) -> Result<Taxonomy> {
         let id = taxonomy.id.clone();
         self.writer
-            .exec(move |conn: &mut SqliteConnection| -> Result<Taxonomy> {
+            .exec_tx(move |tx| -> Result<Taxonomy> {
                 let db = TaxonomyDB {
                     id: taxonomy.id,
                     name: taxonomy.name,
@@ -94,13 +96,15 @@ impl TaxonomyRepositoryTrait for TaxonomyRepository {
 
                 diesel::update(taxonomies::table.find(&id))
                     .set(&db)
-                    .execute(conn)
+                    .execute(tx.conn())
                     .map_err(StorageError::from)?;
 
                 let result = taxonomies::table
                     .find(&id)
-                    .first::<TaxonomyDB>(conn)
+                    .first::<TaxonomyDB>(tx.conn())
                     .map_err(StorageError::from)?;
+
+                tx.update(&result)?;
 
                 Ok(Taxonomy::from(result))
             })
@@ -110,10 +114,14 @@ impl TaxonomyRepositoryTrait for TaxonomyRepository {
     async fn delete_taxonomy(&self, id: &str) -> Result<usize> {
         let id = id.to_string();
         self.writer
-            .exec(move |conn: &mut SqliteConnection| -> Result<usize> {
-                Ok(diesel::delete(taxonomies::table.find(&id))
-                    .execute(conn)
-                    .map_err(StorageError::from)?)
+            .exec_tx(move |tx| -> Result<usize> {
+                let affected = diesel::delete(taxonomies::table.find(&id))
+                    .execute(tx.conn())
+                    .map_err(StorageError::from)?;
+                if affected > 0 {
+                    tx.delete::<TaxonomyDB>(id.clone());
+                }
+                Ok(affected)
             })
             .await
     }
@@ -141,15 +149,17 @@ impl TaxonomyRepositoryTrait for TaxonomyRepository {
 
     async fn create_category(&self, category: NewCategory) -> Result<Category> {
         self.writer
-            .exec(move |conn: &mut SqliteConnection| -> Result<Category> {
+            .exec_tx(move |tx| -> Result<Category> {
                 let mut db: NewCategoryDB = category.into();
                 db.id = Some(db.id.unwrap_or_else(|| Uuid::new_v4().to_string()));
 
                 let result = diesel::insert_into(taxonomy_categories::table)
                     .values(&db)
                     .returning(CategoryDB::as_returning())
-                    .get_result(conn)
+                    .get_result(tx.conn())
                     .map_err(StorageError::from)?;
+
+                tx.insert(&result)?;
 
                 Ok(Category::from(result))
             })
@@ -160,7 +170,7 @@ impl TaxonomyRepositoryTrait for TaxonomyRepository {
         let taxonomy_id = category.taxonomy_id.clone();
         let id = category.id.clone();
         self.writer
-            .exec(move |conn: &mut SqliteConnection| -> Result<Category> {
+            .exec_tx(move |tx| -> Result<Category> {
                 let db = CategoryDB {
                     id: category.id,
                     taxonomy_id: category.taxonomy_id,
@@ -183,14 +193,16 @@ impl TaxonomyRepositoryTrait for TaxonomyRepository {
                         .filter(taxonomy_categories::id.eq(&id)),
                 )
                 .set(&db)
-                .execute(conn)
+                .execute(tx.conn())
                 .map_err(StorageError::from)?;
 
                 let result = taxonomy_categories::table
                     .filter(taxonomy_categories::taxonomy_id.eq(&taxonomy_id))
                     .filter(taxonomy_categories::id.eq(&id))
-                    .first::<CategoryDB>(conn)
+                    .first::<CategoryDB>(tx.conn())
                     .map_err(StorageError::from)?;
+
+                tx.update(&result)?;
 
                 Ok(Category::from(result))
             })
@@ -201,30 +213,36 @@ impl TaxonomyRepositoryTrait for TaxonomyRepository {
         let taxonomy_id = taxonomy_id.to_string();
         let category_id = category_id.to_string();
         self.writer
-            .exec(move |conn: &mut SqliteConnection| -> Result<usize> {
-                Ok(diesel::delete(
+            .exec_tx(move |tx| -> Result<usize> {
+                let affected = diesel::delete(
                     taxonomy_categories::table
                         .filter(taxonomy_categories::taxonomy_id.eq(&taxonomy_id))
                         .filter(taxonomy_categories::id.eq(&category_id)),
                 )
-                .execute(conn)
-                .map_err(StorageError::from)?)
+                .execute(tx.conn())
+                .map_err(StorageError::from)?;
+                if affected > 0 {
+                    tx.delete::<CategoryDB>(format!("{taxonomy_id}:{category_id}"));
+                }
+                Ok(affected)
             })
             .await
     }
 
     async fn bulk_create_categories(&self, categories: Vec<NewCategory>) -> Result<usize> {
         self.writer
-            .exec(move |conn: &mut SqliteConnection| -> Result<usize> {
+            .exec_tx(move |tx| -> Result<usize> {
                 let mut count = 0;
                 for cat in categories {
                     let mut db: NewCategoryDB = cat.into();
                     db.id = Some(db.id.unwrap_or_else(|| Uuid::new_v4().to_string()));
 
-                    diesel::insert_into(taxonomy_categories::table)
+                    let result = diesel::insert_into(taxonomy_categories::table)
                         .values(&db)
-                        .execute(conn)
+                        .returning(CategoryDB::as_returning())
+                        .get_result(tx.conn())
                         .map_err(StorageError::from)?;
+                    tx.insert(&result)?;
                     count += 1;
                 }
                 Ok(count)
@@ -362,5 +380,62 @@ impl TaxonomyRepositoryTrait for TaxonomyRepository {
             });
         }
         Ok(results)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::TaxonomyRepository;
+    use crate::db::{create_pool, get_connection, init, run_migrations, write_actor::spawn_writer};
+    use crate::schema::sync_outbox;
+    use diesel::prelude::*;
+    use tempfile::tempdir;
+    use wealthfolio_core::taxonomies::{NewCategory, TaxonomyRepositoryTrait};
+
+    #[tokio::test]
+    async fn create_category_projects_taxonomy_category_outbox_event() {
+        let app_data = tempdir()
+            .expect("tempdir")
+            .keep()
+            .to_string_lossy()
+            .to_string();
+        let db_path = init(&app_data).expect("init db");
+        run_migrations(&db_path).expect("migrate db");
+        let pool = create_pool(&db_path).expect("create pool");
+        let writer = spawn_writer(pool.as_ref().clone());
+        let repository = TaxonomyRepository::new(pool.clone(), writer);
+
+        let category = repository
+            .create_category(NewCategory {
+                id: Some("category-sync-outbox".to_string()),
+                taxonomy_id: "custom_groups".to_string(),
+                parent_id: None,
+                name: "Synced Category".to_string(),
+                key: "synced_category".to_string(),
+                color: "#123456".to_string(),
+                description: None,
+                sort_order: 7,
+            })
+            .await
+            .expect("create category");
+
+        let mut conn = get_connection(&pool).expect("conn");
+        let (entity, entity_id, op, payload): (String, String, String, String) = sync_outbox::table
+            .select((
+                sync_outbox::entity,
+                sync_outbox::entity_id,
+                sync_outbox::op,
+                sync_outbox::payload,
+            ))
+            .first(&mut conn)
+            .expect("outbox row");
+        let payload: serde_json::Value = serde_json::from_str(&payload).expect("payload json");
+
+        assert_eq!(category.id, "category-sync-outbox");
+        assert_eq!(entity, "taxonomy_category");
+        assert_eq!(entity_id, "custom_groups:category-sync-outbox");
+        assert_eq!(op, "create");
+        assert_eq!(payload["taxonomy_id"], "custom_groups");
+        assert_eq!(payload["id"], "category-sync-outbox");
     }
 }

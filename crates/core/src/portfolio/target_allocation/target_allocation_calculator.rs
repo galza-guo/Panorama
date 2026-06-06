@@ -686,7 +686,11 @@ mod tests {
         }
     }
 
-    fn holding(subject_key: &str, account_id: &str, value_base: Decimal) -> TargetAllocationHoldingInput {
+    fn holding(
+        subject_key: &str,
+        account_id: &str,
+        value_base: Decimal,
+    ) -> TargetAllocationHoldingInput {
         TargetAllocationHoldingInput {
             subject_key: subject_key.to_string(),
             subject_type: TargetAllocationSubjectType::Position,

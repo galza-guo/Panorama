@@ -25,6 +25,16 @@ pub struct FolderSyncImporter {
     local_device_id: String,
 }
 
+enum ReadFolderSyncEvent {
+    Current(FolderSyncEventFileV1),
+    LegacyUnsupported {
+        version: i32,
+        event_id: Option<String>,
+        device_id: Option<String>,
+        entity: String,
+    },
+}
+
 impl FolderSyncImporter {
     pub fn new(
         app_sync_repository: Arc<AppSyncRepository>,
@@ -134,7 +144,58 @@ impl FolderSyncImporter {
                 continue;
             }
 
-            let event = self.read_event_file(&event_ref.path)?;
+            let event = match self.read_event_file(&event_ref.path)? {
+                ReadFolderSyncEvent::Current(event) => event,
+                ReadFolderSyncEvent::LegacyUnsupported {
+                    version,
+                    event_id,
+                    device_id,
+                    entity,
+                } => {
+                    if version != FOLDER_SYNC_VERSION_V1 {
+                        let error = format!(
+                            "Unsupported folder sync event version '{}' in {}",
+                            version,
+                            event_ref.path.display()
+                        );
+                        self.record_import_error(&event_ref.event_id, &error)
+                            .await?;
+                        return Err(error);
+                    }
+                    if event_id
+                        .as_deref()
+                        .is_some_and(|value| value != event_ref.event_id)
+                        || device_id
+                            .as_deref()
+                            .is_some_and(|value| value != event_ref.device_id)
+                    {
+                        let error = format!(
+                            "Folder sync event metadata mismatch for {}",
+                            event_ref.path.display()
+                        );
+                        self.record_import_error(&event_ref.event_id, &error)
+                            .await?;
+                        return Err(error);
+                    }
+
+                    self.folder_sync_repository
+                        .mark_event_imported(
+                            event_ref.event_id.clone(),
+                            event_ref.device_id.clone(),
+                            event_ref.path.to_string_lossy().into_owned(),
+                            Utc::now().to_rfc3339(),
+                        )
+                        .await
+                        .map_err(|err| err.to_string())?;
+                    log::info!(
+                        "Skipped legacy unsupported folder sync entity '{}' in {}",
+                        entity,
+                        event_ref.path.display()
+                    );
+                    skipped_event_ids.push(event_ref.event_id.clone());
+                    continue;
+                }
+            };
             if event.version != FOLDER_SYNC_VERSION_V1 {
                 let error = format!(
                     "Unsupported folder sync event version '{}' in {}",
@@ -226,11 +287,33 @@ impl FolderSyncImporter {
         })
     }
 
-    fn read_event_file(&self, path: &std::path::Path) -> Result<FolderSyncEventFileV1, String> {
-        serde_json::from_slice(
-            &fs::read(path).map_err(|err| format!("Failed to read event file: {err}"))?,
-        )
-        .map_err(|err| format!("Failed to parse event file '{}': {err}", path.display()))
+    fn read_event_file(&self, path: &std::path::Path) -> Result<ReadFolderSyncEvent, String> {
+        let bytes = fs::read(path).map_err(|err| format!("Failed to read event file: {err}"))?;
+        let raw: serde_json::Value = serde_json::from_slice(&bytes)
+            .map_err(|err| format!("Failed to parse event file '{}': {err}", path.display()))?;
+        if let Some(entity) = raw.get("entity").and_then(|value| value.as_str()) {
+            if is_legacy_unsupported_entity(entity) {
+                return Ok(ReadFolderSyncEvent::LegacyUnsupported {
+                    version: raw
+                        .get("version")
+                        .and_then(|value| value.as_i64())
+                        .unwrap_or(-1) as i32,
+                    event_id: raw
+                        .get("eventId")
+                        .and_then(|value| value.as_str())
+                        .map(str::to_string),
+                    device_id: raw
+                        .get("deviceId")
+                        .and_then(|value| value.as_str())
+                        .map(str::to_string),
+                    entity: entity.to_string(),
+                });
+            }
+        }
+
+        serde_json::from_value(raw)
+            .map(ReadFolderSyncEvent::Current)
+            .map_err(|err| format!("Failed to parse event file '{}': {err}", path.display()))
     }
 
     async fn record_import_error(&self, event_id: &str, error: &str) -> Result<(), String> {
@@ -257,6 +340,13 @@ impl FolderSyncImporter {
             .await
             .map_err(|err| err.to_string())
     }
+}
+
+fn is_legacy_unsupported_entity(entity: &str) -> bool {
+    matches!(
+        entity,
+        "bucket" | "bucket_account_default" | "bucket_asset_assignment"
+    )
 }
 
 #[cfg(test)]
@@ -395,6 +485,84 @@ mod tests {
         assert_eq!(
             load_platform_name(&context.pool, "platform-import-1").as_deref(),
             Some("Imported Platform")
+        );
+    }
+
+    #[tokio::test]
+    async fn skips_legacy_bucket_event_and_continues_importing_later_events() {
+        let context = setup_context().await;
+        let remote_dir = context.shared_root.join("events").join("device-remote");
+        std::fs::create_dir_all(&remote_dir).expect("create remote event dir");
+        std::fs::write(
+            remote_dir.join("evt-a-legacy-bucket.json"),
+            serde_json::to_vec_pretty(&serde_json::json!({
+                "version": FOLDER_SYNC_VERSION_V1,
+                "eventId": "evt-a-legacy-bucket",
+                "deviceId": "device-remote",
+                "entity": "bucket",
+                "entityId": "legacy-bucket-1",
+                "op": "create",
+                "clientTimestamp": "2026-03-07T12:00:00Z",
+                "payload": {
+                    "id": "legacy-bucket-1",
+                    "name": "Legacy Bucket",
+                    "color": "#94a3b8",
+                    "sort_order": 0,
+                    "is_system": false,
+                    "created_at": "2026-03-07T12:00:00Z",
+                    "updated_at": "2026-03-07T12:00:00Z"
+                }
+            }))
+            .expect("legacy bucket json"),
+        )
+        .expect("write legacy bucket event");
+        context
+            .fs_service
+            .write_event_file(&FolderSyncEventFileV1 {
+                version: FOLDER_SYNC_VERSION_V1,
+                event_id: "evt-b-platform".to_string(),
+                device_id: "device-remote".to_string(),
+                entity: SyncEntity::Platform,
+                entity_id: "platform-after-legacy".to_string(),
+                op: SyncOperation::Create,
+                client_timestamp: "2026-03-07T12:00:01Z".to_string(),
+                payload: serde_json::json!({
+                    "id": "platform-after-legacy",
+                    "name": "After Legacy",
+                    "url": "https://broker.example/after-legacy",
+                    "external_id": serde_json::Value::Null,
+                    "kind": "BROKERAGE",
+                    "website_url": "https://broker.example",
+                    "logo_url": serde_json::Value::Null
+                }),
+                schema_version: Some(FOLDER_SYNC_VERSION_V1),
+                app_version: Some("3.3.0".to_string()),
+            })
+            .expect("write platform event");
+
+        let importer = FolderSyncImporter::new(
+            context.app_sync_repository.clone(),
+            context.folder_sync_repository.clone(),
+            context.fs_service.clone(),
+            context.local_device_id.clone(),
+        );
+        let result = importer
+            .import_remote_events()
+            .await
+            .expect("import remote events");
+
+        assert_eq!(
+            result.skipped_event_ids,
+            vec!["evt-a-legacy-bucket".to_string()]
+        );
+        assert_eq!(result.applied_event_ids, vec!["evt-b-platform".to_string()]);
+        assert!(context
+            .folder_sync_repository
+            .is_event_imported("evt-a-legacy-bucket")
+            .expect("legacy import marker"));
+        assert_eq!(
+            load_platform_name(&context.pool, "platform-after-legacy").as_deref(),
+            Some("After Legacy")
         );
     }
 

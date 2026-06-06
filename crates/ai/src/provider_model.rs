@@ -67,7 +67,6 @@ pub struct CatalogProvider {
     #[serde(rename = "type")]
     pub provider_type: String,
     pub icon: String,
-    pub description: String,
     pub env_key: String,
     pub default_config: ProviderDefaultConfig,
     pub connection_fields: Vec<ConnectionField>,
@@ -223,7 +222,6 @@ pub struct MergedProvider {
     #[serde(rename = "type")]
     pub provider_type: String,
     pub icon: String,
-    pub description: String,
     pub env_key: String,
     pub connection_fields: Vec<ConnectionField>,
     pub models: Vec<MergedModel>,

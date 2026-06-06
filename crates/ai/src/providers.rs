@@ -40,7 +40,6 @@ struct ProviderCatalogEntry {
     #[serde(rename = "type")]
     provider_type: String,
     icon: String,
-    description: String,
     #[serde(default)]
     env_key: Option<String>,
     #[serde(default)]
@@ -75,7 +74,6 @@ pub struct SimpleProviderInfo {
     pub name: String,
     pub provider_type: String,
     pub icon: String,
-    pub description: String,
     pub default_model: String,
     pub documentation_url: Option<String>,
     #[serde(default)]
@@ -103,7 +101,6 @@ pub struct SimpleModelInfo {
 pub struct SimpleProviderSetting {
     pub id: String,
     pub name: String,
-    pub description: String,
     pub provider_type: String,
     pub icon: String,
     pub default_model: String,
@@ -160,7 +157,6 @@ impl<E: AiEnvironment> ProviderService<E> {
                 name: entry.name.clone(),
                 provider_type: entry.provider_type.clone(),
                 icon: entry.icon.clone(),
-                description: entry.description.clone(),
                 default_model: entry.default_model.clone(),
                 documentation_url: entry.documentation_url.clone(),
                 default_config: entry.default_config.clone(),
@@ -226,7 +222,6 @@ impl<E: AiEnvironment> ProviderService<E> {
                 SimpleProviderSetting {
                     id: id.clone(),
                     name: entry.name.clone(),
-                    description: entry.description.clone(),
                     provider_type: entry.provider_type.clone(),
                     icon: entry.icon.clone(),
                     default_model: entry.default_model.clone(),
@@ -484,6 +479,37 @@ mod tests {
         assert!(catalog.providers.contains_key("openai"));
         assert!(catalog.providers.contains_key("ollama"));
         assert!(catalog.providers.contains_key("deepseek"));
+        assert!(catalog.providers.contains_key("openai-compatible"));
+        assert!(catalog.providers.contains_key("siliconflow-cn"));
+        assert!(catalog.providers.contains_key("dashscope"));
+        assert!(catalog.providers.contains_key("modelscope"));
+    }
+
+    #[test]
+    fn test_provider_responses_omit_descriptions() {
+        let env = Arc::new(MockEnvironment::new());
+        let service = ProviderService::new(env);
+
+        let catalog = service.get_provider_catalog();
+        let catalog_provider = catalog
+            .iter()
+            .find(|provider| provider.id == "ollama")
+            .expect("ollama provider should be present");
+        let catalog_json =
+            serde_json::to_value(catalog_provider).expect("catalog provider should serialize");
+
+        assert!(catalog_json.get("description").is_none());
+
+        let settings = service.get_settings().expect("settings should load");
+        let settings_provider = settings
+            .providers
+            .iter()
+            .find(|provider| provider.id == "ollama")
+            .expect("ollama settings provider should be present");
+        let settings_json =
+            serde_json::to_value(settings_provider).expect("settings provider should serialize");
+
+        assert!(settings_json.get("description").is_none());
     }
 
     #[test]
@@ -518,5 +544,32 @@ mod tests {
         assert!(reasoner_caps.thinking);
         assert!(!reasoner_caps.vision);
         assert!(reasoner_caps.streaming);
+    }
+
+    #[test]
+    fn test_openai_compatible_provider_defaults() {
+        let env = Arc::new(MockEnvironment::new());
+        let service = ProviderService::new(env);
+        let catalog = service.get_provider_catalog();
+        let provider = catalog
+            .iter()
+            .find(|provider| provider.id == "openai-compatible")
+            .expect("openai-compatible provider should be present");
+
+        assert_eq!(provider.name, "Custom OpenAI-Compatible");
+        assert_eq!(provider.icon, "LogoOpenAICompatible");
+        assert_eq!(provider.default_config.priority, 120);
+        assert_eq!(provider.default_model, "gpt-4o-mini");
+        assert_eq!(service.get_provider_url("openai-compatible"), None);
+        assert!(provider
+            .connection_fields
+            .iter()
+            .any(|field| field.key == "baseUrl" && field.required));
+
+        let caps = service.get_model_capabilities("openai-compatible", "gpt-4o-mini");
+        assert!(caps.tools);
+        assert!(!caps.thinking);
+        assert!(caps.vision);
+        assert!(caps.streaming);
     }
 }
