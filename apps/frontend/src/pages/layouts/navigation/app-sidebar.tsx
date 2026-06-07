@@ -46,11 +46,11 @@ export function AppSidebar({ navigation }: AppSidebarProps) {
                 >
                   <Link to="/">
                     <img
-                      className={`h-10 w-10 rounded-full bg-transparent shadow-lg transition-transform duration-700 ease-in-out [transform-style:preserve-3d] hover:[transform:rotateY(-180deg)] ${
+                      className={`h-10 w-10 rounded-xl shadow-lg transition-transform duration-700 ease-in-out [transform-style:preserve-3d] hover:[transform:rotateY(-180deg)] ${
                         collapsed ? "[transform:rotateY(180deg)]" : ""
                       }`}
                       aria-hidden="true"
-                      src="/logo.png"
+                      src="/app-icon.png"
                     />
                   </Link>
 

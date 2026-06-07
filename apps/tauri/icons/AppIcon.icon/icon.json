@@ -1,20 +1,11 @@
 {
-  "fill" : {
-    "linear-gradient" : [
-      "display-p3:0.37647,0.34510,0.27451,1.00000",
-      "display-p3:0.24706,0.21961,0.15294,1.00000"
-    ]
-  },
+  "fill" : "automatic",
   "groups" : [
     {
       "layers" : [
         {
-          "fill" : {
-            "linear-gradient" : [
-              "display-p3:1.00000,1.00000,1.00000,1.00000",
-              "display-p3:0.92941,0.81961,0.62745,1.00000"
-            ]
-          },
+          "blend-mode" : "normal",
+          "hidden" : false,
           "image-name" : "logo-vector.png",
           "name" : "logo-vector"
         }

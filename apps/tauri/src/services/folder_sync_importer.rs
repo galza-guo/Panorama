@@ -536,7 +536,7 @@ mod tests {
                     "logo_url": serde_json::Value::Null
                 }),
                 schema_version: Some(FOLDER_SYNC_VERSION_V1),
-                app_version: Some("3.3.0".to_string()),
+                app_version: Some("3.3.1".to_string()),
             })
             .expect("write platform event");
 

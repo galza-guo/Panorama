@@ -182,6 +182,10 @@ function displayChildrenByPlannedWeight(children: TargetAllocationDisplayRow[]) 
   return [...children].sort(compareRowsByPlannedWeight);
 }
 
+function displayTopLevelChildren(children: TargetAllocationDisplayRow[]) {
+  return [...children].sort((a, b) => a.name.localeCompare(b.name));
+}
+
 function buildNodeTree(
   nodes: TargetAllocationNode[],
   parentId: string | null = null,
@@ -559,7 +563,9 @@ function TargetRow({
   const isRoot = row.kind === "root";
   const isFolderRow = row.kind === "folder";
   const hasChildren = row.children.length > 0;
-  const displayChildren = displayChildrenByPlannedWeight(row.children);
+  const displayChildren = isRoot
+    ? displayTopLevelChildren(row.children)
+    : displayChildrenByPlannedWeight(row.children);
   const isExpanded = expandedIds.includes(row.id);
   const [detailsOpen, setDetailsOpen] = useState(false);
   const [detailsAnchor, setDetailsAnchor] = useState<{ x: number; y: number } | null>(null);

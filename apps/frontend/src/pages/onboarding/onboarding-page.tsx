@@ -52,7 +52,11 @@ const OnboardingPage = () => {
       <header className="flex-none px-4 pt-8 sm:px-6 sm:pt-12">
         <div className="flex flex-col items-center">
           {/* Logo */}
-          <img alt="Panorama" className="mb-3 h-16 w-16 sm:h-20 sm:w-20" src="/logo-vantage.png" />
+          <img
+            alt="Panorama"
+            className="mb-3 h-16 w-16 rounded-xl shadow-lg sm:h-20 sm:w-20"
+            src="/app-icon.png"
+          />
 
           {/* Progress indicators */}
           <div className="flex gap-2">

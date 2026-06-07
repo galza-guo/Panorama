@@ -1,11 +1,11 @@
 {
   "id": "investment-fees-tracker-addon",
   "name": "Investment Fees Tracker",
-  "version": "3.3.0",
+  "version": "3.3.1",
   "description": "Track and analyze investment fees across your portfolio with detailed analytics and insights",
   "author": "Panorama",
   "main": "dist/addon.js",
-  "sdkVersion": "3.3.0",
+  "sdkVersion": "3.3.1",
   "enabled": true,
   "permissions": [
     {

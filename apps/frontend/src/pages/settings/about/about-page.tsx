@@ -67,7 +67,7 @@ export default function AboutSettingsPage() {
 
       <Card>
         <CardHeader className="flex flex-row items-center gap-4">
-          <img src="/logo.svg" alt="Panorama logo" className="h-12 w-12 rounded-md shadow" />
+          <img src="/app-icon.png" alt="Panorama logo" className="h-12 w-12 rounded-xl shadow" />
           <div className="flex flex-col">
             <CardTitle className="text-xl">Panorama</CardTitle>
             <CardDescription>Version {version || "N/A"}</CardDescription>
