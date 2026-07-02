@@ -27,6 +27,7 @@ use super::alternative_assets_model::{
 use super::alternative_assets_traits::{
     AlternativeAssetRepositoryTrait, AlternativeAssetServiceTrait,
 };
+use super::time_deposit::{derive_time_deposit_value, is_time_deposit_metadata};
 use super::{
     normalize_quote_ccy_code, Asset, AssetKind, AssetRepositoryTrait, NewAsset, QuoteMode,
 };
@@ -264,39 +265,11 @@ impl AlternativeAssetService {
     }
 
     fn is_panorama_time_deposit_asset(asset: &Asset) -> bool {
-        if asset.kind == AssetKind::TimeDeposit {
-            return true;
-        }
-
-        let Some(metadata) = asset.metadata.as_ref() else {
-            return false;
-        };
-
-        let category = metadata
-            .get("panorama_category")
-            .and_then(Value::as_str)
-            .map(|value| value.eq_ignore_ascii_case("time_deposit"))
-            .unwrap_or(false);
-
-        let subtype = metadata
-            .get("sub_type")
-            .and_then(Value::as_str)
-            .map(|value| value.eq_ignore_ascii_case("time_deposit"))
-            .unwrap_or(false);
-
-        let has_term_dates = metadata.get("start_date").and_then(Value::as_str).is_some()
-            && metadata
-                .get("maturity_date")
-                .and_then(Value::as_str)
-                .is_some();
-
-        let has_principal = Self::decimal_from_json_value(metadata.get("principal")).is_some();
-        let has_return_signal = Self::decimal_from_json_value(metadata.get("quoted_annual_rate"))
-            .is_some()
-            || Self::decimal_from_json_value(metadata.get("guaranteed_maturity_value")).is_some()
-            || Self::decimal_from_json_value(metadata.get("current_value_override")).is_some();
-
-        category || subtype || (has_term_dates && has_principal && has_return_signal)
+        asset
+            .metadata
+            .as_ref()
+            .map(|metadata| is_time_deposit_metadata(metadata, &asset.kind))
+            .unwrap_or(asset.kind == AssetKind::TimeDeposit)
     }
 
     fn decimal_from_json_value(value: Option<&Value>) -> Option<Decimal> {
@@ -319,61 +292,21 @@ impl AlternativeAssetService {
             return None;
         }
 
-        let principal = Self::decimal_from_json_value(metadata.get("principal"))
-            .or_else(|| Self::decimal_from_json_value(metadata.get("purchase_price")))?;
-        let start_date = Self::date_from_json_value(metadata.get("start_date"))
-            .or_else(|| Self::date_from_json_value(metadata.get("purchase_date")))?;
-        let maturity_date = Self::date_from_json_value(metadata.get("maturity_date"))?;
-        let valuation_mode = metadata
+        let as_of_date = if metadata
             .get("valuation_mode")
             .and_then(Value::as_str)
-            .unwrap_or("derived");
-
-        if valuation_mode.eq_ignore_ascii_case("manual") {
-            let override_value =
-                Self::decimal_from_json_value(metadata.get("current_value_override"))?;
-            let valuation_date = Self::date_from_json_value(metadata.get("valuation_date"))
-                .unwrap_or_else(valuation_date_today);
-            let timestamp = Utc.from_utc_datetime(&valuation_date.and_hms_opt(12, 0, 0).unwrap());
-            return Some((override_value, timestamp));
-        }
-
-        let expected_maturity_value = if let Some(maturity_value) =
-            Self::decimal_from_json_value(metadata.get("guaranteed_maturity_value"))
+            .map(|mode| mode.eq_ignore_ascii_case("manual"))
+            .unwrap_or(false)
         {
-            maturity_value
+            Self::date_from_json_value(metadata.get("valuation_date"))
+                .unwrap_or_else(valuation_date_today)
         } else {
-            let quoted_rate_pct =
-                Self::decimal_from_json_value(metadata.get("quoted_annual_rate"))?;
-            let total_days = (maturity_date - start_date).num_days().max(0);
-            if total_days == 0 {
-                principal
-            } else {
-                let total_days_decimal = Decimal::from(total_days);
-                principal
-                    * (Decimal::ONE
-                        + (quoted_rate_pct / Decimal::new(100, 0))
-                            * (total_days_decimal / Decimal::from(365)))
-            }
+            valuation_date_today()
         };
-
-        let total_days = (maturity_date - start_date).num_days().max(0);
-        let as_of_date = valuation_date_today();
-        let market_value = if total_days == 0 {
-            expected_maturity_value
-        } else {
-            let elapsed_days = (as_of_date - start_date).num_days().clamp(0, total_days);
-            if elapsed_days >= total_days {
-                expected_maturity_value
-            } else {
-                principal
-                    + (expected_maturity_value - principal) * Decimal::from(elapsed_days)
-                        / Decimal::from(total_days)
-            }
-        };
+        let value = derive_time_deposit_value(metadata, as_of_date)?;
 
         let timestamp = Utc.from_utc_datetime(&as_of_date.and_hms_opt(12, 0, 0).unwrap());
-        Some((market_value, timestamp))
+        Some((value.current_value, timestamp))
     }
 
     fn apply_mpf_unit_prices_to_metadata(

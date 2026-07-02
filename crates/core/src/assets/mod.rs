@@ -10,6 +10,7 @@ mod assets_service;
 mod assets_traits;
 mod auto_classification;
 mod classification_service;
+pub mod time_deposit;
 
 #[cfg(test)]
 mod assets_model_tests;
