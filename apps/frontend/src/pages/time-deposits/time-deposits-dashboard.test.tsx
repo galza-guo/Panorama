@@ -4,14 +4,30 @@ import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router-dom";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import type { AlternativeAssetHolding } from "@/lib/types";
+import type { Account, AlternativeAssetHolding } from "@/lib/types";
 
-const { useAlternativeHoldingsMock, useAlternativeAssetMutationsMock, editorValuesRef } =
+const {
+  createActivityMock,
+  useAccountsMock,
+  useAlternativeHoldingsMock,
+  useAlternativeAssetMutationsMock,
+  editorValuesRef,
+} =
   vi.hoisted(() => ({
+    createActivityMock: vi.fn(),
+    useAccountsMock: vi.fn(),
     useAlternativeHoldingsMock: vi.fn(),
     useAlternativeAssetMutationsMock: vi.fn(),
     editorValuesRef: { current: null as Record<string, unknown> | null },
   }));
+
+vi.mock("@/adapters", () => ({
+  createActivity: createActivityMock,
+}));
+
+vi.mock("@/hooks/use-accounts", () => ({
+  useAccounts: useAccountsMock,
+}));
 
 vi.mock("@/hooks/use-alternative-assets", () => ({
   useAlternativeHoldings: useAlternativeHoldingsMock,
@@ -26,14 +42,17 @@ vi.mock("./components/time-deposit-editor-sheet", () => ({
     open,
     mode,
     onSubmit,
+    accounts,
   }: {
     open: boolean;
     mode: "create" | "edit";
+    accounts: Pick<Account, "id" | "name" | "currency">[];
     onSubmit: (values: never) => Promise<void>;
   }) =>
     open ? (
       <div>
         <div>{mode === "create" ? "Mock Create Sheet" : "Mock Edit Sheet"}</div>
+        <div data-testid="mock-linked-account-count">{accounts.length}</div>
         <button type="button" onClick={() => void onSubmit(editorValuesRef.current as never)}>
           {mode === "create" ? "Submit Create Time Deposit" : "Submit Edit Time Deposit"}
         </button>
@@ -61,6 +80,7 @@ function buildHolding(overrides: Partial<AlternativeAssetHolding> = {}): Alterna
       sub_type: "time_deposit",
       owner: "Alice",
       provider: "HSBC",
+      linked_account_id: "acc-hkd",
       principal: "10000",
       start_date: "2026-01-01",
       maturity_date: "2026-04-11",
@@ -101,6 +121,7 @@ function buildFormValues(overrides: Record<string, unknown> = {}) {
     currency: "HKD",
     owner: "Alice",
     provider: "HSBC",
+    linkedAccountId: "acc-hkd",
     principal: "10000",
     startDate: new Date("2026-01-01T00:00:00Z"),
     maturityDate: new Date("2026-04-11T00:00:00Z"),
@@ -130,6 +151,28 @@ function renderPage(today = TODAY) {
 describe("time deposits dashboard", () => {
   beforeEach(() => {
     editorValuesRef.current = buildFormValues();
+    createActivityMock.mockResolvedValue({ id: "act-open" });
+    useAccountsMock.mockReturnValue({
+      accounts: [
+        {
+          id: "acc-hkd",
+          name: "HSBC HKD",
+          accountType: "CASH",
+          balance: 0,
+          currency: "HKD",
+          isDefault: false,
+          isActive: true,
+          isArchived: false,
+          trackingMode: "TRANSACTIONS",
+          createdAt: new Date("2026-01-01T00:00:00Z"),
+          updatedAt: new Date("2026-01-01T00:00:00Z"),
+        },
+      ],
+      isLoading: false,
+      isError: false,
+      error: null,
+      refetch: vi.fn(),
+    });
     useAlternativeAssetMutationsMock.mockReturnValue({
       createMutation: {
         isPending: false,
@@ -147,6 +190,8 @@ describe("time deposits dashboard", () => {
   });
 
   afterEach(() => {
+    createActivityMock.mockReset();
+    useAccountsMock.mockReset();
     useAlternativeHoldingsMock.mockReset();
     useAlternativeAssetMutationsMock.mockReset();
     editorValuesRef.current = null;
@@ -247,6 +292,7 @@ describe("time deposits dashboard", () => {
         sub_type: "time_deposit",
         owner: "Alice",
         provider: "HSBC",
+        linked_account_id: "acc-hkd",
         principal: 10000,
         start_date: "2026-01-01",
         maturity_date: "2026-04-11",
@@ -258,6 +304,24 @@ describe("time deposits dashboard", () => {
         purchase_date: "2026-01-01",
       },
     });
+    expect(createActivityMock).toHaveBeenCalledWith({
+      accountId: "acc-hkd",
+      activityType: "BUY",
+      activityDate: new Date("2026-01-01T00:00:00Z").toISOString(),
+      symbol: {
+        id: "ALT-TD-NEW",
+        kind: "TIME_DEPOSIT",
+        name: "New Deposit",
+        quoteMode: "MANUAL",
+      },
+      quantity: "1",
+      unitPrice: "10000",
+      currency: "HKD",
+      metadata: {
+        panorama_time_deposit_role: "opening",
+        asset_id: "ALT-TD-NEW",
+      },
+    });
     expect(updateMetadataMutation).toHaveBeenCalledWith({
       assetId: "ALT-TD-NEW",
       name: "New Deposit",
@@ -267,6 +331,7 @@ describe("time deposits dashboard", () => {
         sub_type: "time_deposit",
         owner: "Alice",
         provider: "HSBC",
+        linked_account_id: "acc-hkd",
         principal: 10000,
         start_date: "2026-01-01",
         maturity_date: "2026-04-11",
@@ -276,6 +341,7 @@ describe("time deposits dashboard", () => {
         current_value_override: null,
         valuation_date: "2026-02-20",
         status: "active",
+        opening_activity_id: "act-open",
         purchase_price: "10000",
         purchase_date: "2026-01-01",
       },
@@ -323,6 +389,7 @@ describe("time deposits dashboard", () => {
         sub_type: "time_deposit",
         owner: "Alice",
         provider: "HSBC",
+        linked_account_id: "acc-hkd",
         principal: 10000,
         start_date: "2026-01-01",
         maturity_date: "2026-04-11",

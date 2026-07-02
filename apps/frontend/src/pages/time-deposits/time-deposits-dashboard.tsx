@@ -7,7 +7,10 @@ import { Card, CardContent, CardHeader, CardTitle } from "@panorama/ui/component
 import { Icons } from "@panorama/ui/components/ui/icons";
 import { Skeleton } from "@panorama/ui/components/ui/skeleton";
 
+import { createActivity } from "@/adapters";
+import { useAccounts } from "@/hooks/use-accounts";
 import { useAlternativeHoldings } from "@/hooks/use-alternative-assets";
+import { ActivityType, AssetKind, QuoteMode } from "@/lib/constants";
 import {
   asFiniteNumber,
   buildTimeDepositMetadata,
@@ -81,6 +84,7 @@ function buildTimeDepositCreateMetadata(values: TimeDepositFormValues) {
     ...buildTimeDepositMetadata({
       owner: values.owner,
       provider: values.provider,
+      linked_account_id: values.linkedAccountId,
       principal,
       start_date: toIsoDate(values.startDate),
       maturity_date: toIsoDate(values.maturityDate),
@@ -110,6 +114,7 @@ function buildTimeDepositPatchMetadata(values: TimeDepositFormValues) {
     ...buildTimeDepositMetadataPatch({
       owner: values.owner,
       provider: values.provider,
+      linked_account_id: values.linkedAccountId,
       principal,
       start_date: toIsoDate(values.startDate),
       maturity_date: toIsoDate(values.maturityDate),
@@ -208,6 +213,7 @@ function formatValueForMutation(value: number | undefined): string | undefined {
 export default function TimeDepositsDashboard({ today }: { today?: Date } = {}) {
   const navigate = useNavigate();
   const { data: holdings = [], isLoading } = useAlternativeHoldings();
+  const { accounts } = useAccounts({ filterActive: true, includeArchived: false });
   const [editorState, setEditorState] = useState<EditorState>(null);
   const { createMutation, updateMetadataMutation, updateValuationMutation } =
     useAlternativeAssetMutations();
@@ -378,14 +384,34 @@ export default function TimeDepositsDashboard({ today }: { today?: Date } = {}) 
         metadata: createMetadata,
       });
 
-      if (values.notes) {
-        await updateMetadataMutation.mutateAsync({
-          assetId: response.assetId,
+      const openingActivity = await createActivity({
+        accountId: values.linkedAccountId,
+        activityType: ActivityType.BUY,
+        activityDate: values.startDate.toISOString(),
+        symbol: {
+          id: response.assetId,
+          kind: AssetKind.TIME_DEPOSIT,
           name: values.name,
-          notes: values.notes,
-          metadata: patchMetadata,
-        });
-      }
+          quoteMode: QuoteMode.MANUAL,
+        },
+        quantity: "1",
+        unitPrice: values.principal,
+        currency: values.currency,
+        metadata: {
+          panorama_time_deposit_role: "opening",
+          asset_id: response.assetId,
+        },
+      });
+
+      await updateMetadataMutation.mutateAsync({
+        assetId: response.assetId,
+        name: values.name,
+        notes: values.notes || null,
+        metadata: {
+          ...patchMetadata,
+          opening_activity_id: openingActivity.id,
+        },
+      });
     }
 
     setEditorState(null);
@@ -608,6 +634,7 @@ export default function TimeDepositsDashboard({ today }: { today?: Date } = {}) 
           }}
           mode={editorState.mode}
           holding={editingHolding}
+          accounts={accounts}
           onSubmit={handleSubmit}
           isSubmitting={isSaving}
         />

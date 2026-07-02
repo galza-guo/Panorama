@@ -47,6 +47,13 @@ vi.mock("@panorama/ui", async () => {
 import { TimeDepositEditorSheet } from "./time-deposit-editor-sheet";
 
 const TODAY = new Date("2026-02-20T00:00:00Z");
+const ACCOUNTS = [
+  {
+    id: "acc-hkd",
+    name: "HSBC HKD",
+    currency: "HKD",
+  },
+];
 
 function buildHolding(overrides: Partial<AlternativeAssetHolding> = {}): AlternativeAssetHolding {
   return {
@@ -64,6 +71,7 @@ function buildHolding(overrides: Partial<AlternativeAssetHolding> = {}): Alterna
       sub_type: "time_deposit",
       owner: "Alice",
       provider: "HSBC",
+      linked_account_id: "acc-hkd",
       principal: "10000",
       start_date: "2026-01-01",
       maturity_date: "2026-04-11",
@@ -119,6 +127,7 @@ describe("time deposit editor sheet", () => {
         open={true}
         onOpenChange={vi.fn()}
         mode="create"
+        accounts={ACCOUNTS}
         onSubmit={vi.fn().mockResolvedValue(undefined)}
         today={TODAY}
       />,
@@ -137,6 +146,7 @@ describe("time deposit editor sheet", () => {
         onOpenChange={vi.fn()}
         mode="edit"
         holding={buildHolding()}
+        accounts={ACCOUNTS}
         onSubmit={vi.fn().mockResolvedValue(undefined)}
         today={TODAY}
       />,
@@ -144,6 +154,7 @@ describe("time deposit editor sheet", () => {
 
     expect(screen.getByLabelText("Deposit Name")).toHaveValue("HSBC 3M Deposit");
     expect(screen.getByLabelText("Provider")).toHaveValue("HSBC");
+    expect(screen.getByLabelText("Linked Account")).toHaveValue("acc-hkd");
     expect(screen.getByLabelText("Owner")).toHaveValue("Alice");
     expect(screen.getByLabelText("Principal")).toHaveValue("10000");
     expect(screen.getByLabelText("Quoted Annual Rate (%)")).toHaveValue("7.3");
@@ -158,6 +169,7 @@ describe("time deposit editor sheet", () => {
         open={true}
         onOpenChange={vi.fn()}
         mode="create"
+        accounts={ACCOUNTS}
         onSubmit={vi.fn().mockResolvedValue(undefined)}
         today={TODAY}
       />,
@@ -183,6 +195,7 @@ describe("time deposit editor sheet", () => {
         open={true}
         onOpenChange={vi.fn()}
         mode="create"
+        accounts={ACCOUNTS}
         onSubmit={vi.fn().mockResolvedValue(undefined)}
         today={TODAY}
       />,
@@ -209,6 +222,7 @@ describe("time deposit editor sheet", () => {
         open={true}
         onOpenChange={vi.fn()}
         mode="create"
+        accounts={ACCOUNTS}
         onSubmit={vi.fn().mockResolvedValue(undefined)}
         today={TODAY}
       />,
@@ -230,6 +244,7 @@ describe("time deposit editor sheet", () => {
         open={true}
         onOpenChange={vi.fn()}
         mode="create"
+        accounts={ACCOUNTS}
         onSubmit={onSubmit}
         today={TODAY}
       />,
@@ -241,6 +256,36 @@ describe("time deposit editor sheet", () => {
     expect(screen.getByText("Deposit name is required.")).toBeInTheDocument();
   });
 
+  it("requires a linked account before submit", async () => {
+    const user = userEvent.setup();
+    const onSubmit = vi.fn().mockResolvedValue(undefined);
+
+    render(
+      <TimeDepositEditorSheet
+        open={true}
+        onOpenChange={vi.fn()}
+        mode="create"
+        accounts={ACCOUNTS}
+        onSubmit={onSubmit}
+        today={TODAY}
+      />,
+    );
+
+    await user.type(screen.getByLabelText("Deposit Name"), "HSBC 3M Deposit");
+    await user.clear(screen.getByLabelText("Principal"));
+    await user.type(screen.getByLabelText("Principal"), "10000");
+    await user.clear(screen.getByLabelText("Quoted Annual Rate (%)"));
+    await user.type(screen.getByLabelText("Quoted Annual Rate (%)"), "7.3");
+    setDate("start-date-field", "2026-01-01");
+    setDate("maturity-date-field", "2026-04-11");
+
+    await user.selectOptions(screen.getByLabelText("Linked Account"), "");
+    await user.click(screen.getByRole("button", { name: "Create Time Deposit" }));
+
+    expect(onSubmit).not.toHaveBeenCalled();
+    expect(screen.getByText("Linked account is required.")).toBeInTheDocument();
+  });
+
   it("allows owner to be left blank", async () => {
     const user = userEvent.setup();
     const onSubmit = vi.fn().mockResolvedValue(undefined);
@@ -250,6 +295,7 @@ describe("time deposit editor sheet", () => {
         open={true}
         onOpenChange={vi.fn()}
         mode="create"
+        accounts={ACCOUNTS}
         onSubmit={onSubmit}
         today={TODAY}
       />,
@@ -268,6 +314,7 @@ describe("time deposit editor sheet", () => {
     expect(onSubmit).toHaveBeenCalledWith(
       expect.objectContaining({
         owner: "",
+        linkedAccountId: "acc-hkd",
       }),
     );
   });

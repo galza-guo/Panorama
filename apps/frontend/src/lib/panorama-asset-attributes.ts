@@ -40,6 +40,14 @@ export interface PanoramaAssetAttributes {
   valuation_mode?: string;
   current_value_override?: number | string;
   status?: string;
+  linked_account_id?: string;
+  opening_activity_id?: string;
+  settlement_date?: string;
+  settlement_account_id?: string;
+  settlement_activity_ids?: string[];
+  settled_principal?: number | string;
+  settled_interest?: number | string;
+  actual_maturity_value?: number | string;
   sub_type?: string;
 }
 
@@ -74,6 +82,14 @@ export interface TimeDepositMetadataInput {
   current_value_override?: number;
   valuation_date?: string;
   status?: "active" | "matured" | "closed";
+  linked_account_id?: string;
+  opening_activity_id?: string;
+  settlement_date?: string;
+  settlement_account_id?: string;
+  settlement_activity_ids?: string[];
+  settled_principal?: number;
+  settled_interest?: number;
+  actual_maturity_value?: number;
 }
 
 export interface TimeDepositDisplaySnapshot {
@@ -526,6 +542,10 @@ export function buildTimeDepositMetadata(input: TimeDepositMetadataInput): JsonO
     metadata.provider = input.provider.trim();
   }
 
+  if (input.linked_account_id?.trim()) {
+    metadata.linked_account_id = input.linked_account_id.trim();
+  }
+
   if (input.principal !== undefined) {
     metadata.principal = input.principal;
   }
@@ -562,6 +582,34 @@ export function buildTimeDepositMetadata(input: TimeDepositMetadataInput): JsonO
     metadata.status = input.status;
   }
 
+  if (input.opening_activity_id?.trim()) {
+    metadata.opening_activity_id = input.opening_activity_id.trim();
+  }
+
+  if (input.settlement_date?.trim()) {
+    metadata.settlement_date = input.settlement_date.trim();
+  }
+
+  if (input.settlement_account_id?.trim()) {
+    metadata.settlement_account_id = input.settlement_account_id.trim();
+  }
+
+  if (input.settlement_activity_ids && input.settlement_activity_ids.length > 0) {
+    metadata.settlement_activity_ids = input.settlement_activity_ids;
+  }
+
+  if (input.settled_principal !== undefined) {
+    metadata.settled_principal = input.settled_principal;
+  }
+
+  if (input.settled_interest !== undefined) {
+    metadata.settled_interest = input.settled_interest;
+  }
+
+  if (input.actual_maturity_value !== undefined) {
+    metadata.actual_maturity_value = input.actual_maturity_value;
+  }
+
   return metadata;
 }
 
@@ -571,6 +619,7 @@ export function buildTimeDepositMetadataPatch(input: TimeDepositMetadataInput): 
     sub_type: "time_deposit",
     owner: input.owner?.trim() ? input.owner.trim() : null,
     provider: input.provider?.trim() ? input.provider.trim() : null,
+    linked_account_id: input.linked_account_id?.trim() ? input.linked_account_id.trim() : null,
     principal: input.principal ?? null,
     start_date: input.start_date?.trim() ? input.start_date.trim() : null,
     maturity_date: input.maturity_date?.trim() ? input.maturity_date.trim() : null,

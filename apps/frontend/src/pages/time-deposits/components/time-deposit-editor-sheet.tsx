@@ -17,7 +17,7 @@ import { Textarea } from "@panorama/ui/components/ui/textarea";
 
 import { asFiniteNumber, parsePanoramaAssetAttributes } from "@/lib/panorama-asset-attributes";
 import { useSettingsContext } from "@/lib/settings-provider";
-import { type AlternativeAssetHolding } from "@/lib/types";
+import { type Account, type AlternativeAssetHolding } from "@/lib/types";
 import {
   getEffectiveTimeDepositCurrentValue,
   getTimeDepositDerivedMetrics,
@@ -31,6 +31,7 @@ export interface TimeDepositFormValues {
   currency: string;
   owner: string;
   provider: string;
+  linkedAccountId: string;
   principal: string;
   startDate: Date;
   maturityDate: Date;
@@ -48,6 +49,7 @@ interface TimeDepositEditorSheetProps {
   onOpenChange: (open: boolean) => void;
   mode: "create" | "edit";
   holding?: AlternativeAssetHolding | null;
+  accounts?: Pick<Account, "id" | "name" | "currency">[];
   onSubmit: (values: TimeDepositFormValues) => Promise<void>;
   isSubmitting?: boolean;
   today?: Date;
@@ -94,6 +96,7 @@ function buildDefaultValues(
   holding: AlternativeAssetHolding | null | undefined,
   baseCurrency: string,
   today: Date,
+  accounts: Pick<Account, "id" | "name" | "currency">[],
 ): TimeDepositFormValues {
   const attributes = parsePanoramaAssetAttributes(holding?.metadata);
   const startDate = toDate(attributes.start_date ?? holding?.purchaseDate) ?? new Date();
@@ -107,6 +110,12 @@ function buildDefaultValues(
     currency: holding?.currency ?? baseCurrency,
     owner: typeof attributes.owner === "string" ? attributes.owner : "",
     provider: typeof attributes.provider === "string" ? attributes.provider : "",
+    linkedAccountId:
+      typeof attributes.linked_account_id === "string"
+        ? attributes.linked_account_id
+        : accounts.length === 1
+          ? accounts[0].id
+          : "",
     principal: toEditableNumber(attributes.principal ?? holding?.purchasePrice),
     startDate,
     maturityDate: toDate(attributes.maturity_date) ?? addDays(startDate, 90),
@@ -142,6 +151,7 @@ export function TimeDepositEditorSheet({
   onOpenChange,
   mode,
   holding,
+  accounts = [],
   onSubmit,
   isSubmitting = false,
   today,
@@ -149,8 +159,8 @@ export function TimeDepositEditorSheet({
   const { settings } = useSettingsContext();
   const baseCurrency = settings?.baseCurrency ?? "HKD";
   const defaults = useMemo(
-    () => buildDefaultValues(holding, baseCurrency, today ?? getTodayDate()),
-    [holding, baseCurrency, open, today?.getTime()],
+    () => buildDefaultValues(holding, baseCurrency, today ?? getTodayDate(), accounts),
+    [holding, baseCurrency, open, today?.getTime(), accounts],
   );
   const [values, setValues] = useState<TimeDepositFormValues>(defaults);
   const [error, setError] = useState<string | null>(null);
@@ -252,6 +262,11 @@ export function TimeDepositEditorSheet({
       return;
     }
 
+    if (!values.linkedAccountId.trim()) {
+      setError("Linked account is required.");
+      return;
+    }
+
     if (!principal) {
       setError("Principal is required.");
       return;
@@ -284,6 +299,7 @@ export function TimeDepositEditorSheet({
       currency: trimmedCurrency,
       owner: values.owner.trim(),
       provider: values.provider.trim(),
+      linkedAccountId: values.linkedAccountId.trim(),
       principal: values.principal.trim(),
       quotedAnnualRate: values.quotedAnnualRate.trim(),
       guaranteedMaturityValue: values.guaranteedMaturityValue.trim(),
@@ -356,6 +372,23 @@ export function TimeDepositEditorSheet({
                 onChange={(event) => updateValue("provider", event.target.value)}
                 placeholder="HSBC"
               />
+            </div>
+
+            <div className="space-y-2 md:col-span-2">
+              <Label htmlFor="time-deposit-linked-account">Linked Account</Label>
+              <select
+                id="time-deposit-linked-account"
+                className="border-input bg-input-bg h-input-height w-full rounded-md border px-3 text-sm shadow-xs outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px]"
+                value={values.linkedAccountId}
+                onChange={(event) => updateValue("linkedAccountId", event.target.value)}
+              >
+                <option value="">Select account...</option>
+                {accounts.map((account) => (
+                  <option key={account.id} value={account.id}>
+                    {account.name} ({account.currency})
+                  </option>
+                ))}
+              </select>
             </div>
 
             <div className="space-y-2" data-testid="start-date-field">
