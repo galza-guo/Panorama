@@ -154,6 +154,7 @@ The service should compose existing systems:
 
 ```rust
 pub struct PeriodSummary {
+    pub summary_key: String,
     pub requested_start_date: NaiveDate,
     pub requested_end_date: NaiveDate,
     pub actual_start_date: Option<NaiveDate>,
@@ -208,6 +209,11 @@ pub struct ValueMovementItem {
     pub reason: ValueMovementReason,
 }
 ```
+
+`summary_key` is a stable identity for the summary period, such as
+`monthly:2026-06-01:2026-06-30:USD`. V1 does not need to store generated
+summaries, but this key keeps the response compatible with a future saved
+summary table and notification workflow.
 
 ### Money Movement Calculation
 
@@ -294,6 +300,31 @@ Suggested components:
 The mirrored chart should be reusable for both lanes. It should accept two
 ranked arrays: negative items and positive items.
 
+### Future Summary Archive
+
+V1 shows a dynamic summary for the Dashboard's selected period. It should not
+create a full archive UI yet, but the design must leave room for one.
+
+Future archive shape:
+
+- Weekly and monthly summaries listed like statements.
+- Each record stores `summary_key`, period type, start/end dates, currency,
+  generated timestamp, and read/unread state.
+- Opening a saved record can either load stored snapshot data or recompute with
+  a clear `lastGeneratedAt` indicator.
+
+### Future Notification Center Entry
+
+V1 should not depend on notifications, but it should be compatible with them.
+
+Future notification shape:
+
+- When a new weekly/monthly summary becomes available, create a notification
+  such as `June summary is ready`.
+- The notification deep-links to the relevant period summary.
+- Read/unread state should be tied to the saved summary record, not only to the
+  notification row.
+
 Accessibility:
 
 - Each chart row must expose signed amount text, not only bar length.
@@ -327,11 +358,15 @@ Include:
 - Top 5 value gains/losses.
 - Activity notes for money movement.
 - Residual/data-gap disclosure.
+- Stable `summary_key` in the response for future archive and notification
+  support.
 
 Defer:
 
 - Generated natural-language narrative.
 - Exportable PDF statement.
+- Stored summary records and historical summary list.
+- Notification-center alerts for new summaries.
 - Strict institutional-grade factor attribution.
 - Deep splitting of value movement into pure price, FX, income, and quantity
   effects for every holding.
