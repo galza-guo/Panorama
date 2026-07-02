@@ -387,6 +387,16 @@ pub fn run() {
             commands::platform::get_platform,
             commands::platform::is_mobile,
             commands::platform::is_desktop,
+            // Photo tray and film roll commands
+            commands::photos::list_tray_items,
+            commands::photos::list_film_rolls,
+            commands::photos::get_film_roll,
+            commands::photos::list_film_roll_photos,
+            commands::photos::create_photo,
+            commands::photos::create_film_roll,
+            commands::photos::update_film_roll,
+            commands::photos::delete_film_roll,
+            commands::photos::move_photos,
             // Secrets commands
             commands::secrets::set_secret,
             commands::secrets::get_secret,

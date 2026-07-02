@@ -55,6 +55,16 @@ export const COMMANDS: CommandMap = {
   calculate_performance_history: { method: "POST", path: "/performance/history" },
   calculate_performance_summary: { method: "POST", path: "/performance/summary" },
   get_income_summary: { method: "GET", path: "/income/summary" },
+  // Photo tray and film rolls
+  list_tray_items: { method: "GET", path: "/tray/items" },
+  list_film_rolls: { method: "GET", path: "/film-rolls" },
+  get_film_roll: { method: "GET", path: "/film-rolls" },
+  list_film_roll_photos: { method: "GET", path: "/film-rolls" },
+  create_photo: { method: "POST", path: "/photos" },
+  create_film_roll: { method: "POST", path: "/film-rolls" },
+  update_film_roll: { method: "PATCH", path: "/film-rolls" },
+  delete_film_roll: { method: "DELETE", path: "/film-rolls" },
+  move_photos: { method: "POST", path: "/photos/move" },
   // Goals
   get_goals: { method: "GET", path: "/goals" },
   create_goal: { method: "POST", path: "/goals" },
@@ -424,6 +434,52 @@ export const invoke = async <T>(command: string, payload?: Record<string, unknow
     }
     case "get_income_summary":
       break;
+    case "list_tray_items":
+    case "list_film_rolls":
+      break;
+    case "get_film_roll": {
+      const { filmRollId } = payload as { filmRollId: string };
+      url += `/${encodeURIComponent(filmRollId)}`;
+      break;
+    }
+    case "list_film_roll_photos": {
+      const { filmRollId } = payload as { filmRollId: string };
+      url += `/${encodeURIComponent(filmRollId)}/photos`;
+      break;
+    }
+    case "create_photo": {
+      const { input } = payload as { input: Record<string, unknown> };
+      body = JSON.stringify(input);
+      break;
+    }
+    case "create_film_roll": {
+      const { input } = payload as { input: Record<string, unknown> };
+      body = JSON.stringify(input);
+      break;
+    }
+    case "update_film_roll": {
+      const { filmRollId, patch } = payload as {
+        filmRollId: string;
+        patch: Record<string, unknown>;
+      };
+      url += `/${encodeURIComponent(filmRollId)}`;
+      body = JSON.stringify(patch);
+      break;
+    }
+    case "delete_film_roll": {
+      const { filmRollId, mode } = payload as { filmRollId: string; mode: string };
+      url += `/${encodeURIComponent(filmRollId)}`;
+      body = JSON.stringify({ mode });
+      break;
+    }
+    case "move_photos": {
+      const { photoIds, destinationFilmRollId } = payload as {
+        photoIds: string[];
+        destinationFilmRollId: string | null;
+      };
+      body = JSON.stringify({ photoIds, destinationFilmRollId });
+      break;
+    }
     case "delete_goal": {
       const { goalId } = payload as { goalId: string };
       url += `/${encodeURIComponent(goalId)}`;

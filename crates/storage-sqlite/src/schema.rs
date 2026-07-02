@@ -182,6 +182,18 @@ diesel::table! {
 }
 
 diesel::table! {
+    film_rolls (id) {
+        id -> Text,
+        name -> Text,
+        film_type_key -> Text,
+        artwork_key -> Text,
+        sort_order -> Integer,
+        created_at -> Timestamp,
+        updated_at -> Timestamp,
+    }
+}
+
+diesel::table! {
     folder_sync_config (id) {
         id -> Integer,
         shared_folder_path -> Text,
@@ -306,6 +318,20 @@ diesel::table! {
         last_synced_at -> Nullable<Text>,
         last_sync_status -> Nullable<Text>,
         last_sync_error -> Nullable<Text>,
+    }
+}
+
+diesel::table! {
+    photos (id) {
+        id -> Text,
+        file_path -> Text,
+        original_file_name -> Nullable<Text>,
+        thumbnail_path -> Nullable<Text>,
+        film_roll_id -> Nullable<Text>,
+        sort_order -> Integer,
+        imported_at -> Timestamp,
+        created_at -> Timestamp,
+        updated_at -> Timestamp,
     }
 }
 
@@ -525,6 +551,7 @@ diesel::joinable!(ai_thread_tags -> ai_threads (thread_id));
 diesel::joinable!(asset_taxonomy_assignments -> assets (asset_id));
 diesel::joinable!(brokers_sync_state -> accounts (account_id));
 diesel::joinable!(brokers_sync_state -> import_runs (last_run_id));
+diesel::joinable!(photos -> film_rolls (film_roll_id));
 diesel::joinable!(goals_allocation -> accounts (account_id));
 diesel::joinable!(goals_allocation -> goals (goal_id));
 diesel::joinable!(import_runs -> accounts (account_id));
@@ -547,6 +574,7 @@ diesel::allow_tables_to_appear_in_same_query!(
     brokers_sync_state,
     contribution_limits,
     daily_account_valuation,
+    film_rolls,
     folder_sync_config,
     folder_sync_history,
     folder_sync_imported_events,
@@ -557,6 +585,7 @@ diesel::allow_tables_to_appear_in_same_query!(
     holdings_snapshots,
     import_runs,
     market_data_providers,
+    photos,
     platforms,
     quote_sync_state,
     quotes,

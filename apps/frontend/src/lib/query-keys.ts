@@ -27,6 +27,12 @@ export const QueryKeys = {
   FOLDER_SYNC: "folderSync",
   EXCHANGE_RATES: "exchangeRates",
 
+  // Photo tray and film rolls
+  TRAY_ITEMS: "trayItems",
+  FILM_ROLLS: "filmRolls",
+  FILM_ROLL_PHOTOS: "filmRollPhotos",
+  filmRollPhotos: (filmRollId: string) => [QueryKeys.FILM_ROLL_PHOTOS, filmRollId],
+
   // New keys for exchange rates
   EXCHANGE_RATE_SYMBOLS: "exchange_rate_symbols",
   QUOTE: "quote",

@@ -3,7 +3,7 @@ use panorama_core::{
     self, accounts, activities,
     assets::{self, AlternativeAssetServiceTrait},
     events::DomainEventSink,
-    fx, goals, health, limits, portfolio, quotes, settings, taxonomies,
+    fx, goals, health, limits, photos, portfolio, quotes, settings, taxonomies,
 };
 use panorama_storage_sqlite::{
     activities::ActivityRepository,
@@ -41,6 +41,7 @@ pub struct ServiceContext {
     pub asset_service: Arc<dyn assets::AssetServiceTrait>,
     pub quote_service: Arc<dyn quotes::QuoteServiceTrait>,
     pub limits_service: Arc<dyn limits::ContributionLimitServiceTrait>,
+    pub photo_service: Arc<dyn photos::PhotoServiceTrait>,
     pub fx_service: Arc<dyn fx::FxServiceTrait>,
     pub performance_service: Arc<dyn portfolio::performance::PerformanceServiceTrait>,
     pub income_service: Arc<dyn portfolio::income::IncomeServiceTrait>,
@@ -114,6 +115,10 @@ impl ServiceContext {
 
     pub fn limits_service(&self) -> Arc<dyn limits::ContributionLimitServiceTrait> {
         Arc::clone(&self.limits_service)
+    }
+
+    pub fn photo_service(&self) -> Arc<dyn photos::PhotoServiceTrait> {
+        Arc::clone(&self.photo_service)
     }
 
     pub fn fx_service(&self) -> Arc<dyn fx::FxServiceTrait> {

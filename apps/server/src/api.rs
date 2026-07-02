@@ -31,6 +31,7 @@ mod limits;
 mod market_data;
 mod net_worth;
 mod performance;
+mod photos;
 mod portfolio;
 mod secrets;
 mod settings;
@@ -84,6 +85,7 @@ pub fn app_router(state: Arc<AppState>, config: &Config) -> Router {
         .merge(goals::router())
         .merge(exchange_rates::router())
         .merge(market_data::router())
+        .merge(photos::router())
         .merge(assets::router())
         .merge(secrets::router())
         .merge(limits::router())

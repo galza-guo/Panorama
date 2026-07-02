@@ -47,6 +47,13 @@ const staticNavigation: NavigationProps = {
       label: "View Activities",
     },
     {
+      icon: <Icons.FileImage className="size-6" />,
+      title: "Tray",
+      href: "/tray",
+      keywords: ["photos", "film", "rolls", "library", "scans"],
+      label: "View Tray",
+    },
+    {
       icon: <Icons.Sparkles className="size-6" />,
       title: "Assistant",
       href: "/assistant",

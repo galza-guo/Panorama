@@ -21,6 +21,7 @@ use panorama_core::{
     goals::{GoalService, GoalServiceTrait},
     health::{HealthService, HealthServiceTrait},
     limits::{ContributionLimitService, ContributionLimitServiceTrait},
+    photos::{PhotoService, PhotoServiceTrait},
     portfolio::allocation::{AllocationService, AllocationServiceTrait},
     portfolio::income::{IncomeService, IncomeServiceTrait},
     portfolio::target_allocation::{TargetAllocationService, TargetAllocationServiceTrait},
@@ -49,6 +50,7 @@ use panorama_storage_sqlite::{
     health::HealthDismissalRepository,
     limits::ContributionLimitRepository,
     market_data::{MarketDataRepository, QuoteSyncStateRepository},
+    photos::PhotoRepository,
     portfolio::{
         snapshot::SnapshotRepository, target_allocation::TargetAllocationRepository,
         valuation::ValuationRepository,
@@ -81,6 +83,7 @@ pub struct AppState {
     pub income_service: Arc<dyn IncomeServiceTrait + Send + Sync>,
     pub goal_service: Arc<dyn GoalServiceTrait + Send + Sync>,
     pub limits_service: Arc<dyn ContributionLimitServiceTrait + Send + Sync>,
+    pub photo_service: Arc<dyn PhotoServiceTrait + Send + Sync>,
     pub fx_service: Arc<dyn FxServiceTrait + Send + Sync>,
     pub activity_service: Arc<dyn ActivityServiceTrait + Send + Sync>,
     pub asset_service: Arc<dyn AssetServiceTrait + Send + Sync>,
@@ -284,6 +287,9 @@ pub async fn build_state(config: &Config) -> anyhow::Result<Arc<AppState>> {
             limits_repository.clone(),
             activity_repository.clone(),
         ));
+    let photo_repository = Arc::new(PhotoRepository::new(pool.clone(), writer.clone()));
+    let photo_service: Arc<dyn PhotoServiceTrait + Send + Sync> =
+        Arc::new(PhotoService::new(photo_repository));
 
     // Import run repository for tracking CSV imports
     let import_run_repository: Arc<dyn ImportRunRepositoryTrait> =
@@ -408,6 +414,7 @@ pub async fn build_state(config: &Config) -> anyhow::Result<Arc<AppState>> {
         income_service,
         goal_service,
         limits_service,
+        photo_service,
         fx_service: fx_service.clone(),
         activity_service,
         asset_service,
