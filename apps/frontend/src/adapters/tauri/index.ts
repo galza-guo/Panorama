@@ -102,9 +102,6 @@ export * from "../shared/ai-threads";
 // Health Center Commands
 export * from "../shared/health";
 
-// Photo Tray Commands
-export * from "../shared/photos";
-
 // ============================================================================
 // Platform-specific modules (different implementations)
 // ============================================================================

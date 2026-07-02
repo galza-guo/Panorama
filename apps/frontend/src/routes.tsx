@@ -16,7 +16,6 @@ import IncomePage from "@/pages/income/income-page";
 import PortfolioInsightsPage from "@/pages/insights/portfolio-insights";
 import NotFoundPage from "@/pages/not-found";
 import PerformancePage from "@/pages/performance/performance-page";
-import TrayPage from "@/pages/tray/tray-page";
 import SettingsAccountsPage from "@/pages/settings/accounts/accounts-page";
 import SettingsAppearancePage from "@/pages/settings/appearance/appearance-page";
 import TimeDepositsDashboard from "@/pages/time-deposits/time-deposits-dashboard";
@@ -86,8 +85,6 @@ export function AppRoutes() {
           <Route path="mpf" element={<Navigate to="/settings/securities" replace />} />
           <Route path="time-deposits" element={<TimeDepositsDashboard />} />
           <Route path="performance" element={<PerformancePage />} />
-          <Route path="tray" element={<TrayPage />} />
-          <Route path="tray/rolls/:filmRollId" element={<TrayPage />} />
           <Route path="insights" element={<PortfolioInsightsPage />} />
           <Route path="health" element={<HealthPage />} />
           <Route path="assistant" element={<AiAssistantPage />} />

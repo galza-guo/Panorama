@@ -261,9 +261,6 @@ export {
   updateHealthConfig,
 } from "../shared/health";
 
-// Photo Tray Commands
-export * from "../shared/photos";
-
 // ============================================================================
 // Platform-specific modules (different implementations for web vs desktop)
 // ============================================================================

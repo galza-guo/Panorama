@@ -16,7 +16,6 @@ pub mod fx;
 pub mod goals;
 pub mod health;
 pub mod limits;
-pub mod photos;
 pub mod portfolio;
 pub mod quotes;
 pub mod secrets;

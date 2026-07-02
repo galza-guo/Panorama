@@ -1,18 +1,12 @@
 # Film Roll System Implementation Plan
 
-> **For Claude:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to
-> implement this plan task-by-task.
+> **For Claude:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task.
 
-**Goal:** Build the v1 film roll system: a mixed tray with loose photos and film
-roll objects, plus a focused tray view inside one roll.
+**Goal:** Build the v1 film roll system: a mixed tray with loose photos and film roll objects, plus a focused tray view inside one roll.
 
-**Architecture:** Core owns the rule that each photo has one home: loose tray or
-one film roll. SQLite persists film rolls and each photo's nullable
-`film_roll_id`. Tauri and web expose the same small command surface, and the
-frontend reuses one tray view with either top-level scope or film-roll scope.
+**Architecture:** Core owns the rule that each photo has one home: loose tray or one film roll. SQLite persists film rolls and each photo's nullable `film_roll_id`. Tauri and web expose the same small command surface, and the frontend reuses one tray view with either top-level scope or film-roll scope.
 
-**Tech Stack:** Rust, Diesel, SQLite, Tauri commands, Axum web API, React, Vite,
-Tailwind v4, shadcn, TanStack Query, Vitest.
+**Tech Stack:** Rust, Diesel, SQLite, Tauri commands, Axum web API, React, Vite, Tailwind v4, shadcn, TanStack Query, Vitest.
 
 ---
 
@@ -27,22 +21,9 @@ this plan.
 Do not create film rolls inside film rolls. There should be no `parent_id` on
 film rolls. Only photos can point at a film roll.
 
-## Implementation Path Notes
-
-- Tray page: none found in this checkout; create
-  `/Users/guolite/GitHub/Panorama/apps/frontend/src/pages/tray/tray-page.tsx`.
-- Photo model: none found in this checkout; create
-  `/Users/guolite/GitHub/Panorama/crates/core/src/photos/photos_model.rs`.
-- Photo repository: none found in this checkout; create
-  `/Users/guolite/GitHub/Panorama/crates/storage-sqlite/src/photos/repository.rs`.
-- Import flow: none found in this checkout; v1 implementation should include
-  minimal photo creation/listing surfaces needed to exercise film roll
-  organization.
-
 ## Task 1: Locate Existing Tray And Photo Boundaries
 
 **Files:**
-
 - Read: `/Users/guolite/GitHub/Panorama/apps/frontend/src`
 - Read: `/Users/guolite/GitHub/Panorama/crates/core/src`
 - Read: `/Users/guolite/GitHub/Panorama/crates/storage-sqlite/src`
@@ -55,9 +36,7 @@ Run:
 rg -n "tray|photo|picture|scan|library|album|image" apps/frontend/src crates apps/tauri/src apps/server/src -g '!target'
 ```
 
-Expected: identify the real tray page, photo model, photo repository, and import
-flow. If there are no matches, continue with the new module paths in later
-tasks.
+Expected: identify the real tray page, photo model, photo repository, and import flow. If there are no matches, continue with the new module paths in later tasks.
 
 **Step 2: Write down the resolved paths**
 
@@ -85,20 +64,14 @@ Expected: no product code changes from this task.
 ## Task 2: Add Core Film Roll Model And Rules
 
 **Files:**
-
 - Create: `/Users/guolite/GitHub/Panorama/crates/core/src/photos/mod.rs`
-- Create:
-  `/Users/guolite/GitHub/Panorama/crates/core/src/photos/photos_model.rs`
-- Create:
-  `/Users/guolite/GitHub/Panorama/crates/core/src/photos/photos_traits.rs`
-- Create:
-  `/Users/guolite/GitHub/Panorama/crates/core/src/photos/photos_service.rs`
-- Create:
-  `/Users/guolite/GitHub/Panorama/crates/core/src/photos/photos_service_tests.rs`
+- Create: `/Users/guolite/GitHub/Panorama/crates/core/src/photos/photos_model.rs`
+- Create: `/Users/guolite/GitHub/Panorama/crates/core/src/photos/photos_traits.rs`
+- Create: `/Users/guolite/GitHub/Panorama/crates/core/src/photos/photos_service.rs`
+- Create: `/Users/guolite/GitHub/Panorama/crates/core/src/photos/photos_service_tests.rs`
 - Modify: `/Users/guolite/GitHub/Panorama/crates/core/src/lib.rs`
 
-If a photo module already exists, add the film roll types there instead of
-creating a parallel module.
+If a photo module already exists, add the film roll types there instead of creating a parallel module.
 
 **Step 1: Write the failing service tests**
 
@@ -217,22 +190,15 @@ Expected: PASS.
 ## Task 3: Add SQLite Migration And Repository
 
 **Files:**
-
-- Create:
-  `/Users/guolite/GitHub/Panorama/crates/storage-sqlite/migrations/2026-07-02-000001_film_rolls/up.sql`
-- Create:
-  `/Users/guolite/GitHub/Panorama/crates/storage-sqlite/migrations/2026-07-02-000001_film_rolls/down.sql`
-- Create:
-  `/Users/guolite/GitHub/Panorama/crates/storage-sqlite/src/photos/mod.rs`
-- Create:
-  `/Users/guolite/GitHub/Panorama/crates/storage-sqlite/src/photos/model.rs`
-- Create:
-  `/Users/guolite/GitHub/Panorama/crates/storage-sqlite/src/photos/repository.rs`
+- Create: `/Users/guolite/GitHub/Panorama/crates/storage-sqlite/migrations/2026-07-02-000001_film_rolls/up.sql`
+- Create: `/Users/guolite/GitHub/Panorama/crates/storage-sqlite/migrations/2026-07-02-000001_film_rolls/down.sql`
+- Create: `/Users/guolite/GitHub/Panorama/crates/storage-sqlite/src/photos/mod.rs`
+- Create: `/Users/guolite/GitHub/Panorama/crates/storage-sqlite/src/photos/model.rs`
+- Create: `/Users/guolite/GitHub/Panorama/crates/storage-sqlite/src/photos/repository.rs`
 - Modify: `/Users/guolite/GitHub/Panorama/crates/storage-sqlite/src/lib.rs`
 - Modify: `/Users/guolite/GitHub/Panorama/crates/storage-sqlite/src/schema.rs`
 
-If a photo table already exists, alter it. If not, add the film roll field to
-the existing photo persistence table in the target branch.
+If a photo table already exists, alter it. If not, add the film roll field to the existing photo persistence table in the target branch.
 
 **Step 1: Write migration**
 
@@ -264,14 +230,11 @@ DROP INDEX IF EXISTS idx_photos_film_roll_id;
 DROP TABLE IF EXISTS film_rolls;
 ```
 
-SQLite cannot reliably drop the added `film_roll_id` column on older versions.
-Follow the repository's existing migration style if it rebuilds tables for down
-migrations.
+SQLite cannot reliably drop the added `film_roll_id` column on older versions. Follow the repository's existing migration style if it rebuilds tables for down migrations.
 
 **Step 2: Generate or update schema**
 
-Run the repository's Diesel schema update command if one exists. If not, update
-`schema.rs` following nearby generated table definitions.
+Run the repository's Diesel schema update command if one exists. If not, update `schema.rs` following nearby generated table definitions.
 
 **Step 3: Add repository tests**
 
@@ -295,21 +258,16 @@ Expected: PASS.
 ## Task 4: Expose Film Roll Commands In Desktop And Web
 
 **Files:**
-
 - Create: `/Users/guolite/GitHub/Panorama/apps/tauri/src/commands/photos.rs`
 - Modify: `/Users/guolite/GitHub/Panorama/apps/tauri/src/commands/mod.rs`
 - Modify: `/Users/guolite/GitHub/Panorama/apps/tauri/src/lib.rs`
 - Create: `/Users/guolite/GitHub/Panorama/apps/server/src/api/photos.rs`
 - Modify: `/Users/guolite/GitHub/Panorama/apps/server/src/api.rs`
-- Modify: service context file resolved in Task 1, likely
-  `/Users/guolite/GitHub/Panorama/apps/tauri/src/context.rs` and
-  `/Users/guolite/GitHub/Panorama/apps/server/src/main_lib.rs`
+- Modify: service context file resolved in Task 1, likely `/Users/guolite/GitHub/Panorama/apps/tauri/src/context.rs` and `/Users/guolite/GitHub/Panorama/apps/server/src/main_lib.rs`
 
 **Step 1: Add Tauri command tests if the project has command tests**
 
-If command tests exist nearby, add thin tests that assert requests map to
-service calls. If command tests are not used in this repo, skip and cover
-behavior at service/repository level.
+If command tests exist nearby, add thin tests that assert requests map to service calls. If command tests are not used in this repo, skip and cover behavior at service/repository level.
 
 **Step 2: Add Tauri commands**
 
@@ -354,8 +312,7 @@ Add the commands to `tauri::generate_handler!` in `apps/tauri/src/lib.rs`.
 
 **Step 4: Add Axum routes**
 
-Expose routes under `/photos` or `/tray`, matching the existing API naming
-style:
+Expose routes under `/photos` or `/tray`, matching the existing API naming style:
 
 ```text
 GET    /film-rolls
@@ -393,19 +350,14 @@ Expected: PASS.
 ## Task 5: Add Frontend Adapter Functions
 
 **Files:**
-
-- Create:
-  `/Users/guolite/GitHub/Panorama/apps/frontend/src/adapters/shared/photos.ts`
-- Modify:
-  `/Users/guolite/GitHub/Panorama/apps/frontend/src/adapters/tauri/index.ts`
-- Modify:
-  `/Users/guolite/GitHub/Panorama/apps/frontend/src/adapters/web/index.ts`
+- Create: `/Users/guolite/GitHub/Panorama/apps/frontend/src/adapters/shared/photos.ts`
+- Modify: `/Users/guolite/GitHub/Panorama/apps/frontend/src/adapters/tauri/index.ts`
+- Modify: `/Users/guolite/GitHub/Panorama/apps/frontend/src/adapters/web/index.ts`
 - Modify: `/Users/guolite/GitHub/Panorama/apps/frontend/src/lib/query-keys.ts`
 
 **Step 1: Write adapter tests**
 
-Create tests next to the shared adapter if the current adapter pattern supports
-mocked platform calls. Test that:
+Create tests next to the shared adapter if the current adapter pattern supports mocked platform calls. Test that:
 
 - `movePhotos(["a"], "roll-1")` sends destination roll ID
 - `movePhotos(["a"], null)` sends null
@@ -443,14 +395,8 @@ Add:
 export async function listFilmRolls(): Promise<FilmRoll[]>;
 export async function createFilmRoll(input: NewFilmRoll): Promise<FilmRoll>;
 export async function updateFilmRoll(input: FilmRoll): Promise<FilmRoll>;
-export async function deleteFilmRoll(
-  id: string,
-  mode: DeleteFilmRollMode,
-): Promise<void>;
-export async function movePhotos(
-  photoIds: string[],
-  destinationFilmRollId: string | null,
-): Promise<void>;
+export async function deleteFilmRoll(id: string, mode: DeleteFilmRollMode): Promise<void>;
+export async function movePhotos(photoIds: string[], destinationFilmRollId: string | null): Promise<void>;
 ```
 
 Follow the existing shared adapter style for `RUN_ENV`.
@@ -484,20 +430,13 @@ Expected: PASS.
 ## Task 6: Build Reusable Tray Scope UI
 
 **Files:**
-
 - Create or modify resolved tray page from Task 1
-- Create:
-  `/Users/guolite/GitHub/Panorama/apps/frontend/src/features/tray/components/film-roll-card.tsx`
-- Create:
-  `/Users/guolite/GitHub/Panorama/apps/frontend/src/features/tray/components/film-roll-editor-sheet.tsx`
-- Create:
-  `/Users/guolite/GitHub/Panorama/apps/frontend/src/features/tray/components/move-photos-dialog.tsx`
-- Create:
-  `/Users/guolite/GitHub/Panorama/apps/frontend/src/features/tray/components/tray-selection-toolbar.tsx`
-- Create:
-  `/Users/guolite/GitHub/Panorama/apps/frontend/src/features/tray/hooks/use-film-rolls.ts`
-- Create:
-  `/Users/guolite/GitHub/Panorama/apps/frontend/src/features/tray/hooks/use-move-photos.ts`
+- Create: `/Users/guolite/GitHub/Panorama/apps/frontend/src/features/tray/components/film-roll-card.tsx`
+- Create: `/Users/guolite/GitHub/Panorama/apps/frontend/src/features/tray/components/film-roll-editor-sheet.tsx`
+- Create: `/Users/guolite/GitHub/Panorama/apps/frontend/src/features/tray/components/move-photos-dialog.tsx`
+- Create: `/Users/guolite/GitHub/Panorama/apps/frontend/src/features/tray/components/tray-selection-toolbar.tsx`
+- Create: `/Users/guolite/GitHub/Panorama/apps/frontend/src/features/tray/hooks/use-film-rolls.ts`
+- Create: `/Users/guolite/GitHub/Panorama/apps/frontend/src/features/tray/hooks/use-move-photos.ts`
 
 If the tray already has feature folders, place these components there instead.
 
@@ -562,7 +501,7 @@ Disable the current roll as a destination when already inside that roll.
 When selected photos are dragged onto a film roll card, call:
 
 ```ts
-movePhotos(selectedPhotoIds, filmRoll.id);
+movePhotos(selectedPhotoIds, filmRoll.id)
 ```
 
 On success, invalidate tray and film roll queries.
@@ -580,7 +519,6 @@ Expected: PASS.
 ## Task 7: Route And Navigation
 
 **Files:**
-
 - Modify: `/Users/guolite/GitHub/Panorama/apps/frontend/src/routes.tsx`
 - Modify: resolved navigation file if tray is already in app navigation
 
@@ -593,8 +531,7 @@ Use:
 /tray/rolls/:filmRollId
 ```
 
-If the existing tray route already has a path, keep that path and add only the
-nested film roll route.
+If the existing tray route already has a path, keep that path and add only the nested film roll route.
 
 **Step 2: Implement back navigation**
 
@@ -604,8 +541,7 @@ No breadcrumb is required for v1.
 
 **Step 3: Test route rendering**
 
-Add a route test if the app has route tests. Otherwise verify manually in dev
-server.
+Add a route test if the app has route tests. Otherwise verify manually in dev server.
 
 Run:
 
@@ -618,7 +554,6 @@ Expected: PASS.
 ## Task 8: Verification Pass
 
 **Files:**
-
 - No new files unless tests expose a missing edge case.
 
 **Step 1: Run Rust checks**

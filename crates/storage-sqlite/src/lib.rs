@@ -40,7 +40,6 @@ pub mod goals;
 pub mod health;
 pub mod limits;
 pub mod market_data;
-pub mod photos;
 pub mod portfolio;
 pub mod settings;
 pub mod sync;

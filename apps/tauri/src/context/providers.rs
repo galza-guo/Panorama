@@ -13,7 +13,6 @@ use panorama_core::{
     goals::GoalService,
     health::HealthService,
     limits::ContributionLimitService,
-    photos::PhotoService,
     portfolio::{
         allocation::AllocationService,
         holdings::{HoldingsService, HoldingsValuationService},
@@ -40,7 +39,6 @@ use panorama_storage_sqlite::{
     health::HealthDismissalRepository,
     limits::ContributionLimitRepository,
     market_data::{MarketDataRepository, QuoteSyncStateRepository},
-    photos::PhotoRepository,
     portfolio::{
         snapshot::SnapshotRepository, target_allocation::TargetAllocationRepository,
         valuation::ValuationRepository,
@@ -79,7 +77,6 @@ pub async fn initialize_context(
         pool.clone(),
         writer.clone(),
     ));
-    let photo_repository = Arc::new(PhotoRepository::new(pool.clone(), writer.clone()));
     let fx_repository = Arc::new(FxRepository::new(pool.clone(), writer.clone()));
     let snapshot_repository = Arc::new(SnapshotRepository::new(pool.clone(), writer.clone()));
     let app_sync_repository = Arc::new(AppSyncRepository::new(pool.clone(), writer.clone()));
@@ -171,7 +168,6 @@ pub async fn initialize_context(
         limit_repository.clone(),
         activity_repository.clone(),
     ));
-    let photo_service = Arc::new(PhotoService::new(photo_repository));
 
     let income_service = Arc::new(IncomeService::new(
         fx_service.clone(),
@@ -310,7 +306,6 @@ pub async fn initialize_context(
             goal_service,
             quote_service,
             limits_service,
-            photo_service,
             fx_service,
             performance_service,
             income_service,
