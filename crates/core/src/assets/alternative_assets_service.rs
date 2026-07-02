@@ -27,7 +27,9 @@ use super::alternative_assets_model::{
 use super::alternative_assets_traits::{
     AlternativeAssetRepositoryTrait, AlternativeAssetServiceTrait,
 };
-use super::time_deposit::{derive_time_deposit_value, is_time_deposit_metadata};
+use super::time_deposit::{
+    derive_time_deposit_value, is_closed_time_deposit, is_time_deposit_metadata,
+};
 use super::{
     normalize_quote_ccy_code, Asset, AssetKind, AssetRepositoryTrait, NewAsset, QuoteMode,
 };
@@ -1072,6 +1074,7 @@ impl AlternativeAssetServiceTrait for AlternativeAssetService {
         let alternative_assets: Vec<_> = all_assets
             .into_iter()
             .filter(|a| a.kind.is_alternative())
+            .filter(|a| !is_closed_time_deposit(a.metadata.as_ref(), &a.kind))
             .collect();
 
         if alternative_assets.is_empty() {
@@ -1871,6 +1874,45 @@ mod tests {
 
         assert_eq!(holding.market_value, dec!(10200));
         assert_eq!(holding.unrealized_gain, Some(dec!(200)));
+    }
+
+    #[test]
+    fn test_get_alternative_holdings_excludes_closed_time_deposits() {
+        let today = valuation_date_today();
+        let start_date = today - chrono::Duration::days(100);
+        let maturity_date = today - chrono::Duration::days(1);
+        let asset_id = "ALT-TD-CLOSED";
+
+        let metadata = Some(json!({
+            "panorama_category": "time_deposit",
+            "sub_type": "time_deposit",
+            "principal": "10000",
+            "start_date": start_date.to_string(),
+            "maturity_date": maturity_date.to_string(),
+            "guaranteed_maturity_value": "10200",
+            "valuation_mode": "derived",
+            "purchase_price": "10000",
+            "purchase_date": start_date.to_string(),
+            "status": "closed"
+        }));
+
+        let service = AlternativeAssetService::new(
+            Arc::new(MockAlternativeAssetRepository),
+            Arc::new(MockAssetRepository::new(vec![sample_asset(
+                asset_id, metadata,
+            )])),
+            Arc::new(MockQuoteService::new(vec![sample_quote(
+                asset_id,
+                dec!(10200),
+                maturity_date,
+            )])),
+        );
+
+        let holdings = service
+            .get_alternative_holdings()
+            .expect("expected holdings");
+
+        assert!(holdings.is_empty());
     }
 
     #[test]

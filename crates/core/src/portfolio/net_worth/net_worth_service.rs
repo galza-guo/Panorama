@@ -13,6 +13,7 @@ use super::net_worth_model::{
 };
 use super::net_worth_traits::NetWorthServiceTrait;
 use crate::accounts::{account_types, AccountRepositoryTrait};
+use crate::assets::time_deposit::is_closed_time_deposit;
 use crate::assets::{AssetKind, AssetRepositoryTrait};
 use crate::constants::DECIMAL_PRECISION;
 use crate::errors::Result;
@@ -407,6 +408,7 @@ impl NetWorthServiceTrait for NetWorthService {
         let alternative_assets: Vec<_> = all_assets
             .iter()
             .filter(|a| a.kind.is_alternative())
+            .filter(|a| !is_closed_time_deposit(a.metadata.as_ref(), &a.kind))
             .collect();
 
         for asset in alternative_assets {
@@ -539,6 +541,7 @@ impl NetWorthServiceTrait for NetWorthService {
         let alternative_assets: Vec<_> = all_assets
             .iter()
             .filter(|a| a.kind.is_alternative())
+            .filter(|a| !is_closed_time_deposit(a.metadata.as_ref(), &a.kind))
             .collect();
 
         // Separate assets from liabilities

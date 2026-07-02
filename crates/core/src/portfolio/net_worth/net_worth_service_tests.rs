@@ -1765,6 +1765,37 @@ async fn test_archived_account_excluded_from_net_worth() {
 }
 
 #[tokio::test]
+async fn test_closed_standalone_time_deposit_excluded_from_net_worth() {
+    let account = create_test_account("cash", "CASH", "USD");
+    let mut asset = create_test_asset("ALT-TD-CLOSED", AssetKind::TimeDeposit, "USD");
+    asset.metadata = Some(serde_json::json!({
+        "panorama_category": "time_deposit",
+        "sub_type": "time_deposit",
+        "principal": "10000",
+        "start_date": "2024-01-01",
+        "maturity_date": "2024-01-15",
+        "guaranteed_maturity_value": "10200",
+        "status": "closed"
+    }));
+    let quote = create_test_quote(
+        "ALT-TD-CLOSED",
+        dec!(10200),
+        NaiveDate::from_ymd_opt(2024, 1, 15).unwrap(),
+        "USD",
+    );
+    let service = create_net_worth_service(vec![account], vec![asset], vec![], vec![quote]);
+
+    let result = service
+        .get_net_worth(NaiveDate::from_ymd_opt(2024, 1, 15).unwrap())
+        .await
+        .unwrap();
+
+    assert_eq!(result.net_worth, Decimal::ZERO);
+    assert_eq!(result.assets.total, Decimal::ZERO);
+    assert_eq!(get_category_value(&result, "otherAssets"), Decimal::ZERO);
+}
+
+#[tokio::test]
 async fn test_net_worth_with_mixed_account_states() {
     // Setup:
     //   - Account A: is_active=true, is_archived=false (active) - $10,000
