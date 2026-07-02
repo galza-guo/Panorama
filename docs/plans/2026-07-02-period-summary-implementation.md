@@ -851,6 +851,12 @@ the follow-on design target.
   payload or snapshot metadata.
 - Add a scheduled/month-boundary job that materializes weekly/monthly summaries.
 - Add a notification-center entry when a new stored summary is generated.
+- Decide whether edits to past transactions regenerate saved summaries or leave
+  them immutable as historic records.
+- If regenerating, store `lastGeneratedAt` and make notifications resilient to
+  changed numbers.
+- If immutable, add a correction/superseded state so users can see when old
+  summaries no longer match current transactions.
 
 **Frontend shape:**
 

@@ -313,6 +313,18 @@ Future archive shape:
 - Opening a saved record can either load stored snapshot data or recompute with
   a clear `lastGeneratedAt` indicator.
 
+Open product decision:
+
+- If the user edits past transactions, saved summaries can either be regenerated
+  so they always reflect current data, or kept immutable as historic records.
+- Regeneration keeps numbers current but can make old notifications/statements
+  change after the user already read them.
+- Immutable records are easier to trust as "what the app said at the time," but
+  they require an explicit correction or superseded-summary model when past data
+  changes.
+- Decide this before implementing the saved-summary archive or notification
+  workflow.
+
 ### Future Notification Center Entry
 
 V1 should not depend on notifications, but it should be compatible with them.
