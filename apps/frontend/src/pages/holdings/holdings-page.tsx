@@ -60,6 +60,7 @@ import {
 } from "@/pages/asset/alternative-assets";
 import {
   reEnrichAssetProfiles,
+  saveActivities,
   updateAlternativeAssetMetadata,
   updateAlternativeAssetValuation,
 } from "@/adapters";
@@ -77,6 +78,11 @@ import {
   TimeDepositEditorSheet,
   type TimeDepositFormValues,
 } from "@/pages/time-deposits/components/time-deposit-editor-sheet";
+import {
+  buildTimeDepositSettlementActivities,
+  buildTimeDepositSettlementMetadata,
+  getTimeDepositSettlementState,
+} from "@/pages/time-deposits/time-deposit-settlement";
 import {
   InsurancePolicyEditorSheet,
   type InsurancePolicyFormValues,
@@ -312,6 +318,7 @@ export const HoldingsPage = () => {
   );
   const [updateValueAsset, setUpdateValueAsset] = useState<AlternativeAssetHolding | null>(null);
   const [isSavingDetails, setIsSavingDetails] = useState(false);
+  const [settlingTimeDepositId, setSettlingTimeDepositId] = useState<string | null>(null);
 
   // Delete mutation
   const { mutate: deleteAsset, isPending: isDeleting } = useDeleteAlternativeAsset();
@@ -544,6 +551,46 @@ export const HoldingsPage = () => {
       }
     },
     [editInsuranceAsset, invalidateAlternativeAssetQueries],
+  );
+
+  const handleSettleTimeDeposit = useCallback(
+    async (holding: AlternativeAssetHolding) => {
+      const source = {
+        id: holding.id,
+        name: holding.name,
+        currency: holding.currency,
+        metadata: holding.metadata,
+        purchasePrice: holding.purchasePrice,
+      };
+      const settlement = getTimeDepositSettlementState(source);
+
+      if (!settlement.canSettle || !settlement.maturityDate) {
+        return;
+      }
+
+      setSettlingTimeDepositId(holding.id);
+      try {
+        const result = await saveActivities({
+          creates: buildTimeDepositSettlementActivities(source, settlement),
+        });
+        const settlementActivityIds = result.created.map((activity) => activity.id);
+
+        await updateAlternativeAssetMetadata(
+          holding.id,
+          buildTimeDepositSettlementMetadata(settlement, settlementActivityIds),
+        );
+
+        await updateAlternativeAssetValuation(holding.id, {
+          value: "0",
+          date: settlement.maturityDate,
+        });
+
+        invalidateAlternativeAssetQueries();
+      } finally {
+        setSettlingTimeDepositId(null);
+      }
+    },
+    [invalidateAlternativeAssetQueries],
   );
 
   // Handler to delete an asset
@@ -878,9 +925,11 @@ export const HoldingsPage = () => {
               onEdit={handleEditAsset}
               onUpdateValue={setUpdateValueAsset}
               onViewHistory={handleViewHistory}
+              onSettleTimeDeposit={handleSettleTimeDeposit}
               onDelete={handleDeleteAsset}
               onRowClick={handleRowClick}
               isDeleting={isDeleting}
+              settlingTimeDepositId={settlingTimeDepositId}
             />
           </div>
           {/* Mobile View */}

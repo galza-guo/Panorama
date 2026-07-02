@@ -34,6 +34,7 @@ import {
   isMpfAsset,
   isTimeDepositAsset,
 } from "@/lib/panorama-asset-attributes";
+import { getTimeDepositSettlementState } from "@/pages/time-deposits/time-deposit-settlement";
 
 interface AlternativeHoldingsTableProps {
   holdings: AlternativeAssetHolding[];
@@ -43,9 +44,11 @@ interface AlternativeHoldingsTableProps {
   onEdit?: (holding: AlternativeAssetHolding) => void;
   onUpdateValue?: (holding: AlternativeAssetHolding) => void;
   onViewHistory?: (holding: AlternativeAssetHolding) => void;
+  onSettleTimeDeposit?: (holding: AlternativeAssetHolding) => void;
   onDelete?: (holding: AlternativeAssetHolding) => void;
   onRowClick?: (holding: AlternativeAssetHolding) => void;
   isDeleting?: boolean;
+  settlingTimeDepositId?: string | null;
 }
 
 export function AlternativeHoldingsTable({
@@ -56,9 +59,11 @@ export function AlternativeHoldingsTable({
   onEdit,
   onUpdateValue,
   onViewHistory,
+  onSettleTimeDeposit,
   onDelete,
   onRowClick,
   isDeleting = false,
+  settlingTimeDepositId,
 }: AlternativeHoldingsTableProps) {
   const { isBalanceHidden } = useBalancePrivacy();
   const [assetToDelete, setAssetToDelete] = useState<AlternativeAssetHolding | null>(null);
@@ -259,6 +264,13 @@ export function AlternativeHoldingsTable({
         header: "",
         cell: ({ row }) => {
           const holding = row.original;
+          const settlement = getTimeDepositSettlementState({
+            id: holding.id,
+            name: holding.name,
+            currency: holding.currency,
+            metadata: holding.metadata,
+            purchasePrice: holding.purchasePrice,
+          });
 
           return (
             <div className="flex justify-end">
@@ -291,6 +303,15 @@ export function AlternativeHoldingsTable({
                       Edit Details
                     </DropdownMenuItem>
                   )}
+                  {settlement.canSettle && onSettleTimeDeposit ? (
+                    <DropdownMenuItem
+                      onClick={() => onSettleTimeDeposit(holding)}
+                      disabled={settlingTimeDepositId === holding.id}
+                    >
+                      <Icons.DollarSign className="mr-2 h-4 w-4" />
+                      Settle to Cash
+                    </DropdownMenuItem>
+                  ) : null}
                   {onDelete && (
                     <>
                       <DropdownMenuSeparator />
@@ -310,7 +331,17 @@ export function AlternativeHoldingsTable({
         },
       },
     ],
-    [asOfDate, isBalanceHidden, onEdit, onUpdateValue, onViewHistory, onDelete, onRowClick],
+    [
+      asOfDate,
+      isBalanceHidden,
+      onEdit,
+      onUpdateValue,
+      onViewHistory,
+      onSettleTimeDeposit,
+      onDelete,
+      onRowClick,
+      settlingTimeDepositId,
+    ],
   );
 
   if (isLoading) {

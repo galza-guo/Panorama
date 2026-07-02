@@ -1,4 +1,5 @@
-import { render, screen } from "@testing-library/react";
+import { render, screen, waitFor } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import type { AlternativeAssetHolding } from "@/lib/types";
@@ -155,5 +156,39 @@ describe("alternative holdings specialized display", () => {
     expect(screen.getByTestId("mobile-time-deposit-value-ALT-INS-1")).toHaveTextContent(
       /Cash Value.*HK\$125,000\.00/,
     );
+  });
+
+  it("shows settle to cash in the desktop menu for matured linked time deposits", async () => {
+    vi.useRealTimers();
+    const user = userEvent.setup();
+
+    render(
+      <AlternativeHoldingsTable
+        holdings={[
+          buildHolding({
+            metadata: {
+              panorama_category: "time_deposit",
+              sub_type: "time_deposit",
+              provider: "HSBC",
+              linked_account_id: "acc-hkd",
+              principal: "10000",
+              start_date: "2026-01-01",
+              maturity_date: "2026-03-13",
+              guaranteed_maturity_value: "10200",
+              valuation_mode: "derived",
+              status: "active",
+            },
+          }),
+        ]}
+        isLoading={false}
+        onSettleTimeDeposit={vi.fn()}
+      />,
+    );
+
+    await user.click(screen.getByRole("button", { name: "Open actions" }));
+
+    await waitFor(() => {
+      expect(screen.getByRole("menuitem", { name: /Settle to Cash/ })).toBeInTheDocument();
+    });
   });
 });

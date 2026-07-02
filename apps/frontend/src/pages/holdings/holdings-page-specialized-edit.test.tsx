@@ -4,9 +4,19 @@ import userEvent from "@testing-library/user-event";
 import type { ReactNode } from "react";
 import { useState } from "react";
 import { MemoryRouter } from "react-router-dom";
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import type { AlternativeAssetHolding } from "@/lib/types";
+
+const {
+  saveActivitiesMock,
+  updateAlternativeAssetMetadataMock,
+  updateAlternativeAssetValuationMock,
+} = vi.hoisted(() => ({
+  saveActivitiesMock: vi.fn(),
+  updateAlternativeAssetMetadataMock: vi.fn(),
+  updateAlternativeAssetValuationMock: vi.fn(),
+}));
 
 const insuranceHolding: AlternativeAssetHolding = {
   id: "ALT-INS-1",
@@ -29,6 +39,34 @@ const insuranceHolding: AlternativeAssetHolding = {
   },
   linkedAssetId: undefined,
   notes: "Policy notes",
+};
+
+const timeDepositHolding: AlternativeAssetHolding = {
+  id: "ALT-TD-1",
+  symbol: "ALT-TD-1",
+  name: "HSBC 1M Time Deposit",
+  kind: "other",
+  currency: "HKD",
+  marketValue: "10200",
+  purchasePrice: "10000",
+  purchaseDate: "2026-01-01",
+  unrealizedGain: "200",
+  unrealizedGainPct: "0.02",
+  valuationDate: "2026-02-20T00:00:00Z",
+  metadata: {
+    panorama_category: "time_deposit",
+    sub_type: "time_deposit",
+    provider: "HSBC",
+    linked_account_id: "acc-hkd",
+    principal: "10000",
+    start_date: "2026-01-01",
+    maturity_date: "2026-02-20",
+    guaranteed_maturity_value: "10200",
+    valuation_mode: "derived",
+    status: "active",
+  },
+  linkedAssetId: undefined,
+  notes: null,
 };
 
 vi.mock("@/components/page", () => ({
@@ -54,7 +92,7 @@ vi.mock("@/hooks/use-holdings", () => ({
 }));
 
 vi.mock("@/hooks/use-alternative-assets", () => ({
-  useAlternativeHoldings: () => ({ data: [insuranceHolding], isLoading: false }),
+  useAlternativeHoldings: () => ({ data: [insuranceHolding, timeDepositHolding], isLoading: false }),
   useDeleteAlternativeAsset: () => ({ mutate: vi.fn(), isPending: false }),
   useLinkLiability: () => ({ mutateAsync: vi.fn() }),
   useUnlinkLiability: () => ({ mutateAsync: vi.fn() }),
@@ -78,8 +116,9 @@ vi.mock("@/hooks/use-calculate-portfolio", () => ({
 
 vi.mock("@/adapters", () => ({
   reEnrichAssetProfiles: vi.fn(),
-  updateAlternativeAssetMetadata: vi.fn(),
-  updateAlternativeAssetValuation: vi.fn(),
+  saveActivities: saveActivitiesMock,
+  updateAlternativeAssetMetadata: updateAlternativeAssetMetadataMock,
+  updateAlternativeAssetValuation: updateAlternativeAssetValuationMock,
 }));
 
 vi.mock("@/components/classification/classification-sheet", () => ({
@@ -106,15 +145,24 @@ vi.mock("./components/alternative-holdings-table", () => ({
   AlternativeHoldingsTable: ({
     holdings,
     onEdit,
+    onSettleTimeDeposit,
   }: {
     holdings: AlternativeAssetHolding[];
     onEdit: (holding: AlternativeAssetHolding) => void;
+    onSettleTimeDeposit?: (holding: AlternativeAssetHolding) => void;
   }) => (
     <div>
       {holdings.map((holding) => (
-        <button key={holding.id} type="button" onClick={() => onEdit(holding)}>
-          Edit {holding.name}
-        </button>
+        <div key={holding.id}>
+          <button type="button" onClick={() => onEdit(holding)}>
+            Edit {holding.name}
+          </button>
+          {onSettleTimeDeposit ? (
+            <button type="button" onClick={() => onSettleTimeDeposit(holding)}>
+              Settle {holding.name}
+            </button>
+          ) : null}
+        </div>
       ))}
     </div>
   ),
@@ -164,6 +212,19 @@ function renderPage() {
 }
 
 describe("holdings page specialized asset editors", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    saveActivitiesMock.mockResolvedValue({
+      created: [{ id: "act-sell" }, { id: "act-interest" }],
+      updated: [],
+      deleted: [],
+      createdMappings: [],
+      errors: [],
+    });
+    updateAlternativeAssetMetadataMock.mockResolvedValue(undefined);
+    updateAlternativeAssetValuationMock.mockResolvedValue(undefined);
+  });
+
   it("opens the insurance policy editor for insurance holdings", async () => {
     const user = userEvent.setup();
 
@@ -173,5 +234,46 @@ describe("holdings page specialized asset editors", () => {
 
     expect(screen.getByText("Edit Insurance Policy")).toBeInTheDocument();
     expect(screen.queryByText("Generic Asset Details Sheet")).not.toBeInTheDocument();
+  });
+
+  it("settles matured linked time deposits from the holdings asset menu", async () => {
+    const user = userEvent.setup();
+
+    renderPage();
+
+    await user.click(screen.getByRole("button", { name: "Settle HSBC 1M Time Deposit" }));
+
+    expect(saveActivitiesMock).toHaveBeenCalledWith({
+      creates: [
+        expect.objectContaining({
+          accountId: "acc-hkd",
+          activityType: "SELL",
+          unitPrice: "10000",
+          currency: "HKD",
+        }),
+        expect.objectContaining({
+          accountId: "acc-hkd",
+          activityType: "INTEREST",
+          amount: "200",
+          currency: "HKD",
+        }),
+      ],
+    });
+    expect(updateAlternativeAssetMetadataMock).toHaveBeenCalledWith(
+      "ALT-TD-1",
+      expect.objectContaining({
+        status: "closed",
+        settlement_date: "2026-02-20",
+        settlement_account_id: "acc-hkd",
+        settlement_activity_ids: ["act-sell", "act-interest"],
+        settled_principal: 10000,
+        settled_interest: 200,
+        actual_maturity_value: 10200,
+      }),
+    );
+    expect(updateAlternativeAssetValuationMock).toHaveBeenCalledWith("ALT-TD-1", {
+      value: "0",
+      date: "2026-02-20",
+    });
   });
 });
