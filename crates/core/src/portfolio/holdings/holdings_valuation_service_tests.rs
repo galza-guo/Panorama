@@ -1,7 +1,7 @@
 // Test cases for HoldingsValuationService will go here.
 #[cfg(test)]
 mod tests {
-    use crate::assets::{Asset, ProviderProfile};
+    use crate::assets::{Asset, AssetKind, ProviderProfile};
     use crate::errors::{Error, Result};
     use crate::fx::{ExchangeRate, FxServiceTrait, NewExchangeRate};
     use crate::portfolio::holdings::holdings_model::{
@@ -17,7 +17,7 @@ mod tests {
     };
     use crate::utils::time_utils::valuation_date_today;
     use async_trait::async_trait;
-    use chrono::{NaiveDate, Utc};
+    use chrono::{Duration, NaiveDate, Utc};
     use rust_decimal::Decimal;
     use rust_decimal_macros::dec;
     use std::collections::HashMap;
@@ -499,6 +499,46 @@ mod tests {
         }
     }
 
+    fn create_time_deposit_holding(status: &str) -> Holding {
+        let today = valuation_date_today();
+        let start_date = today - Duration::days(10);
+        let maturity_date = today + Duration::days(90);
+        let mut holding = create_holding(
+            "td1",
+            HoldingType::AlternativeAsset,
+            "ALT-TD-1",
+            dec!(1),
+            "HKD",
+            "HKD",
+            Some(dec!(10000)),
+            Some("HSBC 3M Deposit"),
+        );
+
+        holding.instrument = Some(Instrument {
+            id: "ALT-TD-1".to_string(),
+            symbol: "Time Deposit".to_string(),
+            name: Some("HSBC 3M Deposit".to_string()),
+            currency: "HKD".to_string(),
+            notes: None,
+            pricing_mode: "MANUAL".to_string(),
+            preferred_provider: None,
+            classifications: None,
+        });
+        holding.asset_kind = Some(AssetKind::TimeDeposit);
+        holding.purchase_price = Some(dec!(10000));
+        holding.metadata = Some(serde_json::json!({
+            "panorama_category": "time_deposit",
+            "sub_type": "time_deposit",
+            "principal": "10000",
+            "start_date": start_date.to_string(),
+            "maturity_date": maturity_date.to_string(),
+            "quoted_annual_rate": "3.65",
+            "status": status,
+        }));
+
+        holding
+    }
+
     fn assert_monetary_value_approx(
         value: Option<&MonetaryValue>,
         expected_local: Decimal,
@@ -674,6 +714,76 @@ mod tests {
             expected_unrealized_pct,
             TOLERANCE,
             "Total Gain Pct",
+        );
+    }
+
+    #[tokio::test]
+    async fn test_time_deposit_uses_derived_value_without_quote() {
+        let (_fx_service, _market_data_service, valuation_service) = setup_test_env();
+        let mut holdings = vec![create_time_deposit_holding("active")];
+
+        let result = valuation_service
+            .calculate_holdings_live_valuation(&mut holdings)
+            .await;
+        assert!(result.is_ok());
+
+        let holding = &holdings[0];
+        let expected_current_value = dec!(10010.0000000000);
+        let expected_gain = dec!(10.0000000000);
+
+        assert_decimal_approx(
+            holding.price,
+            expected_current_value,
+            TOLERANCE,
+            "Time deposit price",
+        );
+        assert_monetary_value_approx(
+            Some(&holding.market_value),
+            expected_current_value,
+            expected_current_value,
+            TOLERANCE,
+            "Time deposit market value",
+        );
+        assert_monetary_value_approx(
+            holding.unrealized_gain.as_ref(),
+            expected_gain,
+            expected_gain,
+            TOLERANCE,
+            "Time deposit unrealized gain",
+        );
+        assert_decimal_approx(
+            holding.unrealized_gain_pct,
+            dec!(0.0010),
+            TOLERANCE,
+            "Time deposit unrealized gain pct",
+        );
+    }
+
+    #[tokio::test]
+    async fn test_closed_time_deposit_values_at_zero() {
+        let (_fx_service, _market_data_service, valuation_service) = setup_test_env();
+        let mut holdings = vec![create_time_deposit_holding("closed")];
+
+        let result = valuation_service
+            .calculate_holdings_live_valuation(&mut holdings)
+            .await;
+        assert!(result.is_ok());
+
+        let holding = &holdings[0];
+        assert_decimal_approx(holding.price, Decimal::ZERO, TOLERANCE, "Closed TD price");
+        assert_monetary_value_approx(
+            Some(&holding.market_value),
+            Decimal::ZERO,
+            Decimal::ZERO,
+            TOLERANCE,
+            "Closed TD market value",
+        );
+        assert_monetary_value_approx(
+            holding.unrealized_gain.as_ref(),
+            dec!(-10000),
+            dec!(-10000),
+            TOLERANCE,
+            "Closed TD unrealized gain",
         );
     }
 

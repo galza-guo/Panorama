@@ -1,7 +1,8 @@
 use crate::assets::AssetKind;
+use crate::assets::time_deposit::derive_time_deposit_value;
 use crate::errors::Result;
-use crate::fx::currency::{normalize_amount, normalize_currency_code};
 use crate::fx::FxServiceTrait;
+use crate::fx::currency::{normalize_amount, normalize_currency_code};
 use crate::portfolio::holdings::{Holding, HoldingType, MonetaryValue};
 use crate::quotes::{LatestQuotePair, QuoteServiceTrait};
 use crate::utils::time_utils::valuation_date_today;
@@ -214,9 +215,7 @@ impl HoldingsValuationService {
             if normalized_position_currency != normalized_quote_currency {
                 warn!(
                     "{}: Holding currency ({}) differs from quote currency ({}). Using quote currency FX for market value conversion.",
-                    context_msg,
-                    pos_currency,
-                    latest_quote.currency
+                    context_msg, pos_currency, latest_quote.currency
                 );
             }
 
@@ -407,6 +406,75 @@ impl HoldingsValuationService {
             holding.day_change_pct = None;
             holding.prev_close_value = None;
             return Ok(());
+        }
+
+        if asset_kind == AssetKind::TimeDeposit {
+            if let Some(metadata) = holding.metadata.as_ref() {
+                if let Some(time_deposit_value) =
+                    derive_time_deposit_value(metadata, valuation_date_today())
+                {
+                    let market_price_local = if time_deposit_value.is_closed {
+                        Decimal::ZERO
+                    } else {
+                        time_deposit_value.current_value
+                    };
+                    let market_value_local = market_price_local * quantity;
+                    let market_value_base = market_value_local * fx_rate_local_to_base;
+                    holding.price = Some(market_price_local);
+                    holding.market_value = MonetaryValue {
+                        local: market_value_local,
+                        base: market_value_base,
+                    };
+
+                    if let Some(purchase_price) = holding.purchase_price {
+                        let total_cost_local = quantity * purchase_price;
+                        let total_cost_base = total_cost_local * fx_rate_local_to_base;
+                        let unrealized_gain_local = market_value_local - total_cost_local;
+                        let unrealized_gain_base = market_value_base - total_cost_base;
+
+                        holding.unrealized_gain = Some(MonetaryValue {
+                            local: unrealized_gain_local,
+                            base: unrealized_gain_base,
+                        });
+                        if total_cost_base != dec!(0) {
+                            holding.unrealized_gain_pct =
+                                Some((unrealized_gain_base / total_cost_base).round_dp(4));
+                        } else if unrealized_gain_base != dec!(0) {
+                            holding.unrealized_gain_pct = Some(dec!(1.0));
+                        } else {
+                            holding.unrealized_gain_pct = Some(Decimal::ZERO);
+                        }
+                    } else if let Some(cost_basis) = &holding.cost_basis {
+                        let unrealized_gain_local = market_value_local - cost_basis.local;
+                        let unrealized_gain_base = market_value_base - cost_basis.base;
+
+                        holding.unrealized_gain = Some(MonetaryValue {
+                            local: unrealized_gain_local,
+                            base: unrealized_gain_base,
+                        });
+                        if cost_basis.base != dec!(0) {
+                            holding.unrealized_gain_pct =
+                                Some((unrealized_gain_base / cost_basis.base).round_dp(4));
+                        } else if unrealized_gain_base != dec!(0) {
+                            holding.unrealized_gain_pct = Some(dec!(1.0));
+                        } else {
+                            holding.unrealized_gain_pct = Some(Decimal::ZERO);
+                        }
+                    } else {
+                        holding.unrealized_gain = None;
+                        holding.unrealized_gain_pct = None;
+                    }
+
+                    holding.day_change = None;
+                    holding.day_change_pct = None;
+                    holding.prev_close_value = None;
+                    holding.realized_gain = None;
+                    holding.realized_gain_pct = None;
+                    holding.total_gain = holding.unrealized_gain.clone();
+                    holding.total_gain_pct = holding.unrealized_gain_pct;
+                    return Ok(());
+                }
+            }
         }
 
         // --- Fetch and Process Quote Data ---
