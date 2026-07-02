@@ -1,4 +1,7 @@
-use super::model::{MoneyMovementItem, MoneyMovementSummary, PeriodSummaryWarning};
+use super::model::{
+    MoneyMovementItem, MoneyMovementSummary, PeriodSummaryWarning, ValueMovementItem,
+    ValueMovementReason, ValueMovementSummary,
+};
 use crate::activities::{
     Activity, ACTIVITY_TYPE_CREDIT, ACTIVITY_TYPE_DEPOSIT, ACTIVITY_TYPE_TRANSFER_IN,
     ACTIVITY_TYPE_TRANSFER_OUT, ACTIVITY_TYPE_WITHDRAWAL,
@@ -7,7 +10,7 @@ use crate::fx::FxServiceTrait;
 use crate::portfolio::performance::{classify_flow_for_scope, FlowType, PerformanceScope};
 use rust_decimal::Decimal;
 use std::cmp::Ordering;
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 
 pub struct PeriodSummaryService;
 
@@ -108,6 +111,122 @@ fn build_money_movement(
 
 #[allow(dead_code)]
 fn sort_by_abs_desc(items: &mut [MoneyMovementItem]) {
+    items.sort_by(|a, b| {
+        b.amount_base
+            .abs()
+            .partial_cmp(&a.amount_base.abs())
+            .unwrap_or(Ordering::Equal)
+    });
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+struct HoldingKey {
+    account_id: Option<String>,
+    holding_id: String,
+}
+
+#[derive(Debug, Clone)]
+struct HoldingPeriodValue {
+    name: String,
+    symbol: Option<String>,
+    account_name: Option<String>,
+    quantity: Decimal,
+    value_base: Decimal,
+    is_liability: bool,
+}
+
+#[allow(dead_code)]
+fn build_value_movement_from_values(
+    start: HashMap<HoldingKey, HoldingPeriodValue>,
+    end: HashMap<HoldingKey, HoldingPeriodValue>,
+) -> ValueMovementSummary {
+    let mut gains = Vec::new();
+    let mut losses = Vec::new();
+    let mut gains_total = Decimal::ZERO;
+    let mut losses_total = Decimal::ZERO;
+
+    let keys: HashSet<HoldingKey> = start.keys().chain(end.keys()).cloned().collect();
+
+    for key in keys {
+        let start_value = start.get(&key);
+        let end_value = end.get(&key);
+        let Some(display_value) = end_value.or(start_value) else {
+            continue;
+        };
+
+        let start_amount = start_value
+            .map(|value| value.value_base)
+            .unwrap_or(Decimal::ZERO);
+        let end_amount = end_value
+            .map(|value| value.value_base)
+            .unwrap_or(Decimal::ZERO);
+
+        let quantity_changed = match (start_value, end_value) {
+            (Some(start), Some(end)) => start.quantity != end.quantity,
+            _ => true,
+        };
+
+        let is_liability = display_value.is_liability;
+        let movement = if is_liability {
+            start_amount - end_amount
+        } else {
+            end_amount - start_amount
+        };
+
+        if movement.is_zero() {
+            continue;
+        }
+
+        let reason = if is_liability {
+            ValueMovementReason::Liability
+        } else if quantity_changed {
+            ValueMovementReason::Residual
+        } else {
+            ValueMovementReason::Price
+        };
+
+        let percent_change = if start_amount.is_zero() {
+            None
+        } else {
+            Some(movement / start_amount.abs())
+        };
+
+        let item = ValueMovementItem {
+            holding_id: key.holding_id,
+            account_id: key.account_id,
+            account_name: display_value.account_name.clone(),
+            name: display_value.name.clone(),
+            symbol: display_value.symbol.clone(),
+            amount_base: movement,
+            percent_change,
+            reason,
+        };
+
+        if movement.is_sign_positive() {
+            gains_total += movement;
+            gains.push(item);
+        } else {
+            losses_total += movement.abs();
+            losses.push(item);
+        }
+    }
+
+    sort_value_by_abs_desc(&mut gains);
+    sort_value_by_abs_desc(&mut losses);
+    gains.truncate(5);
+    losses.truncate(5);
+
+    ValueMovementSummary {
+        gains_total,
+        losses_total,
+        net: gains_total - losses_total,
+        top_gains: gains,
+        top_losses: losses,
+    }
+}
+
+#[allow(dead_code)]
+fn sort_value_by_abs_desc(items: &mut [ValueMovementItem]) {
     items.sort_by(|a, b| {
         b.amount_base
             .abs()
@@ -377,5 +496,148 @@ mod tests {
         assert_eq!(warnings.len(), 1);
         assert_eq!(warnings[0].code, "missing_fx");
         assert_eq!(warnings[0].account_id.as_deref(), Some("account-1"));
+    }
+
+    fn holding_value(
+        name: &str,
+        quantity: Decimal,
+        value_base: Decimal,
+    ) -> HoldingPeriodValue {
+        HoldingPeriodValue {
+            name: name.to_string(),
+            symbol: Some(name.to_uppercase()),
+            account_name: Some("Brokerage".to_string()),
+            quantity,
+            value_base,
+            is_liability: false,
+        }
+    }
+
+    fn holding_key(id: &str) -> HoldingKey {
+        HoldingKey {
+            account_id: Some("account-1".to_string()),
+            holding_id: id.to_string(),
+        }
+    }
+
+    #[test]
+    fn value_unchanged_quantity_and_higher_value_becomes_gain() {
+        let start = HashMap::from([(
+            holding_key("nvda"),
+            holding_value("NVDA", dec!(2), dec!(1000)),
+        )]);
+        let end = HashMap::from([(
+            holding_key("nvda"),
+            holding_value("NVDA", dec!(2), dec!(1800)),
+        )]);
+
+        let summary = build_value_movement_from_values(start, end);
+
+        assert_eq!(summary.gains_total, dec!(800));
+        assert_eq!(summary.losses_total, Decimal::ZERO);
+        assert_eq!(summary.net, dec!(800));
+        assert_eq!(summary.top_gains[0].holding_id, "nvda");
+        assert_eq!(summary.top_gains[0].reason, ValueMovementReason::Price);
+    }
+
+    #[test]
+    fn value_unchanged_quantity_and_lower_value_becomes_loss() {
+        let start = HashMap::from([(
+            holding_key("btc"),
+            holding_value("BTC", dec!(1), dec!(5000)),
+        )]);
+        let end = HashMap::from([(
+            holding_key("btc"),
+            holding_value("BTC", dec!(1), dec!(1000)),
+        )]);
+
+        let summary = build_value_movement_from_values(start, end);
+
+        assert_eq!(summary.gains_total, Decimal::ZERO);
+        assert_eq!(summary.losses_total, dec!(4000));
+        assert_eq!(summary.net, dec!(-4000));
+        assert_eq!(summary.top_losses[0].amount_base, dec!(-4000));
+    }
+
+    #[test]
+    fn value_larger_liability_balance_becomes_loss() {
+        let mut start_value = holding_value("Card debt", Decimal::ONE, dec!(1200));
+        start_value.is_liability = true;
+        let mut end_value = holding_value("Card debt", Decimal::ONE, dec!(1600));
+        end_value.is_liability = true;
+
+        let summary = build_value_movement_from_values(
+            HashMap::from([(holding_key("liability"), start_value)]),
+            HashMap::from([(holding_key("liability"), end_value)]),
+        );
+
+        assert_eq!(summary.losses_total, dec!(400));
+        assert_eq!(summary.net, dec!(-400));
+        assert_eq!(summary.top_losses[0].reason, ValueMovementReason::Liability);
+    }
+
+    #[test]
+    fn value_smaller_liability_balance_becomes_gain() {
+        let mut start_value = holding_value("Card debt", Decimal::ONE, dec!(1600));
+        start_value.is_liability = true;
+        let mut end_value = holding_value("Card debt", Decimal::ONE, dec!(1200));
+        end_value.is_liability = true;
+
+        let summary = build_value_movement_from_values(
+            HashMap::from([(holding_key("liability"), start_value)]),
+            HashMap::from([(holding_key("liability"), end_value)]),
+        );
+
+        assert_eq!(summary.gains_total, dec!(400));
+        assert_eq!(summary.net, dec!(400));
+        assert_eq!(summary.top_gains[0].reason, ValueMovementReason::Liability);
+    }
+
+    #[test]
+    fn value_changed_quantity_is_classified_as_residual() {
+        let start = HashMap::from([(
+            holding_key("aapl"),
+            holding_value("AAPL", dec!(2), dec!(1000)),
+        )]);
+        let end = HashMap::from([(
+            holding_key("aapl"),
+            holding_value("AAPL", dec!(3), dec!(1400)),
+        )]);
+
+        let summary = build_value_movement_from_values(start, end);
+
+        assert_eq!(summary.gains_total, dec!(400));
+        assert_eq!(summary.top_gains[0].reason, ValueMovementReason::Residual);
+    }
+
+    #[test]
+    fn value_ranking_keeps_top_five_each_side_by_absolute_amount() {
+        let mut start = HashMap::new();
+        let mut end = HashMap::new();
+
+        for index in 1..=6 {
+            let id = format!("gain-{index}");
+            start.insert(holding_key(&id), holding_value(&id, Decimal::ONE, dec!(100)));
+            end.insert(
+                holding_key(&id),
+                holding_value(&id, Decimal::ONE, Decimal::from(index * 100)),
+            );
+        }
+
+        for index in 1..=6 {
+            let id = format!("loss-{index}");
+            start.insert(
+                holding_key(&id),
+                holding_value(&id, Decimal::ONE, Decimal::from(index * 100)),
+            );
+            end.insert(holding_key(&id), holding_value(&id, Decimal::ONE, dec!(0)));
+        }
+
+        let summary = build_value_movement_from_values(start, end);
+
+        assert_eq!(summary.top_gains.len(), 5);
+        assert_eq!(summary.top_losses.len(), 5);
+        assert_eq!(summary.top_gains[0].holding_id, "gain-6");
+        assert_eq!(summary.top_losses[0].holding_id, "loss-6");
     }
 }
