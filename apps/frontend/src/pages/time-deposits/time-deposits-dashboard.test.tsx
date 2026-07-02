@@ -8,6 +8,7 @@ import type { Account, AlternativeAssetHolding } from "@/lib/types";
 
 const {
   createActivityMock,
+  saveActivitiesMock,
   useAccountsMock,
   useAlternativeHoldingsMock,
   useAlternativeAssetMutationsMock,
@@ -15,6 +16,7 @@ const {
 } =
   vi.hoisted(() => ({
     createActivityMock: vi.fn(),
+    saveActivitiesMock: vi.fn(),
     useAccountsMock: vi.fn(),
     useAlternativeHoldingsMock: vi.fn(),
     useAlternativeAssetMutationsMock: vi.fn(),
@@ -23,6 +25,7 @@ const {
 
 vi.mock("@/adapters", () => ({
   createActivity: createActivityMock,
+  saveActivities: saveActivitiesMock,
 }));
 
 vi.mock("@/hooks/use-accounts", () => ({
@@ -152,6 +155,13 @@ describe("time deposits dashboard", () => {
   beforeEach(() => {
     editorValuesRef.current = buildFormValues();
     createActivityMock.mockResolvedValue({ id: "act-open" });
+    saveActivitiesMock.mockResolvedValue({
+      created: [{ id: "act-sell" }, { id: "act-interest" }],
+      updated: [],
+      deleted: [],
+      createdMappings: [],
+      errors: [],
+    });
     useAccountsMock.mockReturnValue({
       accounts: [
         {
@@ -191,6 +201,7 @@ describe("time deposits dashboard", () => {
 
   afterEach(() => {
     createActivityMock.mockReset();
+    saveActivitiesMock.mockReset();
     useAccountsMock.mockReset();
     useAlternativeHoldingsMock.mockReset();
     useAlternativeAssetMutationsMock.mockReset();
@@ -410,5 +421,234 @@ describe("time deposits dashboard", () => {
         date: "2026-02-20",
       },
     });
+  });
+
+  it("shows settle to cash for active matured deposits", () => {
+    useAlternativeHoldingsMock.mockReturnValue({
+      data: [
+        buildHolding({
+          metadata: {
+            panorama_category: "time_deposit",
+            sub_type: "time_deposit",
+            owner: "Alice",
+            provider: "HSBC",
+            linked_account_id: "acc-hkd",
+            principal: "10000",
+            start_date: "2026-01-01",
+            maturity_date: "2026-02-20",
+            guaranteed_maturity_value: "10200",
+            valuation_mode: "derived",
+            valuation_date: "2026-02-20",
+            status: "active",
+          },
+        }),
+      ],
+      isLoading: false,
+      isError: false,
+      error: null,
+    });
+
+    renderPage(new Date("2026-02-21T00:00:00Z"));
+
+    expect(screen.getByRole("button", { name: "Settle to Cash" })).toBeInTheDocument();
+  });
+
+  it("settles a matured deposit with principal and interest activities", async () => {
+    const user = userEvent.setup();
+    const updateMetadataMutation = vi.fn().mockResolvedValue(undefined);
+    const updateValuationMutation = vi.fn().mockResolvedValue(undefined);
+
+    useAlternativeAssetMutationsMock.mockReturnValue({
+      createMutation: {
+        isPending: false,
+        mutateAsync: vi.fn().mockResolvedValue({ assetId: "ALT-TD-NEW" }),
+      },
+      updateMetadataMutation: { isPending: false, mutateAsync: updateMetadataMutation },
+      updateValuationMutation: { isPending: false, mutateAsync: updateValuationMutation },
+    });
+    useAlternativeHoldingsMock.mockReturnValue({
+      data: [
+        buildHolding({
+          metadata: {
+            panorama_category: "time_deposit",
+            sub_type: "time_deposit",
+            owner: "Alice",
+            provider: "HSBC",
+            linked_account_id: "acc-hkd",
+            principal: "10000",
+            start_date: "2026-01-01",
+            maturity_date: "2026-02-20",
+            guaranteed_maturity_value: "10200",
+            valuation_mode: "derived",
+            valuation_date: "2026-02-20",
+            status: "active",
+          },
+        }),
+      ],
+      isLoading: false,
+      isError: false,
+      error: null,
+    });
+
+    renderPage(new Date("2026-02-21T00:00:00Z"));
+
+    await user.click(screen.getByRole("button", { name: "Settle to Cash" }));
+
+    expect(saveActivitiesMock).toHaveBeenCalledWith({
+      creates: [
+        {
+          accountId: "acc-hkd",
+          activityType: "SELL",
+          activityDate: new Date("2026-02-20T00:00:00Z").toISOString(),
+          sourceGroupId: "time-deposit-settlement-ALT-TD-1-2026-02-20",
+          symbol: {
+            id: "ALT-TD-1",
+            kind: "TIME_DEPOSIT",
+            name: "HSBC 3M Deposit",
+            quoteMode: "MANUAL",
+          },
+          quantity: "1",
+          unitPrice: "10000",
+          currency: "HKD",
+          metadata: {
+            panorama_time_deposit_role: "settlement_principal",
+            asset_id: "ALT-TD-1",
+          },
+        },
+        {
+          accountId: "acc-hkd",
+          activityType: "INTEREST",
+          activityDate: new Date("2026-02-20T00:00:00Z").toISOString(),
+          sourceGroupId: "time-deposit-settlement-ALT-TD-1-2026-02-20",
+          amount: "200",
+          currency: "HKD",
+          metadata: {
+            panorama_time_deposit_role: "settlement_interest",
+            asset_id: "ALT-TD-1",
+          },
+        },
+      ],
+    });
+    expect(updateMetadataMutation).toHaveBeenCalledWith({
+      assetId: "ALT-TD-1",
+      metadata: {
+        panorama_category: "time_deposit",
+        sub_type: "time_deposit",
+        status: "closed",
+        settlement_date: "2026-02-20",
+        settlement_account_id: "acc-hkd",
+        settlement_activity_ids: ["act-sell", "act-interest"],
+        settled_principal: 10000,
+        settled_interest: 200,
+        actual_maturity_value: 10200,
+      },
+    });
+    expect(updateValuationMutation).toHaveBeenCalledWith({
+      assetId: "ALT-TD-1",
+      request: {
+        value: "0",
+        date: "2026-02-20",
+      },
+    });
+  });
+
+  it("skips the interest activity when settlement interest is zero", async () => {
+    const user = userEvent.setup();
+    const updateMetadataMutation = vi.fn().mockResolvedValue(undefined);
+    saveActivitiesMock.mockResolvedValue({
+      created: [{ id: "act-sell" }],
+      updated: [],
+      deleted: [],
+      createdMappings: [],
+      errors: [],
+    });
+
+    useAlternativeAssetMutationsMock.mockReturnValue({
+      createMutation: {
+        isPending: false,
+        mutateAsync: vi.fn().mockResolvedValue({ assetId: "ALT-TD-NEW" }),
+      },
+      updateMetadataMutation: { isPending: false, mutateAsync: updateMetadataMutation },
+      updateValuationMutation: {
+        isPending: false,
+        mutateAsync: vi.fn().mockResolvedValue(undefined),
+      },
+    });
+    useAlternativeHoldingsMock.mockReturnValue({
+      data: [
+        buildHolding({
+          metadata: {
+            panorama_category: "time_deposit",
+            sub_type: "time_deposit",
+            owner: "Alice",
+            provider: "HSBC",
+            linked_account_id: "acc-hkd",
+            principal: "10000",
+            start_date: "2026-01-01",
+            maturity_date: "2026-02-20",
+            guaranteed_maturity_value: "10000",
+            valuation_mode: "derived",
+            valuation_date: "2026-02-20",
+            status: "active",
+          },
+        }),
+      ],
+      isLoading: false,
+      isError: false,
+      error: null,
+    });
+
+    renderPage(new Date("2026-02-21T00:00:00Z"));
+
+    await user.click(screen.getByRole("button", { name: "Settle to Cash" }));
+
+    expect(saveActivitiesMock).toHaveBeenCalledWith({
+      creates: [
+        expect.objectContaining({
+          activityType: "SELL",
+          unitPrice: "10000",
+        }),
+      ],
+    });
+    expect(updateMetadataMutation).toHaveBeenCalledWith({
+      assetId: "ALT-TD-1",
+      metadata: expect.objectContaining({
+        status: "closed",
+        settlement_activity_ids: ["act-sell"],
+        settled_principal: 10000,
+        settled_interest: 0,
+        actual_maturity_value: 10000,
+      }),
+    });
+  });
+
+  it("does not show settle to cash for closed deposits", () => {
+    useAlternativeHoldingsMock.mockReturnValue({
+      data: [
+        buildHolding({
+          metadata: {
+            panorama_category: "time_deposit",
+            sub_type: "time_deposit",
+            owner: "Alice",
+            provider: "HSBC",
+            linked_account_id: "acc-hkd",
+            principal: "10000",
+            start_date: "2026-01-01",
+            maturity_date: "2026-02-20",
+            guaranteed_maturity_value: "10200",
+            valuation_mode: "derived",
+            valuation_date: "2026-02-20",
+            status: "closed",
+          },
+        }),
+      ],
+      isLoading: false,
+      isError: false,
+      error: null,
+    });
+
+    renderPage(new Date("2026-02-21T00:00:00Z"));
+
+    expect(screen.queryByRole("button", { name: "Settle to Cash" })).not.toBeInTheDocument();
   });
 });

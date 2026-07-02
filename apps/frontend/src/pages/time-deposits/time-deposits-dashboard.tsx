@@ -7,7 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@panorama/ui/component
 import { Icons } from "@panorama/ui/components/ui/icons";
 import { Skeleton } from "@panorama/ui/components/ui/skeleton";
 
-import { createActivity } from "@/adapters";
+import { createActivity, saveActivities } from "@/adapters";
 import { useAccounts } from "@/hooks/use-accounts";
 import { useAlternativeHoldings } from "@/hooks/use-alternative-assets";
 import { ActivityType, AssetKind, QuoteMode } from "@/lib/constants";
@@ -46,6 +46,9 @@ interface TimeDepositRow {
   maturityValue?: number;
   daysLeft?: number;
   maturityDate?: string;
+  linkedAccountId?: string;
+  isClosed: boolean;
+  canSettle: boolean;
 }
 
 function toIsoDate(value: Date): string {
@@ -55,6 +58,10 @@ function toIsoDate(value: Date): string {
 function getTodayDate(): Date {
   const now = new Date();
   return new Date(Date.UTC(now.getFullYear(), now.getMonth(), now.getDate()));
+}
+
+function toActivityDate(value: string): string {
+  return new Date(`${value}T00:00:00Z`).toISOString();
 }
 
 function parsePositiveNumber(value: string): number | undefined {
@@ -210,11 +217,16 @@ function formatValueForMutation(value: number | undefined): string | undefined {
     : undefined;
 }
 
+function formatSettlementAmount(value: number): string {
+  return String(Number(value.toFixed(2)));
+}
+
 export default function TimeDepositsDashboard({ today }: { today?: Date } = {}) {
   const navigate = useNavigate();
   const { data: holdings = [], isLoading } = useAlternativeHoldings();
   const { accounts } = useAccounts({ filterActive: true, includeArchived: false });
   const [editorState, setEditorState] = useState<EditorState>(null);
+  const [settlingAssetId, setSettlingAssetId] = useState<string | null>(null);
   const { createMutation, updateMetadataMutation, updateValuationMutation } =
     useAlternativeAssetMutations();
 
@@ -235,6 +247,11 @@ export default function TimeDepositsDashboard({ today }: { today?: Date } = {}) 
         typeof attributes.start_date === "string" ? attributes.start_date : undefined;
       const maturityDate =
         typeof attributes.maturity_date === "string" ? attributes.maturity_date : undefined;
+      const linkedAccountId =
+        typeof attributes.linked_account_id === "string" && attributes.linked_account_id.trim()
+          ? attributes.linked_account_id.trim()
+          : undefined;
+      const isClosed = attributes.status === "closed";
       const guaranteedMaturityValue =
         asFiniteNumber(attributes.guaranteed_maturity_value) ??
         (principal !== undefined &&
@@ -295,6 +312,15 @@ export default function TimeDepositsDashboard({ today }: { today?: Date } = {}) 
         maturityValue: guaranteedMaturityValue,
         daysLeft: derivedMetrics?.daysLeft,
         maturityDate,
+        linkedAccountId,
+        isClosed,
+        canSettle:
+          !isClosed &&
+          linkedAccountId !== undefined &&
+          principal !== undefined &&
+          guaranteedMaturityValue !== undefined &&
+          maturityDate !== undefined &&
+          maturityDate <= asOfDate,
       };
     });
   }, [timeDepositHoldings, today]);
@@ -415,6 +441,84 @@ export default function TimeDepositsDashboard({ today }: { today?: Date } = {}) 
     }
 
     setEditorState(null);
+  };
+
+  const handleSettleToCash = async (row: TimeDepositRow) => {
+    if (!row.canSettle || !row.linkedAccountId || !row.maturityDate || !row.principal) {
+      return;
+    }
+
+    const maturityValue = row.maturityValue ?? row.principal;
+    const settledPrincipal = row.principal;
+    const settledInterest = Math.max(maturityValue - settledPrincipal, 0);
+    const sourceGroupId = `time-deposit-settlement-${row.id}-${row.maturityDate}`;
+    const activityDate = toActivityDate(row.maturityDate);
+    const creates = [
+      {
+        accountId: row.linkedAccountId,
+        activityType: ActivityType.SELL,
+        activityDate,
+        sourceGroupId,
+        symbol: {
+          id: row.id,
+          kind: AssetKind.TIME_DEPOSIT,
+          name: row.name,
+          quoteMode: QuoteMode.MANUAL,
+        },
+        quantity: "1",
+        unitPrice: formatSettlementAmount(settledPrincipal),
+        currency: row.currency,
+        metadata: {
+          panorama_time_deposit_role: "settlement_principal",
+          asset_id: row.id,
+        },
+      },
+      ...(settledInterest > 0
+        ? [
+            {
+              accountId: row.linkedAccountId,
+              activityType: ActivityType.INTEREST,
+              activityDate,
+              sourceGroupId,
+              amount: formatSettlementAmount(settledInterest),
+              currency: row.currency,
+              metadata: {
+                panorama_time_deposit_role: "settlement_interest",
+                asset_id: row.id,
+              },
+            },
+          ]
+        : []),
+    ];
+
+    setSettlingAssetId(row.id);
+    try {
+      const result = await saveActivities({ creates });
+      const settlementActivityIds = result.created.map((activity) => activity.id);
+
+      await updateMetadataMutation.mutateAsync({
+        assetId: row.id,
+        metadata: buildTimeDepositMetadata({
+          status: "closed",
+          settlement_date: row.maturityDate,
+          settlement_account_id: row.linkedAccountId,
+          settlement_activity_ids: settlementActivityIds,
+          settled_principal: settledPrincipal,
+          settled_interest: settledInterest,
+          actual_maturity_value: maturityValue,
+        }),
+      });
+
+      await updateValuationMutation.mutateAsync({
+        assetId: row.id,
+        request: {
+          value: "0",
+          date: row.maturityDate,
+        },
+      });
+    } finally {
+      setSettlingAssetId(null);
+    }
   };
 
   return (
@@ -567,6 +671,17 @@ export default function TimeDepositsDashboard({ today }: { today?: Date } = {}) 
                         >
                           Open
                         </Button>
+                        {row.canSettle ? (
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant="outline"
+                            disabled={settlingAssetId === row.id}
+                            onClick={() => void handleSettleToCash(row)}
+                          >
+                            Settle to Cash
+                          </Button>
+                        ) : null}
                         <Button
                           type="button"
                           size="sm"
