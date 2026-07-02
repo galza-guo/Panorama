@@ -31,6 +31,7 @@ import {
 import { useAlternativeAssetMutations } from "./alternative-assets/hooks/use-alternative-asset-mutations";
 import { LinkedLiabilitiesSection, LinkedAssetSection } from "./linked-liabilities-card";
 import { useQuoteMutations } from "./hooks/use-quote-mutations";
+import { useAccounts } from "@/hooks/use-accounts";
 import { useBalancePrivacy } from "@/hooks/use-balance-privacy";
 import { useLinkedLiabilities, useAlternativeHoldings } from "@/hooks/use-alternative-assets";
 import {
@@ -124,6 +125,7 @@ function buildTimeDepositPatch(values: TimeDepositFormValues) {
     ...buildTimeDepositMetadataPatch({
       owner: values.owner,
       provider: values.provider,
+      linked_account_id: values.linkedAccountId,
       principal: parsePositiveNumber(values.principal),
       start_date: toIsoDate(values.startDate),
       maturity_date: toIsoDate(values.maturityDate),
@@ -1277,6 +1279,8 @@ export function useAlternativeAssetActions({
   allHoldings,
   onNavigateBack,
 }: AlternativeAssetActionsProps) {
+  const { accounts } = useAccounts({ filterActive: true, includeArchived: false });
+
   // Modal state
   const [updateValuationOpen, setUpdateValuationOpen] = useState(false);
   const [editDetailsOpen, setEditDetailsOpen] = useState(false);
@@ -1523,6 +1527,7 @@ export function useAlternativeAssetActions({
           onOpenChange={setEditTimeDepositOpen}
           mode="edit"
           holding={holding}
+          accounts={accounts}
           onSubmit={handleTimeDepositSave}
           isSubmitting={updateMetadataMutation.isPending || updateValuationMutation.isPending}
         />

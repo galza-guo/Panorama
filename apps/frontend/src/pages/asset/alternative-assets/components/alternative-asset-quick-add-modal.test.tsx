@@ -4,11 +4,13 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const {
   useAlternativeAssetMutationsMock,
+  useAccountsMock,
   useSettingsContextMock,
   timeDepositEditorValuesRef,
   insuranceEditorValuesRef,
 } = vi.hoisted(() => ({
   useAlternativeAssetMutationsMock: vi.fn(),
+  useAccountsMock: vi.fn(),
   useSettingsContextMock: vi.fn(),
   timeDepositEditorValuesRef: { current: null as Record<string, unknown> | null },
   insuranceEditorValuesRef: { current: null as Record<string, unknown> | null },
@@ -20,6 +22,10 @@ vi.mock("@/pages/asset/alternative-assets/hooks/use-alternative-asset-mutations"
 
 vi.mock("@/lib/settings-provider", () => ({
   useSettingsContext: useSettingsContextMock,
+}));
+
+vi.mock("@/hooks/use-accounts", () => ({
+  useAccounts: useAccountsMock,
 }));
 
 vi.mock("@/pages/time-deposits/components/time-deposit-editor-sheet", () => ({
@@ -74,6 +80,7 @@ function buildFormValues(overrides: Record<string, unknown> = {}) {
     currency: "HKD",
     owner: "Alice",
     provider: "HSBC",
+    linkedAccountId: "acc-hkd",
     principal: "10000",
     startDate: new Date("2026-01-01T00:00:00Z"),
     maturityDate: new Date("2026-04-11T00:00:00Z"),
@@ -124,6 +131,19 @@ describe("alternative asset quick add modal", () => {
         baseCurrency: "HKD",
       },
     });
+    useAccountsMock.mockReturnValue({
+      accounts: [
+        {
+          id: "acc-hkd",
+          name: "HSBC HKD",
+          currency: "HKD",
+        },
+      ],
+      isLoading: false,
+      isError: false,
+      error: null,
+      refetch: vi.fn(),
+    });
     useAlternativeAssetMutationsMock.mockReturnValue({
       createMutation: {
         isPending: false,
@@ -138,6 +158,7 @@ describe("alternative asset quick add modal", () => {
 
   afterEach(() => {
     useAlternativeAssetMutationsMock.mockReset();
+    useAccountsMock.mockReset();
     useSettingsContextMock.mockReset();
     timeDepositEditorValuesRef.current = null;
     insuranceEditorValuesRef.current = null;
@@ -179,6 +200,7 @@ describe("alternative asset quick add modal", () => {
           sub_type: "time_deposit",
           owner: "Alice",
           provider: "HSBC",
+          linked_account_id: "acc-hkd",
           principal: 10000,
           start_date: "2026-01-01",
           maturity_date: "2026-04-11",
@@ -201,6 +223,7 @@ describe("alternative asset quick add modal", () => {
           sub_type: "time_deposit",
           owner: "Alice",
           provider: "HSBC",
+          linked_account_id: "acc-hkd",
           principal: 10000,
           start_date: "2026-01-01",
           maturity_date: "2026-04-11",

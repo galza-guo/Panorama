@@ -20,6 +20,7 @@ import {
   QuantityInput,
 } from "@panorama/ui";
 import { cn } from "@/lib/utils";
+import { useAccounts } from "@/hooks/use-accounts";
 import { useSettingsContext } from "@/lib/settings-provider";
 import {
   buildInsuranceMetadata,
@@ -217,6 +218,7 @@ function buildTimeDepositCreateMetadata(values: TimeDepositFormValues) {
     ...buildTimeDepositMetadata({
       owner: values.owner,
       provider: values.provider,
+      linked_account_id: values.linkedAccountId,
       principal: parsePositiveNumber(values.principal),
       start_date: toIsoDate(values.startDate),
       maturity_date: toIsoDate(values.maturityDate),
@@ -244,6 +246,7 @@ function buildTimeDepositPatch(values: TimeDepositFormValues) {
     ...buildTimeDepositMetadataPatch({
       owner: values.owner,
       provider: values.provider,
+      linked_account_id: values.linkedAccountId,
       principal: parsePositiveNumber(values.principal),
       start_date: toIsoDate(values.startDate),
       maturity_date: toIsoDate(values.maturityDate),
@@ -371,6 +374,7 @@ export function AlternativeAssetQuickAddModal({
 }: AlternativeAssetQuickAddModalProps) {
   const { settings } = useSettingsContext();
   const baseCurrency = settings?.baseCurrency ?? "USD";
+  const { accounts } = useAccounts({ filterActive: true, includeArchived: false });
   const effectiveToday = useMemo(() => today ?? getTodayDate(), [today]);
 
   const [step, setStep] = useState<1 | 2>(1);
@@ -616,6 +620,7 @@ export function AlternativeAssetQuickAddModal({
           }
         }}
         mode="create"
+        accounts={accounts}
         onSubmit={handleTimeDepositSubmit}
         isSubmitting={isSubmitting}
       />

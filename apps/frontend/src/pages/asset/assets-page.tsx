@@ -16,6 +16,7 @@ import {
 } from "@panorama/ui/components/ui/alert-dialog";
 import { RefreshQuotesConfirmDialog } from "./refresh-quotes-confirm-dialog";
 
+import { useAccounts } from "@/hooks/use-accounts";
 import { useAlternativeHoldings } from "@/hooks/use-alternative-assets";
 import { useIsMobileViewport } from "@/hooks/use-platform";
 import { useSyncMarketDataMutation } from "@/hooks/use-sync-market-data";
@@ -102,6 +103,7 @@ function buildTimeDepositCreateMetadata(values: TimeDepositFormValues) {
     ...buildTimeDepositMetadata({
       owner: values.owner,
       provider: values.provider,
+      linked_account_id: values.linkedAccountId,
       principal: parsePositiveNumber(values.principal),
       start_date: toIsoDate(values.startDate),
       maturity_date: toIsoDate(values.maturityDate),
@@ -129,6 +131,7 @@ function buildTimeDepositPatch(values: TimeDepositFormValues) {
     ...buildTimeDepositMetadataPatch({
       owner: values.owner,
       provider: values.provider,
+      linked_account_id: values.linkedAccountId,
       principal: parsePositiveNumber(values.principal),
       start_date: toIsoDate(values.startDate),
       maturity_date: toIsoDate(values.maturityDate),
@@ -315,6 +318,7 @@ function mergeSubfunds(
 export default function AssetsPage() {
   const queryClient = useQueryClient();
   const { assets, isLoading } = useAssets();
+  const { accounts } = useAccounts({ filterActive: true, includeArchived: false });
   const { data: alternativeHoldings = [] } = useAlternativeHoldings();
   const { deleteAssetMutation } = useAssetManagement();
   const { createMutation, updateMetadataMutation, updateValuationMutation } =
@@ -755,6 +759,7 @@ export default function AssetsPage() {
         }}
         mode={editingTimeDepositAssetId ? "edit" : "create"}
         holding={editingTimeDepositHolding}
+        accounts={accounts}
         onSubmit={handleTimeDepositSubmit}
         isSubmitting={isSavingTimeDeposit}
       />

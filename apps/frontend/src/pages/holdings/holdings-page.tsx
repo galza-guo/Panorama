@@ -125,6 +125,7 @@ function buildTimeDepositPatch(values: TimeDepositFormValues) {
     ...buildTimeDepositMetadataPatch({
       owner: values.owner,
       provider: values.provider,
+      linked_account_id: values.linkedAccountId,
       principal: parsePositiveNumber(values.principal),
       start_date: toIsoDate(values.startDate),
       maturity_date: toIsoDate(values.maturityDate),
@@ -1141,6 +1142,7 @@ export const HoldingsPage = () => {
         onOpenChange={(open) => !open && setEditTimeDepositAsset(null)}
         mode="edit"
         holding={editTimeDepositAsset}
+        accounts={accounts}
         onSubmit={handleTimeDepositSave}
         isSubmitting={isSavingDetails}
       />

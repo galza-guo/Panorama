@@ -26,6 +26,13 @@ vi.mock("@/hooks/use-alternative-assets", () => ({
   useLinkedLiabilities: () => ({ data: [] }),
 }));
 
+vi.mock("@/hooks/use-accounts", () => ({
+  useAccounts: () => ({
+    accounts: [{ id: "acc-hkd", name: "HSBC HKD", currency: "HKD" }],
+    isLoading: false,
+  }),
+}));
+
 vi.mock("@/pages/mpf/components/mpf-asset-editor-sheet", () => ({
   MpfAssetEditorSheet: ({ open }: { open: boolean }) =>
     open ? <div>Mock MPF Edit Sheet</div> : null,
