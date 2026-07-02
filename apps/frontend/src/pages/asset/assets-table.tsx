@@ -38,6 +38,7 @@ import {
   isStaleQuote,
   ParsedAsset,
 } from "./asset-utils";
+import { getTimeDepositSettlementState } from "@/pages/time-deposits/time-deposit-settlement";
 
 interface AssetsTableProps {
   assets: ParsedAsset[];
@@ -47,6 +48,8 @@ interface AssetsTableProps {
   onDelete: (asset: ParsedAsset) => void;
   onUpdateQuotes: (asset: ParsedAsset) => void;
   onRefetchQuotes: (asset: ParsedAsset) => void;
+  onSettleTimeDeposit?: (asset: ParsedAsset) => void;
+  settlingTimeDepositAssetId?: string | null;
   isUpdatingQuotes?: boolean;
   isRefetchingQuotes?: boolean;
 }
@@ -64,6 +67,8 @@ export function AssetsTable({
   onDelete,
   onUpdateQuotes,
   onRefetchQuotes,
+  onSettleTimeDeposit,
+  settlingTimeDepositAssetId,
   isUpdatingQuotes,
   isRefetchingQuotes,
 }: AssetsTableProps) {
@@ -269,6 +274,12 @@ export function AssetsTable({
         cell: ({ row }) => {
           const asset = row.original;
           const isMpfAsset = getPanoramaAssetCategory(asset) === "MPF";
+          const timeDepositSettlement = getTimeDepositSettlementState({
+            id: asset.id,
+            name: asset.name ?? asset.displayCode ?? "Time Deposit",
+            currency: asset.quoteCcy,
+            metadata: asset.metadata,
+          });
           return (
             <div className="flex justify-end">
               <DropdownMenu>
@@ -285,6 +296,14 @@ export function AssetsTable({
                   <DropdownMenuItem onClick={() => onEdit(asset)}>
                     {getPanoramaAssetEditLabel(asset)}
                   </DropdownMenuItem>
+                  {timeDepositSettlement.canSettle && onSettleTimeDeposit ? (
+                    <DropdownMenuItem
+                      onClick={() => onSettleTimeDeposit(asset)}
+                      disabled={settlingTimeDepositAssetId === asset.id}
+                    >
+                      Settle to Cash
+                    </DropdownMenuItem>
+                  ) : null}
                   <DropdownMenuSeparator />
                   <DropdownMenuItem
                     onClick={() => onUpdateQuotes(asset)}
@@ -317,9 +336,11 @@ export function AssetsTable({
       onDelete,
       onEdit,
       onRefetchQuotes,
+      onSettleTimeDeposit,
       onUpdateQuotes,
       isRefetchingQuotes,
       isUpdatingQuotes,
+      settlingTimeDepositAssetId,
       navigate,
     ],
   );

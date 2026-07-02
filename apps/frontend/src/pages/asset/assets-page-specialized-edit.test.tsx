@@ -2,10 +2,22 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import type { ReactNode } from "react";
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import type { AlternativeAssetHolding, Asset } from "@/lib/types";
 import type { ParsedAsset } from "./asset-utils";
+
+const {
+  saveActivitiesMock,
+  updateMetadataMutationMock,
+  updateValuationMutationMock,
+  useAssetsMock,
+} = vi.hoisted(() => ({
+  saveActivitiesMock: vi.fn(),
+  updateMetadataMutationMock: vi.fn(),
+  updateValuationMutationMock: vi.fn(),
+  useAssetsMock: vi.fn(),
+}));
 
 const insuranceAsset = {
   id: "ALT-INS-1",
@@ -20,6 +32,34 @@ const insuranceAsset = {
     panorama_category: "insurance",
     sub_type: "insurance",
     insurance_provider: "Chubb",
+  },
+  isActive: true,
+  createdAt: "2026-02-20T00:00:00Z",
+  updatedAt: "2026-02-20T00:00:00Z",
+} as Asset;
+
+const timeDepositAsset = {
+  id: "ALT-TD-1",
+  name: "HSBC 3M Deposit",
+  displayCode: "Time Deposit",
+  description: null,
+  kind: "OTHER",
+  quoteCcy: "HKD",
+  quoteSource: null,
+  quoteMode: "MANUAL",
+  metadata: {
+    panorama_category: "time_deposit",
+    sub_type: "time_deposit",
+    owner: "Alice",
+    provider: "HSBC",
+    linked_account_id: "acc-hkd",
+    principal: "10000",
+    start_date: "2026-01-01",
+    maturity_date: "2026-02-20",
+    guaranteed_maturity_value: "10200",
+    valuation_mode: "derived",
+    valuation_date: "2026-02-20",
+    status: "active",
   },
   isActive: true,
   createdAt: "2026-02-20T00:00:00Z",
@@ -56,6 +96,7 @@ vi.mock("@/hooks/use-sync-market-data", () => ({
 
 vi.mock("@/adapters", () => ({
   syncPanoramaMpfUnitPrices: vi.fn(),
+  saveActivities: saveActivitiesMock,
 }));
 
 vi.mock("../settings/settings-header", () => ({
@@ -63,7 +104,7 @@ vi.mock("../settings/settings-header", () => ({
 }));
 
 vi.mock("./hooks/use-assets", () => ({
-  useAssets: () => ({ assets: [insuranceAsset], isLoading: false }),
+  useAssets: () => useAssetsMock(),
 }));
 
 vi.mock("./hooks/use-latest-quotes", () => ({
@@ -79,8 +120,8 @@ vi.mock("./hooks/use-asset-management", () => ({
 vi.mock("./alternative-assets/hooks", () => ({
   useAlternativeAssetMutations: () => ({
     createMutation: { mutateAsync: vi.fn(), isPending: false },
-    updateMetadataMutation: { mutateAsync: vi.fn(), isPending: false },
-    updateValuationMutation: { mutateAsync: vi.fn(), isPending: false },
+    updateMetadataMutation: { mutateAsync: updateMetadataMutationMock, isPending: false },
+    updateValuationMutation: { mutateAsync: updateValuationMutationMock, isPending: false },
   }),
 }));
 
@@ -88,15 +129,24 @@ vi.mock("./assets-table", () => ({
   AssetsTable: ({
     assets,
     onEdit,
+    onSettleTimeDeposit,
   }: {
     assets: ParsedAsset[];
     onEdit: (asset: ParsedAsset) => void;
+    onSettleTimeDeposit?: (asset: ParsedAsset) => void;
   }) => (
     <div>
       {assets.map((asset) => (
-        <button key={asset.id} type="button" onClick={() => onEdit(asset)}>
-          Edit {asset.name}
-        </button>
+        <div key={asset.id}>
+          <button type="button" onClick={() => onEdit(asset)}>
+            Edit {asset.name}
+          </button>
+          {onSettleTimeDeposit ? (
+            <button type="button" onClick={() => onSettleTimeDeposit(asset)}>
+              Settle {asset.name}
+            </button>
+          ) : null}
+        </div>
       ))}
     </div>
   ),
@@ -130,6 +180,20 @@ vi.mock("@/pages/insurance/components/insurance-policy-editor-sheet", () => ({
 
 import AssetsPage from "./assets-page";
 
+beforeEach(() => {
+  vi.clearAllMocks();
+  useAssetsMock.mockReturnValue({ assets: [insuranceAsset], isLoading: false });
+  saveActivitiesMock.mockResolvedValue({
+    created: [{ id: "act-sell" }, { id: "act-interest" }],
+    updated: [],
+    deleted: [],
+    createdMappings: [],
+    errors: [],
+  });
+  updateMetadataMutationMock.mockResolvedValue(undefined);
+  updateValuationMutationMock.mockResolvedValue(undefined);
+});
+
 function renderPage() {
   const queryClient = new QueryClient({
     defaultOptions: {
@@ -155,5 +219,50 @@ describe("assets page specialized asset editors", () => {
 
     expect(screen.getByText("Edit Insurance Policy")).toBeInTheDocument();
     expect(screen.queryByText("Generic Asset Edit Sheet")).not.toBeInTheDocument();
+  });
+
+  it("settles matured time deposits from the assets page", async () => {
+    const user = userEvent.setup();
+    useAssetsMock.mockReturnValue({ assets: [timeDepositAsset], isLoading: false });
+
+    renderPage();
+
+    await user.click(screen.getByRole("button", { name: "Settle HSBC 3M Deposit" }));
+
+    expect(saveActivitiesMock).toHaveBeenCalledWith({
+      creates: [
+        expect.objectContaining({
+          accountId: "acc-hkd",
+          activityType: "SELL",
+          unitPrice: "10000",
+          currency: "HKD",
+        }),
+        expect.objectContaining({
+          accountId: "acc-hkd",
+          activityType: "INTEREST",
+          amount: "200",
+          currency: "HKD",
+        }),
+      ],
+    });
+    expect(updateMetadataMutationMock).toHaveBeenCalledWith({
+      assetId: "ALT-TD-1",
+      metadata: expect.objectContaining({
+        status: "closed",
+        settlement_date: "2026-02-20",
+        settlement_account_id: "acc-hkd",
+        settlement_activity_ids: ["act-sell", "act-interest"],
+        settled_principal: 10000,
+        settled_interest: 200,
+        actual_maturity_value: 10200,
+      }),
+    });
+    expect(updateValuationMutationMock).toHaveBeenCalledWith({
+      assetId: "ALT-TD-1",
+      request: {
+        value: "0",
+        date: "2026-02-20",
+      },
+    });
   });
 });

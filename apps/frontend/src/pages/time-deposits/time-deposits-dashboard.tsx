@@ -20,12 +20,16 @@ import {
   parsePanoramaAssetAttributes,
 } from "@/lib/panorama-asset-attributes";
 import {
-  deriveTimeDepositMaturityValue,
   getEffectiveTimeDepositCurrentValue,
   getTimeDepositDerivedMetrics,
 } from "@/lib/time-deposit-calculations";
 import type { AlternativeAssetHolding } from "@/lib/types";
 import { useAlternativeAssetMutations } from "@/pages/asset/alternative-assets/hooks";
+import {
+  buildTimeDepositSettlementActivities,
+  buildTimeDepositSettlementMetadata,
+  getTimeDepositSettlementState,
+} from "./time-deposit-settlement";
 
 import {
   TimeDepositEditorSheet,
@@ -58,10 +62,6 @@ function toIsoDate(value: Date): string {
 function getTodayDate(): Date {
   const now = new Date();
   return new Date(Date.UTC(now.getFullYear(), now.getMonth(), now.getDate()));
-}
-
-function toActivityDate(value: string): string {
-  return new Date(`${value}T00:00:00Z`).toISOString();
 }
 
 function parsePositiveNumber(value: string): number | undefined {
@@ -217,10 +217,6 @@ function formatValueForMutation(value: number | undefined): string | undefined {
     : undefined;
 }
 
-function formatSettlementAmount(value: number): string {
-  return String(Number(value.toFixed(2)));
-}
-
 export default function TimeDepositsDashboard({ today }: { today?: Date } = {}) {
   const navigate = useNavigate();
   const { data: holdings = [], isLoading } = useAlternativeHoldings();
@@ -239,32 +235,24 @@ export default function TimeDepositsDashboard({ today }: { today?: Date } = {}) 
 
     return timeDepositHoldings.map((holding) => {
       const attributes = parsePanoramaAssetAttributes(holding.metadata);
-      const principal = asFiniteNumber(attributes.principal ?? holding.purchasePrice);
+      const settlement = getTimeDepositSettlementState(
+        {
+          id: holding.id,
+          name: holding.name,
+          currency: holding.currency,
+          metadata: holding.metadata,
+          purchasePrice: holding.purchasePrice,
+        },
+        asOfDate,
+      );
+      const principal = settlement.principal;
       const quotedAnnualRate = asFiniteNumber(attributes.quoted_annual_rate);
       const currentValueOverride = asFiniteNumber(attributes.current_value_override);
       const valuationMode = attributes.valuation_mode === "manual" ? "manual" : "derived";
       const startDate =
         typeof attributes.start_date === "string" ? attributes.start_date : undefined;
-      const maturityDate =
-        typeof attributes.maturity_date === "string" ? attributes.maturity_date : undefined;
-      const linkedAccountId =
-        typeof attributes.linked_account_id === "string" && attributes.linked_account_id.trim()
-          ? attributes.linked_account_id.trim()
-          : undefined;
-      const isClosed = attributes.status === "closed";
-      const guaranteedMaturityValue =
-        asFiniteNumber(attributes.guaranteed_maturity_value) ??
-        (principal !== undefined &&
-        startDate !== undefined &&
-        maturityDate !== undefined &&
-        quotedAnnualRate !== undefined
-          ? deriveTimeDepositMaturityValue({
-              principal,
-              startDate,
-              maturityDate,
-              quotedAnnualRatePct: quotedAnnualRate,
-            })
-          : undefined);
+      const maturityDate = settlement.maturityDate;
+      const guaranteedMaturityValue = settlement.maturityValue;
       const canDeriveCurrentValue =
         principal !== undefined &&
         startDate !== undefined &&
@@ -312,15 +300,9 @@ export default function TimeDepositsDashboard({ today }: { today?: Date } = {}) 
         maturityValue: guaranteedMaturityValue,
         daysLeft: derivedMetrics?.daysLeft,
         maturityDate,
-        linkedAccountId,
-        isClosed,
-        canSettle:
-          !isClosed &&
-          linkedAccountId !== undefined &&
-          principal !== undefined &&
-          guaranteedMaturityValue !== undefined &&
-          maturityDate !== undefined &&
-          maturityDate <= asOfDate,
+        linkedAccountId: settlement.linkedAccountId,
+        isClosed: settlement.isClosed,
+        canSettle: settlement.canSettle,
       };
     });
   }, [timeDepositHoldings, today]);
@@ -448,48 +430,7 @@ export default function TimeDepositsDashboard({ today }: { today?: Date } = {}) 
       return;
     }
 
-    const maturityValue = row.maturityValue ?? row.principal;
-    const settledPrincipal = row.principal;
-    const settledInterest = Math.max(maturityValue - settledPrincipal, 0);
-    const sourceGroupId = `time-deposit-settlement-${row.id}-${row.maturityDate}`;
-    const activityDate = toActivityDate(row.maturityDate);
-    const creates = [
-      {
-        accountId: row.linkedAccountId,
-        activityType: ActivityType.SELL,
-        activityDate,
-        sourceGroupId,
-        symbol: {
-          id: row.id,
-          kind: AssetKind.TIME_DEPOSIT,
-          name: row.name,
-          quoteMode: QuoteMode.MANUAL,
-        },
-        quantity: "1",
-        unitPrice: formatSettlementAmount(settledPrincipal),
-        currency: row.currency,
-        metadata: {
-          panorama_time_deposit_role: "settlement_principal",
-          asset_id: row.id,
-        },
-      },
-      ...(settledInterest > 0
-        ? [
-            {
-              accountId: row.linkedAccountId,
-              activityType: ActivityType.INTEREST,
-              activityDate,
-              sourceGroupId,
-              amount: formatSettlementAmount(settledInterest),
-              currency: row.currency,
-              metadata: {
-                panorama_time_deposit_role: "settlement_interest",
-                asset_id: row.id,
-              },
-            },
-          ]
-        : []),
-    ];
+    const creates = buildTimeDepositSettlementActivities(row, row);
 
     setSettlingAssetId(row.id);
     try {
@@ -498,15 +439,7 @@ export default function TimeDepositsDashboard({ today }: { today?: Date } = {}) 
 
       await updateMetadataMutation.mutateAsync({
         assetId: row.id,
-        metadata: buildTimeDepositMetadata({
-          status: "closed",
-          settlement_date: row.maturityDate,
-          settlement_account_id: row.linkedAccountId,
-          settlement_activity_ids: settlementActivityIds,
-          settled_principal: settledPrincipal,
-          settled_interest: settledInterest,
-          actual_maturity_value: maturityValue,
-        }),
+        metadata: buildTimeDepositSettlementMetadata(row, settlementActivityIds),
       });
 
       await updateValuationMutation.mutateAsync({

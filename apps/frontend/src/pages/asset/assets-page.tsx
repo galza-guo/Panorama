@@ -16,6 +16,7 @@ import {
 } from "@panorama/ui/components/ui/alert-dialog";
 import { RefreshQuotesConfirmDialog } from "./refresh-quotes-confirm-dialog";
 
+import { saveActivities } from "@/adapters";
 import { useAccounts } from "@/hooks/use-accounts";
 import { useAlternativeHoldings } from "@/hooks/use-alternative-assets";
 import { useIsMobileViewport } from "@/hooks/use-platform";
@@ -43,6 +44,11 @@ import {
   TimeDepositEditorSheet,
   type TimeDepositFormValues,
 } from "@/pages/time-deposits/components/time-deposit-editor-sheet";
+import {
+  buildTimeDepositSettlementActivities,
+  buildTimeDepositSettlementMetadata,
+  getTimeDepositSettlementState,
+} from "@/pages/time-deposits/time-deposit-settlement";
 import {
   InsurancePolicyEditorSheet,
   type InsurancePolicyFormValues,
@@ -360,6 +366,7 @@ export default function AssetsPage() {
   const [editingMpfAssetId, setEditingMpfAssetId] = useState<string | null>(null);
   const [isCreatingTimeDeposit, setIsCreatingTimeDeposit] = useState(false);
   const [editingTimeDepositAssetId, setEditingTimeDepositAssetId] = useState<string | null>(null);
+  const [settlingTimeDepositAssetId, setSettlingTimeDepositAssetId] = useState<string | null>(null);
   const [isCreatingInsurance, setIsCreatingInsurance] = useState(false);
   const [editingInsuranceAssetId, setEditingInsuranceAssetId] = useState<string | null>(null);
   const [assetPendingDelete, setAssetPendingDelete] = useState<ParsedAsset | null>(null);
@@ -583,6 +590,43 @@ export default function AssetsPage() {
     setEditingTimeDepositAssetId(null);
   };
 
+  const handleSettleTimeDeposit = async (asset: ParsedAsset) => {
+    const source = {
+      id: asset.id,
+      name: asset.name ?? asset.displayCode ?? "Time Deposit",
+      currency: asset.quoteCcy,
+      metadata: asset.metadata,
+    };
+    const settlement = getTimeDepositSettlementState(source);
+
+    if (!settlement.canSettle || !settlement.maturityDate) {
+      return;
+    }
+
+    const creates = buildTimeDepositSettlementActivities(source, settlement);
+
+    setSettlingTimeDepositAssetId(asset.id);
+    try {
+      const result = await saveActivities({ creates });
+      const settlementActivityIds = result.created.map((activity) => activity.id);
+
+      await updateMetadataMutation.mutateAsync({
+        assetId: asset.id,
+        metadata: buildTimeDepositSettlementMetadata(settlement, settlementActivityIds),
+      });
+
+      await updateValuationMutation.mutateAsync({
+        assetId: asset.id,
+        request: {
+          value: "0",
+          date: settlement.maturityDate,
+        },
+      });
+    } finally {
+      setSettlingTimeDepositAssetId(null);
+    }
+  };
+
   const handleInsuranceSubmit = async (values: InsurancePolicyFormValues) => {
     const valuationDate = toIsoDate(new Date());
 
@@ -706,6 +750,8 @@ export default function AssetsPage() {
             onDelete={(asset) => setAssetPendingDelete(asset)}
             onUpdateQuotes={handleUpdateQuotes}
             onRefetchQuotes={handleRefetchQuotes}
+            onSettleTimeDeposit={(asset) => void handleSettleTimeDeposit(asset)}
+            settlingTimeDepositAssetId={settlingTimeDepositAssetId}
             isUpdatingQuotes={updateQuotesMutation.isPending || syncMpfMutation.isPending}
             isRefetchingQuotes={refetchQuotesMutation.isPending || syncMpfMutation.isPending}
           />
@@ -718,6 +764,8 @@ export default function AssetsPage() {
             onDelete={(asset) => setAssetPendingDelete(asset)}
             onUpdateQuotes={handleUpdateQuotes}
             onRefetchQuotes={handleRefetchQuotes}
+            onSettleTimeDeposit={(asset) => void handleSettleTimeDeposit(asset)}
+            settlingTimeDepositAssetId={settlingTimeDepositAssetId}
             isUpdatingQuotes={updateQuotesMutation.isPending || syncMpfMutation.isPending}
             isRefetchingQuotes={refetchQuotesMutation.isPending || syncMpfMutation.isPending}
           />

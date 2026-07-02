@@ -37,6 +37,7 @@ import {
   ParsedAsset,
   type PanoramaAssetCategory,
 } from "./asset-utils";
+import { getTimeDepositSettlementState } from "@/pages/time-deposits/time-deposit-settlement";
 
 interface AssetsTableMobileProps {
   assets: ParsedAsset[];
@@ -47,6 +48,8 @@ interface AssetsTableMobileProps {
   onUpdateQuotes: (asset: ParsedAsset) => void;
   onRefetchQuotes: (asset: ParsedAsset) => void;
   onClassify?: (asset: ParsedAsset) => void;
+  onSettleTimeDeposit?: (asset: ParsedAsset) => void;
+  settlingTimeDepositAssetId?: string | null;
   isUpdatingQuotes?: boolean;
   isRefetchingQuotes?: boolean;
 }
@@ -60,6 +63,8 @@ export function AssetsTableMobile({
   onUpdateQuotes,
   onRefetchQuotes,
   onClassify,
+  onSettleTimeDeposit,
+  settlingTimeDepositAssetId,
   isUpdatingQuotes,
   isRefetchingQuotes,
 }: AssetsTableMobileProps) {
@@ -242,6 +247,12 @@ export function AssetsTableMobile({
           const category = getPanoramaAssetCategory(asset);
           const isMpfAsset = category === "MPF";
           const timeDepositDisplay = getTimeDepositDisplayState(asset);
+          const timeDepositSettlement = getTimeDepositSettlementState({
+            id: asset.id,
+            name: asset.name ?? asset.displayCode ?? "Time Deposit",
+            currency: asset.quoteCcy,
+            metadata: asset.metadata,
+          });
           const displaySymbol =
             getDisplaySymbol({
               symbol: asset.displayCode ?? asset.instrumentSymbol,
@@ -349,6 +360,14 @@ export function AssetsTableMobile({
                       <DropdownMenuItem onClick={() => onEdit(asset)}>
                         {getPanoramaAssetEditLabel(asset)}
                       </DropdownMenuItem>
+                      {timeDepositSettlement.canSettle && onSettleTimeDeposit ? (
+                        <DropdownMenuItem
+                          onClick={() => onSettleTimeDeposit(asset)}
+                          disabled={settlingTimeDepositAssetId === asset.id}
+                        >
+                          Settle to Cash
+                        </DropdownMenuItem>
+                      ) : null}
                       <DropdownMenuItem
                         className="text-destructive focus:text-destructive"
                         onSelect={() => onDelete(asset)}
