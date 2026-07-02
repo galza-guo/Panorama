@@ -161,6 +161,22 @@ describe("time deposit editor sheet", () => {
     expect(screen.getByLabelText("Manual Current Value")).toHaveValue("10123.45");
   });
 
+  it("loads existing holding values when accounts are not provided", () => {
+    render(
+      <TimeDepositEditorSheet
+        open={true}
+        onOpenChange={vi.fn()}
+        mode="edit"
+        holding={buildHolding()}
+        onSubmit={vi.fn().mockResolvedValue(undefined)}
+        today={TODAY}
+      />,
+    );
+
+    expect(screen.getByLabelText("Deposit Name")).toHaveValue("HSBC 3M Deposit");
+    expect(screen.getByLabelText("Linked Account")).toHaveValue("acc-hkd");
+  });
+
   it("updates rate-driven previews", async () => {
     const user = userEvent.setup();
 

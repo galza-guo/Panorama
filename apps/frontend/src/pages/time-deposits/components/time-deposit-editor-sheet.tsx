@@ -26,6 +26,8 @@ import {
 type TimeDepositInputMode = "rate" | "maturity";
 type TimeDepositValuationMode = "derived" | "manual";
 
+const EMPTY_ACCOUNTS: Pick<Account, "id" | "name" | "currency">[] = [];
+
 export interface TimeDepositFormValues {
   name: string;
   currency: string;
@@ -151,19 +153,25 @@ export function TimeDepositEditorSheet({
   onOpenChange,
   mode,
   holding,
-  accounts = [],
+  accounts = EMPTY_ACCOUNTS,
   onSubmit,
   isSubmitting = false,
   today,
 }: TimeDepositEditorSheetProps) {
   const { settings } = useSettingsContext();
   const baseCurrency = settings?.baseCurrency ?? "HKD";
+  const accountsKey = accounts
+    .map((account) => `${account.id}:${account.name}:${account.currency}`)
+    .join("|");
   const defaults = useMemo(
     () => buildDefaultValues(holding, baseCurrency, today ?? getTodayDate(), accounts),
-    [holding, baseCurrency, open, today?.getTime(), accounts],
+    [holding, baseCurrency, open, today?.getTime(), accountsKey],
   );
   const [values, setValues] = useState<TimeDepositFormValues>(defaults);
   const [error, setError] = useState<string | null>(null);
+  const selectedLinkedAccountIsMissing =
+    values.linkedAccountId.trim() &&
+    !accounts.some((account) => account.id === values.linkedAccountId.trim());
 
   useEffect(() => {
     if (open) {
@@ -383,6 +391,11 @@ export function TimeDepositEditorSheet({
                 onChange={(event) => updateValue("linkedAccountId", event.target.value)}
               >
                 <option value="">Select account...</option>
+                {selectedLinkedAccountIsMissing ? (
+                  <option value={values.linkedAccountId}>
+                    Linked account ({values.linkedAccountId})
+                  </option>
+                ) : null}
                 {accounts.map((account) => (
                   <option key={account.id} value={account.id}>
                     {account.name} ({account.currency})
