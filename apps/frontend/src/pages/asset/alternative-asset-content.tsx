@@ -864,7 +864,7 @@ const AlternativeAssetDetailCard: React.FC<AlternativeAssetDetailCardProps> = ({
           <>
             <Separator className="my-4" />
             <div className="space-y-2">
-              <div className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
+              <div className="text-muted-foreground text-xs font-medium uppercase tracking-wide">
                 Subfunds
               </div>
               {mpfSubfundRows.length === 0 ? (

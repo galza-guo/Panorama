@@ -175,7 +175,7 @@ const AccountSummaryComponent = React.memo(
       }
 
       return (
-        <div className="border-border bg-card flex w-full items-center justify-between gap-3 rounded-lg border px-4 py-3 shadow-xs md:px-5 md:py-4">
+        <div className="border-border bg-card shadow-xs flex w-full items-center justify-between gap-3 rounded-lg border px-4 py-3 md:px-5 md:py-4">
           {skeletonContent}
         </div>
       );
@@ -209,14 +209,14 @@ const AccountSummaryComponent = React.memo(
     const content = (
       <>
         <div className="flex min-w-0 flex-1 flex-col gap-1 md:gap-1.5">
-          <h3 className="truncate text-sm leading-tight font-semibold md:text-base md:font-semibold">
+          <h3 className="truncate text-sm font-semibold leading-tight md:text-base md:font-semibold">
             {name}
           </h3>
           <p className="text-muted-foreground truncate text-xs md:text-sm">{subText}</p>
         </div>
         <div className="flex shrink-0 items-center gap-2 md:gap-3">
           <div className="flex min-h-[3rem] flex-col items-end justify-center gap-1 md:gap-1.5">
-            <p className="text-sm leading-tight font-semibold md:text-base md:font-semibold">
+            <p className="text-sm font-semibold leading-tight md:text-base md:font-semibold">
               <PrivacyAmount value={totalValue} currency={currency} />
             </p>
             {(gainAmountToDisplay !== null || gainPercentToDisplay !== null) &&
@@ -317,7 +317,7 @@ const AccountSummaryComponent = React.memo(
       return (
         <Link
           to={`/accounts/${accountId}`}
-          className="border-border bg-card flex w-full cursor-pointer items-center justify-between gap-3 rounded-lg border px-4 py-3 shadow-xs transition-all duration-150 hover:shadow-md md:px-5 md:py-4"
+          className="border-border bg-card shadow-xs flex w-full cursor-pointer items-center justify-between gap-3 rounded-lg border px-4 py-3 transition-all duration-150 hover:shadow-md md:px-5 md:py-4"
         >
           {content}
         </Link>
@@ -325,7 +325,7 @@ const AccountSummaryComponent = React.memo(
     }
 
     return (
-      <div className="border-border bg-card flex w-full items-center justify-between gap-3 rounded-lg border px-4 py-3 shadow-xs md:px-5 md:py-4">
+      <div className="border-border bg-card shadow-xs flex w-full items-center justify-between gap-3 rounded-lg border px-4 py-3 md:px-5 md:py-4">
         {content}
       </div>
     );
@@ -425,7 +425,7 @@ export const AccountsSummary = React.memo(() => {
       return Array.from({ length: 4 }).map((_, index) => (
         <div
           key={`skeleton-${index}`}
-          className="border-border bg-card rounded-lg border px-4 py-3 shadow-xs md:px-5 md:py-4"
+          className="border-border bg-card shadow-xs rounded-lg border px-4 py-3 md:px-5 md:py-4"
         >
           <AccountSummarySkeleton />
         </div>
@@ -441,7 +441,7 @@ export const AccountsSummary = React.memo(() => {
             </div>
             <div className="min-w-0 flex-1">
               <p className="text-destructive text-sm font-medium">Failed to load accounts</p>
-              <p className="text-muted-foreground mt-1 text-xs break-words">
+              <p className="text-muted-foreground mt-1 break-words text-xs">
                 {errorAccounts?.message || "An unexpected error occurred"}
               </p>
               <p className="text-muted-foreground mt-2 text-xs">
@@ -596,7 +596,7 @@ export const AccountsSummary = React.memo(() => {
             return (
               <div
                 key={group.accountName}
-                className="border-border bg-card overflow-hidden rounded-lg border shadow-xs transition-shadow duration-150 hover:shadow-md"
+                className="border-border bg-card shadow-xs overflow-hidden rounded-lg border transition-shadow duration-150 hover:shadow-md"
               >
                 <div className="cursor-pointer">
                   <AccountSummaryComponent

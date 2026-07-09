@@ -717,7 +717,7 @@ export function AlternativeAssetQuickAddModal({
                           <motion.div
                             initial={{ scale: 0 }}
                             animate={{ scale: 1 }}
-                            className="absolute top-2 right-2"
+                            className="absolute right-2 top-2"
                           >
                             <div className="bg-primary flex h-5 w-5 items-center justify-center rounded-full">
                               <Icons.Check className="text-primary-foreground h-3 w-3" />

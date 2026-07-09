@@ -40,8 +40,7 @@ export function getTimeDepositSettlementState(
   const principal = asFiniteNumber(attributes.principal ?? source.purchasePrice);
   const quotedAnnualRate = asFiniteNumber(attributes.quoted_annual_rate);
   const guaranteedMaturityValue = asFiniteNumber(attributes.guaranteed_maturity_value);
-  const startDate =
-    typeof attributes.start_date === "string" ? attributes.start_date : undefined;
+  const startDate = typeof attributes.start_date === "string" ? attributes.start_date : undefined;
   const maturityDate =
     typeof attributes.maturity_date === "string" ? attributes.maturity_date : undefined;
   const linkedAccountId =

@@ -101,12 +101,12 @@ describe("activities adapter", () => {
       activityDate: "2026-02-20",
       amount: "200",
       currency: "HKD",
-      metadata: "{\"already\":\"serialized\"}",
+      metadata: '{"already":"serialized"}',
     });
 
     expect(invokeMock).toHaveBeenCalledWith("update_activity", {
       activity: expect.objectContaining({
-        metadata: "{\"already\":\"serialized\"}",
+        metadata: '{"already":"serialized"}',
       }),
     });
   });

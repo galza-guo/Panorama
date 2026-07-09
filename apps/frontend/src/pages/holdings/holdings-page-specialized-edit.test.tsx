@@ -92,7 +92,10 @@ vi.mock("@/hooks/use-holdings", () => ({
 }));
 
 vi.mock("@/hooks/use-alternative-assets", () => ({
-  useAlternativeHoldings: () => ({ data: [insuranceHolding, timeDepositHolding], isLoading: false }),
+  useAlternativeHoldings: () => ({
+    data: [insuranceHolding, timeDepositHolding],
+    isLoading: false,
+  }),
   useDeleteAlternativeAsset: () => ({ mutate: vi.fn(), isPending: false }),
   useLinkLiability: () => ({ mutateAsync: vi.fn() }),
   useUnlinkLiability: () => ({ mutateAsync: vi.fn() }),

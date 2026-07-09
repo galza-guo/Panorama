@@ -68,7 +68,7 @@ export const HoldingsMobileFilterSheet = ({
             {/* View Settings */}
             <div className="grid grid-cols-1 gap-6">
               <div className="space-y-3">
-                <h4 className="text-muted-foreground text-xs font-medium tracking-wider uppercase">
+                <h4 className="text-muted-foreground text-xs font-medium uppercase tracking-wider">
                   Sort By
                 </h4>
                 <AnimatedToggleGroup<"symbol" | "marketValue">
@@ -84,7 +84,7 @@ export const HoldingsMobileFilterSheet = ({
               </div>
 
               <div className="space-y-3">
-                <h4 className="text-muted-foreground text-xs font-medium tracking-wider uppercase">
+                <h4 className="text-muted-foreground text-xs font-medium uppercase tracking-wider">
                   Return View
                 </h4>
                 <AnimatedToggleGroup
@@ -105,7 +105,7 @@ export const HoldingsMobileFilterSheet = ({
             {/* Category Filter Section */}
             {setCategoryFilter && (
               <div className="space-y-3">
-                <h4 className="text-muted-foreground text-xs font-medium tracking-wider uppercase">
+                <h4 className="text-muted-foreground text-xs font-medium uppercase tracking-wider">
                   Category
                 </h4>
                 <div className="overflow-hidden rounded-lg border">
@@ -138,7 +138,7 @@ export const HoldingsMobileFilterSheet = ({
             {/* Account Filter Section */}
             {showAccountFilter && (
               <div className="space-y-3">
-                <h4 className="text-muted-foreground text-xs font-medium tracking-wider uppercase">
+                <h4 className="text-muted-foreground text-xs font-medium uppercase tracking-wider">
                   Account
                 </h4>
                 <div className="overflow-hidden rounded-lg border">
@@ -201,7 +201,7 @@ export const HoldingsMobileFilterSheet = ({
 
             {/* Asset Type Filter Section */}
             <div className="space-y-3">
-              <h4 className="text-muted-foreground text-xs font-medium tracking-wider uppercase">
+              <h4 className="text-muted-foreground text-xs font-medium uppercase tracking-wider">
                 Asset Type
               </h4>
               <div className="overflow-hidden rounded-lg border">

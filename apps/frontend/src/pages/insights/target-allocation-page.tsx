@@ -445,7 +445,7 @@ function TargetMetricLabel({
   const showAmount = mode === "amount" || mode === "both";
 
   return (
-    <span className="flex shrink-0 items-center gap-1 text-xs whitespace-nowrap tabular-nums">
+    <span className="flex shrink-0 items-center gap-1 whitespace-nowrap text-xs tabular-nums">
       {showPercent && percent !== null && percent !== undefined && (
         <span className="text-muted-foreground">
           {isAuto ? `auto ${formatPercent(percent)}` : formatPercent(percent)}
@@ -709,7 +709,7 @@ function TargetRow({
             runRowAction();
           }}
           className={cn(
-            "group hover:bg-muted/45 grid min-h-[58px] grid-cols-[minmax(220px,1fr)_minmax(240px,2fr)] items-center gap-3 px-3 py-2 transition-colors max-md:grid-cols-1",
+            "hover:bg-muted/45 group grid min-h-[58px] grid-cols-[minmax(220px,1fr)_minmax(240px,2fr)] items-center gap-3 px-3 py-2 transition-colors max-md:grid-cols-1",
             isClickableRow ? "cursor-pointer" : "cursor-default",
             !isFolderRow && "border-b last:border-b-0",
             isRoot && "bg-muted/20",
@@ -1333,7 +1333,7 @@ function TargetAllocationEditor({ draft, setDraft, viewHoldings, dashboardRows }
               type="button"
               onClick={() => openNodeEditDialog(node)}
               className={cn(
-                "hover:bg-muted/60 focus-visible:ring-ring flex min-w-0 flex-none items-center gap-2 rounded-md py-1 pr-2 text-left transition-colors focus-visible:ring-2 focus-visible:outline-none",
+                "hover:bg-muted/60 focus-visible:ring-ring flex min-w-0 flex-none items-center gap-2 rounded-md py-1 pr-2 text-left transition-colors focus-visible:outline-none focus-visible:ring-2",
                 node.nodeKind === "folder"
                   ? "max-w-[calc(100%-7rem)]"
                   : "max-w-[calc(100%-4.75rem)]",
@@ -1730,7 +1730,7 @@ export default function TargetAllocationPage() {
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="relative min-w-56 flex-1 sm:max-w-sm">
-          <Icons.Search className="text-muted-foreground absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2" />
+          <Icons.Search className="text-muted-foreground absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2" />
           <Input
             value={query}
             onChange={(event) => setQuery(event.target.value)}

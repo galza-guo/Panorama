@@ -258,7 +258,7 @@ export function AllocationDetailSheet({
                               return (
                                 <div
                                   key={child.categoryId}
-                                  className={`flex cursor-pointer items-center gap-3 py-2.5 pr-4 pl-11 transition-colors ${
+                                  className={`flex cursor-pointer items-center gap-3 py-2.5 pl-11 pr-4 transition-colors ${
                                     isChildSelected ? "bg-muted" : "hover:bg-muted/50"
                                   } ${childIdx > 0 ? "border-t border-dashed" : ""}`}
                                   onClick={(e) => {

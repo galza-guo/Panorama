@@ -151,7 +151,7 @@ export default function AboutSettingsPage() {
 
               <div className="grid gap-4">
                 <div className="space-y-1">
-                  <p className="text-muted-foreground text-xs tracking-wide uppercase">
+                  <p className="text-muted-foreground text-xs uppercase tracking-wide">
                     Database path
                   </p>
                   <div className="flex items-center gap-2">
@@ -170,7 +170,7 @@ export default function AboutSettingsPage() {
                   </div>
                 </div>
                 <div className="space-y-1">
-                  <p className="text-muted-foreground text-xs tracking-wide uppercase">
+                  <p className="text-muted-foreground text-xs uppercase tracking-wide">
                     Logs directory
                   </p>
                   <div className="flex items-center gap-2">

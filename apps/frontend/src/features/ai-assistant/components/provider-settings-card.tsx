@@ -365,7 +365,7 @@ export function ProviderSettingsCard({
                           type="button"
                           variant="ghost"
                           size="icon"
-                          className="absolute top-0 right-0 h-full w-9 hover:bg-transparent"
+                          className="absolute right-0 top-0 h-full w-9 hover:bg-transparent"
                           onClick={handleRevealApiKey}
                           disabled={isLoadingKey}
                           aria-label={showApiKey ? "Hide API key" : "Show API key"}

@@ -3,10 +3,10 @@ use crate::errors::StorageError;
 use crate::sync::app_sync::ProjectedChange;
 use crate::sync::{flush_projected_outbox, OutboxWriteRequest, SyncOutboxModel};
 use diesel::SqliteConnection;
-use std::any::Any;
-use tokio::sync::{mpsc, oneshot};
 use panorama_core::errors::Result;
 use panorama_core::sync::SyncOperation;
+use std::any::Any;
+use tokio::sync::{mpsc, oneshot};
 
 // Type alias for the job to be executed by the writer actor.
 // It takes a mutable reference to a SqliteConnection and returns a Result.

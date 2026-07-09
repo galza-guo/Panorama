@@ -133,7 +133,7 @@ export default function SettingsLayout() {
             <div className="space-y-6 p-3 pb-[calc(var(--mobile-nav-ui-height)+max(var(--mobile-nav-gap),env(safe-area-inset-bottom)))] lg:p-4 lg:pb-4">
               {settingsSections.map((section) => (
                 <div key={section.title} className="space-y-3">
-                  <div className="text-muted-foreground px-2 text-xs font-semibold tracking-widest uppercase">
+                  <div className="text-muted-foreground px-2 text-xs font-semibold uppercase tracking-widest">
                     {section.title}
                   </div>
                   <div className="divide-border bg-card divide-y overflow-hidden rounded-2xl border shadow-sm">
@@ -188,7 +188,7 @@ export default function SettingsLayout() {
               <div className="space-y-6">
                 {settingsSections.map((section) => (
                   <div key={section.title} className="space-y-2">
-                    <div className="text-muted-foreground pl-2 text-sm font-light tracking-widest uppercase">
+                    <div className="text-muted-foreground pl-2 text-sm font-light uppercase tracking-widest">
                       {section.title}
                     </div>
                     <SidebarNav items={section.items} />

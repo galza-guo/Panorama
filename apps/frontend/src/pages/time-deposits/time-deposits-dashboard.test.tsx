@@ -13,15 +13,14 @@ const {
   useAlternativeHoldingsMock,
   useAlternativeAssetMutationsMock,
   editorValuesRef,
-} =
-  vi.hoisted(() => ({
-    createActivityMock: vi.fn(),
-    saveActivitiesMock: vi.fn(),
-    useAccountsMock: vi.fn(),
-    useAlternativeHoldingsMock: vi.fn(),
-    useAlternativeAssetMutationsMock: vi.fn(),
-    editorValuesRef: { current: null as Record<string, unknown> | null },
-  }));
+} = vi.hoisted(() => ({
+  createActivityMock: vi.fn(),
+  saveActivitiesMock: vi.fn(),
+  useAccountsMock: vi.fn(),
+  useAlternativeHoldingsMock: vi.fn(),
+  useAlternativeAssetMutationsMock: vi.fn(),
+  editorValuesRef: { current: null as Record<string, unknown> | null },
+}));
 
 vi.mock("@/adapters", () => ({
   createActivity: createActivityMock,

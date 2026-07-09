@@ -250,7 +250,7 @@ export default function MpfDashboard() {
   };
 
   return (
-    <Page className="flex flex-col px-4 pt-22 pb-10 md:px-6 md:pt-10 lg:px-8 lg:pt-12">
+    <Page className="pt-22 flex flex-col px-4 pb-10 md:px-6 md:pt-10 lg:px-8 lg:pt-12">
       <div className="space-y-6">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">MPF</h1>

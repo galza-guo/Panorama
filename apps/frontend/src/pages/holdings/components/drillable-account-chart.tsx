@@ -171,7 +171,7 @@ export function DrillableAccountChart({
     <Card className="overflow-hidden backdrop-blur-sm">
       <CardHeader>
         {isAtRoot ? (
-          <CardTitle className="text-muted-foreground text-sm font-medium tracking-wider uppercase">
+          <CardTitle className="text-muted-foreground text-sm font-medium uppercase tracking-wider">
             Accounts
           </CardTitle>
         ) : (

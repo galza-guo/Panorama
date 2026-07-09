@@ -875,7 +875,7 @@ export const AssetProfilePage = () => {
             )
           )}
           <div className="flex min-w-0 flex-col justify-center">
-            <h1 className="truncate text-base leading-tight font-semibold md:text-lg">
+            <h1 className="truncate text-base font-semibold leading-tight md:text-lg">
               {assetProfile?.name ?? holding?.instrument?.name ?? assetId ?? "-"}
             </h1>
             <p className="text-muted-foreground flex items-center gap-1.5 text-xs leading-tight md:text-sm">

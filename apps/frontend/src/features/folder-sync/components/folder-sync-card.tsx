@@ -59,7 +59,7 @@ function getStatusVariant(
 function TimestampRow({ label, value }: { label: string; value: string | null | undefined }) {
   return (
     <div className="space-y-1">
-      <dt className="text-muted-foreground text-xs tracking-wide uppercase">{label}</dt>
+      <dt className="text-muted-foreground text-xs uppercase tracking-wide">{label}</dt>
       <dd className="text-sm">
         {value ? (
           <time className="font-mono text-xs" dateTime={value}>
@@ -134,7 +134,7 @@ export function FolderSyncCard() {
           </CardHeader>
           <CardContent className="space-y-5">
             <div className="space-y-1">
-              <p className="text-muted-foreground text-xs tracking-wide uppercase">Shared folder</p>
+              <p className="text-muted-foreground text-xs uppercase tracking-wide">Shared folder</p>
               <p className="bg-muted rounded-md px-3 py-2 font-mono text-xs">
                 {config?.sharedFolderPath ?? "Not configured"}
               </p>

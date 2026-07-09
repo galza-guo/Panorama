@@ -32,7 +32,7 @@ const Shimmer = memo(({ children, duration = 2 }: { children: string; duration?:
       animate={{ backgroundPosition: "0% center" }}
       initial={{ backgroundPosition: "100% center" }}
       transition={{ duration, ease: "linear", repeat: Infinity }}
-      className="relative inline-block bg-[length:250%_100%,auto] bg-clip-text [background-repeat:no-repeat,padding-box] text-transparent"
+      className="relative inline-block bg-[length:250%_100%,auto] bg-clip-text text-transparent [background-repeat:no-repeat,padding-box]"
       style={
         {
           "--spread": `${spread}px`,

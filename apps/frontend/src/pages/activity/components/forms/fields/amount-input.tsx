@@ -39,10 +39,10 @@ export function AmountInput<TFieldValues extends FieldValues = FieldValues>({
           <FormLabel>{label}</FormLabel>
           <FormControl>
             {currency ? (
-              <InputGroup className="bg-input-bg h-input-height rounded-md shadow-xs">
+              <InputGroup className="bg-input-bg h-input-height shadow-xs rounded-md">
                 <MoneyInput
                   data-slot="input-group-control"
-                  className="flex-1 rounded-none border-0 bg-transparent shadow-none ring-0 focus-visible:ring-0 aria-invalid:ring-0"
+                  className="aria-invalid:ring-0 flex-1 rounded-none border-0 bg-transparent shadow-none ring-0 focus-visible:ring-0"
                   ref={field.ref}
                   name={field.name}
                   value={field.value}

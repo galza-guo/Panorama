@@ -129,8 +129,8 @@ function TopHoldingsSkeleton() {
         <CardTitle className="text-md">Top Holdings</CardTitle>
       </CardHeader>
       <CardContent>
-        <Card className="w-full shadow-xs">
-          <CardContent className="px-4 pt-4 pb-2">
+        <Card className="shadow-xs w-full">
+          <CardContent className="px-4 pb-2 pt-4">
             {Array.from({ length: 5 }).map((_, i) => (
               <div key={i} className="border-border border-b py-3 last:border-0">
                 <div className="flex items-center justify-between">
@@ -165,7 +165,7 @@ function TopHoldingsEmptyState() {
         <CardTitle className="text-md">Top Holdings</CardTitle>
       </CardHeader>
       <CardContent className="p-0">
-        <Card className="border-border/50 bg-success/10 w-full shadow-xs">
+        <Card className="border-border/50 bg-success/10 shadow-xs w-full">
           <CardContent className="px-4 py-6">
             <div className="text-center">
               <p className="text-sm">No holdings yet.</p>
@@ -234,8 +234,8 @@ export function TopHoldings({ holdings, isLoading, baseCurrency }: TopHoldingsPr
         </Button>
       </CardHeader>
       <CardContent className="p-0">
-        <Card className="w-full shadow-xs">
-          <CardContent className="px-4 pt-4 pb-2">
+        <Card className="shadow-xs w-full">
+          <CardContent className="px-4 pb-2 pt-4">
             {topHoldings.map((holding) => {
               const assetId = holding.instrument?.id ?? holding.id;
               return (

@@ -83,7 +83,7 @@ export function MappingTable({
                   <TableHead
                     key={field}
                     className={cn(
-                      "border-border border-r p-2 whitespace-nowrap transition-colors last:border-r-0",
+                      "border-border whitespace-nowrap border-r p-2 transition-colors last:border-r-0",
                       IMPORT_REQUIRED_FIELDS.includes(field as ImportRequiredField)
                         ? !isFieldMapped(field)
                           ? "bg-amber-50 dark:bg-amber-950/20"

@@ -313,7 +313,7 @@ export function AccountForm({
                 {needsSetup && !currentTrackingMode && (
                   <Alert
                     variant="warning"
-                    className="px-3 py-2.5 [&>svg]:top-2.5 [&>svg]:left-3 [&>svg~*]:pl-6"
+                    className="px-3 py-2.5 [&>svg]:left-3 [&>svg]:top-2.5 [&>svg~*]:pl-6"
                   >
                     <Icons.AlertTriangle className="h-4 w-4" />
                     <AlertDescription className="text-xs">
@@ -369,7 +369,7 @@ export function AccountForm({
                 {field.value === "HOLDINGS" && (
                   <Alert
                     variant="warning"
-                    className="px-3 py-2.5 [&>svg]:top-2.5 [&>svg]:left-3 [&>svg~*]:pl-6"
+                    className="px-3 py-2.5 [&>svg]:left-3 [&>svg]:top-2.5 [&>svg~*]:pl-6"
                   >
                     <Icons.AlertTriangle className="h-4 w-4" />
                     <AlertDescription className="text-xs">
@@ -394,7 +394,7 @@ export function AccountForm({
             control={form.control}
             name="isActive"
             render={({ field }) => (
-              <FormItem className="flex items-center space-y-0 space-x-3 rounded-lg border p-3">
+              <FormItem className="flex items-center space-x-3 space-y-0 rounded-lg border p-3">
                 <FormControl>
                   <Checkbox
                     checked={!field.value}
@@ -418,7 +418,7 @@ export function AccountForm({
               <select
                 value={targetFolderId}
                 onChange={(event) => setTargetFolderId(event.target.value)}
-                className="border-input bg-background ring-offset-background focus:ring-ring flex h-10 w-full rounded-md border px-3 py-2 text-sm focus:ring-2 focus:ring-offset-2 focus:outline-none"
+                className="border-input bg-background ring-offset-background focus:ring-ring flex h-10 w-full rounded-md border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-offset-2"
               >
                 <option value="">Unassigned</option>
                 {targetFolders.map((folder) => (
@@ -435,7 +435,7 @@ export function AccountForm({
               control={form.control}
               name="isArchived"
               render={({ field }) => (
-                <FormItem className="border-destructive/30 flex items-center space-y-0 space-x-3 rounded-lg border p-3">
+                <FormItem className="border-destructive/30 flex items-center space-x-3 space-y-0 rounded-lg border p-3">
                   <FormControl>
                     <Checkbox checked={field.value} onCheckedChange={field.onChange} />
                   </FormControl>

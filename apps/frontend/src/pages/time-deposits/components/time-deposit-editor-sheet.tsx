@@ -386,7 +386,7 @@ export function TimeDepositEditorSheet({
               <Label htmlFor="time-deposit-linked-account">Linked Account</Label>
               <select
                 id="time-deposit-linked-account"
-                className="border-input bg-input-bg h-input-height w-full rounded-md border px-3 text-sm shadow-xs outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px]"
+                className="border-input bg-input-bg h-input-height shadow-xs focus-visible:border-ring focus-visible:ring-ring/50 w-full rounded-md border px-3 text-sm outline-none focus-visible:ring-[3px]"
                 value={values.linkedAccountId}
                 onChange={(event) => updateValue("linkedAccountId", event.target.value)}
               >
