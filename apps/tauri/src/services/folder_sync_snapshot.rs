@@ -187,11 +187,11 @@ impl FolderSyncSnapshotService {
     }
 
     fn backup_if_local_shared_data_exists(&self) -> Result<Option<String>, String> {
-        let summary = self
+        let has_local_data = self
             .app_sync_repository
-            .get_local_sync_data_summary()
+            .has_local_restore_conflict_data()
             .map_err(|err| err.to_string())?;
-        if summary.total_rows == 0 {
+        if !has_local_data {
             return Ok(None);
         }
 

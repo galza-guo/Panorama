@@ -255,6 +255,7 @@ describe("panorama asset attributes", () => {
       sub_type: "time_deposit",
       owner: null,
       provider: "HSBC",
+      linked_account_id: null,
       principal: null,
       start_date: "2026-01-01",
       maturity_date: null,

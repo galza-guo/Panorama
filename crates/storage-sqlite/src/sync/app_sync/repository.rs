@@ -1013,6 +1013,34 @@ impl AppSyncRepository {
         })
     }
 
+    pub fn has_local_restore_conflict_data(&self) -> Result<bool> {
+        let mut conn = get_connection(&self.pool)?;
+
+        for table in APP_SYNC_TABLES {
+            let count_sql = match table {
+                "taxonomies" => {
+                    "SELECT COUNT(*) AS count FROM taxonomies WHERE is_system = 0".to_string()
+                }
+                "taxonomy_categories" => "SELECT COUNT(*) AS count FROM taxonomy_categories \
+                     WHERE taxonomy_id = 'custom_groups' \
+                     OR taxonomy_id IN (SELECT id FROM taxonomies WHERE is_system = 0)"
+                    .to_string(),
+                _ => {
+                    let table_ident = quote_identifier(table);
+                    format!("SELECT COUNT(*) AS count FROM {table_ident}")
+                }
+            };
+            let row = diesel::sql_query(count_sql)
+                .get_result::<TableRowCountResult>(&mut conn)
+                .map_err(StorageError::from)?;
+            if row.count > 0 {
+                return Ok(true);
+            }
+        }
+
+        Ok(false)
+    }
+
     pub async fn upsert_device_config(
         &self,
         device_id_value: String,
@@ -2249,6 +2277,60 @@ mod tests {
             let second = &window[1];
             first.rows > second.rows || (first.rows == second.rows && first.table <= second.table)
         }));
+    }
+
+    #[tokio::test]
+    async fn restore_conflict_data_ignores_seeded_taxonomy_defaults() {
+        let (pool, writer) = setup_db();
+        let repo = AppSyncRepository::new(pool, writer);
+
+        assert!(
+            !repo
+                .has_local_restore_conflict_data()
+                .expect("restore conflict summary"),
+            "fresh migration seed data should not require a join backup"
+        );
+    }
+
+    #[tokio::test]
+    async fn restore_conflict_data_detects_local_account_rows() {
+        let (pool, writer) = setup_db();
+        let repo = AppSyncRepository::new(pool.clone(), writer);
+
+        {
+            let mut conn = get_connection(&pool).expect("conn");
+            insert_account_for_test(&mut conn, "acc-restore-conflict").expect("insert account");
+        }
+
+        assert!(
+            repo.has_local_restore_conflict_data()
+                .expect("restore conflict summary"),
+            "local account rows should require a join backup"
+        );
+    }
+
+    #[tokio::test]
+    async fn restore_conflict_data_detects_user_taxonomy_content() {
+        let (pool, writer) = setup_db();
+        let repo = AppSyncRepository::new(pool.clone(), writer);
+
+        {
+            let mut conn = get_connection(&pool).expect("conn");
+            diesel::sql_query(
+                "INSERT INTO taxonomies \
+                 (id, name, color, description, is_system, is_single_select, sort_order) \
+                 VALUES ('user-taxonomy', 'User Taxonomy', '#808080', NULL, 0, 0, 999)",
+            )
+            .execute(&mut conn)
+            .map_err(StorageError::from)
+            .expect("insert user taxonomy");
+        }
+
+        assert!(
+            repo.has_local_restore_conflict_data()
+                .expect("restore conflict summary"),
+            "user-created taxonomy rows should require a join backup"
+        );
     }
 
     #[tokio::test]
