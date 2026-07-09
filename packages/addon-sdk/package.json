@@ -1,6 +1,6 @@
 {
   "name": "@panorama/addon-sdk",
-  "version": "3.3.1",
+  "version": "3.3.2",
   "type": "module",
   "description": "TypeScript SDK for building Panorama addons with enhanced functionality and type safety",
   "main": "dist/index.js",

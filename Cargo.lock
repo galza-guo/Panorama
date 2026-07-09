@@ -3959,7 +3959,7 @@ dependencies = [
 
 [[package]]
 name = "panorama-ai"
-version = "3.3.1"
+version = "3.3.2"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -3983,7 +3983,7 @@ dependencies = [
 
 [[package]]
 name = "panorama-app"
-version = "3.3.1"
+version = "3.3.2"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -4020,7 +4020,7 @@ dependencies = [
 
 [[package]]
 name = "panorama-core"
-version = "3.3.1"
+version = "3.3.2"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -4059,7 +4059,7 @@ dependencies = [
 
 [[package]]
 name = "panorama-market-data"
-version = "3.3.1"
+version = "3.3.2"
 dependencies = [
  "async-trait",
  "chrono",
@@ -4081,7 +4081,7 @@ dependencies = [
 
 [[package]]
 name = "panorama-server"
-version = "3.3.1"
+version = "3.3.2"
 dependencies = [
  "anyhow",
  "argon2",
@@ -4123,7 +4123,7 @@ dependencies = [
 
 [[package]]
 name = "panorama-storage-sqlite"
-version = "3.3.1"
+version = "3.3.2"
 dependencies = [
  "anyhow",
  "async-trait",
