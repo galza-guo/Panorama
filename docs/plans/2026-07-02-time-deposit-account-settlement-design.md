@@ -158,4 +158,3 @@ The implementation should verify:
 - account cash changes correctly after recalculation
 - closed time deposits are not counted as standalone alternative assets
 - active account-held time deposits use derived live value
-

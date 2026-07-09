@@ -12,8 +12,8 @@ grouped activity batch: `SELL` principal plus optional `INTEREST`, followed by a
 metadata update that closes the asset. Holdings remain calculated from existing
 activity and snapshot services.
 
-**Tech Stack:** React, TypeScript, TanStack Query, Vitest, Rust
-`panorama-core`, existing activity APIs, existing alternative asset APIs.
+**Tech Stack:** React, TypeScript, TanStack Query, Vitest, Rust `panorama-core`,
+existing activity APIs, existing alternative asset APIs.
 
 ---
 
@@ -21,9 +21,11 @@ activity and snapshot services.
 
 **Files:**
 
-- Create: `/Users/guolite/GitHub/Panorama/crates/core/src/assets/time_deposit.rs`
+- Create:
+  `/Users/guolite/GitHub/Panorama/crates/core/src/assets/time_deposit.rs`
 - Modify: `/Users/guolite/GitHub/Panorama/crates/core/src/assets/mod.rs`
-- Modify: `/Users/guolite/GitHub/Panorama/crates/core/src/assets/alternative_assets_service.rs`
+- Modify:
+  `/Users/guolite/GitHub/Panorama/crates/core/src/assets/alternative_assets_service.rs`
 - Test: `/Users/guolite/GitHub/Panorama/crates/core/src/assets/time_deposit.rs`
 
 **Step 1: Write failing tests**
@@ -110,11 +112,16 @@ git commit -m "refactor: share time deposit metadata logic"
 
 **Files:**
 
-- Modify: `/Users/guolite/GitHub/Panorama/apps/frontend/src/pages/time-deposits/components/time-deposit-editor-sheet.tsx`
-- Modify: `/Users/guolite/GitHub/Panorama/apps/frontend/src/pages/time-deposits/components/time-deposit-editor-sheet.test.tsx`
-- Modify: `/Users/guolite/GitHub/Panorama/apps/frontend/src/pages/time-deposits/time-deposits-dashboard.tsx`
-- Modify: `/Users/guolite/GitHub/Panorama/apps/frontend/src/pages/time-deposits/time-deposits-dashboard.test.tsx`
-- Modify: `/Users/guolite/GitHub/Panorama/apps/frontend/src/lib/panorama-asset-attributes.ts`
+- Modify:
+  `/Users/guolite/GitHub/Panorama/apps/frontend/src/pages/time-deposits/components/time-deposit-editor-sheet.tsx`
+- Modify:
+  `/Users/guolite/GitHub/Panorama/apps/frontend/src/pages/time-deposits/components/time-deposit-editor-sheet.test.tsx`
+- Modify:
+  `/Users/guolite/GitHub/Panorama/apps/frontend/src/pages/time-deposits/time-deposits-dashboard.tsx`
+- Modify:
+  `/Users/guolite/GitHub/Panorama/apps/frontend/src/pages/time-deposits/time-deposits-dashboard.test.tsx`
+- Modify:
+  `/Users/guolite/GitHub/Panorama/apps/frontend/src/lib/panorama-asset-attributes.ts`
 
 **Step 1: Write failing tests**
 
@@ -148,11 +155,18 @@ await createActivity({
   accountId: values.linkedAccountId,
   activityType: ActivityType.BUY,
   activityDate: values.startDate.toISOString(),
-  symbol: { id: created.assetId, kind: AssetKind.TIME_DEPOSIT, name: values.name },
+  symbol: {
+    id: created.assetId,
+    kind: AssetKind.TIME_DEPOSIT,
+    name: values.name,
+  },
   quantity: "1",
   unitPrice: values.principal,
   currency: values.currency,
-  metadata: { panorama_time_deposit_role: "opening", asset_id: created.assetId },
+  metadata: {
+    panorama_time_deposit_role: "opening",
+    asset_id: created.assetId,
+  },
 });
 ```
 
@@ -176,9 +190,12 @@ git commit -m "feat: link time deposits to accounts"
 
 **Files:**
 
-- Modify: `/Users/guolite/GitHub/Panorama/apps/frontend/src/pages/time-deposits/time-deposits-dashboard.tsx`
-- Modify: `/Users/guolite/GitHub/Panorama/apps/frontend/src/pages/time-deposits/time-deposits-dashboard.test.tsx`
-- Modify: `/Users/guolite/GitHub/Panorama/apps/frontend/src/lib/panorama-asset-attributes.ts`
+- Modify:
+  `/Users/guolite/GitHub/Panorama/apps/frontend/src/pages/time-deposits/time-deposits-dashboard.tsx`
+- Modify:
+  `/Users/guolite/GitHub/Panorama/apps/frontend/src/pages/time-deposits/time-deposits-dashboard.test.tsx`
+- Modify:
+  `/Users/guolite/GitHub/Panorama/apps/frontend/src/lib/panorama-asset-attributes.ts`
 
 **Step 1: Write failing tests**
 
@@ -213,22 +230,34 @@ await saveActivities({
       activityType: ActivityType.SELL,
       activityDate: settlementDate.toISOString(),
       sourceGroupId,
-      symbol: { id: holding.id, kind: AssetKind.TIME_DEPOSIT, name: holding.name },
+      symbol: {
+        id: holding.id,
+        kind: AssetKind.TIME_DEPOSIT,
+        name: holding.name,
+      },
       quantity: "1",
       unitPrice: String(settledPrincipal),
       currency,
-      metadata: { panorama_time_deposit_role: "settlement_principal", asset_id: holding.id },
+      metadata: {
+        panorama_time_deposit_role: "settlement_principal",
+        asset_id: holding.id,
+      },
     },
     ...(settledInterest > 0
-      ? [{
-          accountId,
-          activityType: ActivityType.INTEREST,
-          activityDate: settlementDate.toISOString(),
-          sourceGroupId,
-          amount: String(settledInterest),
-          currency,
-          metadata: { panorama_time_deposit_role: "settlement_interest", asset_id: holding.id },
-        }]
+      ? [
+          {
+            accountId,
+            activityType: ActivityType.INTEREST,
+            activityDate: settlementDate.toISOString(),
+            sourceGroupId,
+            amount: String(settledInterest),
+            currency,
+            metadata: {
+              panorama_time_deposit_role: "settlement_interest",
+              asset_id: holding.id,
+            },
+          },
+        ]
       : []),
   ],
 });
@@ -248,7 +277,8 @@ Then patch metadata:
 }
 ```
 
-Also write a zero valuation quote on the settlement date as a defensive fallback.
+Also write a zero valuation quote on the settlement date as a defensive
+fallback.
 
 **Step 4: Run tests to verify pass**
 
@@ -267,8 +297,10 @@ git commit -m "feat: settle time deposits to cash"
 
 **Files:**
 
-- Modify: `/Users/guolite/GitHub/Panorama/crates/core/src/portfolio/holdings/holdings_valuation_service.rs`
-- Test: `/Users/guolite/GitHub/Panorama/crates/core/src/portfolio/holdings/holdings_valuation_service_tests.rs`
+- Modify:
+  `/Users/guolite/GitHub/Panorama/crates/core/src/portfolio/holdings/holdings_valuation_service.rs`
+- Test:
+  `/Users/guolite/GitHub/Panorama/crates/core/src/portfolio/holdings/holdings_valuation_service_tests.rs`
 
 **Step 1: Write failing tests**
 
@@ -326,10 +358,14 @@ git commit -m "feat: value account-held time deposits"
 
 **Files:**
 
-- Modify: `/Users/guolite/GitHub/Panorama/crates/core/src/assets/alternative_assets_service.rs`
-- Modify: `/Users/guolite/GitHub/Panorama/crates/core/src/portfolio/net_worth/net_worth_service.rs`
-- Test: `/Users/guolite/GitHub/Panorama/crates/core/src/assets/alternative_assets_service.rs`
-- Test: `/Users/guolite/GitHub/Panorama/crates/core/src/portfolio/net_worth/net_worth_service_tests.rs`
+- Modify:
+  `/Users/guolite/GitHub/Panorama/crates/core/src/assets/alternative_assets_service.rs`
+- Modify:
+  `/Users/guolite/GitHub/Panorama/crates/core/src/portfolio/net_worth/net_worth_service.rs`
+- Test:
+  `/Users/guolite/GitHub/Panorama/crates/core/src/assets/alternative_assets_service.rs`
+- Test:
+  `/Users/guolite/GitHub/Panorama/crates/core/src/portfolio/net_worth/net_worth_service_tests.rs`
 
 **Step 1: Write failing tests**
 
