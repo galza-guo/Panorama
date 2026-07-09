@@ -72,12 +72,6 @@ const settingsSections = [
     title: "Connections",
     items: [
       {
-        title: "Webull HK",
-        href: "webull-hk",
-        subtitle: "Local account linking",
-        icon: <Icons.Link className="size-5" />,
-      },
-      {
         title: "Market Data",
         href: "market-data",
         subtitle: "Providers, sync, and imports",

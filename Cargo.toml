@@ -66,6 +66,5 @@ rand = "0.8"
 # Internal crates
 panorama-market-data = { path = "crates/market-data" }
 panorama-core = { path = "crates/core" }
-panorama-local-connectors = { path = "crates/connect" }
 panorama-storage-sqlite = { path = "crates/storage-sqlite" }
 panorama-ai = { path = "crates/ai" }

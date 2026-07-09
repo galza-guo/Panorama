@@ -90,9 +90,6 @@ export * from "../shared/exchange-rates";
 // Secrets Commands
 export * from "../shared/secrets";
 
-// Webull HK Local Connect Commands
-export * from "../shared/webull-hk";
-
 // AI Providers Commands
 export * from "../shared/ai-providers";
 

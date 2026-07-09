@@ -195,31 +195,6 @@ export {
   getNetWorthHistory,
 } from "../shared/alternative-assets";
 
-// Webull HK Local Connect Commands
-export {
-  createWebullHkConnection,
-  listWebullHkConnections,
-  deleteWebullHkConnection,
-  listWebullHkRemoteAccounts,
-  linkWebullHkAccount,
-  listWebullHkAccountLinks,
-  syncWebullHkAccountSnapshot,
-} from "../shared/webull-hk";
-export type {
-  ConnectorCapability,
-  ConnectorEnvironment,
-  ConnectorProvider,
-  CreateWebullHkConnectionRequest,
-  ExternalAccountLink,
-  ExternalAccountLinkStatus,
-  ExternalAccountSyncMode,
-  ExternalConnection,
-  ExternalConnectionStatus,
-  LinkWebullHkAccountRequest,
-  WebullHkRemoteAccount,
-  WebullHkSnapshotSyncResult,
-} from "../shared/webull-hk";
-
 // AI Providers Commands
 export {
   getAiProviders,

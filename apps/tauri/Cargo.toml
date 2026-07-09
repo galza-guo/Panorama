@@ -14,7 +14,6 @@ tauri-build = { version = "2.5", features = [] }
 # Internal crates
 panorama-market-data = { workspace = true }
 panorama-core = { workspace = true }
-panorama-local-connectors = { workspace = true }
 panorama-storage-sqlite = { workspace = true }
 panorama-ai = { workspace = true }
 

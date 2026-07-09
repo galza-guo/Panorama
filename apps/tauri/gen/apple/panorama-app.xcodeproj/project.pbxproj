@@ -75,7 +75,6 @@
 		E3D9E93C6CBD1AFEEF5E0337 /* registry.rs */ = {isa = PBXFileReference; path = registry.rs; sourceTree = "<group>"; };
 		E8D27541EADE400FAF9666B2 /* goal.rs */ = {isa = PBXFileReference; path = goal.rs; sourceTree = "<group>"; };
 		F19D13CA6DC2B579249721F2 /* bindings.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = bindings.h; sourceTree = "<group>"; };
-		F78C9F28C93DBD86DA139B8A /* webull_hk.rs */ = {isa = PBXFileReference; path = webull_hk.rs; sourceTree = "<group>"; };
 		FBB7D0A948D1A3473181C27F /* main.rs */ = {isa = PBXFileReference; path = main.rs; sourceTree = "<group>"; };
 		FBD4DFEFB9F8DD68984795E0 /* menu.rs */ = {isa = PBXFileReference; path = menu.rs; sourceTree = "<group>"; };
 /* End PBXFileReference section */
@@ -233,7 +232,6 @@
 				8167741C3A93FCA609430547 /* settings.rs */,
 				A808D0809909572A63FD6981 /* taxonomy.rs */,
 				A23835D8F6C9598050516AE2 /* utilities.rs */,
-				F78C9F28C93DBD86DA139B8A /* webull_hk.rs */,
 			);
 			path = commands;
 			sourceTree = "<group>";

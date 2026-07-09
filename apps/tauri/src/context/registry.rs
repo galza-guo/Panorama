@@ -6,8 +6,6 @@ use panorama_core::{
     fx, goals, health, limits, portfolio, quotes, settings, taxonomies,
 };
 use panorama_storage_sqlite::{
-    activities::ActivityRepository,
-    connectors::ConnectorRepository,
     portfolio::snapshot::SnapshotRepository,
     settings::SettingsRepository,
     sync::{AppSyncRepository, FolderSyncRepository},
@@ -33,8 +31,6 @@ pub struct ServiceContext {
     // Services
     pub settings_repository: Arc<SettingsRepository>,
     pub settings_service: Arc<dyn settings::SettingsServiceTrait>,
-    pub activity_repository: Arc<ActivityRepository>,
-    pub connector_repository: Arc<ConnectorRepository>,
     pub activity_service: Arc<dyn activities::ActivityServiceTrait>,
     pub account_service: Arc<dyn accounts::AccountServiceTrait>,
     pub goal_service: Arc<dyn goals::GoalServiceTrait>,
@@ -90,14 +86,6 @@ impl ServiceContext {
 
     pub fn activity_service(&self) -> Arc<dyn activities::ActivityServiceTrait> {
         Arc::clone(&self.activity_service)
-    }
-
-    pub fn activity_repository(&self) -> Arc<ActivityRepository> {
-        Arc::clone(&self.activity_repository)
-    }
-
-    pub fn connector_repository(&self) -> Arc<ConnectorRepository> {
-        Arc::clone(&self.connector_repository)
     }
 
     pub fn asset_service(&self) -> Arc<dyn assets::AssetServiceTrait> {

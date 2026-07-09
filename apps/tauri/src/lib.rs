@@ -394,14 +394,6 @@ pub fn run() {
             // Provider settings commands
             commands::providers_settings::get_market_data_providers_settings,
             commands::providers_settings::update_market_data_provider_settings,
-            // Webull HK local connector commands
-            commands::webull_hk::create_webull_hk_connection,
-            commands::webull_hk::list_webull_hk_connections,
-            commands::webull_hk::delete_webull_hk_connection,
-            commands::webull_hk::list_webull_hk_remote_accounts,
-            commands::webull_hk::link_webull_hk_account,
-            commands::webull_hk::list_webull_hk_account_links,
-            commands::webull_hk::sync_webull_hk_account_snapshot,
             // AI provider commands
             commands::ai_providers::get_ai_providers,
             commands::ai_providers::update_ai_provider_settings,
