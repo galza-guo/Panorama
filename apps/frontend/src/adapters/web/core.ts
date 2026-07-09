@@ -158,6 +158,7 @@ export const COMMANDS: CommandMap = {
   // Net Worth
   get_net_worth: { method: "GET", path: "/net-worth" },
   get_net_worth_history: { method: "GET", path: "/net-worth/history" },
+  get_period_summary: { method: "GET", path: "/period-summary" },
   // AI Providers
   get_ai_providers: { method: "GET", path: "/ai/providers" },
   update_ai_provider_settings: { method: "PUT", path: "/ai/providers/settings" },
@@ -835,6 +836,19 @@ export const invoke = async <T>(command: string, payload?: Record<string, unknow
       const params = new URLSearchParams();
       params.set("startDate", startDate);
       params.set("endDate", endDate);
+      url += `?${params.toString()}`;
+      break;
+    }
+    case "get_period_summary": {
+      const { startDate, endDate, period } = payload as {
+        startDate: string;
+        endDate: string;
+        period: string;
+      };
+      const params = new URLSearchParams();
+      params.set("startDate", startDate);
+      params.set("endDate", endDate);
+      params.set("period", period);
       url += `?${params.toString()}`;
       break;
     }

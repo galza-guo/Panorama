@@ -92,6 +92,13 @@ export const QueryKeys = {
     startDate,
     endDate,
   ],
+  PERIOD_SUMMARY: "periodSummary",
+  periodSummary: (startDate: string, endDate: string, period: string) => [
+    QueryKeys.PERIOD_SUMMARY,
+    startDate,
+    endDate,
+    period,
+  ],
 
   secrets: {
     apiKey: (providerId: string) => ["secrets", "apiKey", providerId],

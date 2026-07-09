@@ -1,12 +1,18 @@
 # Period Summary Implementation Plan
 
-> **For Claude:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task.
+> **For Claude:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to
+> implement this plan task-by-task.
 
-**Goal:** Build a weekly/monthly period summary that explains net worth changes with separate money-movement and value-movement lanes.
+**Goal:** Build a weekly/monthly period summary that explains net worth changes
+with separate money-movement and value-movement lanes.
 
-**Architecture:** Add a `PeriodSummaryService` in `crates/core` that composes existing activity, account, snapshot, quote, FX, and net worth services. Expose it through Tauri and Web adapters, then add a Dashboard summary card with a reusable mirrored contributor chart.
+**Architecture:** Add a `PeriodSummaryService` in `crates/core` that composes
+existing activity, account, snapshot, quote, FX, and net worth services. Expose
+it through Tauri and Web adapters, then add a Dashboard summary card with a
+reusable mirrored contributor chart.
 
-**Tech Stack:** Rust, Tauri commands, Axum API, React, TanStack Query, Tailwind, Vitest, cargo tests.
+**Tech Stack:** Rust, Tauri commands, Axum API, React, TanStack Query, Tailwind,
+Vitest, cargo tests.
 
 ---
 
@@ -14,12 +20,13 @@
 
 - Work in `/Users/guolite/GitHub/Panorama`.
 - Do not create a branch or worktree unless Gallant asks.
-- Keep V1 conservative: show reliable contributors and put ambiguous amounts in residual with warnings.
+- Keep V1 conservative: show reliable contributors and put ambiguous amounts in
+  residual with warnings.
 - Use existing flow rules from `portfolio::performance::flow_classifier`.
 - Keep the mirrored chart center axis fixed and straight.
-- V1 is dynamic on the Dashboard, but responses must include a stable `summaryKey`
-  so a future summary archive and notification-center entry can link to the same
-  period.
+- V1 is dynamic on the Dashboard, but responses must include a stable
+  `summaryKey` so a future summary archive and notification-center entry can
+  link to the same period.
 
 ## Task 1: Core Models And Module
 
@@ -187,8 +194,8 @@ Test cases:
 - `CREDIT` subtype `BONUS` is included.
 - missing FX returns a warning and does not fabricate zero.
 
-Use `create_test_activity()` from nearby tests as a pattern. Add a small mock
-FX service that returns identity conversion for USD and a configurable error for
+Use `create_test_activity()` from nearby tests as a pattern. Add a small mock FX
+service that returns identity conversion for USD and a configurable error for
 missing FX.
 
 **Step 2: Run failing tests**
@@ -569,7 +576,11 @@ export const getPeriodSummary = async (
   endDate: string,
   period?: "weekly" | "monthly" | "custom",
 ): Promise<PeriodSummary> => {
-  return invoke<PeriodSummary>("get_period_summary", { startDate, endDate, period });
+  return invoke<PeriodSummary>("get_period_summary", {
+    startDate,
+    endDate,
+    period,
+  });
 };
 ```
 
@@ -614,8 +625,10 @@ git commit -m "feat(frontend): add period summary adapter"
 
 **Files:**
 
-- Create: `apps/frontend/src/pages/dashboard/period-summary/mirrored-contributor-chart.tsx`
-- Create: `apps/frontend/src/pages/dashboard/period-summary/mirrored-contributor-chart.test.tsx`
+- Create:
+  `apps/frontend/src/pages/dashboard/period-summary/mirrored-contributor-chart.tsx`
+- Create:
+  `apps/frontend/src/pages/dashboard/period-summary/mirrored-contributor-chart.test.tsx`
 
 **Step 1: Write failing component tests**
 
@@ -681,8 +694,10 @@ git commit -m "feat(frontend): add mirrored contributor chart"
 
 **Files:**
 
-- Create: `apps/frontend/src/pages/dashboard/period-summary/period-summary-card.tsx`
-- Create: `apps/frontend/src/pages/dashboard/period-summary/period-summary-card.test.tsx`
+- Create:
+  `apps/frontend/src/pages/dashboard/period-summary/period-summary-card.tsx`
+- Create:
+  `apps/frontend/src/pages/dashboard/period-summary/period-summary-card.test.tsx`
 - Create: `apps/frontend/src/pages/dashboard/period-summary/index.ts`
 
 **Step 1: Write failing tests**
@@ -746,7 +761,8 @@ git commit -m "feat(frontend): add period summary card"
 **Files:**
 
 - Modify: `apps/frontend/src/pages/dashboard/dashboard-content.tsx`
-- Test: update/create `apps/frontend/src/pages/dashboard/dashboard-content.test.tsx`
+- Test: update/create
+  `apps/frontend/src/pages/dashboard/dashboard-content.test.tsx`
 
 **Step 1: Write failing integration test**
 
@@ -763,7 +779,12 @@ const periodSummaryRange = useMemo(() => {
   return {
     startDate: format(dateRange.from, "yyyy-MM-dd"),
     endDate: format(dateRange.to, "yyyy-MM-dd"),
-    period: intervalCode === "1W" ? "weekly" : intervalCode === "1M" ? "monthly" : "custom",
+    period:
+      intervalCode === "1W"
+        ? "weekly"
+        : intervalCode === "1M"
+          ? "monthly"
+          : "custom",
   } as const;
 }, [dateRange, intervalCode]);
 ```
@@ -866,9 +887,12 @@ the follow-on design target.
 
 ## Execution Options
 
-Plan complete and saved to `docs/plans/2026-07-02-period-summary-implementation.md`.
+Plan complete and saved to
+`docs/plans/2026-07-02-period-summary-implementation.md`.
 
-1. **Subagent-Driven (this session)** - dispatch fresh subagent per task, review between tasks, fast iteration.
-2. **Parallel Session (separate)** - open a new session with `superpowers:executing-plans`, batch execution with checkpoints.
+1. **Subagent-Driven (this session)** - dispatch fresh subagent per task, review
+   between tasks, fast iteration.
+2. **Parallel Session (separate)** - open a new session with
+   `superpowers:executing-plans`, batch execution with checkpoints.
 
 Choose one before implementation starts.

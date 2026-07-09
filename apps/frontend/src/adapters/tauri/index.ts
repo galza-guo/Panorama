@@ -81,6 +81,9 @@ export * from "../shared/taxonomies";
 // Alternative Assets Commands
 export * from "../shared/alternative-assets";
 
+// Period Summary Commands
+export * from "../shared/period-summary";
+
 // Contribution Limits Commands
 export * from "../shared/contribution-limits";
 

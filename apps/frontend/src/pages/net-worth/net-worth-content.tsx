@@ -1,6 +1,7 @@
 import { useNetWorth, useNetWorthHistory } from "@/hooks/use-alternative-assets";
+import { usePeriodSummary } from "@/hooks/use-period-summary";
 import { useSettingsContext } from "@/lib/settings-provider";
-import type { DateRange } from "@/lib/types";
+import type { DateRange, PeriodSummaryPeriod } from "@/lib/types";
 import { formatDateISO } from "@/lib/utils";
 import Balance from "@/pages/dashboard/balance";
 import {
@@ -28,6 +29,7 @@ import {
 import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { NetWorthChart } from "./net-worth-chart";
+import { PeriodSummaryCard } from "./period-summary-card";
 
 // Goldish orange for net worth theme (matches chart)
 const THEME_COLOR = "hsl(38 75% 50%)";
@@ -96,7 +98,7 @@ function BalanceSheet({ data, currency }: BalanceSheetProps) {
   const hasLiabilities = data.liabilities.total > 0 || data.liabilities.breakdown.length > 0;
 
   return (
-    <div className="border-border bg-card rounded-lg border shadow-xs">
+    <div className="border-border bg-card shadow-xs rounded-lg border">
       {/* Assets Section */}
       <Collapsible open={assetsOpen} onOpenChange={setAssetsOpen}>
         <CollapsibleTrigger className="hover:bg-muted/50 flex w-full items-center justify-between px-4 py-3 transition-colors md:px-5">
@@ -218,7 +220,7 @@ function CompositionWidget({ data, isLoading }: CompositionWidgetProps) {
     return (
       <div className="w-full">
         <h2 className="text-md pb-2 font-semibold tracking-tight">Composition</h2>
-        <div className="border-border bg-card rounded-lg border p-4 shadow-xs md:p-5">
+        <div className="border-border bg-card shadow-xs rounded-lg border p-4 md:p-5">
           <Skeleton className="mb-4 h-2.5 w-full rounded-full" />
           <div className="grid grid-cols-2 gap-x-4 gap-y-2">
             {Array.from({ length: 4 }).map((_, i) => (
@@ -238,7 +240,7 @@ function CompositionWidget({ data, isLoading }: CompositionWidgetProps) {
   return (
     <div className="w-full">
       <h2 className="text-md pb-2 font-semibold tracking-tight">Composition</h2>
-      <div className="border-border bg-card rounded-lg border p-4 shadow-xs md:p-5">
+      <div className="border-border bg-card shadow-xs rounded-lg border p-4 md:p-5">
         {/* Stacked horizontal bar */}
         <div className="mb-4 flex h-2.5 w-full overflow-hidden rounded-full">
           {items.map((item, index) => (
@@ -308,6 +310,7 @@ export function NetWorthContent({ onAddAsset, onAddLiability }: NetWorthContentP
   const [selectedIntervalDescription, setSelectedIntervalDescription] = useState<string>(
     () => getInitialIntervalData(intervalCode).description,
   );
+  const [selectedIntervalCode, setSelectedIntervalCode] = useState<TimePeriod>(intervalCode);
 
   // Compute ISO date strings for the history query
   const historyDates = useMemo(() => {
@@ -325,13 +328,25 @@ export function NetWorthContent({ onAddAsset, onAddLiability }: NetWorthContentP
     endDate: historyDates?.endDate ?? "",
     enabled: !!historyDates,
   });
+  const summaryPeriod = useMemo<PeriodSummaryPeriod>(() => {
+    if (selectedIntervalCode === "1W") return "weekly";
+    if (selectedIntervalCode === "1M") return "monthly";
+    return "custom";
+  }, [selectedIntervalCode]);
+  const { data: periodSummary, isLoading: isPeriodSummaryLoading } = usePeriodSummary({
+    startDate: historyDates?.startDate ?? "",
+    endDate: historyDates?.endDate ?? "",
+    period: summaryPeriod,
+    enabled: !!historyDates,
+  });
 
   // Interval selector callback
   const handleIntervalSelect = (
-    _code: TimePeriod,
+    code: TimePeriod,
     description: string,
     range: DateRange | undefined,
   ) => {
+    setSelectedIntervalCode(code);
     setSelectedIntervalDescription(description);
     setDateRange(range);
   };
@@ -407,7 +422,7 @@ export function NetWorthContent({ onAddAsset, onAddLiability }: NetWorthContentP
   return (
     <div className="flex min-h-screen flex-col">
       {/* Top section: Net Worth value */}
-      <div className="px-4 pt-2 pb-1 md:px-6 md:pb-2 lg:px-8">
+      <div className="px-4 pb-1 pt-2 md:px-6 md:pb-2 lg:px-8">
         <div className="flex items-start gap-2">
           <div>
             <div className="flex items-center gap-3">
@@ -507,19 +522,28 @@ export function NetWorthContent({ onAddAsset, onAddLiability }: NetWorthContentP
 
       {/* Content section with gradient background - starts at 0.15 to match chart bottom */}
       <div
-        className="grow px-4 pt-4 pb-[calc(var(--mobile-nav-ui-height)+max(var(--mobile-nav-gap),env(safe-area-inset-bottom)))] md:px-6 md:pt-6 md:pb-6 lg:px-10 lg:pt-8 lg:pb-8"
+        className="grow px-4 pb-[calc(var(--mobile-nav-ui-height)+max(var(--mobile-nav-gap),env(safe-area-inset-bottom)))] pt-4 md:px-6 md:pb-6 md:pt-6 lg:px-10 lg:pb-8 lg:pt-8"
         style={{
           backgroundImage: `linear-gradient(to bottom, ${THEME_COLOR.replace(")", " / 0.15)")}, ${THEME_COLOR.replace(")", " / 0.08)")} 50%, ${THEME_COLOR.replace(")", " / 0)")} 100%)`,
         }}
       >
+        <div className="mb-8">
+          <PeriodSummaryCard
+            summary={periodSummary}
+            isLoading={isPeriodSummaryLoading}
+            intervalDescription={selectedIntervalDescription}
+            currency={currency}
+          />
+        </div>
+
         <div className="grid grid-cols-1 gap-8 lg:grid-cols-3 lg:gap-20">
           {/* Left column: Breakdown */}
           <div className="lg:col-span-2">
-            <div className="mt-8 mb-4 w-full lg:mt-0">
+            <div className="mb-4 mt-8 w-full lg:mt-0">
               <h2 className="text-md pb-2 font-semibold tracking-tight">Breakdown</h2>
 
               {isLoading ? (
-                <div className="border-border bg-card rounded-lg border p-4 shadow-xs md:p-5">
+                <div className="border-border bg-card shadow-xs rounded-lg border p-4 md:p-5">
                   <div className="space-y-4">
                     {Array.from({ length: 3 }).map((_, i) => (
                       <div key={i} className="flex items-center justify-between">

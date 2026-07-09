@@ -352,6 +352,7 @@ pub fn run() {
             commands::alternative_assets::sync_panorama_mpf_unit_prices,
             commands::alternative_assets::get_net_worth,
             commands::alternative_assets::get_net_worth_history,
+            commands::period_summary::get_period_summary,
             commands::alternative_assets::get_alternative_holdings,
             // Market data commands
             commands::market_data::search_symbol,

@@ -52,6 +52,7 @@ pub struct ServiceContext {
         Arc<dyn portfolio::target_allocation::TargetAllocationServiceTrait>,
     pub valuation_service: Arc<dyn portfolio::valuation::ValuationServiceTrait>,
     pub net_worth_service: Arc<dyn portfolio::net_worth::NetWorthServiceTrait>,
+    pub period_summary_service: Arc<dyn portfolio::period_summary::PeriodSummaryServiceTrait>,
     pub alternative_asset_service: Arc<dyn AlternativeAssetServiceTrait>,
     pub taxonomy_service: Arc<dyn taxonomies::TaxonomyServiceTrait>,
     pub ai_provider_service: Arc<dyn AiProviderServiceTrait>,
@@ -157,6 +158,12 @@ impl ServiceContext {
 
     pub fn net_worth_service(&self) -> Arc<dyn portfolio::net_worth::NetWorthServiceTrait> {
         Arc::clone(&self.net_worth_service)
+    }
+
+    pub fn period_summary_service(
+        &self,
+    ) -> Arc<dyn portfolio::period_summary::PeriodSummaryServiceTrait> {
+        Arc::clone(&self.period_summary_service)
     }
 
     pub fn alternative_asset_service(&self) -> Arc<dyn AlternativeAssetServiceTrait> {

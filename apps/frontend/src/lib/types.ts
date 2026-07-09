@@ -1262,6 +1262,84 @@ export interface NetWorthHistoryPoint {
   currency: string;
 }
 
+export type PeriodSummaryPeriod = "weekly" | "monthly" | "custom";
+
+export type ValueMovementReason =
+  | "price"
+  | "valuation"
+  | "fx"
+  | "income"
+  | "liability"
+  | "residual";
+
+export interface PeriodSummary {
+  summaryKey: string;
+  requestedStartDate: string;
+  requestedEndDate: string;
+  actualStartDate?: string | null;
+  actualEndDate?: string | null;
+  period: PeriodSummaryPeriod;
+  currency: string;
+  startNetWorth: string;
+  endNetWorth: string;
+  totalChange: string;
+  moneyMovement: MoneyMovementSummary;
+  valueMovement: ValueMovementSummary;
+  residual: PeriodSummaryResidual;
+  warnings: PeriodSummaryWarning[];
+}
+
+export interface MoneyMovementSummary {
+  inflowsTotal: string;
+  outflowsTotal: string;
+  net: string;
+  topInflows: MoneyMovementItem[];
+  topOutflows: MoneyMovementItem[];
+}
+
+export interface MoneyMovementItem {
+  activityId: string;
+  accountId: string;
+  accountName?: string | null;
+  date: string;
+  activityType: string;
+  amountBase: string;
+  amountOriginal: string;
+  originalCurrency: string;
+  note?: string | null;
+}
+
+export interface ValueMovementSummary {
+  gainsTotal: string;
+  lossesTotal: string;
+  net: string;
+  topGains: ValueMovementItem[];
+  topLosses: ValueMovementItem[];
+}
+
+export interface ValueMovementItem {
+  holdingId: string;
+  accountId?: string | null;
+  accountName?: string | null;
+  name: string;
+  symbol?: string | null;
+  amountBase: string;
+  percentChange?: string | null;
+  reason: ValueMovementReason;
+}
+
+export interface PeriodSummaryResidual {
+  amount: string;
+  reason?: string | null;
+}
+
+export interface PeriodSummaryWarning {
+  code: string;
+  message: string;
+  accountId?: string | null;
+  holdingId?: string | null;
+}
+
 /**
  * Alternative asset holding with valuation details.
  * Simplified model: no account, no activities, just asset + quotes.

@@ -31,6 +31,7 @@ mod limits;
 mod market_data;
 mod net_worth;
 mod performance;
+mod period_summary;
 mod portfolio;
 mod secrets;
 mod settings;
@@ -91,6 +92,7 @@ pub fn app_router(state: Arc<AppState>, config: &Config) -> Router {
         .merge(taxonomies::router())
         .merge(target_allocation::router())
         .merge(net_worth::router())
+        .merge(period_summary::router())
         .merge(alternative_assets::router())
         .merge(ai_providers::router())
         .merge(ai_chat::router())

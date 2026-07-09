@@ -8,8 +8,8 @@ period and what contributed to that change.
 The summary should feel like a bank statement plus an investment statement:
 
 - Money movement explains deposits, withdrawals, and external transfers.
-- Value movement explains holding-level gains and losses from prices,
-  valuation updates, FX, income accrual, or liability changes.
+- Value movement explains holding-level gains and losses from prices, valuation
+  updates, FX, income accrual, or liability changes.
 - The top view reconciles the period from starting net worth to ending net
   worth.
 
@@ -392,8 +392,8 @@ Backend tests:
 - Period with only withdrawal: outflow appears in top losses for money movement.
 - Period with no cash flow and one holding price gain: value movement explains
   the change.
-- Period with one large holding loss and several small gains: mirrored chart data
-  ranks both sides correctly.
+- Period with one large holding loss and several small gains: mirrored chart
+  data ranks both sides correctly.
 - Internal transfer is excluded from portfolio-level money movement.
 - External transfer keeps activity notes in the response.
 - Liability payoff with tracked liability reduces cash and liability without

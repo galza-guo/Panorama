@@ -30,6 +30,7 @@ use panorama_core::{
             HoldingsServiceTrait,
         },
         net_worth::{NetWorthService, NetWorthServiceTrait},
+        period_summary::{PeriodSummaryService, PeriodSummaryServiceTrait},
         snapshot::{SnapshotService, SnapshotServiceTrait},
         valuation::{ValuationService, ValuationServiceTrait},
     },
@@ -86,6 +87,7 @@ pub struct AppState {
     pub asset_service: Arc<dyn AssetServiceTrait + Send + Sync>,
     pub taxonomy_service: Arc<dyn TaxonomyServiceTrait + Send + Sync>,
     pub net_worth_service: Arc<dyn NetWorthServiceTrait + Send + Sync>,
+    pub period_summary_service: Arc<dyn PeriodSummaryServiceTrait + Send + Sync>,
     pub alternative_asset_service: Arc<dyn AlternativeAssetServiceTrait + Send + Sync>,
     pub addon_service: Arc<dyn AddonServiceTrait + Send + Sync>,
     pub ai_provider_service: Arc<dyn AiProviderServiceTrait + Send + Sync>,
@@ -301,6 +303,18 @@ pub async fn build_state(config: &Config) -> anyhow::Result<Arc<AppState>> {
         .with_event_sink(domain_event_sink.clone()),
     );
 
+    let period_summary_service: Arc<dyn PeriodSummaryServiceTrait + Send + Sync> =
+        Arc::new(PeriodSummaryService::new(
+            base_currency.clone(),
+            account_service.clone(),
+            activity_service.clone(),
+            asset_service.clone(),
+            snapshot_repository.clone(),
+            quote_service.clone(),
+            fx_service.clone(),
+            net_worth_service.clone(),
+        ));
+
     // Alternative asset repository for alternative assets operations
     let alternative_asset_repository: Arc<dyn AlternativeAssetRepositoryTrait + Send + Sync> =
         Arc::new(AlternativeAssetRepository::new(
@@ -413,6 +427,7 @@ pub async fn build_state(config: &Config) -> anyhow::Result<Arc<AppState>> {
         asset_service,
         taxonomy_service,
         net_worth_service,
+        period_summary_service,
         alternative_asset_service,
         addon_service,
         ai_provider_service,

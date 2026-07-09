@@ -19,6 +19,7 @@ use panorama_core::{
         income::IncomeService,
         net_worth::NetWorthService,
         performance::PerformanceService,
+        period_summary::PeriodSummaryService,
         snapshot::SnapshotService,
         target_allocation::TargetAllocationService,
         valuation::ValuationService,
@@ -227,6 +228,17 @@ pub async fn initialize_context(
         fx_service.clone(),
     ));
 
+    let period_summary_service = Arc::new(PeriodSummaryService::new(
+        base_currency.clone(),
+        account_service.clone(),
+        activity_service.clone(),
+        asset_service.clone(),
+        snapshot_repository.clone(),
+        quote_service.clone(),
+        fx_service.clone(),
+        net_worth_service.clone(),
+    ));
+
     let alternative_asset_repository = Arc::new(AlternativeAssetRepository::new(
         pool.clone(),
         writer.clone(),
@@ -315,6 +327,7 @@ pub async fn initialize_context(
             target_allocation_service,
             valuation_service,
             net_worth_service,
+            period_summary_service,
             alternative_asset_service,
             taxonomy_service,
             ai_provider_service,
