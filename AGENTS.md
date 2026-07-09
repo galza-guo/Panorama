@@ -92,6 +92,59 @@ crates/
 
 ---
 
+## macOS 27 / Xcode 27 Beta Tooling
+
+Panorama has a generated Tauri Apple project under `apps/tauri/gen/apple/`. This
+machine may be on macOS 27 with Xcode 27 beta installed at
+`/Applications/Xcode-beta.app`, while the active global developer directory may
+still be `/Library/Developer/CommandLineTools`.
+
+Plain `xcodebuild`, `xcrun simctl`, or tools that depend on global
+`xcode-select` may fail with errors like:
+
+- `xcodebuild requires Xcode, but active developer directory is ... CommandLineTools`
+- `unable to find utility "simctl"`
+- `SDK "iphonesimulator" cannot be located`
+
+Do not assume Xcode or simulators are missing. Use Xcode beta explicitly per
+command:
+
+```bash
+DEVELOPER_DIR=/Applications/Xcode-beta.app/Contents/Developer xcodebuild -list -project ProjectName.xcodeproj
+DEVELOPER_DIR=/Applications/Xcode-beta.app/Contents/Developer xcrun --sdk iphonesimulator --show-sdk-path
+DEVELOPER_DIR=/Applications/Xcode-beta.app/Contents/Developer xcrun simctl list devices available
+```
+
+For building:
+
+```bash
+DEVELOPER_DIR=/Applications/Xcode-beta.app/Contents/Developer \
+xcodebuild -project ProjectName.xcodeproj \
+  -scheme SchemeName \
+  -configuration Debug \
+  -destination 'platform=iOS Simulator,name=iPhone 17 Pro' \
+  build
+```
+
+DeviceHub exists at
+`/Applications/Xcode-beta.app/Contents/Applications/DeviceHub.app`. Relevant CLI
+tools are still under the Xcode beta developer directory:
+
+```bash
+DEVELOPER_DIR=/Applications/Xcode-beta.app/Contents/Developer xcrun --find xcodebuild
+DEVELOPER_DIR=/Applications/Xcode-beta.app/Contents/Developer xcrun --find simctl
+DEVELOPER_DIR=/Applications/Xcode-beta.app/Contents/Developer xcrun --find devicectl
+```
+
+Do not ask Gallant to install Xcode or switch global `xcode-select` until you
+have tried the explicit
+`DEVELOPER_DIR=/Applications/Xcode-beta.app/Contents/Developer` path. Some
+automation/MCP tools may still fail if they internally call global
+`xcode-select`; in that case, prefer direct shell commands with the
+`DEVELOPER_DIR` prefix, including simulator screenshot/install/launch commands.
+
+---
+
 ## Upstream Maintenance SOP
 
 - Patch inventory: `docs/maintenance/panorama-patch-inventory.md`
